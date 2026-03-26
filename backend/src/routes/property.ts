@@ -3,6 +3,7 @@ import { z } from "zod";
 import { readCache, writeCache } from "../services/gcsCache";
 import { fetchTransactionPrices, getMockTransactionData } from "../services/mlitApi";
 import { config } from "../config";
+import { buildCacheKey } from "../utils/tile";
 
 const app = new Hono();
 
@@ -15,6 +16,11 @@ const querySchema = z.object({
 /**
  * GET /api/property/transactions
  * 不動産取引価格情報を取得（GCSキャッシュ機構付き）
+ *
+ * キャッシュ戦略:
+ * 1. GCSキャッシュHIT → 即返却
+ * 2. MISS + APIキーあり → MLIT API を呼び、GCSに非同期保存
+ * 3. MISS + APIキーなし → モックデータを返す
  */
 app.get("/transactions", async (c) => {
   const parsed = querySchema.safeParse({
@@ -44,31 +50,36 @@ app.get("/transactions", async (c) => {
     });
   }
 
-  // 2. キャッシュなし → APIを呼ぶ（APIキーがなければモックを返す）
+  // 2. キャッシュなし: APIキーの有無で分岐（NODE_ENVは参照しない）
+  const hasApiKey = !!config.mlit.apiKey;
   let apiData;
-  const isMockMode = !config.mlit.apiKey || config.nodeEnv === "development";
+  let source: "api" | "mock";
 
-  if (isMockMode) {
-    console.log(`[API] Mock mode: returning dummy data for (${lat}, ${lng})`);
-    apiData = getMockTransactionData(lat, lng);
-  } else {
+  if (hasApiKey) {
     try {
-      apiData = await fetchTransactionPrices(lat, lng, zoom);
+      apiData = await fetchTransactionPrices(lat, lng);
+      source = "api";
     } catch (err) {
-      console.error("[API] MLIT API fetch failed:", err);
-      // フォールバック: モックデータを返す
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[MLIT API] fetch failed, falling back to mock:", msg);
       apiData = getMockTransactionData(lat, lng);
+      source = "mock";
     }
+  } else {
+    console.log(`[Route] No API key. Returning mock data for (${lat}, ${lng})`);
+    apiData = getMockTransactionData(lat, lng);
+    source = "mock";
   }
 
   // 3. 非同期でGCSに保存（レスポンスをブロックしない）
+  const cacheKey = buildCacheKey(lat, lng, zoom);
   writeCache(lat, lng, zoom, apiData).catch((err) =>
     console.error("[GCS Cache] Background write failed:", err)
   );
 
   return c.json({
-    source: isMockMode ? "mock" : "api",
-    cacheKey: null,
+    source,
+    cacheKey,
     fetchedAt: new Date().toISOString(),
     expiresAt: null,
     data: apiData,
