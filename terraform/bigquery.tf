@@ -26,11 +26,12 @@ resource "google_bigquery_table" "property_transactions" {
   description = "国交省API: 不動産取引価格情報キャッシュ"
 
   # 30日でパーティション期限切れ
+  require_partition_filter = false
+
   time_partitioning {
-    type                     = "DAY"
-    field                    = "fetched_at"
-    expiration_ms            = var.cache_ttl_days * 24 * 60 * 60 * 1000
-    require_partition_filter = false
+    type          = "DAY"
+    field         = "fetched_at"
+    expiration_ms = var.cache_ttl_days * 24 * 60 * 60 * 1000
   }
 
   schema = jsonencode([
