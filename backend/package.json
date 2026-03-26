@@ -1,0 +1,30 @@
+{
+  "name": "realestate-api",
+  "version": "0.1.0",
+  "description": "不動産リスク&適正価格レポート生成 - バックエンドAPI",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "jest --forceExit",
+    "lint": "eslint src --ext .ts"
+  },
+  "dependencies": {
+    "@google-cloud/bigquery": "^7.9.0",
+    "@google-cloud/storage": "^7.12.0",
+    "dotenv": "^16.4.5",
+    "hono": "^4.4.0",
+    "@hono/node-server": "^1.12.0",
+    "axios": "^1.7.7",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.14.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.0",
+    "tsx": "^4.16.0",
+    "typescript": "^5.5.0"
+  }
+}

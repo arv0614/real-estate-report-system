@@ -1,0 +1,38 @@
+# 機密情報・環境依存ファイル
+.env
+*.env.local
+
+# Terraform
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/*.tfvars
+!terraform/*.tfvars.example
+
+# GCPサービスアカウントキー
+*.json
+!package*.json
+!tsconfig*.json
+
+# Node.js
+node_modules/
+dist/
+.next/
+out/
+
+# ビルド成果物
+*.js.map
+build/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/settings.json
+.idea/
+
+# ログ
+*.log
+npm-debug.log*
