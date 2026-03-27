@@ -313,6 +313,139 @@ export function getMockHazardData(): HazardInfo {
 }
 
 // ============================================================
+// 生活環境情報
+// ============================================================
+
+export interface EnvironmentInfo {
+  zoning: {
+    useArea: string | null;       // 用途地域名
+    coverageRatio: string | null; // 建ぺい率
+    floorAreaRatio: string | null;// 容積率
+  };
+  schools: {
+    elementary: string | null;    // 小学校区名
+    juniorHigh: string | null;    // 中学校区名
+  };
+  medical: {
+    count: number;
+    facilities: Array<{ name: string; type: string }>;
+  };
+  station: {
+    name: string | null;
+    operator: string | null;
+    dailyPassengers: number | null;
+  };
+}
+
+/** 用途地域 (XKT002): 最頻出の用途地域を返す */
+async function fetchZoning(x: number, y: number, z: number): Promise<EnvironmentInfo["zoning"]> {
+  const data = await fetchTileGeojson("XKT002", x, y, z);
+  if (!data.features.length) return { useArea: null, coverageRatio: null, floorAreaRatio: null };
+
+  // タイル内に複数ポリゴン存在する可能性があるため最頻出を採用
+  const tally: Record<string, { count: number; coverage: string; floor: string }> = {};
+  for (const f of data.features) {
+    const area = String(f.properties["use_area_ja"] ?? "").trim();
+    if (!area) continue;
+    if (!tally[area]) {
+      tally[area] = {
+        count: 0,
+        coverage: String(f.properties["u_building_coverage_ratio_ja"] ?? "").trim(),
+        floor: String(f.properties["u_floor_area_ratio_ja"] ?? "").trim(),
+      };
+    }
+    tally[area].count++;
+  }
+
+  const dominant = Object.entries(tally).sort((a, b) => b[1].count - a[1].count)[0];
+  if (!dominant) return { useArea: null, coverageRatio: null, floorAreaRatio: null };
+
+  return {
+    useArea: dominant[0],
+    coverageRatio: dominant[1].coverage || null,
+    floorAreaRatio: dominant[1].floor || null,
+  };
+}
+
+/** 学区 (XKT004 小学校 / XKT005 中学校): 最初のフィーチャー */
+async function fetchSchools(x: number, y: number, z: number): Promise<EnvironmentInfo["schools"]> {
+  const [elem, jh] = await Promise.all([
+    fetchTileGeojson("XKT004", x, y, z).catch(() => ({ type: "FeatureCollection", features: [] })),
+    fetchTileGeojson("XKT005", x, y, z).catch(() => ({ type: "FeatureCollection", features: [] })),
+  ]);
+  const elemName = elem.features[0]?.properties["A27_004_ja"];
+  const jhName   = jh.features[0]?.properties["A32_004_ja"];
+  return {
+    elementary: elemName ? String(elemName) : null,
+    juniorHigh: jhName ? String(jhName) : null,
+  };
+}
+
+/** 医療機関 (XKT010): 件数 + 施設リスト先頭5件 */
+async function fetchMedical(x: number, y: number, z: number): Promise<EnvironmentInfo["medical"]> {
+  const data = await fetchTileGeojson("XKT010", x, y, z);
+  return {
+    count: data.features.length,
+    facilities: data.features.slice(0, 5)
+      .map((f) => ({
+        name: String(f.properties["P04_002_ja"] ?? "").trim(),
+        type: String(f.properties["P04_001_name_ja"] ?? "").trim(),
+      }))
+      .filter((f) => f.name),
+  };
+}
+
+/** 最寄り駅 (XKT015): 乗降客数が最大の駅 */
+async function fetchStation(x: number, y: number, z: number): Promise<EnvironmentInfo["station"]> {
+  const data = await fetchTileGeojson("XKT015", x, y, z);
+  if (!data.features.length) return { name: null, operator: null, dailyPassengers: null };
+
+  // 乗降客数 S12_009 が最大のフィーチャーを採用
+  const best = data.features.reduce((a, b) =>
+    Number(b.properties["S12_009"] ?? 0) > Number(a.properties["S12_009"] ?? 0) ? b : a
+  );
+  return {
+    name: String(best.properties["S12_001_ja"] ?? "").trim() || null,
+    operator: String(best.properties["S12_002_ja"] ?? "").trim() || null,
+    dailyPassengers: Number(best.properties["S12_009"]) || null,
+  };
+}
+
+/**
+ * 生活環境情報を並列取得
+ * XKT002: 用途地域 / XKT004: 小学校区 / XKT005: 中学校区
+ * XKT010: 医療機関 / XKT015: 最寄り駅
+ */
+export async function fetchEnvironmentInfo(lat: number, lng: number): Promise<EnvironmentInfo> {
+  const { x, y, z } = latLngToTile(lat, lng, 15);
+  const fallbackZoning  = { useArea: null, coverageRatio: null, floorAreaRatio: null };
+  const fallbackSchools = { elementary: null, juniorHigh: null };
+  const fallbackMedical = { count: 0, facilities: [] };
+  const fallbackStation = { name: null, operator: null, dailyPassengers: null };
+
+  const [zoning, schools, medical, station] = await Promise.all([
+    fetchZoning(x, y, z).catch(() => fallbackZoning),
+    fetchSchools(x, y, z).catch(() => fallbackSchools),
+    fetchMedical(x, y, z).catch(() => fallbackMedical),
+    fetchStation(x, y, z).catch(() => fallbackStation),
+  ]);
+
+  return { zoning, schools, medical, station };
+}
+
+export function getMockEnvironmentData(): EnvironmentInfo {
+  return {
+    zoning: { useArea: "第一種住居地域", coverageRatio: "60%", floorAreaRatio: "200%" },
+    schools: { elementary: "○○小学校", juniorHigh: "○○中学校" },
+    medical: { count: 8, facilities: [
+      { name: "○○クリニック", type: "診療所" },
+      { name: "△△病院", type: "病院" },
+    ]},
+    station: { name: "××駅", operator: "○○電鉄", dailyPassengers: 45000 },
+  };
+}
+
+// ============================================================
 // モックデータ（APIキーなし・テスト用）
 // ============================================================
 export function getMockTransactionData(_lat: number, _lng: number): MlitApiResponse {

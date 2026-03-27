@@ -17,6 +17,7 @@ import { SourceBadge } from "@/components/SourceBadge";
 import { SummaryCards } from "@/components/SummaryCards";
 import { TransactionTable } from "@/components/TransactionTable";
 import { PriceTrendChart } from "@/components/PriceTrendChart";
+import { EnvironmentInfoCard } from "@/components/EnvironmentInfo";
 
 export default function HomePage() {
   const { user, loading: authLoading } = useAuth();
@@ -248,6 +249,9 @@ export default function HomePage() {
               </div>
 
               <SummaryCards summary={summary} hazard={result.hazard} />
+              {result.environment && (
+                <EnvironmentInfoCard environment={result.environment} />
+              )}
               <PriceTrendChart records={result.data.data} />
               <TransactionTable records={result.data.data} isPdfExporting={pdfLoading} autoDistrict={autoDistrict} />
             </div>

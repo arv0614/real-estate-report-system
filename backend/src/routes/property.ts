@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { readCache, writeCache } from "../services/gcsCache";
-import { fetchTransactionPrices, getMockTransactionData, fetchHazardInfo, getMockHazardData } from "../services/mlitApi";
+import { fetchTransactionPrices, getMockTransactionData, fetchHazardInfo, getMockHazardData, fetchEnvironmentInfo, getMockEnvironmentData } from "../services/mlitApi";
 import { config } from "../config";
 import { buildCacheKey } from "../utils/tile";
 
@@ -46,9 +46,10 @@ app.get("/transactions", async (c) => {
     const isOldFormat = typeof cachedApiData.year === "number" && !Array.isArray(cachedApiData.years);
     if (!isOldFormat) {
       const hasApiKey = !!config.mlit.apiKey;
-      const hazard = hasApiKey
-        ? await fetchHazardInfo(lat, lng).catch(() => getMockHazardData())
-        : getMockHazardData();
+      const [hazard, environment] = await Promise.all([
+        hasApiKey ? fetchHazardInfo(lat, lng).catch(() => getMockHazardData()) : Promise.resolve(getMockHazardData()),
+        hasApiKey ? fetchEnvironmentInfo(lat, lng).catch(() => getMockEnvironmentData()) : Promise.resolve(getMockEnvironmentData()),
+      ]);
 
       return c.json({
         source: "cache",
@@ -56,6 +57,7 @@ app.get("/transactions", async (c) => {
         fetchedAt: cached.fetchedAt,
         expiresAt: cached.expiresAt,
         hazard,
+        environment,
         data: cachedApiData,
       });
     }
@@ -83,13 +85,15 @@ app.get("/transactions", async (c) => {
     source = "mock";
   }
 
-  // 3. ハザード情報を取得（取引データと独立して毎回フレッシュ取得）
-  const hazard = hasApiKey
-    ? await fetchHazardInfo(lat, lng).catch((err) => {
-        console.error("[Hazard API] fetch failed:", err);
-        return getMockHazardData();
-      })
-    : getMockHazardData();
+  // 3. ハザード・生活環境情報を並列取得（取引データとは独立してフレッシュ取得）
+  const [hazard, environment] = await Promise.all([
+    hasApiKey
+      ? fetchHazardInfo(lat, lng).catch((err) => { console.error("[Hazard API] fetch failed:", err); return getMockHazardData(); })
+      : Promise.resolve(getMockHazardData()),
+    hasApiKey
+      ? fetchEnvironmentInfo(lat, lng).catch((err) => { console.error("[Environment API] fetch failed:", err); return getMockEnvironmentData(); })
+      : Promise.resolve(getMockEnvironmentData()),
+  ]);
 
   // 4. 非同期でGCSに保存（レスポンスをブロックしない）
   const cacheKey = buildCacheKey(lat, lng, zoom);
@@ -103,6 +107,7 @@ app.get("/transactions", async (c) => {
     fetchedAt: new Date().toISOString(),
     expiresAt: null,
     hazard,
+    environment,
     data: apiData,
   });
 });

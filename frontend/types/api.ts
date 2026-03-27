@@ -52,12 +52,36 @@ export interface ApiData {
   data: TransactionRecord[];
 }
 
+export interface EnvironmentZoning {
+  useArea: string | null;
+  coverageRatio: string | null;
+  floorAreaRatio: string | null;
+}
+
+export interface EnvironmentInfo {
+  zoning: EnvironmentZoning;
+  schools: {
+    elementary: string | null;
+    juniorHigh: string | null;
+  };
+  medical: {
+    count: number;
+    facilities: Array<{ name: string; type: string }>;
+  };
+  station: {
+    name: string | null;
+    operator: string | null;
+    dailyPassengers: number | null;
+  };
+}
+
 export interface TransactionApiResponse {
   source: "api" | "cache" | "mock";
   cacheKey: string | null;
   fetchedAt: string;
   expiresAt: string | null;
   hazard: HazardInfo;
+  environment: EnvironmentInfo | null;
   data: ApiData;
 }
 
