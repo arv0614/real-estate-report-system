@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatPrice } from "@/lib/api";
+import { formatPrice, formatUnitPrice } from "@/lib/api";
 import type { TransactionSummary } from "@/types/api";
 
 interface Props {
@@ -22,9 +22,7 @@ export function SummaryCards({ summary }: Props) {
     },
     {
       title: "平均㎡単価",
-      value: summary.avgUnitPrice
-        ? `${Math.round(summary.avgUnitPrice / 10000).toLocaleString()}万円/㎡`
-        : "—",
+      value: summary.avgUnitPrice ? formatUnitPrice(summary.avgUnitPrice) : "—",
       sub: "（単価データが存在する物件のみ）",
       icon: "📐",
     },

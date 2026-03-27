@@ -20,10 +20,11 @@ export async function fetchTransactions(
   return res.json();
 }
 
-/** 取引データのサマリーを計算 */
 export function calcSummary(records: TransactionRecord[]): TransactionSummary {
   const prices = records.map((r) => r.tradePrice).filter((p) => p > 0);
-  const unitPrices = records.map((r) => r.unitPrice).filter((v): v is number => v !== null && v > 0);
+  const unitPrices = records
+    .map((r) => r.unitPrice)
+    .filter((v): v is number => v !== null && v > 0);
 
   const avg = (arr: number[]) =>
     arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : 0;
@@ -37,6 +38,10 @@ export function calcSummary(records: TransactionRecord[]): TransactionSummary {
       : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
   };
 
+  // Math.min/max(...arr) can overflow the call stack for large arrays; use reduce instead
+  const minOf = (arr: number[]) => arr.reduce((a, b) => (b < a ? b : a), arr[0]);
+  const maxOf = (arr: number[]) => arr.reduce((a, b) => (b > a ? b : a), arr[0]);
+
   const typeBreakdown = records.reduce<Record<string, number>>((acc, r) => {
     acc[r.type] = (acc[r.type] ?? 0) + 1;
     return acc;
@@ -47,15 +52,20 @@ export function calcSummary(records: TransactionRecord[]): TransactionSummary {
     avgUnitPrice: unitPrices.length ? avg(unitPrices) : null,
     avgTradePrice: avg(prices),
     medianTradePrice: median(prices),
-    minTradePrice: prices.length ? Math.min(...prices) : 0,
-    maxTradePrice: prices.length ? Math.max(...prices) : 0,
+    minTradePrice: prices.length ? minOf(prices) : 0,
+    maxTradePrice: prices.length ? maxOf(prices) : 0,
     typeBreakdown,
   };
 }
 
-/** 数値を「1,234万円」表記に変換 */
+/** 円を「1,234万円」表記に変換。ゼロは「—」 */
 export function formatPrice(yen: number): string {
   if (yen === 0) return "—";
   const man = Math.round(yen / 10000);
   return `${man.toLocaleString()}万円`;
+}
+
+/** 円/㎡を「NN万円/㎡」表記に変換 */
+export function formatUnitPrice(yenPerSqm: number): string {
+  return `${Math.round(yenPerSqm / 10000).toLocaleString()}万円/㎡`;
 }
