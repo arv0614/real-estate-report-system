@@ -41,18 +41,25 @@ app.get("/transactions", async (c) => {
   // 1. GCSキャッシュを確認（ハザード情報は毎回フレッシュ取得）
   const cached = await readCache(lat, lng, zoom);
   if (cached) {
-    const hasApiKey = !!config.mlit.apiKey;
-    const hazard = hasApiKey
-      ? await fetchHazardInfo(lat, lng).catch(() => getMockHazardData())
-      : getMockHazardData();
-    return c.json({
-      source: "cache",
-      cacheKey: cached.cacheKey,
-      fetchedAt: cached.fetchedAt,
-      expiresAt: cached.expiresAt,
-      hazard,
-      data: cached.data,
-    });
+    const cachedApiData = cached.data as Record<string, unknown>;
+    // 旧キャッシュ（year: number, 1年分のみ）はスキップして再取得
+    const isOldFormat = typeof cachedApiData.year === "number" && !Array.isArray(cachedApiData.years);
+    if (!isOldFormat) {
+      const hasApiKey = !!config.mlit.apiKey;
+      const hazard = hasApiKey
+        ? await fetchHazardInfo(lat, lng).catch(() => getMockHazardData())
+        : getMockHazardData();
+
+      return c.json({
+        source: "cache",
+        cacheKey: cached.cacheKey,
+        fetchedAt: cached.fetchedAt,
+        expiresAt: cached.expiresAt,
+        hazard,
+        data: cachedApiData,
+      });
+    }
+    console.log(`[Route] Old cache format detected, re-fetching 5-year data for (${lat}, ${lng})`);
   }
 
   // 2. キャッシュなし: APIキーの有無で分岐（NODE_ENVは参照しない）

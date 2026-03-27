@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { flushSync } from "react-dom";
 import { fetchTransactions, calcSummary } from "@/lib/api";
 import { exportToPdf } from "@/lib/exportPdf";
 import type { TransactionApiResponse } from "@/types/api";
@@ -32,7 +33,10 @@ export default function HomePage() {
 
   async function handleDownloadPdf() {
     if (!firstRecord) return;
-    setPdfLoading(true);
+    // flushSync でReactを同期的に再レンダリングし、
+    // TransactionTable が isPdfExporting=true の状態（1ページ目・ページネーション非表示）に
+    // なってからキャプチャを開始する
+    flushSync(() => setPdfLoading(true));
     try {
       await exportToPdf("report-content", firstRecord.municipality);
     } finally {
@@ -117,7 +121,14 @@ export default function HomePage() {
                   </span>
                 )}
                 <span className="text-slate-300">|</span>
-                <span>対象年: <strong className="text-slate-800">{result.data.year}年</strong></span>
+                <span>
+                  対象年:{" "}
+                  <strong className="text-slate-800">
+                    {result.data.years.length === 1
+                      ? `${result.data.years[0]}年`
+                      : `${result.data.years[0]}〜${result.data.years[result.data.years.length - 1]}年`}
+                  </strong>
+                </span>
                 {result.expiresAt && (
                   <>
                     <span className="text-slate-300">|</span>
@@ -130,7 +141,7 @@ export default function HomePage() {
 
               <SummaryCards summary={summary} hazard={result.hazard} />
               <PriceTrendChart records={result.data.data} />
-              <TransactionTable records={result.data.data} />
+              <TransactionTable records={result.data.data} isPdfExporting={pdfLoading} />
             </div>
           </>
         )}
