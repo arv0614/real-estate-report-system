@@ -36,3 +36,4 @@ Thumbs.db
 # ログ
 *.log
 npm-debug.log*
+frontend/.env.local
