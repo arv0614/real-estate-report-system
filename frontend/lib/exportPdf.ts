@@ -3,7 +3,7 @@ export async function exportToPdf(elementId: string, municipality: string): Prom
   if (!element) return;
 
   const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
-    import("html2canvas"),
+    import("html2canvas-pro"),
     import("jspdf"),
   ]);
 
