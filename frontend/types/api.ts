@@ -82,6 +82,7 @@ export interface TransactionApiResponse {
   expiresAt: string | null;
   hazard: HazardInfo;
   environment: EnvironmentInfo | null;
+  aiReport: string | null;
   data: ApiData;
 }
 

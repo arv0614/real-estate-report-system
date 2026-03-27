@@ -32,4 +32,9 @@ export const config = {
       process.env.MLIT_API_BASE_URL ??
       "https://www.reinfolib.mlit.go.jp/ex-api/external",
   },
+
+  gemini: {
+    apiKey: process.env.GEMINI_API_KEY ?? "",
+    model: process.env.GEMINI_MODEL ?? "gemini-2.5-flash",
+  },
 } as const;

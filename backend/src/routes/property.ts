@@ -2,8 +2,10 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { readCache, writeCache } from "../services/gcsCache";
 import { fetchTransactionPrices, getMockTransactionData, fetchHazardInfo, getMockHazardData, fetchEnvironmentInfo, getMockEnvironmentData } from "../services/mlitApi";
+import { generateAreaReport, getMockAiReport, type AreaReportInput } from "../services/geminiApi";
 import { config } from "../config";
 import { buildCacheKey } from "../utils/tile";
+import type { TransactionRecord } from "../services/mlitApi";
 
 const app = new Hono();
 
@@ -13,14 +15,29 @@ const querySchema = z.object({
   zoom: z.coerce.number().min(10).max(18).default(15),
 });
 
+/** TransactionRecord の配列から統計サマリーを計算 */
+function calcSummary(records: TransactionRecord[]) {
+  const prices = records.map((r) => r.tradePrice).filter((p) => p > 0);
+  const unitPrices = records.map((r) => r.unitPrice).filter((v): v is number => v !== null && v > 0);
+  const sorted = [...prices].sort((a, b) => a - b);
+  return {
+    totalCount: records.length,
+    avgTradePrice: prices.length ? prices.reduce((a, b) => a + b, 0) / prices.length : 0,
+    avgUnitPrice: unitPrices.length ? unitPrices.reduce((a, b) => a + b, 0) / unitPrices.length : null,
+    minTradePrice: sorted[0] ?? 0,
+    maxTradePrice: sorted[sorted.length - 1] ?? 0,
+  };
+}
+
 /**
  * GET /api/property/transactions
  * 不動産取引価格情報を取得（GCSキャッシュ機構付き）
  *
  * キャッシュ戦略:
- * 1. GCSキャッシュHIT → 即返却
- * 2. MISS + APIキーあり → MLIT API を呼び、GCSに非同期保存
- * 3. MISS + APIキーなし → モックデータを返す
+ * 1. GCSキャッシュHIT + aiReport あり → hazard/environment だけ再取得して即返却
+ * 2. GCSキャッシュHIT + aiReport なし → Gemini生成 → バックグラウンドでキャッシュ更新
+ * 3. MISS + APIキーあり → MLIT API + Gemini を呼び、GCSに保存
+ * 4. MISS + APIキーなし → モックデータ + モックAIレポートを返す
  */
 app.get("/transactions", async (c) => {
   const parsed = querySchema.safeParse({
@@ -37,19 +54,46 @@ app.get("/transactions", async (c) => {
   }
 
   const { lat, lng, zoom } = parsed.data;
+  const hasApiKey = !!config.mlit.apiKey;
 
-  // 1. GCSキャッシュを確認（ハザード情報は毎回フレッシュ取得）
+  // 1. GCSキャッシュを確認
   const cached = await readCache(lat, lng, zoom);
   if (cached) {
     const cachedApiData = cached.data as Record<string, unknown>;
     // 旧キャッシュ（year: number, 1年分のみ）はスキップして再取得
     const isOldFormat = typeof cachedApiData.year === "number" && !Array.isArray(cachedApiData.years);
     if (!isOldFormat) {
-      const hasApiKey = !!config.mlit.apiKey;
+      // hazard・environment は毎回フレッシュ取得
       const [hazard, environment] = await Promise.all([
         hasApiKey ? fetchHazardInfo(lat, lng).catch(() => getMockHazardData()) : Promise.resolve(getMockHazardData()),
         hasApiKey ? fetchEnvironmentInfo(lat, lng).catch(() => getMockEnvironmentData()) : Promise.resolve(getMockEnvironmentData()),
       ]);
+
+      // AIレポート: キャッシュにあればそのまま使用、なければ生成してキャッシュを更新
+      let aiReport = cached.aiReport;
+      if (!aiReport) {
+        console.log(`[Gemini] キャッシュにaiReportなし。新規生成します (${lat}, ${lng})`);
+        const records = (cachedApiData.data ?? []) as TransactionRecord[];
+        const summary = calcSummary(records);
+        const reportInput: AreaReportInput = {
+          lat, lng,
+          prefecture: String((records[0]?.prefecture) ?? ""),
+          municipality: String((records[0]?.municipality) ?? ""),
+          cityCode: String(cachedApiData.cityCode ?? ""),
+          years: (cachedApiData.years as number[]) ?? [],
+          ...summary,
+          hazard,
+          environment,
+        };
+        aiReport = await generateAreaReport(reportInput).catch((err) => {
+          console.error("[Gemini] 生成失敗:", err);
+          return getMockAiReport(reportInput.prefecture, reportInput.municipality);
+        });
+        // バックグラウンドでキャッシュを更新
+        writeCache(lat, lng, zoom, cachedApiData, aiReport).catch((err) =>
+          console.error("[GCS Cache] aiReport update failed:", err)
+        );
+      }
 
       return c.json({
         source: "cache",
@@ -58,14 +102,14 @@ app.get("/transactions", async (c) => {
         expiresAt: cached.expiresAt,
         hazard,
         environment,
+        aiReport,
         data: cachedApiData,
       });
     }
     console.log(`[Route] Old cache format detected, re-fetching 5-year data for (${lat}, ${lng})`);
   }
 
-  // 2. キャッシュなし: APIキーの有無で分岐（NODE_ENVは参照しない）
-  const hasApiKey = !!config.mlit.apiKey;
+  // 2. キャッシュなし: APIキーの有無で分岐
   let apiData;
   let source: "api" | "mock";
 
@@ -85,7 +129,7 @@ app.get("/transactions", async (c) => {
     source = "mock";
   }
 
-  // 3. ハザード・生活環境情報を並列取得（取引データとは独立してフレッシュ取得）
+  // 3. ハザード・生活環境情報を並列取得
   const [hazard, environment] = await Promise.all([
     hasApiKey
       ? fetchHazardInfo(lat, lng).catch((err) => { console.error("[Hazard API] fetch failed:", err); return getMockHazardData(); })
@@ -95,9 +139,26 @@ app.get("/transactions", async (c) => {
       : Promise.resolve(getMockEnvironmentData()),
   ]);
 
-  // 4. 非同期でGCSに保存（レスポンスをブロックしない）
+  // 4. Gemini AIレポートを生成
+  const summary = calcSummary(apiData.data);
+  const reportInput: AreaReportInput = {
+    lat, lng,
+    prefecture: apiData.data[0]?.prefecture ?? "",
+    municipality: apiData.data[0]?.municipality ?? "",
+    cityCode: apiData.cityCode,
+    years: apiData.years,
+    ...summary,
+    hazard,
+    environment,
+  };
+  const aiReport = await generateAreaReport(reportInput).catch((err) => {
+    console.error("[Gemini] 生成失敗:", err);
+    return getMockAiReport(reportInput.prefecture, reportInput.municipality);
+  });
+
+  // 5. 非同期でGCS保存（aiReport も一緒に保存）
   const cacheKey = buildCacheKey(lat, lng, zoom);
-  writeCache(lat, lng, zoom, apiData).catch((err) =>
+  writeCache(lat, lng, zoom, apiData, aiReport).catch((err) =>
     console.error("[GCS Cache] Background write failed:", err)
   );
 
@@ -108,6 +169,7 @@ app.get("/transactions", async (c) => {
     expiresAt: null,
     hazard,
     environment,
+    aiReport,
     data: apiData,
   });
 });
