@@ -36,9 +36,10 @@ interface Props {
   onSearch: (lat: number, lng: number) => void;
   loading: boolean;
   districtMarkers?: DistrictMarker[];
+  isLoggedIn?: boolean;
 }
 
-export function SearchForm({ onSearch, loading, districtMarkers }: Props) {
+export function SearchForm({ onSearch, loading, districtMarkers, isLoggedIn = false }: Props) {
   const [lat, setLat] = useState("35.7101");
   const [lng, setLng] = useState("139.8107");
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -210,12 +211,14 @@ export function SearchForm({ onSearch, loading, districtMarkers }: Props) {
               required
             />
           </div>
-          <Button type="submit" disabled={loading} className="gap-2">
+          <Button type="submit" disabled={loading || !isLoggedIn} className="gap-2">
             {loading ? (
               <>
                 <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 取得中...
               </>
+            ) : !isLoggedIn ? (
+              "🔒 ログインして診断"
             ) : (
               "🔍 診断開始"
             )}
@@ -237,6 +240,12 @@ export function SearchForm({ onSearch, loading, districtMarkers }: Props) {
 
         {validationError && (
           <p className="text-xs text-red-600">{validationError}</p>
+        )}
+
+        {!isLoggedIn && (
+          <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+            🔒 診断を開始するには、画面右上から <strong>Googleアカウントでログイン</strong> してください。
+          </p>
         )}
       </CardContent>
     </Card>
