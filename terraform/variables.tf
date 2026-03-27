@@ -31,3 +31,9 @@ variable "cache_ttl_days" {
   type        = number
   default     = 30
 }
+
+variable "frontend_cloud_run_service_name" {
+  description = "フロントエンド Cloud Run サービス名"
+  type        = string
+  default     = "realestate-frontend"
+}
