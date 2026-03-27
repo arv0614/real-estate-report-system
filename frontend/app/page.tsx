@@ -8,9 +8,11 @@ import { useAuth } from "@/lib/useAuth";
 import { fetchTransactions, calcSummary } from "@/lib/api";
 import { exportToPdf } from "@/lib/exportPdf";
 import { geocodeAddress, reverseGeocodeDistrict, matchDistrictName } from "@/lib/geocode";
+import { saveSearchHistory } from "@/lib/history";
 import type { TransactionApiResponse } from "@/types/api";
 import { SearchForm } from "@/components/SearchForm";
 import type { DistrictMarker } from "@/components/SearchForm";
+import { HistoryList } from "@/components/HistoryList";
 import { SourceBadge } from "@/components/SourceBadge";
 import { SummaryCards } from "@/components/SummaryCards";
 import { TransactionTable } from "@/components/TransactionTable";
@@ -47,6 +49,25 @@ export default function HomePage() {
     try {
       const data = await fetchTransactions(lat, lng);
       setResult(data);
+
+      // Firestore に検索履歴を保存（ログイン中のみ）
+      if (user) {
+        const rec = data.data.data[0];
+        if (rec) {
+          const s = calcSummary(data.data.data);
+          saveSearchHistory(user.uid, {
+            lat,
+            lng,
+            prefecture: rec.prefecture ?? "",
+            municipality: rec.municipality ?? "",
+            cityCode: data.data.cityCode,
+            years: data.data.years,
+            totalCount: s.totalCount,
+            avgTradePrice: s.avgTradePrice,
+            avgUnitPrice: s.avgUnitPrice ?? 0,
+          }).catch(console.error);
+        }
+      }
 
       // ピンの地区名をリバースジオコーディングで特定し自動選択
       const uniqueDistricts = Array.from(
@@ -145,7 +166,17 @@ export default function HomePage() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-8 space-y-6">
+      <main className="max-w-6xl mx-auto px-4 py-8">
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* サイドバー: 検索履歴 */}
+          {user && (
+            <aside className="lg:w-64 shrink-0">
+              <HistoryList uid={user.uid} onReplay={handleSearch} />
+            </aside>
+          )}
+
+          {/* メインコンテンツ */}
+          <div className="flex-1 min-w-0 space-y-6">
         <SearchForm onSearch={handleSearch} loading={loading} districtMarkers={districtMarkers} isLoggedIn={!!user} />
 
         {error && (
@@ -237,6 +268,8 @@ export default function HomePage() {
             </p>
           </div>
         )}
+          </div>{/* end main content */}
+        </div>{/* end flex */}
       </main>
 
       <footer className="mt-8 border-t border-slate-200 py-6 text-center text-xs text-slate-400">
