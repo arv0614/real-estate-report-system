@@ -22,3 +22,8 @@ output "bigquery_dataset" {
   description = "BigQuery データセット"
   value       = "${var.project_id}.${google_bigquery_dataset.realestate_cache.dataset_id}"
 }
+
+output "frontend_cloud_run_url" {
+  description = "フロントエンド Cloud Run サービスのURL"
+  value       = google_cloud_run_v2_service.frontend.uri
+}
