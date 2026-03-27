@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { geocodeAddress } from "@/lib/geocode";
 
 const MapPicker = dynamic(
   () => import("./MapPicker").then((m) => m.MapPicker),
@@ -25,22 +26,19 @@ const QUICK_LINKS = [
   { label: "新宿区", lat: 35.693, lng: 139.703 },
 ] as const;
 
+export interface DistrictMarker {
+  name: string;
+  lat: number;
+  lng: number;
+}
+
 interface Props {
   onSearch: (lat: number, lng: number) => void;
   loading: boolean;
+  districtMarkers?: DistrictMarker[];
 }
 
-async function geocodeAddress(query: string): Promise<{ lat: number; lng: number } | null> {
-  const url = `https://msearch.gsi.go.jp/address-search/AddressSearch?q=${encodeURIComponent(query)}`;
-  const res = await fetch(url);
-  if (!res.ok) return null;
-  const data = await res.json();
-  if (!Array.isArray(data) || data.length === 0) return null;
-  const [lng, lat] = data[0].geometry.coordinates as [number, number];
-  return { lat, lng };
-}
-
-export function SearchForm({ onSearch, loading }: Props) {
+export function SearchForm({ onSearch, loading, districtMarkers }: Props) {
   const [lat, setLat] = useState("35.7101");
   const [lng, setLng] = useState("139.8107");
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -176,7 +174,7 @@ export function SearchForm({ onSearch, loading }: Props) {
             {showMap ? "▲ 地図を非表示" : "▼ 地図を表示"}
           </button>
           {showMap && mapReady && (
-            <MapPicker lat={mapLat} lng={mapLng} onChange={applyCoords} />
+            <MapPicker lat={mapLat} lng={mapLng} onChange={applyCoords} districtMarkers={districtMarkers} />
           )}
         </div>
 

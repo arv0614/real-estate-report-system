@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -22,6 +22,7 @@ const PAGE_SIZE = 20;
 interface Props {
   records: TransactionRecord[];
   isPdfExporting?: boolean;
+  autoDistrict?: string;
 }
 
 /** "YYYY年第N四半期" → ソートキー（降順用に大きい値=新しい） */
@@ -30,10 +31,16 @@ function periodSortKey(period: string): number {
   return m ? parseInt(m[1]) * 4 + parseInt(m[2]) : 0;
 }
 
-export function TransactionTable({ records, isPdfExporting = false }: Props) {
+export function TransactionTable({ records, isPdfExporting = false, autoDistrict }: Props) {
   const [filter, setFilter] = useState<Filter>("すべて");
   const [districtFilter, setDistrictFilter] = useState("");
   const [page, setPage] = useState(0);
+
+  // 新しい検索結果が来たとき（autoDistrictが変わったとき）にドロップダウンを自動選択
+  useEffect(() => {
+    setDistrictFilter(autoDistrict ?? "");
+    setPage(0);
+  }, [autoDistrict]);
 
   function handleFilterChange(f: Filter) {
     setFilter(f);
