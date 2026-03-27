@@ -4,8 +4,10 @@ import { useMemo, useState } from "react";
 import { flushSync } from "react-dom";
 import { fetchTransactions, calcSummary } from "@/lib/api";
 import { exportToPdf } from "@/lib/exportPdf";
+import { geocodeAddress, reverseGeocodeDistrict, matchDistrictName } from "@/lib/geocode";
 import type { TransactionApiResponse } from "@/types/api";
 import { SearchForm } from "@/components/SearchForm";
+import type { DistrictMarker } from "@/components/SearchForm";
 import { SourceBadge } from "@/components/SourceBadge";
 import { SummaryCards } from "@/components/SummaryCards";
 import { TransactionTable } from "@/components/TransactionTable";
@@ -16,14 +18,41 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<TransactionApiResponse | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [autoDistrict, setAutoDistrict] = useState<string>("");
+  const [districtMarkers, setDistrictMarkers] = useState<DistrictMarker[]>([]);
 
   async function handleSearch(lat: number, lng: number) {
     setLoading(true);
     setError(null);
     setResult(null);
+    setAutoDistrict("");
+    setDistrictMarkers([]);
     try {
       const data = await fetchTransactions(lat, lng);
       setResult(data);
+
+      // ピンの地区名をリバースジオコーディングで特定し自動選択
+      const uniqueDistricts = Array.from(
+        new Set(data.data.data.map((r) => r.districtName).filter((d): d is string => !!d))
+      );
+      const gsiName = await reverseGeocodeDistrict(lat, lng);
+      if (gsiName) {
+        setAutoDistrict(matchDistrictName(gsiName, uniqueDistricts));
+      }
+
+      // 各地区をジオコーディングしてマップマーカーを生成（バックグラウンド）
+      const firstRecord = data.data.data[0];
+      if (firstRecord) {
+        const prefix = `${firstRecord.prefecture}${firstRecord.municipality}`;
+        Promise.all(
+          uniqueDistricts.map(async (name) => {
+            const pos = await geocodeAddress(`${prefix}${name}`);
+            return pos ? { name, lat: pos.lat, lng: pos.lng } : null;
+          })
+        ).then((results) => {
+          setDistrictMarkers(results.filter((r): r is DistrictMarker => r !== null));
+        });
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "不明なエラーが発生しました");
     } finally {
@@ -67,7 +96,7 @@ export default function HomePage() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-8 space-y-6">
-        <SearchForm onSearch={handleSearch} loading={loading} />
+        <SearchForm onSearch={handleSearch} loading={loading} districtMarkers={districtMarkers} />
 
         {error && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -142,7 +171,7 @@ export default function HomePage() {
 
               <SummaryCards summary={summary} hazard={result.hazard} />
               <PriceTrendChart records={result.data.data} />
-              <TransactionTable records={result.data.data} isPdfExporting={pdfLoading} />
+              <TransactionTable records={result.data.data} isPdfExporting={pdfLoading} autoDistrict={autoDistrict} />
             </div>
           </>
         )}

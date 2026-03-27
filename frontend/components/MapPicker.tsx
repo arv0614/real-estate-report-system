@@ -3,13 +3,15 @@
 import "leaflet/dist/leaflet.css";
 import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
 import "leaflet-defaulticon-compatibility";
-import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, CircleMarker, Tooltip, useMapEvents, useMap } from "react-leaflet";
 import { useEffect } from "react";
+import type { DistrictMarker } from "./SearchForm";
 
 interface Props {
   lat: number;
   lng: number;
   onChange: (lat: number, lng: number) => void;
+  districtMarkers?: DistrictMarker[];
 }
 
 function MapController({ lat, lng }: { lat: number; lng: number }) {
@@ -31,7 +33,7 @@ function ClickHandler({ onChange }: { onChange: (lat: number, lng: number) => vo
   return null;
 }
 
-export function MapPicker({ lat, lng, onChange }: Props) {
+export function MapPicker({ lat, lng, onChange, districtMarkers = [] }: Props) {
   return (
     <MapContainer
       center={[lat, lng]}
@@ -46,6 +48,24 @@ export function MapPicker({ lat, lng, onChange }: Props) {
       <MapController lat={lat} lng={lng} />
       <ClickHandler onChange={onChange} />
       <Marker position={[lat, lng]} />
+
+      {districtMarkers.map((d) => (
+        <CircleMarker
+          key={d.name}
+          center={[d.lat, d.lng]}
+          radius={5}
+          pathOptions={{
+            color: "#2563eb",
+            fillColor: "#3b82f6",
+            fillOpacity: 0.7,
+            weight: 1.5,
+          }}
+        >
+          <Tooltip permanent direction="top" offset={[0, -6]} className="text-xs font-medium">
+            {d.name}
+          </Tooltip>
+        </CircleMarker>
+      ))}
     </MapContainer>
   );
 }
