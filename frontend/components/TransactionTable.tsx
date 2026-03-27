@@ -32,18 +32,35 @@ function periodSortKey(period: string): number {
 
 export function TransactionTable({ records, isPdfExporting = false }: Props) {
   const [filter, setFilter] = useState<Filter>("すべて");
+  const [districtFilter, setDistrictFilter] = useState("");
   const [page, setPage] = useState(0);
 
-  // フィルタ変更時にページをリセット
   function handleFilterChange(f: Filter) {
     setFilter(f);
     setPage(0);
   }
 
+  function handleDistrictChange(d: string) {
+    setDistrictFilter(d);
+    setPage(0);
+  }
+
+  // records から重複なし・五十音順の地区名リストを生成
+  const districtOptions = useMemo(() => {
+    const names = Array.from(
+      new Set(records.map((r) => r.districtName).filter((d): d is string => !!d))
+    );
+    return names.sort((a, b) => a.localeCompare(b, "ja"));
+  }, [records]);
+
   const sortedFiltered = useMemo(() => {
-    const base = filter === "すべて" ? records : records.filter((r) => r.type === filter);
+    const base = records.filter((r) => {
+      const typeMatch = filter === "すべて" || r.type === filter;
+      const districtMatch = districtFilter === "" || r.districtName === districtFilter;
+      return typeMatch && districtMatch;
+    });
     return [...base].sort((a, b) => periodSortKey(b.period) - periodSortKey(a.period));
-  }, [records, filter]);
+  }, [records, filter, districtFilter]);
 
   const totalPages = Math.ceil(sortedFiltered.length / PAGE_SIZE);
 
@@ -62,25 +79,40 @@ export function TransactionTable({ records, isPdfExporting = false }: Props) {
           <CardTitle className="text-base">
             取引事例一覧
             <span className="ml-2 text-sm font-normal text-slate-500">
-              （{page * PAGE_SIZE + 1}〜{Math.min((page + 1) * PAGE_SIZE, sortedFiltered.length)} 件表示 / 全 {sortedFiltered.length} 件）
+              （{sortedFiltered.length === 0 ? 0 : effectivePage * PAGE_SIZE + 1}〜{Math.min((effectivePage + 1) * PAGE_SIZE, sortedFiltered.length)} 件表示 / 全 {sortedFiltered.length} 件）
             </span>
           </CardTitle>
 
           {!isPdfExporting && (
-            <div className="flex flex-wrap gap-1">
-              {TYPE_FILTERS.map((t) => (
-                <button
-                  key={t}
-                  onClick={() => handleFilterChange(t)}
-                  className={`text-xs px-2 py-1 rounded-full border transition-colors ${
-                    filter === t
-                      ? "bg-blue-600 text-white border-blue-600"
-                      : "text-slate-600 border-slate-200 hover:bg-slate-100"
-                  }`}
-                >
-                  {t}
-                </button>
-              ))}
+            <div className="flex flex-wrap items-center gap-2">
+              {/* 地区名フィルター */}
+              <select
+                value={districtFilter}
+                onChange={(e) => handleDistrictChange(e.target.value)}
+                className="text-xs px-2 py-1 rounded border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 focus:outline-none focus:ring-1 focus:ring-blue-400"
+              >
+                <option value="">すべての地区</option>
+                {districtOptions.map((d) => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+
+              {/* 種別フィルター */}
+              <div className="flex flex-wrap gap-1">
+                {TYPE_FILTERS.map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => handleFilterChange(t)}
+                    className={`text-xs px-2 py-1 rounded-full border transition-colors ${
+                      filter === t
+                        ? "bg-blue-600 text-white border-blue-600"
+                        : "text-slate-600 border-slate-200 hover:bg-slate-100"
+                    }`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>
