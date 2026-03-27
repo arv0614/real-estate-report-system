@@ -8,6 +8,7 @@ import { SearchForm } from "@/components/SearchForm";
 import { SourceBadge } from "@/components/SourceBadge";
 import { SummaryCards } from "@/components/SummaryCards";
 import { TransactionTable } from "@/components/TransactionTable";
+import { PriceTrendChart } from "@/components/PriceTrendChart";
 
 export default function HomePage() {
   const [loading, setLoading] = useState(false);
@@ -128,6 +129,7 @@ export default function HomePage() {
               </div>
 
               <SummaryCards summary={summary} hazard={result.hazard} />
+              <PriceTrendChart records={result.data.data} />
               <TransactionTable records={result.data.data} />
             </div>
           </>

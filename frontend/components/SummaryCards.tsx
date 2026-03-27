@@ -67,6 +67,13 @@ export function SummaryCards({ summary, hazard }: Props) {
       </div>
 
       {hazard ? (
+        <>
+        <div className="flex items-center gap-4 text-xs text-slate-500 px-1">
+          <span className="font-medium">凡例:</span>
+          <span className="flex items-center gap-1"><span className="inline-block w-2.5 h-2.5 rounded-full bg-green-400" />該当なし</span>
+          <span className="flex items-center gap-1"><span className="inline-block w-2.5 h-2.5 rounded-full bg-amber-400" />注意（0.5m未満）</span>
+          <span className="flex items-center gap-1"><span className="inline-block w-2.5 h-2.5 rounded-full bg-red-400" />危険（3m以上）</span>
+        </div>
         <div className="grid grid-cols-2 gap-3">
           {/* 洪水リスク */}
           <Card className={`border ${floodRiskColor(hazard.flood.hasRisk, hazard.flood.maxDepthRank)}`}>
@@ -106,6 +113,7 @@ export function SummaryCards({ summary, hazard }: Props) {
             </CardContent>
           </Card>
         </div>
+        </>
       ) : null}
     </div>
   );
