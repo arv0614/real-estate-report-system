@@ -41,8 +41,8 @@ async function geocodeAddress(query: string): Promise<{ lat: number; lng: number
 }
 
 export function SearchForm({ onSearch, loading }: Props) {
-  const [lat, setLat] = useState("35.74");
-  const [lng, setLng] = useState("139.86");
+  const [lat, setLat] = useState("35.7101");
+  const [lng, setLng] = useState("139.8107");
   const [validationError, setValidationError] = useState<string | null>(null);
   const [addressQuery, setAddressQuery] = useState("");
   const [addressLoading, setAddressLoading] = useState(false);
@@ -131,7 +131,7 @@ export function SearchForm({ onSearch, loading }: Props) {
         <form onSubmit={handleAddressSearch} className="flex gap-2">
           <Input
             type="text"
-            placeholder="住所・地名で検索（例：東京都葛飾区立石）"
+            placeholder="住所・地名で検索（例：東京都墨田区押上）"
             value={addressQuery}
             onChange={(e) => setAddressQuery(e.target.value)}
             className="flex-1 text-sm"
@@ -190,7 +190,7 @@ export function SearchForm({ onSearch, loading }: Props) {
               id="lat"
               type="number"
               step="0.000001"
-              placeholder="例: 35.74"
+              placeholder="例: 35.7101"
               value={lat}
               onChange={(e) => setLat(e.target.value)}
               className="w-40"
@@ -205,7 +205,7 @@ export function SearchForm({ onSearch, loading }: Props) {
               id="lng"
               type="number"
               step="0.000001"
-              placeholder="例: 139.86"
+              placeholder="例: 139.8107"
               value={lng}
               onChange={(e) => setLng(e.target.value)}
               className="w-40"

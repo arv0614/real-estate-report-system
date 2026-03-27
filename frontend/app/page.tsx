@@ -112,12 +112,13 @@ export default function HomePage() {
                 <SourceBadge source={result.source} />
                 <span className="text-slate-300">|</span>
                 {firstRecord && (
-                  <span>
+                  <span className="flex flex-wrap items-center gap-1.5">
                     対象エリア:{" "}
                     <strong className="text-slate-800">
                       {firstRecord.prefecture} {firstRecord.municipality}
                     </strong>
                     （市区町村コード: {result.data.cityCode}）
+                    <span className="text-xs text-slate-500">※選択した地点を含む市区町村全体のデータです</span>
                   </span>
                 )}
                 <span className="text-slate-300">|</span>
