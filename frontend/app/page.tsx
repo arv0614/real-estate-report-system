@@ -26,6 +26,8 @@ export default function HomePage() {
   const [pdfLoading, setPdfLoading] = useState(false);
   const [autoDistrict, setAutoDistrict] = useState<string>("");
   const [districtMarkers, setDistrictMarkers] = useState<DistrictMarker[]>([]);
+  // 履歴クリック時に SearchForm の入力欄とマップを更新するための座標
+  const [externalCoords, setExternalCoords] = useState<{ lat: number; lng: number } | undefined>();
 
   async function handleLogin() {
     try {
@@ -98,6 +100,11 @@ export default function HomePage() {
     }
   }
 
+  function handleReplay(lat: number, lng: number) {
+    setExternalCoords({ lat, lng });
+    handleSearch(lat, lng);
+  }
+
   async function handleDownloadPdf() {
     if (!firstRecord) return;
     // flushSync でReactを同期的に再レンダリングし、
@@ -166,18 +173,8 @@ export default function HomePage() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 py-8">
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* サイドバー: 検索履歴 */}
-          {user && (
-            <aside className="lg:w-64 shrink-0">
-              <HistoryList uid={user.uid} onReplay={handleSearch} />
-            </aside>
-          )}
-
-          {/* メインコンテンツ */}
-          <div className="flex-1 min-w-0 space-y-6">
-        <SearchForm onSearch={handleSearch} loading={loading} districtMarkers={districtMarkers} isLoggedIn={!!user} />
+      <main className="max-w-5xl mx-auto px-4 py-8 space-y-6">
+        <SearchForm onSearch={handleSearch} loading={loading} districtMarkers={districtMarkers} isLoggedIn={!!user} externalCoords={externalCoords} />
 
         {error && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -268,9 +265,10 @@ export default function HomePage() {
             </p>
           </div>
         )}
-          </div>{/* end main content */}
-        </div>{/* end flex */}
       </main>
+
+      {/* 右下フローティング履歴ボタン（ログイン中のみ） */}
+      {user && <HistoryList uid={user.uid} onReplay={handleReplay} />}
 
       <footer className="mt-8 border-t border-slate-200 py-6 text-center text-xs text-slate-400">
         データソース: 国土交通省「不動産情報ライブラリ」 /

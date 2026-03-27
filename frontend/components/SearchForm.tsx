@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,12 +37,23 @@ interface Props {
   loading: boolean;
   districtMarkers?: DistrictMarker[];
   isLoggedIn?: boolean;
+  /** 履歴クリック時などに外部から座標を注入するときに使う */
+  externalCoords?: { lat: number; lng: number };
 }
 
-export function SearchForm({ onSearch, loading, districtMarkers, isLoggedIn = false }: Props) {
+export function SearchForm({ onSearch, loading, districtMarkers, isLoggedIn = false, externalCoords }: Props) {
   const [lat, setLat] = useState("35.7101");
   const [lng, setLng] = useState("139.8107");
   const [validationError, setValidationError] = useState<string | null>(null);
+
+  // 履歴クリック等で外部から座標が届いたら入力欄・マップに反映する
+  useEffect(() => {
+    if (externalCoords == null) return;
+    setLat(String(externalCoords.lat));
+    setLng(String(externalCoords.lng));
+    setValidationError(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalCoords?.lat, externalCoords?.lng]);
   const [addressQuery, setAddressQuery] = useState("");
   const [addressLoading, setAddressLoading] = useState(false);
   const [geoLoading, setGeoLoading] = useState(false);

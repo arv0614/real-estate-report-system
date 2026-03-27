@@ -1,6 +1,7 @@
 import {
   collection,
-  addDoc,
+  doc,
+  setDoc,
   serverTimestamp,
   onSnapshot,
   orderBy,
@@ -36,12 +37,16 @@ export interface SaveSearchHistoryData {
   avgUnitPrice: number;
 }
 
+/**
+ * 検索履歴を保存する。cityCode をドキュメントIDとして使うことで
+ * 同じ市区町村の履歴は常に上書き（重複防止）される。
+ */
 export async function saveSearchHistory(
   uid: string,
   data: SaveSearchHistoryData
 ): Promise<void> {
-  const ref = collection(db, "users", uid, "search_history");
-  await addDoc(ref, {
+  const docRef = doc(db, "users", uid, "search_history", data.cityCode);
+  await setDoc(docRef, {
     ...data,
     searchedAt: serverTimestamp(),
   });
