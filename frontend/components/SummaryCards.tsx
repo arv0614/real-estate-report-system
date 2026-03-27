@@ -4,7 +4,7 @@ import type { HazardInfo, TransactionSummary } from "@/types/api";
 
 interface Props {
   summary: TransactionSummary;
-  hazard: HazardInfo;
+  hazard?: HazardInfo;
 }
 
 function floodRiskColor(hasRisk: boolean, rank: number | null) {
@@ -47,8 +47,6 @@ export function SummaryCards({ summary, hazard }: Props) {
     },
   ];
 
-  const { flood, landslide } = hazard;
-
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -68,45 +66,47 @@ export function SummaryCards({ summary, hazard }: Props) {
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        {/* 洪水リスク */}
-        <Card className={`border ${floodRiskColor(flood.hasRisk, flood.maxDepthRank)}`}>
-          <CardHeader className="pb-1 pt-4 px-4">
-            <CardTitle className="text-xs text-slate-500 font-medium flex items-center gap-1">
-              <span>🌊</span>
-              洪水浸水想定区域
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <p className={`text-xl font-bold leading-tight ${floodValueColor(flood.hasRisk, flood.maxDepthRank)}`}>
-              {flood.hasRisk ? `最大 ${flood.maxDepthLabel}` : "該当なし"}
-            </p>
-            <p className="text-xs text-slate-400 mt-0.5">
-              {flood.hasRisk ? "浸水想定区域内（想定最大規模）" : "浸水想定区域外"}
-            </p>
-          </CardContent>
-        </Card>
+      {hazard ? (
+        <div className="grid grid-cols-2 gap-3">
+          {/* 洪水リスク */}
+          <Card className={`border ${floodRiskColor(hazard.flood.hasRisk, hazard.flood.maxDepthRank)}`}>
+            <CardHeader className="pb-1 pt-4 px-4">
+              <CardTitle className="text-xs text-slate-500 font-medium flex items-center gap-1">
+                <span>🌊</span>
+                洪水浸水想定区域
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-4">
+              <p className={`text-xl font-bold leading-tight ${floodValueColor(hazard.flood.hasRisk, hazard.flood.maxDepthRank)}`}>
+                {hazard.flood.hasRisk ? `最大 ${hazard.flood.maxDepthLabel}` : "該当なし"}
+              </p>
+              <p className="text-xs text-slate-400 mt-0.5">
+                {hazard.flood.hasRisk ? "浸水想定区域内（想定最大規模）" : "浸水想定区域外"}
+              </p>
+            </CardContent>
+          </Card>
 
-        {/* 土砂災害リスク */}
-        <Card className={`border ${landslide.hasRisk ? "bg-red-50 border-red-200" : "bg-green-50 border-green-200"}`}>
-          <CardHeader className="pb-1 pt-4 px-4">
-            <CardTitle className="text-xs text-slate-500 font-medium flex items-center gap-1">
-              <span>⛰️</span>
-              土砂災害警戒区域
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <p className={`text-xl font-bold leading-tight ${landslide.hasRisk ? "text-red-700" : "text-green-700"}`}>
-              {landslide.hasRisk ? "警戒区域内" : "該当なし"}
-            </p>
-            <p className="text-xs text-slate-400 mt-0.5">
-              {landslide.hasRisk && landslide.phenomena.length > 0
-                ? landslide.phenomena.join("・")
-                : "土砂災害警戒区域外"}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+          {/* 土砂災害リスク */}
+          <Card className={`border ${hazard.landslide.hasRisk ? "bg-red-50 border-red-200" : "bg-green-50 border-green-200"}`}>
+            <CardHeader className="pb-1 pt-4 px-4">
+              <CardTitle className="text-xs text-slate-500 font-medium flex items-center gap-1">
+                <span>⛰️</span>
+                土砂災害警戒区域
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-4">
+              <p className={`text-xl font-bold leading-tight ${hazard.landslide.hasRisk ? "text-red-700" : "text-green-700"}`}>
+                {hazard.landslide.hasRisk ? "警戒区域内" : "該当なし"}
+              </p>
+              <p className="text-xs text-slate-400 mt-0.5">
+                {hazard.landslide.hasRisk && hazard.landslide.phenomena.length > 0
+                  ? hazard.landslide.phenomena.join("・")
+                  : "土砂災害警戒区域外"}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      ) : null}
     </div>
   );
 }
