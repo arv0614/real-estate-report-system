@@ -1,6 +1,7 @@
 import axios from "axios";
 import { config } from "../config";
 import { reverseGeocode } from "../utils/geocode";
+import { latLngToTile } from "../utils/tile";
 
 // ============================================================
 // 国交省 不動産情報ライブラリAPI レスポンス型
@@ -197,6 +198,101 @@ export async function fetchTransactionPrices(
     cityCode: municipality.cityCode,
     year,
     data: raw.data.map(normalize),
+  };
+}
+
+// ============================================================
+// ハザード情報
+// ============================================================
+
+export interface FloodHazard {
+  hasRisk: boolean;
+  maxDepthRank: number | null;  // 1=0.5m未満 2=0.5〜3m 3=3〜5m 4=5〜10m 5=10〜20m 6=20m以上
+  maxDepthLabel: string | null;
+}
+
+export interface LandslideHazard {
+  hasRisk: boolean;
+  phenomena: string[];  // ["土石流", "急傾斜地の崩壊", "地すべり"]
+}
+
+export interface HazardInfo {
+  flood: FloodHazard;
+  landslide: LandslideHazard;
+}
+
+const FLOOD_DEPTH_LABELS: Record<number, string> = {
+  1: "0.5m未満",
+  2: "0.5〜3m",
+  3: "3〜5m",
+  4: "5〜10m",
+  5: "10〜20m",
+  6: "20m以上",
+};
+
+const LANDSLIDE_PHENOMENA_LABELS: Record<number, string> = {
+  1: "土石流",
+  2: "急傾斜地の崩壊",
+  3: "地すべり",
+};
+
+interface GeoJsonFeatureCollection {
+  type: string;
+  features: Array<{ properties: Record<string, unknown> }>;
+}
+
+async function fetchTileGeojson(endpoint: string, x: number, y: number, z: number): Promise<GeoJsonFeatureCollection> {
+  const url = `${config.mlit.baseUrl}/${endpoint}`;
+  const response = await axios.get<GeoJsonFeatureCollection>(url, {
+    params: { response_format: "geojson", z, x, y },
+    headers: { "Ocp-Apim-Subscription-Key": config.mlit.apiKey },
+    timeout: 15000,
+  });
+  return response.data;
+}
+
+async function fetchFloodHazard(x: number, y: number, z: number): Promise<FloodHazard> {
+  const data = await fetchTileGeojson("XKT026", x, y, z);
+  if (!data.features.length) return { hasRisk: false, maxDepthRank: null, maxDepthLabel: null };
+
+  const maxRank = Math.max(...data.features.map((f) => Number(f.properties["A31a_205"] ?? 0)));
+  return {
+    hasRisk: true,
+    maxDepthRank: maxRank,
+    maxDepthLabel: FLOOD_DEPTH_LABELS[maxRank] ?? null,
+  };
+}
+
+async function fetchLandslideHazard(x: number, y: number, z: number): Promise<LandslideHazard> {
+  const data = await fetchTileGeojson("XKT029", x, y, z);
+  if (!data.features.length) return { hasRisk: false, phenomena: [] };
+
+  const phenomenaSet = new Set<string>();
+  for (const f of data.features) {
+    const code = Number(f.properties["A33_001"]);
+    const label = LANDSLIDE_PHENOMENA_LABELS[code];
+    if (label) phenomenaSet.add(label);
+  }
+  return { hasRisk: true, phenomena: Array.from(phenomenaSet) };
+}
+
+/**
+ * 洪水浸水想定区域 (XKT026) と土砂災害警戒区域 (XKT029) を並列取得
+ * タイルベースAPIのため lat/lng → z=15 タイル座標に変換して問い合わせ
+ */
+export async function fetchHazardInfo(lat: number, lng: number): Promise<HazardInfo> {
+  const { x, y, z } = latLngToTile(lat, lng, 15);
+  const [flood, landslide] = await Promise.all([
+    fetchFloodHazard(x, y, z).catch(() => ({ hasRisk: false, maxDepthRank: null, maxDepthLabel: null } as FloodHazard)),
+    fetchLandslideHazard(x, y, z).catch(() => ({ hasRisk: false, phenomena: [] } as LandslideHazard)),
+  ]);
+  return { flood, landslide };
+}
+
+export function getMockHazardData(): HazardInfo {
+  return {
+    flood: { hasRisk: true, maxDepthRank: 2, maxDepthLabel: "0.5〜3m" },
+    landslide: { hasRisk: false, phenomena: [] },
   };
 }
 

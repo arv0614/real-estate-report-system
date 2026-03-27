@@ -1,3 +1,19 @@
+export interface FloodHazard {
+  hasRisk: boolean;
+  maxDepthRank: number | null;
+  maxDepthLabel: string | null;
+}
+
+export interface LandslideHazard {
+  hasRisk: boolean;
+  phenomena: string[];
+}
+
+export interface HazardInfo {
+  flood: FloodHazard;
+  landslide: LandslideHazard;
+}
+
 export interface TransactionRecord {
   priceCategory: string;
   type: string;
@@ -41,6 +57,7 @@ export interface TransactionApiResponse {
   cacheKey: string | null;
   fetchedAt: string;
   expiresAt: string | null;
+  hazard: HazardInfo;
   data: ApiData;
 }
 

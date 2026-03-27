@@ -127,7 +127,7 @@ export default function HomePage() {
                 )}
               </div>
 
-              <SummaryCards summary={summary} />
+              <SummaryCards summary={summary} hazard={result.hazard} />
               <TransactionTable records={result.data.data} />
             </div>
           </>
