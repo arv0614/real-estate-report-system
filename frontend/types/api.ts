@@ -48,7 +48,7 @@ export interface TransactionRecord {
 export interface ApiData {
   status: string;
   cityCode: string;
-  year: number;
+  years: number[];
   data: TransactionRecord[];
 }
 

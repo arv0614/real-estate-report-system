@@ -128,3 +128,8 @@
     @apply font-sans;
   }
 }
+
+/* PDF出力時: pdf-hide クラスの要素を非表示にする */
+body.pdf-export .pdf-hide {
+  display: none !important;
+}

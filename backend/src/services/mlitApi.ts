@@ -74,7 +74,7 @@ export interface TransactionRecord {
 export interface MlitApiResponse {
   status: string;
   cityCode: string;
-  year: number;
+  years: number[];
   data: TransactionRecord[];
 }
 
@@ -104,9 +104,10 @@ function parseBuildingYear(raw: string | null | undefined): number | null {
   return m ? parseInt(m[1], 10) : null;
 }
 
-/** 取得対象年：前年を基準にする（当年データが未整備の場合があるため） */
-function getTargetYear(): number {
-  return new Date().getFullYear() - 1;
+/** 取得対象年リスト：前年を基準に直近5年分 */
+function getTargetYears(): number[] {
+  const baseYear = new Date().getFullYear() - 1;
+  return Array.from({ length: 5 }, (_, i) => baseYear - 4 + i);
 }
 
 /** MlitRawRecord → TransactionRecord */
@@ -159,45 +160,60 @@ export async function fetchTransactionPrices(
 ): Promise<MlitApiResponse> {
   // Step1: 座標から市区町村コードを取得
   const municipality = await reverseGeocode(lat, lng);
-  const year = getTargetYear();
+  const years = getTargetYears();
 
   console.log(
     `[MLIT API] 逆ジオコーディング完了: cityCode=${municipality.cityCode} (${municipality.districtName})`
   );
+  console.log(`[MLIT API] 取得対象年: ${years.join(", ")}`);
 
-  // Step2: XIT001 呼び出し
+  // Step2: XIT001 を直近5年分並列呼び出し（一部の年が404/エラーでも他の年は返す）
   const url = `${config.mlit.baseUrl}/XIT001`;
-  const response = await axios.get<{ status: string; data: MlitRawRecord[] }>(
-    url,
-    {
-      params: {
-        year,
-        city: municipality.cityCode,
-      },
-      headers: {
-        "Ocp-Apim-Subscription-Key": config.mlit.apiKey,
-      },
-      // レスポンスがgzip圧縮されているため decompress: true が必要
-      decompress: true,
-      timeout: 30000,
-    }
+
+  const results = await Promise.allSettled(
+    years.map((year) =>
+      axios
+        .get<{ status: string; data: MlitRawRecord[] }>(url, {
+          params: { year, city: municipality.cityCode },
+          headers: { "Ocp-Apim-Subscription-Key": config.mlit.apiKey },
+          decompress: true,
+          timeout: 30000,
+        })
+        .then((res) => {
+          if (res.data.status !== "OK") {
+            console.warn(`[MLIT API] year=${year} status=${res.data.status}, skipping`);
+            return { year, records: [] as TransactionRecord[] };
+          }
+          console.log(`[MLIT API] year=${year} → ${res.data.data.length} 件`);
+          return { year, records: res.data.data.map(normalize) };
+        })
+    )
   );
 
-  const raw = response.data;
+  const allRecords: TransactionRecord[] = [];
+  const successYears: number[] = [];
 
-  if (raw.status !== "OK") {
-    throw new Error(`MLIT API returned status: ${raw.status}`);
+  for (let i = 0; i < results.length; i++) {
+    const r = results[i];
+    if (r.status === "fulfilled" && r.value.records.length > 0) {
+      allRecords.push(...r.value.records);
+      successYears.push(years[i]);
+    } else if (r.status === "rejected") {
+      console.warn(`[MLIT API] year=${years[i]} failed:`, r.reason?.message ?? String(r.reason));
+    }
   }
 
-  console.log(
-    `[MLIT API] 取得完了: city=${municipality.cityCode} year=${year} → ${raw.data.length} 件`
-  );
+  console.log(`[MLIT API] 合計: ${allRecords.length} 件 (${successYears.length}年分: ${successYears.join(", ")})`);
+
+  if (allRecords.length === 0) {
+    throw new Error("MLIT API: 全取得年でデータが取得できませんでした");
+  }
 
   return {
-    status: raw.status,
+    status: "OK",
     cityCode: municipality.cityCode,
-    year,
-    data: raw.data.map(normalize),
+    years: successYears,
+    data: allRecords,
   };
 }
 
@@ -304,7 +320,7 @@ export function getMockTransactionData(_lat: number, _lng: number): MlitApiRespo
   return {
     status: "mock",
     cityCode: "13122",
-    year: 2024,
+    years: [2020, 2021, 2022, 2023, 2024],
     data: [
       {
         priceCategory: "不動産取引価格情報",

@@ -1,3 +1,34 @@
+// Tailwind CSS v4 は oklch()/lab() カラー関数を使用しており、html2canvas が解釈できない。
+// キャプチャ直前に :root のカスタムプロパティを hex 値で上書きし、キャプチャ後に削除する。
+const OKLCH_COLOR_OVERRIDE_ID = "pdf-color-override";
+const OKLCH_COLOR_OVERRIDE_CSS = `
+  :root {
+    --background: #ffffff !important;
+    --foreground: #09090b !important;
+    --card: #ffffff !important;
+    --card-foreground: #09090b !important;
+    --popover: #ffffff !important;
+    --popover-foreground: #09090b !important;
+    --primary: #18181b !important;
+    --primary-foreground: #fafafa !important;
+    --secondary: #f4f4f5 !important;
+    --secondary-foreground: #18181b !important;
+    --muted: #f4f4f5 !important;
+    --muted-foreground: #71717a !important;
+    --accent: #f4f4f5 !important;
+    --accent-foreground: #18181b !important;
+    --destructive: #dc2626 !important;
+    --border: #e4e4e7 !important;
+    --input: #e4e4e7 !important;
+    --ring: #a1a1aa !important;
+    --chart-1: #d4d4d8 !important;
+    --chart-2: #71717a !important;
+    --chart-3: #52525b !important;
+    --chart-4: #3f3f46 !important;
+    --chart-5: #27272a !important;
+  }
+`;
+
 export async function exportToPdf(elementId: string, municipality: string): Promise<void> {
   const element = document.getElementById(elementId);
   if (!element) return;
@@ -10,38 +41,47 @@ export async function exportToPdf(elementId: string, municipality: string): Prom
   const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
   const filename = `不動産診断レポート_${municipality}_${date}.pdf`;
 
-  const canvas = await html2canvas(element, {
-    scale: 2,
-    useCORS: true,
-    backgroundColor: "#ffffff",
-    logging: false,
-  });
+  // oklch カラー変数を hex で上書き（html2canvas-pro がパースできない色への対策）
+  const styleEl = document.createElement("style");
+  styleEl.id = OKLCH_COLOR_OVERRIDE_ID;
+  styleEl.textContent = OKLCH_COLOR_OVERRIDE_CSS;
+  document.head.appendChild(styleEl);
 
-  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-  const pageWidth = pdf.internal.pageSize.getWidth();
-  const pageHeight = pdf.internal.pageSize.getHeight();
+  let canvas: HTMLCanvasElement;
+  try {
+    canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: "#ffffff",
+      logging: false,
+    });
+  } finally {
+    document.head.removeChild(styleEl);
+  }
 
   const imgData = canvas.toDataURL("image/jpeg", 0.92);
-  const imgWidth = pageWidth;
-  const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-  let yOffset = 0;
-  while (yOffset < imgHeight) {
-    if (yOffset > 0) pdf.addPage();
-    pdf.addImage(imgData, "JPEG", 0, -yOffset, imgWidth, imgHeight);
-    yOffset += pageHeight;
-  }
+  // ページ分割なし: コンテンツ全体を1枚のカスタムサイズページに収める
+  // → addImage の yOffset 分割で発生する黒線アーティファクトを根本的に排除
+  const pdfWidth = 210; // A4幅 (mm)
+  const pdfHeight = (canvas.height / canvas.width) * pdfWidth;
+
+  const pdf = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: [pdfWidth, pdfHeight],
+  });
+  pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
 
   // iOS Safari では pdf.save() が現在タブを上書きするため、
   // Blob URL + <a download> によるクリック方式に統一する。
-  // <a>.click() はポップアップブロック対象外なので非同期後でも安全。
   const blob = pdf.output("blob");
   const blobUrl = URL.createObjectURL(blob);
 
   const a = document.createElement("a");
   a.href = blobUrl;
   a.download = filename;
-  a.target = "_blank";   // iOS で download 未対応の場合も新タブで開く（上書き回避）
+  a.target = "_blank";
   a.rel = "noopener";
   a.style.display = "none";
   document.body.appendChild(a);
