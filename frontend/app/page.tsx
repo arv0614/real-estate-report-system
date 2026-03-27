@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { fetchTransactions, calcSummary } from "@/lib/api";
+import { exportToPdf } from "@/lib/exportPdf";
 import type { TransactionApiResponse } from "@/types/api";
 import { SearchForm } from "@/components/SearchForm";
 import { SourceBadge } from "@/components/SourceBadge";
@@ -12,6 +13,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<TransactionApiResponse | null>(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   async function handleSearch(lat: number, lng: number) {
     setLoading(true);
@@ -24,6 +26,16 @@ export default function HomePage() {
       setError(e instanceof Error ? e.message : "不明なエラーが発生しました");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleDownloadPdf() {
+    if (!firstRecord) return;
+    setPdfLoading(true);
+    try {
+      await exportToPdf("report-content", firstRecord.municipality);
+    } finally {
+      setPdfLoading(false);
     }
   }
 
@@ -69,34 +81,56 @@ export default function HomePage() {
         )}
 
         {result && summary && (
-          <div className="space-y-5">
-            <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600 bg-white rounded-lg border border-slate-200 px-4 py-3">
-              <SourceBadge source={result.source} />
-              <span className="text-slate-300">|</span>
-              {firstRecord && (
-                <span>
-                  対象エリア:{" "}
-                  <strong className="text-slate-800">
-                    {firstRecord.prefecture} {firstRecord.municipality}
-                  </strong>
-                  （市区町村コード: {result.data.cityCode}）
-                </span>
-              )}
-              <span className="text-slate-300">|</span>
-              <span>対象年: <strong className="text-slate-800">{result.data.year}年</strong></span>
-              {result.expiresAt && (
-                <>
-                  <span className="text-slate-300">|</span>
-                  <span className="text-xs text-slate-400">
-                    キャッシュ期限: {new Date(result.expiresAt).toLocaleDateString("ja-JP")}
-                  </span>
-                </>
-              )}
+          <>
+            <div className="flex justify-end">
+              <button
+                onClick={handleDownloadPdf}
+                disabled={pdfLoading}
+                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+              >
+                {pdfLoading ? (
+                  <>
+                    <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    PDF生成中...
+                  </>
+                ) : (
+                  <>
+                    <span>📄</span>
+                    PDFをダウンロード
+                  </>
+                )}
+              </button>
             </div>
 
-            <SummaryCards summary={summary} />
-            <TransactionTable records={result.data.data} />
-          </div>
+            <div id="report-content" className="space-y-5 bg-slate-50 p-1 rounded-xl">
+              <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600 bg-white rounded-lg border border-slate-200 px-4 py-3">
+                <SourceBadge source={result.source} />
+                <span className="text-slate-300">|</span>
+                {firstRecord && (
+                  <span>
+                    対象エリア:{" "}
+                    <strong className="text-slate-800">
+                      {firstRecord.prefecture} {firstRecord.municipality}
+                    </strong>
+                    （市区町村コード: {result.data.cityCode}）
+                  </span>
+                )}
+                <span className="text-slate-300">|</span>
+                <span>対象年: <strong className="text-slate-800">{result.data.year}年</strong></span>
+                {result.expiresAt && (
+                  <>
+                    <span className="text-slate-300">|</span>
+                    <span className="text-xs text-slate-400">
+                      キャッシュ期限: {new Date(result.expiresAt).toLocaleDateString("ja-JP")}
+                    </span>
+                  </>
+                )}
+              </div>
+
+              <SummaryCards summary={summary} />
+              <TransactionTable records={result.data.data} />
+            </div>
+          </>
         )}
 
         {!result && !loading && !error && (
