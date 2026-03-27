@@ -1,13 +1,26 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatPrice, formatUnitPrice } from "@/lib/api";
-import type { TransactionSummary } from "@/types/api";
+import type { HazardInfo, TransactionSummary } from "@/types/api";
 
 interface Props {
   summary: TransactionSummary;
+  hazard: HazardInfo;
 }
 
-export function SummaryCards({ summary }: Props) {
-  const cards = [
+function floodRiskColor(hasRisk: boolean, rank: number | null) {
+  if (!hasRisk) return "bg-green-50 border-green-200";
+  if (rank !== null && rank >= 3) return "bg-red-50 border-red-200";
+  return "bg-amber-50 border-amber-200";
+}
+
+function floodValueColor(hasRisk: boolean, rank: number | null) {
+  if (!hasRisk) return "text-green-700";
+  if (rank !== null && rank >= 3) return "text-red-700";
+  return "text-amber-700";
+}
+
+export function SummaryCards({ summary, hazard }: Props) {
+  const statsCards = [
     {
       title: "データ件数",
       value: `${summary.totalCount.toLocaleString()} 件`,
@@ -34,22 +47,66 @@ export function SummaryCards({ summary }: Props) {
     },
   ];
 
+  const { flood, landslide } = hazard;
+
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-      {cards.map((c) => (
-        <Card key={c.title} className="bg-white">
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {statsCards.map((c) => (
+          <Card key={c.title} className="bg-white">
+            <CardHeader className="pb-1 pt-4 px-4">
+              <CardTitle className="text-xs text-slate-500 font-medium flex items-center gap-1">
+                <span>{c.icon}</span>
+                {c.title}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-4">
+              <p className="text-xl font-bold text-slate-800 leading-tight">{c.value}</p>
+              <p className="text-xs text-slate-400 mt-0.5">{c.sub}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        {/* 洪水リスク */}
+        <Card className={`border ${floodRiskColor(flood.hasRisk, flood.maxDepthRank)}`}>
           <CardHeader className="pb-1 pt-4 px-4">
             <CardTitle className="text-xs text-slate-500 font-medium flex items-center gap-1">
-              <span>{c.icon}</span>
-              {c.title}
+              <span>🌊</span>
+              洪水浸水想定区域
             </CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-4">
-            <p className="text-xl font-bold text-slate-800 leading-tight">{c.value}</p>
-            <p className="text-xs text-slate-400 mt-0.5">{c.sub}</p>
+            <p className={`text-xl font-bold leading-tight ${floodValueColor(flood.hasRisk, flood.maxDepthRank)}`}>
+              {flood.hasRisk ? `最大 ${flood.maxDepthLabel}` : "該当なし"}
+            </p>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {flood.hasRisk ? "浸水想定区域内（想定最大規模）" : "浸水想定区域外"}
+            </p>
           </CardContent>
         </Card>
-      ))}
+
+        {/* 土砂災害リスク */}
+        <Card className={`border ${landslide.hasRisk ? "bg-red-50 border-red-200" : "bg-green-50 border-green-200"}`}>
+          <CardHeader className="pb-1 pt-4 px-4">
+            <CardTitle className="text-xs text-slate-500 font-medium flex items-center gap-1">
+              <span>⛰️</span>
+              土砂災害警戒区域
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            <p className={`text-xl font-bold leading-tight ${landslide.hasRisk ? "text-red-700" : "text-green-700"}`}>
+              {landslide.hasRisk ? "警戒区域内" : "該当なし"}
+            </p>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {landslide.hasRisk && landslide.phenomena.length > 0
+                ? landslide.phenomena.join("・")
+                : "土砂災害警戒区域外"}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
