@@ -18,6 +18,7 @@ import { SummaryCards } from "@/components/SummaryCards";
 import { TransactionTable } from "@/components/TransactionTable";
 import { PriceTrendChart } from "@/components/PriceTrendChart";
 import { EnvironmentInfoCard } from "@/components/EnvironmentInfo";
+import { AiReport } from "@/components/AiReport";
 
 export default function HomePage() {
   const { user, loading: authLoading } = useAuth();
@@ -249,6 +250,7 @@ export default function HomePage() {
               </div>
 
               <SummaryCards summary={summary} hazard={result.hazard} />
+              {result.aiReport && <AiReport report={result.aiReport} />}
               {result.environment && (
                 <EnvironmentInfoCard environment={result.environment} />
               )}

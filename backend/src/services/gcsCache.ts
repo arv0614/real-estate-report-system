@@ -10,6 +10,8 @@ export interface CachedData {
   lng: number;
   zoom: number;
   data: unknown;
+  /** Gemini によるAIエリアレポート（マークダウン）。旧キャッシュには存在しない場合あり */
+  aiReport?: string;
   fetchedAt: string;
   expiresAt: string;
 }
@@ -73,7 +75,8 @@ export async function writeCache(
   lat: number,
   lng: number,
   zoom: number = 15,
-  data: unknown
+  data: unknown,
+  aiReport?: string
 ): Promise<void> {
   if (!config.gcs.bucketName) {
     console.log("[GCS Cache] SKIP write: GCS_CACHE_BUCKET not configured");
@@ -90,6 +93,7 @@ export async function writeCache(
     lng,
     zoom,
     data,
+    ...(aiReport !== undefined ? { aiReport } : {}),
     fetchedAt: now.toISOString(),
     expiresAt: expiresAt.toISOString(),
   };
