@@ -32,5 +32,21 @@ export async function exportToPdf(elementId: string, municipality: string): Prom
     yOffset += pageHeight;
   }
 
-  pdf.save(filename);
+  // iOS Safari では pdf.save() が現在タブを上書きするため、
+  // Blob URL + <a download> によるクリック方式に統一する。
+  // <a>.click() はポップアップブロック対象外なので非同期後でも安全。
+  const blob = pdf.output("blob");
+  const blobUrl = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = blobUrl;
+  a.download = filename;
+  a.target = "_blank";   // iOS で download 未対応の場合も新タブで開く（上書き回避）
+  a.rel = "noopener";
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
 }
