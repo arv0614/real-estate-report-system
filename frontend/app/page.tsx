@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { fetchTransactions, calcSummary } from "@/lib/api";
 import type { TransactionApiResponse } from "@/types/api";
 import { SearchForm } from "@/components/SearchForm";
@@ -27,12 +27,14 @@ export default function HomePage() {
     }
   }
 
-  const summary = result ? calcSummary(result.data.data) : null;
+  const summary = useMemo(
+    () => (result ? calcSummary(result.data.data) : null),
+    [result]
+  );
   const firstRecord = result?.data.data[0];
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* ヘッダー */}
       <header className="bg-white border-b border-slate-200 shadow-sm">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center gap-3">
           <span className="text-2xl">🏠</span>
@@ -48,17 +50,14 @@ export default function HomePage() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-8 space-y-6">
-        {/* 入力フォーム */}
         <SearchForm onSearch={handleSearch} loading={loading} />
 
-        {/* エラー */}
         {error && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             ⚠️ {error}
           </div>
         )}
 
-        {/* ローディング */}
         {loading && (
           <div className="rounded-xl border border-slate-200 bg-white py-16 text-center text-slate-500">
             <div className="inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4" />
@@ -69,10 +68,8 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* 結果エリア */}
         {result && summary && (
           <div className="space-y-5">
-            {/* ステータスバー */}
             <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600 bg-white rounded-lg border border-slate-200 px-4 py-3">
               <SourceBadge source={result.source} />
               <span className="text-slate-300">|</span>
@@ -97,15 +94,11 @@ export default function HomePage() {
               )}
             </div>
 
-            {/* サマリーカード */}
             <SummaryCards summary={summary} />
-
-            {/* データテーブル */}
             <TransactionTable records={result.data.data} />
           </div>
         )}
 
-        {/* 初期状態 */}
         {!result && !loading && !error && (
           <div className="rounded-xl border border-dashed border-slate-300 bg-white py-16 text-center text-slate-400">
             <p className="text-4xl mb-3">🗾</p>
