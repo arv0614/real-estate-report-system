@@ -1,5 +1,8 @@
 "use client";
 
+// Next.js のスタティックキャッシュを無効化（常にサーバーサイドレンダリング）
+export const dynamic = "force-dynamic";
+
 import { useMemo, useState } from "react";
 import { flushSync } from "react-dom";
 import { signInWithPopup, signOut } from "firebase/auth";
@@ -255,16 +258,14 @@ export default function HomePage() {
               </div>
 
               <SummaryCards summary={summary} hazard={result.hazard} />
-              {result && (
-                <LifestyleImage
-                  user={user}
-                  cityCode={result.data.cityCode}
-                  prefecture={result.data.data[0]?.prefecture ?? ""}
-                  municipality={result.data.data[0]?.municipality ?? ""}
-                  cachedImage={lifestyleImage}
-                  onImageSaved={setLifestyleImage}
-                />
-              )}
+              <LifestyleImage
+                user={user}
+                cityCode={result.data.cityCode}
+                prefecture={result.data.data[0]?.prefecture ?? ""}
+                municipality={result.data.data[0]?.municipality ?? ""}
+                cachedImage={lifestyleImage}
+                onImageSaved={setLifestyleImage}
+              />
               {result.environment && (
                 <EnvironmentInfoCard environment={result.environment} />
               )}
