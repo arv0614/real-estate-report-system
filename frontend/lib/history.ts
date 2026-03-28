@@ -10,7 +10,8 @@ import {
   limit,
   Timestamp,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { ref, uploadString, getDownloadURL } from "firebase/storage";
+import { db, storage } from "@/lib/firebase";
 
 export interface SearchHistoryItem {
   id: string;
@@ -56,16 +57,23 @@ export async function saveSearchHistory(
 }
 
 /**
- * 生成した暮らしイメージ画像をFirestoreの履歴ドキュメントに保存する。
- * cityCode をドキュメントIDとして使用。
+ * 生成した暮らしイメージ画像を Firebase Storage にアップロードし、
+ * 取得した公開URLをFirestoreの履歴ドキュメントに保存する。
+ * Base64 data URL をそのままFirestoreに入れると1MB制限を超えるためこの方式を採用。
  */
 export async function updateLifestyleImage(
   uid: string,
   cityCode: string,
   imageDataUrl: string
 ): Promise<void> {
+  // Storage: users/{uid}/images/{cityCode}.png にアップロード
+  const storageRef = ref(storage, `users/${uid}/images/${cityCode}.png`);
+  await uploadString(storageRef, imageDataUrl, "data_url");
+  const downloadUrl = await getDownloadURL(storageRef);
+
+  // Firestore: ダウンロードURLのみ保存（軽量）
   const docRef = doc(db, "users", uid, "search_history", cityCode);
-  await updateDoc(docRef, { lifestyleImage: imageDataUrl });
+  await updateDoc(docRef, { lifestyleImage: downloadUrl });
 }
 
 export function subscribeHistory(
