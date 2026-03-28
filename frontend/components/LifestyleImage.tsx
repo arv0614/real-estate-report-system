@@ -37,8 +37,14 @@ export function LifestyleImage({
     try {
       const result = await generateLifestyleImage(prefecture, municipality, areaFeatures);
       const dataUrl = `data:${result.mimeType};base64,${result.imageBase64}`;
-      await updateLifestyleImage(user.uid, cityCode, dataUrl);
+
+      // Base64をそのまま親stateに渡して即時表示（CORSエラーが出ない）
       onImageSaved(dataUrl);
+
+      // Storage保存はバックグラウンドで実行（失敗しても表示には影響しない）
+      updateLifestyleImage(user.uid, cityCode, dataUrl).catch((err) => {
+        console.error("[LifestyleImage] Storage保存エラー:", err);
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "画像の生成に失敗しました");
     } finally {
