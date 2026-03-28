@@ -255,11 +255,6 @@ export default function HomePage() {
               </div>
 
               <SummaryCards summary={summary} hazard={result.hazard} />
-              {result.environment && (
-                <EnvironmentInfoCard environment={result.environment} />
-              )}
-              <PriceTrendChart records={result.data.data} />
-              {result.aiReport && <AiReport report={result.aiReport} />}
               {firstRecord && (
                 <LifestyleImage
                   user={user}
@@ -270,6 +265,11 @@ export default function HomePage() {
                   onImageSaved={setLifestyleImage}
                 />
               )}
+              {result.environment && (
+                <EnvironmentInfoCard environment={result.environment} />
+              )}
+              <PriceTrendChart records={result.data.data} />
+              {result.aiReport && <AiReport report={result.aiReport} />}
               <TransactionTable records={result.data.data} isPdfExporting={pdfLoading} autoDistrict={autoDistrict} />
             </div>
           </>
