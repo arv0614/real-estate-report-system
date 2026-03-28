@@ -255,12 +255,12 @@ export default function HomePage() {
               </div>
 
               <SummaryCards summary={summary} hazard={result.hazard} />
-              {firstRecord && (
+              {result && (
                 <LifestyleImage
                   user={user}
                   cityCode={result.data.cityCode}
-                  prefecture={firstRecord.prefecture ?? ""}
-                  municipality={firstRecord.municipality ?? ""}
+                  prefecture={result.data.data[0]?.prefecture ?? ""}
+                  municipality={result.data.data[0]?.municipality ?? ""}
                   cachedImage={lifestyleImage}
                   onImageSaved={setLifestyleImage}
                 />
