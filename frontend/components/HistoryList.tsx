@@ -6,7 +6,7 @@ import { subscribeHistory, type SearchHistoryItem } from "@/lib/history";
 
 interface Props {
   uid: string;
-  onReplay: (lat: number, lng: number) => void;
+  onReplay: (lat: number, lng: number, lifestyleImage?: string) => void;
 }
 
 export function HistoryList({ uid, onReplay }: Props) {
@@ -26,7 +26,7 @@ export function HistoryList({ uid, onReplay }: Props) {
   }, [uid]);
 
   function handleItemClick(item: SearchHistoryItem) {
-    onReplay(item.lat, item.lng);
+    onReplay(item.lat, item.lng, item.lifestyleImage);
     setOpen(false);
   }
 

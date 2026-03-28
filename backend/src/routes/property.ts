@@ -3,6 +3,7 @@ import { z } from "zod";
 import { readCache, writeCache } from "../services/gcsCache";
 import { fetchTransactionPrices, getMockTransactionData, fetchHazardInfo, getMockHazardData, fetchEnvironmentInfo, getMockEnvironmentData } from "../services/mlitApi";
 import { generateAreaReport, getMockAiReport, type AreaReportInput } from "../services/geminiApi";
+import { generateLifestyleImage } from "../services/imagenApi";
 import { config } from "../config";
 import { buildCacheKey } from "../utils/tile";
 import type { TransactionRecord } from "../services/mlitApi";
@@ -172,6 +173,34 @@ app.get("/transactions", async (c) => {
     aiReport,
     data: apiData,
   });
+});
+
+/**
+ * POST /api/property/generate-image
+ * 指定エリアの「暮らしイメージ」画像をImagen 3で生成する（ログイン必須はフロントで制御）
+ */
+const generateImageSchema = z.object({
+  prefecture: z.string().min(1),
+  municipality: z.string().min(1),
+  areaFeatures: z.string().optional(),
+});
+
+app.post("/generate-image", async (c) => {
+  let body: unknown;
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "Invalid JSON body" }, 400);
+  }
+
+  const parsed = generateImageSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: "Invalid parameters", details: parsed.error.flatten() }, 400);
+  }
+
+  const { prefecture, municipality, areaFeatures } = parsed.data;
+  const result = await generateLifestyleImage(prefecture, municipality, areaFeatures);
+  return c.json(result);
 });
 
 export default app;
