@@ -116,6 +116,9 @@ export function AiReport({
   const sections = parseSections(report);
   const allKeys = [IMAGE_KEY, ...sections.map((s) => s.number)];
 
+  // セクション1「エリア総評」のテキストを画像生成プロンプトに流し込む
+  const areaFeatures = sections.find((s) => s.number === "1")?.content.trim() || undefined;
+
   const [openSet, setOpenSet] = useState<Set<string>>(() => new Set([IMAGE_KEY, "1"]));
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
@@ -138,7 +141,7 @@ export function AiReport({
     // Step1: 画像生成（失敗したらエラー表示して終了）
     let result;
     try {
-      result = await generateLifestyleImage(prefecture, municipality);
+      result = await generateLifestyleImage(prefecture, municipality, areaFeatures);
     } catch (e) {
       setGenError(e instanceof Error ? e.message : "生成に失敗しました");
       setGenerating(false);
