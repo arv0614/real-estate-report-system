@@ -50,6 +50,8 @@ export interface ApiData {
   cityCode: string;
   years: number[];
   data: TransactionRecord[];
+  /** 取引データが0件でも逆ジオコーダから取得した地区名（バックエンドが付与） */
+  geocodedDistrict?: string;
 }
 
 export interface EnvironmentZoning {

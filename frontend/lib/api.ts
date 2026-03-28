@@ -1,18 +1,19 @@
 import type { TransactionApiResponse, TransactionSummary, TransactionRecord } from "@/types/api";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+// 末尾スラッシュを除去してベースURLを正規化
+// NEXT_PUBLIC_API_URL が空の場合は相対パスでフォールバック（開発時は /api プロキシを使う想定）
+const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
+const API_BASE = RAW_API_URL.replace(/\/$/, "") || "";
 
 export async function fetchTransactions(
   lat: number,
   lng: number,
   zoom = 15
 ): Promise<TransactionApiResponse> {
-  const url = new URL(`${API_URL}/api/property/transactions`);
-  url.searchParams.set("lat", lat.toString());
-  url.searchParams.set("lng", lng.toString());
-  url.searchParams.set("zoom", zoom.toString());
+  // new URL() は NEXT_PUBLIC_API_URL が空だと "Invalid URL" でクラッシュするため文字列結合を使う
+  const url = `${API_BASE}/api/property/transactions?lat=${lat}&lng=${lng}&zoom=${zoom}`;
 
-  const res = await fetch(url.toString(), { cache: "no-store" });
+  const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) {
     const body = await res.text();
     throw new Error(`API error ${res.status}: ${body}`);
@@ -64,13 +65,13 @@ export interface GeneratedImageResponse {
   isMock: boolean;
 }
 
-/** 指定エリアの「暮らしイメージ」画像をバックエンド経由でImagen 3生成する */
+/** 指定エリアの「暮らしイメージ」画像をバックエンド経由でImagen 4生成する */
 export async function generateLifestyleImage(
   prefecture: string,
   municipality: string,
   areaFeatures?: string
 ): Promise<GeneratedImageResponse> {
-  const url = `${API_URL}/api/property/generate-image`;
+  const url = `${API_BASE}/api/property/generate-image`;
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

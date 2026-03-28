@@ -321,7 +321,9 @@ export default function HomePage() {
                 <span>
                   対象年:{" "}
                   <strong className="text-slate-800">
-                    {result.data.years.length === 1
+                    {result.data.years.length === 0
+                      ? "データなし"
+                      : result.data.years.length === 1
                       ? `${result.data.years[0]}年`
                       : `${result.data.years[0]}〜${result.data.years[result.data.years.length - 1]}年`}
                   </strong>
@@ -358,7 +360,11 @@ export default function HomePage() {
                     user={user}
                     cityCode={result.data.cityCode}
                     prefecture={result.data.data[0]?.prefecture ?? ""}
-                    municipality={result.data.data[0]?.municipality ?? ""}
+                    municipality={
+                      result.data.data[0]?.municipality ??
+                      result.data.geocodedDistrict ??
+                      ""
+                    }
                     lifestyleImage={lifestyleImage}
                     onImageSaved={setLifestyleImage}
                   />
