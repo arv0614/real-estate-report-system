@@ -8,6 +8,12 @@ import { flushSync } from "react-dom";
 import { signInWithPopup, signOut } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { useAuth } from "@/lib/useAuth";
+import {
+  checkGuestSearchAllowed,
+  recordGuestSearch,
+  checkAndIncrementFreeSearch,
+  FREE_DAILY_LIMIT,
+} from "@/lib/userPlan";
 import { fetchTransactions, calcSummary } from "@/lib/api";
 import { exportToPdf } from "@/lib/exportPdf";
 import { geocodeAddress, reverseGeocodeDistrict, matchDistrictName } from "@/lib/geocode";
@@ -41,7 +47,7 @@ const PDF_SECTION_LABELS: { key: keyof PdfSections; label: string }[] = [
 ];
 
 export default function HomePage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, plan, planLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<TransactionApiResponse | null>(null);
@@ -85,8 +91,36 @@ export default function HomePage() {
 
   // preservedImage: リプレイ時に復元する画像（通常検索時は undefined でクリア）
   async function handleSearch(lat: number, lng: number, preservedImage?: string) {
-    setLoading(true);
     setError(null);
+
+    // ── 検索回数制限チェック ──────────────────────────────
+    if (!user) {
+      // 未ログイン: localStorage で1日1回
+      if (!checkGuestSearchAllowed()) {
+        setError(
+          "1日1回の無料お試し枠を消費しました。さらに検索するには Google アカウントで無料ログインしてください。"
+        );
+        return;
+      }
+      recordGuestSearch();
+    } else if (plan === "free") {
+      // 無料ログイン: Firestore で1日3回
+      const { allowed, usedCount } = await checkAndIncrementFreeSearch(user.uid);
+      if (!allowed) {
+        setError(
+          `本日の検索上限（${FREE_DAILY_LIMIT}回）に達しました。無制限に使うにはプロプランへのアップグレードをご検討ください。`
+        );
+        return;
+      }
+      // 残り回数をユーザーに通知（任意）
+      if (usedCount === FREE_DAILY_LIMIT) {
+        console.info(`[Plan] 本日の無料検索 ${usedCount}/${FREE_DAILY_LIMIT} 回目（上限到達）`);
+      }
+    }
+    // plan === "pro" または planLoading 中 → 制限なしで続行
+    // ─────────────────────────────────────────────────────
+
+    setLoading(true);
     setResult(null);
     setAutoDistrict("");
     setDistrictMarkers([]);
@@ -150,6 +184,10 @@ export default function HomePage() {
   }
 
   async function handleDownloadPdf() {
+    if (plan !== "pro") {
+      alert("📄 PDF出力機能はプロプラン限定です。\nアップグレードすると全セクションのPDFを出力できます。");
+      return;
+    }
     if (!firstRecord) return;
     flushSync(() => setPdfLoading(true));
     try {
@@ -358,6 +396,7 @@ export default function HomePage() {
                   <AiReport
                     report={result.aiReport}
                     user={user}
+                    plan={plan}
                     cityCode={result.data.cityCode}
                     prefecture={result.data.data[0]?.prefecture ?? ""}
                     municipality={
@@ -367,6 +406,7 @@ export default function HomePage() {
                     }
                     lifestyleImage={lifestyleImage}
                     onImageSaved={setLifestyleImage}
+                    onLoginRequest={handleLogin}
                   />
                 </div>
               )}

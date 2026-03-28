@@ -6,6 +6,10 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { generateLifestyleImage } from "@/lib/api";
 import { updateLifestyleImage } from "@/lib/history";
+import type { UserPlan } from "@/lib/userPlan";
+
+/** 無料プランで閲覧できるセクション番号の上限（これ以下は表示） */
+const FREE_VISIBLE_SECTIONS = 3;
 
 interface Section {
   number: string;
@@ -97,21 +101,27 @@ interface Props {
   report: string;
   /** 画像生成機能用（任意） */
   user?: User | null;
+  /** ユーザープラン。null=未ログイン, "free"=無料, "pro"=有料 */
+  plan?: UserPlan | null;
   cityCode?: string;
   prefecture?: string;
   municipality?: string;
   lifestyleImage?: string;
   onImageSaved?: (dataUrl: string) => void;
+  /** 未ログイン時にログインUIを開くコールバック */
+  onLoginRequest?: () => void;
 }
 
 export function AiReport({
   report,
   user,
+  plan,
   cityCode,
   prefecture,
   municipality,
   lifestyleImage,
   onImageSaved,
+  onLoginRequest,
 }: Props) {
   const sections = parseSections(report);
   const allKeys = [IMAGE_KEY, ...sections.map((s) => s.number)];
@@ -166,6 +176,46 @@ export function AiReport({
     return (
       <div className="rounded-xl border border-purple-200 bg-purple-50 px-5 py-5">
         <SectionBody content={report} />
+      </div>
+    );
+  }
+
+  // ── 未ログイン: コンポーネント全体をロックUIに差し替え ──────────
+  if (!user) {
+    return (
+      <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+        {/* ヘッダー */}
+        <div className="px-5 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 flex items-center gap-3">
+          <span className="text-2xl">✨</span>
+          <div>
+            <h2 className="text-white font-bold text-base leading-tight">AI不動産コンサルタントのエリア分析</h2>
+            <p className="text-purple-200 text-xs mt-0.5">Powered by Google Gemini · 10項目</p>
+          </div>
+        </div>
+        {/* ロック本体 */}
+        <div className="px-6 py-10 text-center">
+          <div className="text-5xl mb-4">🔒</div>
+          <h3 className="font-bold text-slate-800 text-lg mb-2">
+            AI住環境分析・プロの所見を読む
+          </h3>
+          <p className="text-slate-500 text-sm mb-6 max-w-sm mx-auto">
+            10項目のエリア分析レポート（リアルな住環境・注意点・プロのクロージングアドバイスを含む）は、
+            無料アカウントでログインすると閲覧できます。
+          </p>
+          <button
+            onClick={onLoginRequest}
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors shadow-md"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+            </svg>
+            Google で無料ログイン
+          </button>
+          <p className="text-xs text-slate-400 mt-3">登録・利用は無料です</p>
+        </div>
       </div>
     );
   }
@@ -319,6 +369,8 @@ export function AiReport({
 
           {/* ── 通常セクション ── */}
           {sections.map((section) => {
+            const sectionNum = Number(section.number);
+            const isLocked = plan === "free" && sectionNum > FREE_VISIBLE_SECTIONS;
             const isOpen = openSet.has(section.number);
             const icon = SECTION_ICONS[section.number] ?? "📋";
 
@@ -326,25 +378,41 @@ export function AiReport({
               <div key={section.number} className="bg-white/60">
                 <button
                   type="button"
-                  onClick={() => toggle(section.number)}
-                  className="w-full flex items-center gap-3 px-5 py-3.5 text-left hover:bg-purple-50/60 transition-colors"
-                  aria-expanded={isOpen}
+                  onClick={() => !isLocked && toggle(section.number)}
+                  className={`w-full flex items-center gap-3 px-5 py-3.5 text-left transition-colors ${
+                    isLocked
+                      ? "cursor-default opacity-60"
+                      : "hover:bg-purple-50/60"
+                  }`}
+                  aria-expanded={isLocked ? false : isOpen}
                 >
-                  <span className="text-lg shrink-0">{icon}</span>
+                  <span className="text-lg shrink-0">{isLocked ? "🔒" : icon}</span>
                   <span className="flex-1 text-sm font-semibold text-slate-700">
                     <span className="text-purple-500 mr-1">{section.number}.</span>
                     {section.title}
                   </span>
-                  <span
-                    className={`text-purple-400 text-xs shrink-0 transition-transform duration-200 ${
-                      isOpen ? "rotate-180" : ""
-                    }`}
-                  >
-                    ▼
-                  </span>
+                  {!isLocked && (
+                    <span
+                      className={`text-purple-400 text-xs shrink-0 transition-transform duration-200 ${
+                        isOpen ? "rotate-180" : ""
+                      }`}
+                    >
+                      ▼
+                    </span>
+                  )}
                 </button>
 
-                {isOpen && (
+                {/* ロックされたセクションのぼかしプレビュー */}
+                {isLocked && (
+                  <div className="px-5 pb-3 pt-1 relative select-none pointer-events-none">
+                    <div className="blur-sm opacity-40 text-sm text-slate-700 line-clamp-3">
+                      {section.content.trim().slice(0, 120)}…
+                    </div>
+                  </div>
+                )}
+
+                {/* 通常の展開コンテンツ */}
+                {!isLocked && isOpen && (
                   <div className="px-5 pb-4 pt-1">
                     {section.content.trim() === "" ? null : (
                       <SectionBody content={section.content} />
@@ -354,6 +422,24 @@ export function AiReport({
               </div>
             );
           })}
+
+          {/* ── 無料プラン: セクション4以降のアップグレードCTA ── */}
+          {plan === "free" && (
+            <div className="border-t border-amber-100 bg-gradient-to-r from-amber-50 to-orange-50 px-5 py-5 text-center">
+              <p className="text-sm font-semibold text-amber-800 mb-1">
+                🔒 この続きの独自分析・補助金情報・営業トークはプロプラン限定です
+              </p>
+              <p className="text-xs text-amber-700 mb-4">
+                都市開発動向・投資価値・将来予測・総合スコア・リアルな住環境・プロのクロージングアドバイス（セクション4〜10）を解放
+              </p>
+              <button
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 text-white font-semibold hover:bg-amber-600 transition-colors shadow-sm text-sm"
+                onClick={() => alert("プロプランへのアップグレードページは近日公開予定です。")}
+              >
+                ✨ プロプランにアップグレード
+              </button>
+            </div>
+          )}
         </div>
 
         {/* フッター注記 */}
