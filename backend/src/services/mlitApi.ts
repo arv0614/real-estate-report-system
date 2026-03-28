@@ -76,6 +76,8 @@ export interface MlitApiResponse {
   cityCode: string;
   years: number[];
   data: TransactionRecord[];
+  /** reverseGeocodeで取得した地区名（取引データが0件でも利用できるフォールバック） */
+  geocodedDistrict?: string;
 }
 
 // ============================================================
@@ -206,14 +208,15 @@ export async function fetchTransactionPrices(
   console.log(`[MLIT API] 合計: ${allRecords.length} 件 (${successYears.length}年分: ${successYears.join(", ")})`);
 
   if (allRecords.length === 0) {
-    throw new Error("MLIT API: 全取得年でデータが取得できませんでした");
+    console.warn(`[MLIT API] 取引データ0件: cityCode=${municipality.cityCode} (${municipality.districtName}). 空配列で返します。`);
   }
 
   return {
-    status: "OK",
+    status: allRecords.length > 0 ? "OK" : "EMPTY",
     cityCode: municipality.cityCode,
     years: successYears,
     data: allRecords,
+    geocodedDistrict: municipality.districtName,
   };
 }
 
