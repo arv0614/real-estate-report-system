@@ -18,20 +18,19 @@ export interface GeneratedImage {
 }
 
 function buildImagePrompt(prefecture: string, municipality: string, areaFeatures?: string): string {
-  const location = `${municipality}, ${prefecture}, Japan`;
-  const featureHint = areaFeatures ? ` Area characteristics: ${areaFeatures}.` : "";
+  // areaFeatures（エリア総評テキスト）を冒頭に置いて最も高いウェイトを与える
+  // 長すぎる場合は最初の500文字に制限してトークン節約
+  const contextBlock = areaFeatures
+    ? `=== Area characteristics of ${municipality}, ${prefecture} ===\n${areaFeatures.slice(0, 500)}\n\n`
+    : `=== Location: ${municipality}, ${prefecture}, Japan ===\n\n`;
 
   return (
-    `Photorealistic lifestyle image capturing the unique character of ${location}. ` +
-    `Showcase the area's distinctive identity: prominent local landmarks and scenery specific to ${municipality}, ` +
-    `seasonal atmosphere and weather (e.g., snowy mountain landscape and ski slopes for a ski resort area, ` +
-    `coastal scenery for a seaside town, rice paddies for a rural farming village, dense urban streetscape for a city), ` +
-    `regional architectural styles (e.g., traditional Japanese onsen bathhouses (soto-yu), ` +
-    `thatched-roof farmhouses (gassho-zukuri), modern concrete apartments, wooden machiya townhouses), ` +
-    `and activities typical of daily life in this specific region. ` +
-    `A happy family naturally enjoying the local environment. ` +
-    `Vibrant, high-quality photorealistic photography. 16:9 landscape format.` +
-    featureHint
+    contextBlock +
+    `Create a photorealistic lifestyle image that visually captures the UNIQUE local identity described above. ` +
+    `The image MUST be specific to ${municipality} — avoid generic or cliché Japanese suburb visuals. ` +
+    `Reflect the actual landscape, architecture, and daily activities that are distinctive to this specific place. ` +
+    `Show a happy family naturally enjoying the local environment. ` +
+    `Photorealistic, high-quality photography. 16:9 landscape format, vibrant colors.`
   );
 }
 

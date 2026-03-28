@@ -123,6 +123,7 @@ export function AiReport({
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [isMockImage, setIsMockImage] = useState(false);
 
   function toggle(key: string) {
     setOpenSet((prev) => {
@@ -150,6 +151,7 @@ export function AiReport({
 
     // Step2: 生成成功 → Base64 data URL で即時表示（CORSエラーなし）
     const dataUrl = `data:${result.mimeType};base64,${result.imageBase64}`;
+    setIsMockImage(result.isMock);
     onImageSaved?.(dataUrl);
     setGenerating(false);
 
@@ -252,6 +254,12 @@ export function AiReport({
                 ) : lifestyleImage ? (
                   /* 画像あり */
                   <div style={{ animation: "fadeInUp 0.5s ease both" }}>
+                    {/* モック画像警告 */}
+                    {isMockImage && (
+                      <div className="mb-2 flex items-center gap-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-1.5">
+                        <span className="text-red-500 text-xs font-medium">⚠️ APIエラーのためダミー画像を表示しています（実際のエリアとは異なります）</span>
+                      </div>
+                    )}
                     <div
                       className="relative group inline-block cursor-pointer w-full max-w-md"
                       onClick={() => setLightboxOpen(true)}
