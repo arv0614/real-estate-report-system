@@ -4,8 +4,8 @@ import { config } from "../config";
 
 // ============================================================
 // 暮らしイメージ画像生成
-// 1st: Imagen 4 (imagen-4.0-fast-generate-001 via REST predict)
-// Fallback: SVG モック
+// Stage1: gemini-2.5-flash でエリア固有の英語プロンプトを生成
+// Stage2: Imagen 4 Fast → gemini-2.5-flash-image → SVG モック
 // ============================================================
 
 const IMAGEN4_ENDPOINT =
@@ -17,24 +17,60 @@ export interface GeneratedImage {
   isMock: boolean;
 }
 
-function buildImagePrompt(prefecture: string, municipality: string, areaFeatures?: string): string {
-  // areaFeatures（エリア総評テキスト）を冒頭に置いて最も高いウェイトを与える
-  // 長すぎる場合は最初の500文字に制限してトークン節約
-  const contextBlock = areaFeatures
-    ? `=== Area characteristics of ${municipality}, ${prefecture} ===\n${areaFeatures.slice(0, 500)}\n\n`
-    : `=== Location: ${municipality}, ${prefecture}, Japan ===\n\n`;
+// ============================================================
+// Stage1: テキストモデルで画像生成用英語プロンプトを動的生成
+// ============================================================
 
-  return (
-    contextBlock +
-    `Create a photorealistic lifestyle image that visually captures the UNIQUE local identity described above. ` +
-    `The image MUST be specific to ${municipality} — avoid generic or cliché Japanese suburb visuals. ` +
-    `Reflect the actual landscape, architecture, and daily activities that are distinctive to this specific place. ` +
-    `Show a happy family naturally enjoying the local environment. ` +
-    `Photorealistic, high-quality photography. 16:9 landscape format, vibrant colors.`
-  );
+const PROMPT_SYSTEM_INSTRUCTION = `You are an expert at writing prompts for photorealistic image generation AI (like Imagen or Midjourney).
+Your task: given a Japanese address and area description, write a single English image generation prompt that will produce a photorealistic lifestyle photo perfectly matching that specific location.
+
+Rules:
+- Output ONLY the image generation prompt string. No explanation, no markdown, no prefix like "Prompt:".
+- The prompt must be comma-separated keywords and short phrases.
+- Always capture the REAL visual character of the specific location. Do NOT produce generic Japanese suburb imagery.
+- Season / Weather rules:
+  - If the area is known for heavy snow (e.g., Hokkaido, Tohoku, Niigata, mountainous parts of Nagano, Yamagata, Fukushima, Akita) → MUST include: winter, heavy snow, snowy landscape, snow-covered
+  - If the area is a famous ski resort (e.g., Nozawa Onsen, Hakuba, Niseko, Furano) → MUST include: ski slopes, ski resort, snowy mountains, winter resort town
+  - If the area is tropical or warm (e.g., Okinawa, Kagoshima, Miyazaki) → MUST include: tropical, warm climate, blue sea
+  - Otherwise → use appropriate season based on the area description
+- Urban / Rural rules:
+  - If the area is in Tokyo 23 wards, Osaka city center, Nagoya city center, or other major urban cores → MUST include: dense urban streetscape, high-rise buildings, busy city, urban vibes. NEVER include: field, nature, rural, empty land, countryside
+  - If the area is rural, mountainous, or a small town → include appropriate rural/natural scenery
+- Architecture: reflect the actual local architectural style (e.g., traditional onsen town buildings, modern city towers, wooden machiya, etc.)
+- Always end with: photorealistic, high-quality photography, 16:9 landscape format, vibrant colors, happy family`;
+
+/**
+ * gemini-2.5-flash を使って、エリア固有の画像生成用英語プロンプトを動的生成する。
+ * 失敗した場合は静的フォールバックプロンプトを返す。
+ */
+async function generateDynamicPrompt(
+  prefecture: string,
+  municipality: string,
+  areaFeatures?: string
+): Promise<string> {
+  const genAI = new GoogleGenerativeAI(config.gemini.apiKey);
+  const model = genAI.getGenerativeModel({
+    model: "gemini-2.5-flash",
+    systemInstruction: PROMPT_SYSTEM_INSTRUCTION,
+  });
+
+  const userMessage =
+    `Address: ${prefecture} ${municipality}\n` +
+    (areaFeatures
+      ? `Area description (Japanese):\n${areaFeatures.slice(0, 800)}`
+      : "No area description available.");
+
+  const result = await model.generateContent(userMessage);
+  const text = result.response.text().trim();
+
+  if (!text) throw new Error("Empty response from prompt generator");
+  return text;
 }
 
-/** SVGプレースホルダーをBase64で返す（失敗時フォールバック） */
+// ============================================================
+// SVG モックフォールバック
+// ============================================================
+
 function getMockImageBase64(): string {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
   <defs>
@@ -80,6 +116,10 @@ function getMockImageBase64(): string {
 </svg>`;
   return Buffer.from(svg).toString("base64");
 }
+
+// ============================================================
+// Stage2: 画像生成モデル
+// ============================================================
 
 /** Imagen 4 Fast (REST predict API) で画像生成 */
 async function generateViaImagen4(prompt: string): Promise<GeneratedImage> {
@@ -129,9 +169,14 @@ async function generateViaGeminiImage(prompt: string): Promise<GeneratedImage> {
   throw new Error("No image data in Gemini response");
 }
 
+// ============================================================
+// 公開API
+// ============================================================
+
 /**
- * 「その街での暮らしイメージ」画像を生成する。
- * Imagen 4 を試し、失敗したら gemini-2.5-flash-image を試み、それも失敗したら SVG モックを返す。
+ * 「その街での暮らしイメージ」画像を2段階で生成する。
+ * Stage1: gemini-2.5-flash でエリア固有の英語プロンプトを動的生成
+ * Stage2: Imagen 4 → gemini-2.5-flash-image → SVG モック
  */
 export async function generateLifestyleImage(
   prefecture: string,
@@ -143,28 +188,41 @@ export async function generateLifestyleImage(
     return { imageBase64: getMockImageBase64(), mimeType: "image/svg+xml", isMock: true };
   }
 
-  const prompt = buildImagePrompt(prefecture, municipality, areaFeatures);
   console.log(`[ImageGen] 生成開始: ${prefecture}${municipality}`);
 
-  // 1st try: Imagen 4
+  // ── Stage1: 動的プロンプト生成 ──
+  let imagePrompt: string;
   try {
-    const result = await generateViaImagen4(prompt);
+    imagePrompt = await generateDynamicPrompt(prefecture, municipality, areaFeatures);
+    console.log(`[ImageGen] 動的プロンプト生成完了: ${imagePrompt}`);
+  } catch (promptErr) {
+    // プロンプト生成失敗時は簡易フォールバックプロンプトで続行
+    console.warn(`[ImageGen] 動的プロンプト生成失敗、フォールバック使用: ${promptErr instanceof Error ? promptErr.message : promptErr}`);
+    imagePrompt =
+      `Photorealistic lifestyle photo of ${municipality}, ${prefecture}, Japan. ` +
+      `Accurately reflect the local scenery, architecture, and seasonal weather. ` +
+      `Happy family, 16:9, high-quality photography.`;
+  }
+
+  // ── Stage2-a: Imagen 4 ──
+  try {
+    const result = await generateViaImagen4(imagePrompt);
     console.log(`[ImageGen] Imagen 4 完了 (${result.mimeType})`);
     return result;
   } catch (err1) {
     console.warn(`[ImageGen] Imagen 4 失敗: ${err1 instanceof Error ? err1.message : err1}`);
   }
 
-  // 2nd try: gemini-2.5-flash-image
+  // ── Stage2-b: gemini-2.5-flash-image ──
   try {
-    const result = await generateViaGeminiImage(prompt);
+    const result = await generateViaGeminiImage(imagePrompt);
     console.log(`[ImageGen] gemini-2.5-flash-image 完了 (${result.mimeType})`);
     return result;
   } catch (err2) {
     console.warn(`[ImageGen] gemini-2.5-flash-image 失敗: ${err2 instanceof Error ? err2.message : err2}`);
   }
 
-  // Fallback
+  // ── Fallback: SVG モック ──
   console.error("[ImageGen] 全モデル失敗 - SVGモックを返します");
   return { imageBase64: getMockImageBase64(), mimeType: "image/svg+xml", isMock: true };
 }
