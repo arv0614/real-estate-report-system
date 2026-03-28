@@ -2,6 +2,7 @@ import {
   collection,
   doc,
   setDoc,
+  updateDoc,
   serverTimestamp,
   onSnapshot,
   orderBy,
@@ -23,6 +24,8 @@ export interface SearchHistoryItem {
   avgTradePrice: number;
   avgUnitPrice: number;
   searchedAt: Timestamp;
+  /** AI生成の暮らしイメージ画像（data URL or base64） */
+  lifestyleImage?: string;
 }
 
 export interface SaveSearchHistoryData {
@@ -50,6 +53,19 @@ export async function saveSearchHistory(
     ...data,
     searchedAt: serverTimestamp(),
   });
+}
+
+/**
+ * 生成した暮らしイメージ画像をFirestoreの履歴ドキュメントに保存する。
+ * cityCode をドキュメントIDとして使用。
+ */
+export async function updateLifestyleImage(
+  uid: string,
+  cityCode: string,
+  imageDataUrl: string
+): Promise<void> {
+  const docRef = doc(db, "users", uid, "search_history", cityCode);
+  await updateDoc(docRef, { lifestyleImage: imageDataUrl });
 }
 
 export function subscribeHistory(

@@ -9,6 +9,7 @@ import { fetchTransactions, calcSummary } from "@/lib/api";
 import { exportToPdf } from "@/lib/exportPdf";
 import { geocodeAddress, reverseGeocodeDistrict, matchDistrictName } from "@/lib/geocode";
 import { saveSearchHistory } from "@/lib/history";
+import { LifestyleImage } from "@/components/LifestyleImage";
 import type { TransactionApiResponse } from "@/types/api";
 import { SearchForm } from "@/components/SearchForm";
 import type { DistrictMarker } from "@/components/SearchForm";
@@ -30,6 +31,8 @@ export default function HomePage() {
   const [districtMarkers, setDistrictMarkers] = useState<DistrictMarker[]>([]);
   // 履歴クリック時に SearchForm の入力欄とマップを更新するための座標
   const [externalCoords, setExternalCoords] = useState<{ lat: number; lng: number } | undefined>();
+  // 現在表示中の暮らしイメージ（Firestoreキャッシュ or 新規生成）
+  const [lifestyleImage, setLifestyleImage] = useState<string | undefined>(undefined);
 
   async function handleLogin() {
     try {
@@ -50,6 +53,7 @@ export default function HomePage() {
     setResult(null);
     setAutoDistrict("");
     setDistrictMarkers([]);
+    setLifestyleImage(undefined);
     try {
       const data = await fetchTransactions(lat, lng);
       setResult(data);
@@ -102,8 +106,9 @@ export default function HomePage() {
     }
   }
 
-  function handleReplay(lat: number, lng: number) {
+  function handleReplay(lat: number, lng: number, savedImage?: string) {
     setExternalCoords({ lat, lng });
+    setLifestyleImage(savedImage);
     handleSearch(lat, lng);
   }
 
@@ -255,6 +260,16 @@ export default function HomePage() {
               )}
               <PriceTrendChart records={result.data.data} />
               {result.aiReport && <AiReport report={result.aiReport} />}
+              {firstRecord && (
+                <LifestyleImage
+                  user={user}
+                  cityCode={result.data.cityCode}
+                  prefecture={firstRecord.prefecture ?? ""}
+                  municipality={firstRecord.municipality ?? ""}
+                  cachedImage={lifestyleImage}
+                  onImageSaved={setLifestyleImage}
+                />
+              )}
               <TransactionTable records={result.data.data} isPdfExporting={pdfLoading} autoDistrict={autoDistrict} />
             </div>
           </>

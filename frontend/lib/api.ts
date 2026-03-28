@@ -58,6 +58,32 @@ export function calcSummary(records: TransactionRecord[]): TransactionSummary {
   };
 }
 
+export interface GeneratedImageResponse {
+  imageBase64: string;
+  mimeType: string;
+  isMock: boolean;
+}
+
+/** 指定エリアの「暮らしイメージ」画像をバックエンド経由でImagen 3生成する */
+export async function generateLifestyleImage(
+  prefecture: string,
+  municipality: string,
+  areaFeatures?: string
+): Promise<GeneratedImageResponse> {
+  const url = `${API_URL}/api/property/generate-image`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prefecture, municipality, areaFeatures }),
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`API error ${res.status}: ${body}`);
+  }
+  return res.json();
+}
+
 /** 円を「1,234万円」表記に変換。ゼロは「—」 */
 export function formatPrice(yen: number): string {
   if (yen === 0) return "—";
