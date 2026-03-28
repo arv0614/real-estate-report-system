@@ -18,14 +18,21 @@ export interface GeneratedImage {
 }
 
 function buildImagePrompt(prefecture: string, municipality: string, areaFeatures?: string): string {
-  const base =
-    `Photorealistic exterior of a bright, modern Japanese single-family home in ${municipality}, ${prefecture}. ` +
-    `Warm golden-hour sunlight. Clean architectural lines with white walls and dark roof tiles. ` +
-    `Small front garden with seasonal flowers. ` +
-    `A happy young family — father, mother and two young children — strolling along a peaceful, tree-lined residential street. ` +
-    `Soft bokeh background showing a quiet neighborhood. 16:9 landscape format. High quality, vibrant colors.`;
+  const location = `${municipality}, ${prefecture}, Japan`;
+  const featureHint = areaFeatures ? ` Area characteristics: ${areaFeatures}.` : "";
 
-  return areaFeatures ? `${base} Area characteristics: ${areaFeatures}` : base;
+  return (
+    `Photorealistic lifestyle image capturing the unique character of ${location}. ` +
+    `Showcase the area's distinctive identity: prominent local landmarks and scenery specific to ${municipality}, ` +
+    `seasonal atmosphere and weather (e.g., snowy mountain landscape and ski slopes for a ski resort area, ` +
+    `coastal scenery for a seaside town, rice paddies for a rural farming village, dense urban streetscape for a city), ` +
+    `regional architectural styles (e.g., traditional Japanese onsen bathhouses (soto-yu), ` +
+    `thatched-roof farmhouses (gassho-zukuri), modern concrete apartments, wooden machiya townhouses), ` +
+    `and activities typical of daily life in this specific region. ` +
+    `A happy family naturally enjoying the local environment. ` +
+    `Vibrant, high-quality photorealistic photography. 16:9 landscape format.` +
+    featureHint
+  );
 }
 
 /** SVGプレースホルダーをBase64で返す（失敗時フォールバック） */

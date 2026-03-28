@@ -145,7 +145,7 @@ app.get("/transactions", async (c) => {
   const reportInput: AreaReportInput = {
     lat, lng,
     prefecture: apiData.data[0]?.prefecture ?? "",
-    municipality: apiData.data[0]?.municipality ?? "",
+    municipality: apiData.data[0]?.municipality ?? apiData.geocodedDistrict ?? "",
     cityCode: apiData.cityCode,
     years: apiData.years,
     ...summary,

@@ -28,6 +28,15 @@ const SECTION_ICONS: Record<string, string> = {
 
 const IMAGE_KEY = "image";
 
+/** マークダウン装飾（**bold**, __bold__）を除去してプレーンテキストに変換 */
+function stripInlineMarkdown(text: string): string {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/__(.*?)__/g, "$1")
+    .replace(/\*(.*?)\*/g, "$1")
+    .replace(/_([^_]+)_/g, "$1");
+}
+
 /** マークダウンを ## N. タイトル で分割してセクション配列に変換 */
 function parseSections(report: string): Section[] {
   const sections: Section[] = [];
@@ -38,7 +47,8 @@ function parseSections(report: string): Section[] {
     const match = line.match(/^#{2,3} (\d+)\.\s+(.+)$/);
     if (match) {
       if (current) sections.push(current);
-      current = { number: match[1], title: match[2].trim(), content: "" };
+      // タイトルはプレーンテキストとして表示するためインラインマークダウンを除去
+      current = { number: match[1], title: stripInlineMarkdown(match[2].trim()), content: "" };
     } else if (current) {
       current.content += line + "\n";
     }
@@ -124,18 +134,26 @@ export function AiReport({
     if (!user || !cityCode || !prefecture || !municipality) return;
     setGenerating(true);
     setGenError(null);
+
+    // Step1: 画像生成（失敗したらエラー表示して終了）
+    let result;
     try {
-      const result = await generateLifestyleImage(prefecture, municipality);
-      const dataUrl = `data:${result.mimeType};base64,${result.imageBase64}`;
-      onImageSaved?.(dataUrl);
-      updateLifestyleImage(user.uid, cityCode, dataUrl).catch((e) =>
-        console.error("[AiReport] Storage保存エラー:", e)
-      );
+      result = await generateLifestyleImage(prefecture, municipality);
     } catch (e) {
       setGenError(e instanceof Error ? e.message : "生成に失敗しました");
-    } finally {
       setGenerating(false);
+      return;
     }
+
+    // Step2: 生成成功 → Base64 data URL で即時表示（CORSエラーなし）
+    const dataUrl = `data:${result.mimeType};base64,${result.imageBase64}`;
+    onImageSaved?.(dataUrl);
+    setGenerating(false);
+
+    // Step3: Storage保存はバックグラウンド（失敗しても throw せずコンソール出力のみ）
+    updateLifestyleImage(user.uid, cityCode, dataUrl).catch((e) =>
+      console.error("[AiReport] Storage保存エラー:", e)
+    );
   }
 
   // パース失敗フォールバック
