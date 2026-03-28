@@ -12,7 +12,6 @@ import { fetchTransactions, calcSummary } from "@/lib/api";
 import { exportToPdf } from "@/lib/exportPdf";
 import { geocodeAddress, reverseGeocodeDistrict, matchDistrictName } from "@/lib/geocode";
 import { saveSearchHistory } from "@/lib/history";
-import { LifestyleImage } from "@/components/LifestyleImage";
 import type { TransactionApiResponse } from "@/types/api";
 import { SearchForm } from "@/components/SearchForm";
 import type { DistrictMarker } from "@/components/SearchForm";
@@ -258,19 +257,21 @@ export default function HomePage() {
               </div>
 
               <SummaryCards summary={summary} hazard={result.hazard} />
-              <LifestyleImage
-                user={user}
-                cityCode={result.data.cityCode}
-                prefecture={result.data.data[0]?.prefecture ?? ""}
-                municipality={result.data.data[0]?.municipality ?? ""}
-                cachedImage={lifestyleImage}
-                onImageSaved={setLifestyleImage}
-              />
               {result.environment && (
                 <EnvironmentInfoCard environment={result.environment} />
               )}
               <PriceTrendChart records={result.data.data} />
-              {result.aiReport && <AiReport report={result.aiReport} />}
+              {result.aiReport && (
+                <AiReport
+                  report={result.aiReport}
+                  user={user}
+                  cityCode={result.data.cityCode}
+                  prefecture={result.data.data[0]?.prefecture ?? ""}
+                  municipality={result.data.data[0]?.municipality ?? ""}
+                  lifestyleImage={lifestyleImage}
+                  onImageSaved={setLifestyleImage}
+                />
+              )}
               <TransactionTable records={result.data.data} isPdfExporting={pdfLoading} autoDistrict={autoDistrict} />
             </div>
           </>
