@@ -3,7 +3,7 @@
 // Next.js のスタティックキャッシュを無効化（常にサーバーサイドレンダリング）
 export const dynamic = "force-dynamic";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { signInWithPopup, signOut } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
@@ -23,6 +23,23 @@ import { PriceTrendChart } from "@/components/PriceTrendChart";
 import { EnvironmentInfoCard } from "@/components/EnvironmentInfo";
 import { AiReport } from "@/components/AiReport";
 
+// PDF出力するセクションの選択状態
+interface PdfSections {
+  summary: boolean;
+  environment: boolean;
+  chart: boolean;
+  aiReport: boolean;
+  table: boolean;
+}
+
+const PDF_SECTION_LABELS: { key: keyof PdfSections; label: string }[] = [
+  { key: "summary",     label: "取引価格サマリー＆ハザード" },
+  { key: "environment", label: "生活環境情報" },
+  { key: "chart",       label: "価格推移グラフ" },
+  { key: "aiReport",    label: "AIエリア分析レポート" },
+  { key: "table",       label: "取引事例一覧" },
+];
+
 export default function HomePage() {
   const { user, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -31,10 +48,27 @@ export default function HomePage() {
   const [pdfLoading, setPdfLoading] = useState(false);
   const [autoDistrict, setAutoDistrict] = useState<string>("");
   const [districtMarkers, setDistrictMarkers] = useState<DistrictMarker[]>([]);
-  // 履歴クリック時に SearchForm の入力欄とマップを更新するための座標
   const [externalCoords, setExternalCoords] = useState<{ lat: number; lng: number } | undefined>();
-  // 現在表示中の暮らしイメージ（Firestoreキャッシュ or 新規生成）
   const [lifestyleImage, setLifestyleImage] = useState<string | undefined>(undefined);
+
+  // PDF出力セクション選択
+  const [pdfSections, setPdfSections] = useState<PdfSections>({
+    summary: true, environment: true, chart: true, aiReport: true, table: true,
+  });
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const settingsRef = useRef<HTMLDivElement>(null);
+
+  // 設定パネル外クリックで閉じる
+  useEffect(() => {
+    if (!settingsOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
+        setSettingsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [settingsOpen]);
 
   async function handleLogin() {
     try {
@@ -49,13 +83,14 @@ export default function HomePage() {
     setResult(null);
   }
 
-  async function handleSearch(lat: number, lng: number) {
+  // preservedImage: リプレイ時に復元する画像（通常検索時は undefined でクリア）
+  async function handleSearch(lat: number, lng: number, preservedImage?: string) {
     setLoading(true);
     setError(null);
     setResult(null);
     setAutoDistrict("");
     setDistrictMarkers([]);
-    setLifestyleImage(undefined);
+    setLifestyleImage(preservedImage);   // ← undefined なら クリア、savedImage なら即復元
     try {
       const data = await fetchTransactions(lat, lng);
       setResult(data);
@@ -108,17 +143,14 @@ export default function HomePage() {
     }
   }
 
+  // 履歴リプレイ: 保存済み画像を復元しつつ再検索
   function handleReplay(lat: number, lng: number, savedImage?: string) {
     setExternalCoords({ lat, lng });
-    setLifestyleImage(savedImage);
-    handleSearch(lat, lng);
+    handleSearch(lat, lng, savedImage);   // savedImage を handleSearch に渡す
   }
 
   async function handleDownloadPdf() {
     if (!firstRecord) return;
-    // flushSync でReactを同期的に再レンダリングし、
-    // TransactionTable が isPdfExporting=true の状態（1ページ目・ページネーション非表示）に
-    // なってからキャプチャを開始する
     flushSync(() => setPdfLoading(true));
     try {
       await exportToPdf("report-content", firstRecord.municipality);
@@ -127,11 +159,20 @@ export default function HomePage() {
     }
   }
 
+  function togglePdfSection(key: keyof PdfSections) {
+    setPdfSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  }
+
   const summary = useMemo(
     () => (result ? calcSummary(result.data.data) : null),
     [result]
   );
   const firstRecord = result?.data.data[0];
+
+  // PDF出力時に非表示にするクラスを返す
+  function pdfHide(visible: boolean) {
+    return visible ? "" : "pdf-hide";
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -203,7 +244,46 @@ export default function HomePage() {
 
         {result && summary && (
           <>
-            <div className="flex justify-end">
+            {/* PDF操作バー */}
+            <div className="flex items-center justify-end gap-2 pdf-hide">
+              {/* 出力設定ポップオーバー */}
+              <div className="relative" ref={settingsRef}>
+                <button
+                  onClick={() => setSettingsOpen((v) => !v)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 transition-colors shadow-sm"
+                >
+                  <span>⚙️</span>
+                  出力設定
+                </button>
+
+                {settingsOpen && (
+                  <div className="absolute right-0 top-full mt-1.5 w-60 rounded-xl border border-slate-200 bg-white shadow-xl p-4 z-20">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
+                      PDFに含めるセクション
+                    </p>
+                    <div className="space-y-2.5">
+                      {PDF_SECTION_LABELS.map(({ key, label }) => (
+                        <label key={key} className="flex items-center gap-2.5 cursor-pointer group">
+                          <input
+                            type="checkbox"
+                            checked={pdfSections[key]}
+                            onChange={() => togglePdfSection(key)}
+                            className="w-4 h-4 rounded border-slate-300 text-blue-600 cursor-pointer accent-blue-600"
+                          />
+                          <span className="text-sm text-slate-700 group-hover:text-slate-900 transition-colors select-none">
+                            {label}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-3 pt-2.5 border-t border-slate-100">
+                      チェックを外したセクションはPDF非表示（画面は通常表示）
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* PDFダウンロードボタン */}
               <button
                 onClick={handleDownloadPdf}
                 disabled={pdfLoading}
@@ -256,23 +336,38 @@ export default function HomePage() {
                 )}
               </div>
 
-              <SummaryCards summary={summary} hazard={result.hazard} />
+              {/* 各セクション: pdfSections の設定に応じて pdf-hide を付与 */}
+              <div className={pdfHide(pdfSections.summary)}>
+                <SummaryCards summary={summary} hazard={result.hazard} />
+              </div>
+
               {result.environment && (
-                <EnvironmentInfoCard environment={result.environment} />
+                <div className={pdfHide(pdfSections.environment)}>
+                  <EnvironmentInfoCard environment={result.environment} />
+                </div>
               )}
-              <PriceTrendChart records={result.data.data} />
+
+              <div className={pdfHide(pdfSections.chart)}>
+                <PriceTrendChart records={result.data.data} />
+              </div>
+
               {result.aiReport && (
-                <AiReport
-                  report={result.aiReport}
-                  user={user}
-                  cityCode={result.data.cityCode}
-                  prefecture={result.data.data[0]?.prefecture ?? ""}
-                  municipality={result.data.data[0]?.municipality ?? ""}
-                  lifestyleImage={lifestyleImage}
-                  onImageSaved={setLifestyleImage}
-                />
+                <div className={pdfHide(pdfSections.aiReport)}>
+                  <AiReport
+                    report={result.aiReport}
+                    user={user}
+                    cityCode={result.data.cityCode}
+                    prefecture={result.data.data[0]?.prefecture ?? ""}
+                    municipality={result.data.data[0]?.municipality ?? ""}
+                    lifestyleImage={lifestyleImage}
+                    onImageSaved={setLifestyleImage}
+                  />
+                </div>
               )}
-              <TransactionTable records={result.data.data} isPdfExporting={pdfLoading} autoDistrict={autoDistrict} />
+
+              <div className={pdfHide(pdfSections.table)}>
+                <TransactionTable records={result.data.data} isPdfExporting={pdfLoading} autoDistrict={autoDistrict} />
+              </div>
             </div>
           </>
         )}
