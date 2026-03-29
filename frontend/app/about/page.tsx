@@ -1,10 +1,31 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
+  "https://realestate-frontend-2hctlfcy6a-an.a.run.app";
+
 export const metadata: Metadata = {
-  title: "サービス紹介・料金プラン | 不動産価値・リスク診断レポート",
+  title: "サービス紹介・料金プラン",
   description:
-    "AIと国土交通省データを活用した不動産価値・リスク診断SaaS。取引価格の可視化、ハザード情報、AIによる10項目のエリア分析、暮らしのイメージ生成、PDF出力機能を提供します。",
+    "AIと国土交通省データを活用した不動産資産価値・リスク診断SaaS。取引価格の可視化、ハザード情報、AIによる10項目エリア分析、暮らしのイメージ生成、PDF出力機能を提供。不動産営業・投資家・購入検討者向け。",
+  alternates: {
+    canonical: `${SITE_URL}/about`,
+  },
+  openGraph: {
+    type: "website",
+    url: `${SITE_URL}/about`,
+    title: "サービス紹介・料金プラン | AI不動産診断レポート",
+    description:
+      "AIと国土交通省データを活用した不動産資産価値・リスク診断SaaS。Proプランは月額980円で無制限診断・PDF出力対応。",
+    images: [{ url: `${SITE_URL}/ogp.png`, width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "サービス紹介・料金プラン | AI不動産診断レポート",
+    description: "AIで不動産の資産価値とリスクを瞬時に分析。月額980円のProプランで無制限診断・PDF出力。",
+    images: [`${SITE_URL}/ogp.png`],
+  },
 };
 
 // ── Features data ────────────────────────────────────────────
