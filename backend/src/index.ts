@@ -5,6 +5,7 @@ import { cors } from "hono/cors";
 import { rateLimiter } from "hono-rate-limiter";
 import { config } from "./config";
 import propertyRoutes from "./routes/property";
+import stripeRoutes from "./routes/stripe";
 
 const app = new Hono();
 
@@ -45,6 +46,7 @@ app.get("/health", (c) =>
 
 // APIルート
 app.route("/api/property", propertyRoutes);
+app.route("/api/stripe", stripeRoutes);
 
 // 404
 app.notFound((c) => c.json({ error: "Not Found" }, 404));
