@@ -3,6 +3,7 @@
 // Next.js のスタティックキャッシュを無効化（常にサーバーサイドレンダリング）
 export const dynamic = "force-dynamic";
 
+import { Suspense } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { flushSync } from "react-dom";
@@ -17,6 +18,7 @@ import {
   FREE_DAILY_LIMIT,
 } from "@/lib/userPlan";
 import { fetchTransactions, calcSummary } from "@/lib/api";
+import { trackLimitReached } from "@/lib/posthog";
 import { exportToPdf, DEFAULT_PDF_OPTIONS } from "@/lib/exportPdf";
 import type { PdfExportOptions } from "@/lib/exportPdf";
 import { geocodeAddress, reverseGeocodeDistrict, matchDistrictName } from "@/lib/geocode";
@@ -58,7 +60,7 @@ const PDF_SECTION_LABELS: { key: keyof PdfSections; label: string }[] = [
   { key: "table",       label: "取引事例一覧" },
 ];
 
-export default function HomePage() {
+function HomePageContent() {
   const { user, loading: authLoading, plan, planLoading } = useAuth();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
@@ -134,6 +136,7 @@ export default function HomePage() {
       if (!user) {
         // 未ログイン: localStorage で1日1回
         if (!checkGuestSearchAllowed()) {
+          trackLimitReached({ plan: "guest" });
           setPlanModalOpen(true);
           return;
         }
@@ -142,6 +145,7 @@ export default function HomePage() {
         // 無料ログイン: Firestore で1日3回
         const { allowed, usedCount } = await checkAndIncrementFreeSearch(user.uid);
         if (!allowed) {
+          trackLimitReached({ plan: "free", uid: user.uid });
           setPlanModalOpen(true);
           return;
         }
@@ -578,5 +582,14 @@ export default function HomePage() {
         キャッシュ: Google Cloud Storage (TTL 30日)
       </footer>
     </div>
+  );
+}
+
+// useSearchParams() は Suspense バウンダリが必要
+export default function HomePage() {
+  return (
+    <Suspense>
+      <HomePageContent />
+    </Suspense>
   );
 }

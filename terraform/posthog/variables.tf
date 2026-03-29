@@ -14,3 +14,14 @@ variable "posthog_host" {
   type        = string
   default     = "https://us.i.posthog.com"
 }
+
+variable "backend_api_url" {
+  description = "バックエンドCloud Run URL (例: https://realestate-api-xxx.run.app)"
+  type        = string
+}
+
+variable "posthog_webhook_secret" {
+  description = "PostHog HogFunction → バックエンド間の共有シークレット。任意の強いランダム文字列を設定"
+  type        = string
+  sensitive   = true
+}
