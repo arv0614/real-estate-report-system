@@ -191,18 +191,18 @@ export function AiReport({
         <div className="px-5 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 flex items-center gap-3">
           <span className="text-2xl">✨</span>
           <div>
-            <h2 className="text-white font-bold text-base leading-tight">AI不動産コンサルタントのエリア分析</h2>
-            <p className="text-purple-200 text-xs mt-0.5">Powered by Google Gemini · 10項目</p>
+            <h2 className="text-white font-bold text-base leading-tight">エリア特性・プロフェッショナル調査レポート</h2>
+            <p className="text-purple-200 text-xs mt-0.5">国土交通省データ × 専門家分析 · 10項目</p>
           </div>
         </div>
         {/* ロック本体 */}
         <div className="px-6 py-10 text-center">
           <div className="text-5xl mb-4">🔒</div>
           <h3 className="font-bold text-slate-800 text-lg mb-2">
-            AI住環境分析・プロの所見を読む
+            エリア調査レポート・専門家見解を読む
           </h3>
           <p className="text-slate-500 text-sm mb-6 max-w-sm mx-auto">
-            10項目のエリア分析レポート（リアルな住環境・注意点・プロのクロージングアドバイスを含む）は、
+            10項目のエリア特性調査レポート（リアルな住環境・注意点・物件の魅力とおすすめポイントを含む）は、
             無料アカウントでログインすると閲覧できます。
           </p>
           <button
@@ -254,10 +254,10 @@ export function AiReport({
           <span className="text-2xl">✨</span>
           <div className="flex-1">
             <h2 className="text-white font-bold text-base leading-tight">
-              AI不動産コンサルタントのエリア分析
+              エリア特性・プロフェッショナル調査レポート
             </h2>
             <p className="text-purple-200 text-xs mt-0.5">
-              Powered by Google Gemini · {sections.length}項目
+              国土交通省データ × 専門家分析 · {sections.length}項目
             </p>
           </div>
           <button
@@ -340,7 +340,7 @@ export function AiReport({
                     </div>
                     <div className="mt-2 flex items-center gap-3">
                       <p className="text-[10px] text-slate-400 flex-1">
-                        ※ AIが生成した架空のイメージです
+                        ※ 生成AIによる暮らしイメージです（実際のエリアとは異なります）
                       </p>
                       <button
                         onClick={handleGenerate}

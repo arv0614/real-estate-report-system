@@ -36,7 +36,7 @@ function buildShareText(props: Omit<Props, "lat" | "lng">): string {
     ? `平均坪単価 ${fmtUnit(props.avgUnitPrice)}`
     : `平均取引価格 ${Math.round(props.avgTradePrice / 10000).toLocaleString()}万円`;
   const hazardPart = props.hasFloodRisk ? "洪水リスクあり" : "洪水リスク低";
-  return `${area}の資産価値をAIで診断しました！${unitPart}、${hazardPart}。 #AI不動産診断 #不動産レポート`;
+  return `${area}の不動産価値・リスクを調査しました！${unitPart}、${hazardPart}。 #不動産調査レポート #不動産リスク分析`;
 }
 
 type Platform = "x" | "line" | "copy" | "native";
