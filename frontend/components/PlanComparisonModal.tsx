@@ -98,6 +98,13 @@ function Cell({ value, highlight }: { value: string; highlight?: boolean }) {
   );
 }
 
+// ─────────────────────────────────────────────────────────────
+// 🚦 Stripe 審査フラグ
+//    審査通過後に `true` へ変更するだけで決済導線が有効になる
+//    変更箇所: この1行のみ
+// ─────────────────────────────────────────────────────────────
+const IS_STRIPE_APPROVED = false;
+
 export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail }: Props) {
   const [checkoutLoading, setCheckoutLoading] = React.useState(false);
 
@@ -113,6 +120,11 @@ export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail
   }
 
   async function handleUpgrade() {
+    // 審査中はStripeへ遷移せず案内メッセージを表示
+    if (!IS_STRIPE_APPROVED) {
+      alert("現在Stripeによる決済審査中です。数日以内に公開予定ですので、今しばらくお待ちください。");
+      return;
+    }
     if (!uid) return;
     setCheckoutLoading(true);
     try {
@@ -238,17 +250,25 @@ export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail
                 無制限検索・AIレポート全10項目・PDF出力がすべて使えます。
               </div>
               <button
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-500 text-white text-sm font-semibold hover:bg-amber-600 disabled:opacity-60 disabled:cursor-not-allowed transition-colors shadow-sm shrink-0"
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-semibold transition-colors shadow-sm shrink-0 ${
+                  IS_STRIPE_APPROVED
+                    ? "bg-amber-500 hover:bg-amber-600 disabled:opacity-60 disabled:cursor-not-allowed"
+                    : "bg-slate-400 cursor-not-allowed"
+                }`}
                 onClick={handleUpgrade}
-                disabled={checkoutLoading || !uid}
+                disabled={IS_STRIPE_APPROVED && (checkoutLoading || !uid)}
               >
-                {checkoutLoading ? (
-                  <>
-                    <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    処理中...
-                  </>
+                {IS_STRIPE_APPROVED ? (
+                  checkoutLoading ? (
+                    <>
+                      <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      処理中...
+                    </>
+                  ) : (
+                    <>✨ Proプランにアップグレード</>
+                  )
                 ) : (
-                  <>✨ Proプランにアップグレード</>
+                  <>🚀 近日公開予定</>
                 )}
               </button>
             </div>
