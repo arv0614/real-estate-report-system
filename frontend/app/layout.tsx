@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import PostHogInit from "@/components/PostHogInit";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -157,7 +158,10 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <PostHogInit />
+        {children}
+      </body>
     </html>
   );
 }

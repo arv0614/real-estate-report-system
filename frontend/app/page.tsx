@@ -30,6 +30,7 @@ import { TransactionTable } from "@/components/TransactionTable";
 import { PriceTrendChart } from "@/components/PriceTrendChart";
 import { EnvironmentInfoCard } from "@/components/EnvironmentInfo";
 import { AiReport } from "@/components/AiReport";
+import { ShareActions } from "@/components/ShareActions";
 import { PlanComparisonModal } from "@/components/PlanComparisonModal";
 import nextDynamic from "next/dynamic";
 
@@ -509,6 +510,17 @@ export default function HomePage() {
               <div className={pdfHide(pdfSections.table)}>
                 <TransactionTable records={result.data.data} isPdfExporting={pdfLoading} autoDistrict={autoDistrict} />
               </div>
+
+              {/* シェアアクション（PDF非表示・レポート末尾） */}
+              {firstRecord && (
+                <ShareActions
+                  prefecture={firstRecord.prefecture ?? ""}
+                  municipality={firstRecord.municipality ?? ""}
+                  avgUnitPrice={summary.avgUnitPrice}
+                  avgTradePrice={summary.avgTradePrice}
+                  hasFloodRisk={result.hazard?.flood?.hasRisk ?? false}
+                />
+              )}
             </div>
           </>
         )}
