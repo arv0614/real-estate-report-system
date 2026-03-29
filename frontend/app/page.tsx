@@ -4,6 +4,7 @@
 export const dynamic = "force-dynamic";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { flushSync } from "react-dom";
 import Link from "next/link";
 import { signInWithPopup, signOut } from "firebase/auth";
@@ -59,6 +60,7 @@ const PDF_SECTION_LABELS: { key: keyof PdfSections; label: string }[] = [
 
 export default function HomePage() {
   const { user, loading: authLoading, plan, planLoading } = useAuth();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<TransactionApiResponse | null>(null);
@@ -76,8 +78,27 @@ export default function HomePage() {
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
+  const autoSearchTriggered = useRef(false);
 
   const [pdfExportOptions, setPdfExportOptions] = useState<PdfExportOptions>(DEFAULT_PDF_OPTIONS);
+
+  // URLパラメータからの自動検索（シェアURL経由でのアクセス時）
+  useEffect(() => {
+    if (autoSearchTriggered.current) return;
+    if (authLoading || planLoading) return;
+    const latParam = searchParams.get("lat");
+    const lngParam = searchParams.get("lng");
+    if (latParam && lngParam) {
+      const lat = parseFloat(latParam);
+      const lng = parseFloat(lngParam);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        autoSearchTriggered.current = true;
+        setExternalCoords({ lat, lng });
+        handleSearch(lat, lng);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, planLoading]);
 
   // 設定パネル外クリックで閉じる
   useEffect(() => {
@@ -516,6 +537,8 @@ export default function HomePage() {
                 <ShareActions
                   prefecture={firstRecord.prefecture ?? ""}
                   municipality={firstRecord.municipality ?? ""}
+                  lat={searchCoords?.lat ?? 0}
+                  lng={searchCoords?.lng ?? 0}
                   avgUnitPrice={summary.avgUnitPrice}
                   avgTradePrice={summary.avgTradePrice}
                   hasFloodRisk={result.hazard?.flood?.hasRisk ?? false}
