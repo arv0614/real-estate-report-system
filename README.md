@@ -328,6 +328,76 @@ real-estate-report-system/
 
 ---
 
+## 💳 Stripe 決済の本番稼働手順
+
+### 現在の状態（審査中）
+
+Stripe の本番審査通過待ちのため、決済導線は「準備中」表示になっています。
+フロントエンドの以下 **1行** を変更するだけで本番稼働に切り替えられます。
+
+```typescript
+// frontend/components/PlanComparisonModal.tsx
+
+// ❌ 審査中（現在）
+const IS_STRIPE_APPROVED = false;
+
+// ✅ 審査通過後 → true に変更
+const IS_STRIPE_APPROVED = true;
+```
+
+### 審査通過後の本番切り替え手順
+
+#### Step 1 — Stripe ダッシュボードで本番用リソースを準備
+
+1. [Stripe Dashboard](https://dashboard.stripe.com) でテストモード → **本番モード** に切り替え
+2. **製品カタログ** で Proプランの商品・価格を作成 → `price_live_XXX` を控える
+3. **Webhooks** でエンドポイントを登録:
+   - URL: `https://realestate-api-2hctlfcy6a-an.a.run.app/api/stripe/webhook`
+   - イベント: `checkout.session.completed` / `customer.subscription.deleted`
+   - 表示された `whsec_live_XXX` を控える
+
+#### Step 2 — Cloud Run の環境変数を本番キーに更新
+
+```bash
+source .env
+
+gcloud run services update realestate-api \
+  --region asia-northeast1 \
+  --project $GCP_PROJECT_ID \
+  --update-env-vars "\
+STRIPE_SECRET_KEY=sk_live_XXX,\
+STRIPE_PRICE_ID=price_live_XXX,\
+STRIPE_WEBHOOK_SECRET=whsec_live_XXX"
+```
+
+#### Step 3 — フロントエンドのフラグを変更してデプロイ
+
+```bash
+# frontend/components/PlanComparisonModal.tsx の1行を変更
+# IS_STRIPE_APPROVED = false  →  IS_STRIPE_APPROVED = true
+
+bash scripts/deploy_frontend.sh
+```
+
+#### Step 4 — 本番テスト
+
+本番カードで少額決済を実施し、Firestore の `users/{uid}.plan` が `"pro"` になることを確認してください。
+
+### ローカルでの Webhook テスト（開発時）
+
+```bash
+# Stripe CLI をインストール済みの場合
+stripe login
+stripe listen --forward-to http://localhost:8080/api/stripe/webhook
+# → 表示された whsec_... を .env の STRIPE_WEBHOOK_SECRET に設定
+
+# 別ターミナルでテストイベントを送信
+stripe trigger checkout.session.completed \
+  --add checkout_session:client_reference_id=YOUR_FIREBASE_UID
+```
+
+---
+
 ## 🔒 セキュリティ対策（Stripe審査・PCI DSS準拠対応）
 
 本システムでは、Stripe本番環境審査および一般的なセキュリティ要件を満たすため、以下の対策を実施しています。
