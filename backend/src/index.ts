@@ -2,6 +2,7 @@ import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { logger } from "hono/logger";
 import { cors } from "hono/cors";
+import { rateLimiter } from "hono-rate-limiter";
 import { config } from "./config";
 import propertyRoutes from "./routes/property";
 
@@ -14,6 +15,22 @@ app.use(
   cors({
     origin: "*", // MVP段階。本番ではオリジンを制限すること
     allowMethods: ["GET", "POST", "OPTIONS"],
+  })
+);
+
+// Rate Limiting: IPアドレスベース、15分間に100リクエストまで
+// Cloud Run環境では x-forwarded-for にクライアントIPが入る
+app.use(
+  "/api/*",
+  rateLimiter({
+    windowMs: 15 * 60 * 1000, // 15分
+    limit: 100,
+    standardHeaders: "draft-6",
+    keyGenerator: (c) =>
+      c.req.header("x-forwarded-for")?.split(",")[0].trim() ??
+      c.req.header("x-real-ip") ??
+      "unknown",
+    message: { error: "アクセスが集中しています。しばらく待ってから再度お試しください。" },
   })
 );
 

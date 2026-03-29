@@ -15,6 +15,9 @@ export async function fetchTransactions(
 
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) {
+    if (res.status === 429) {
+      throw new Error("アクセスが集中しています。しばらく待ってから再度お試しください。");
+    }
     const body = await res.text();
     throw new Error(`API error ${res.status}: ${body}`);
   }
@@ -79,6 +82,9 @@ export async function generateLifestyleImage(
     cache: "no-store",
   });
   if (!res.ok) {
+    if (res.status === 429) {
+      throw new Error("アクセスが集中しています。しばらく待ってから再度お試しください。");
+    }
     const body = await res.text();
     throw new Error(`API error ${res.status}: ${body}`);
   }
