@@ -137,7 +137,6 @@ function HomePageContent() {
         // 未ログイン: localStorage で1日1回
         if (!checkGuestSearchAllowed()) {
           trackLimitReached({ plan: "guest" });
-          setPlanModalOpen(true);
           return;
         }
         recordGuestSearch();
@@ -146,7 +145,6 @@ function HomePageContent() {
         const { allowed, usedCount } = await checkAndIncrementFreeSearch(user.uid);
         if (!allowed) {
           trackLimitReached({ plan: "free", uid: user.uid });
-          setPlanModalOpen(true);
           return;
         }
         if (usedCount === FREE_DAILY_LIMIT) {
