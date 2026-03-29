@@ -2,7 +2,8 @@
 
 import React from "react";
 import { signInWithPopup } from "firebase/auth";
-import { auth, googleProvider } from "@/lib/firebase";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { auth, googleProvider, db } from "@/lib/firebase";
 import { FREE_DAILY_LIMIT, GUEST_DAILY_LIMIT } from "@/lib/userPlan";
 import type { UserPlan } from "@/lib/userPlan";
 
@@ -107,6 +108,12 @@ const IS_STRIPE_APPROVED = false;
 
 export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail }: Props) {
   const [checkoutLoading, setCheckoutLoading] = React.useState(false);
+  // ウェイトリスト登録フォームの状態
+  const [waitlistOpen, setWaitlistOpen] = React.useState(false);
+  const [waitlistEmail, setWaitlistEmail] = React.useState(userEmail ?? "");
+  const [waitlistLoading, setWaitlistLoading] = React.useState(false);
+  const [waitlistDone, setWaitlistDone] = React.useState(false);
+  const [waitlistError, setWaitlistError] = React.useState("");
 
   if (!open) return null;
 
@@ -119,10 +126,37 @@ export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail
     }
   }
 
+  async function handleWaitlistSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const email = waitlistEmail.trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setWaitlistError("有効なメールアドレスを入力してください。");
+      return;
+    }
+    setWaitlistLoading(true);
+    setWaitlistError("");
+    try {
+      // Firestore の waitlist コレクションに保存（メールアドレスをIDとして使用）
+      const docId = email.replace(/[^a-zA-Z0-9]/g, "_");
+      await setDoc(doc(db, "waitlist", docId), {
+        email,
+        uid: uid ?? null,
+        registeredAt: serverTimestamp(),
+        source: "plan_modal",
+      }, { merge: true });
+      setWaitlistDone(true);
+    } catch (err) {
+      console.error("[Waitlist] save error:", err);
+      setWaitlistError("登録に失敗しました。しばらく後にもう一度お試しください。");
+    } finally {
+      setWaitlistLoading(false);
+    }
+  }
+
   async function handleUpgrade() {
-    // 審査中はStripeへ遷移せず案内メッセージを表示
+    // 審査中はStripeへ遷移せずウェイトリスト登録フォームを表示
     if (!IS_STRIPE_APPROVED) {
-      alert("現在Stripeによる決済審査中です。数日以内に公開予定ですので、今しばらくお待ちください。");
+      setWaitlistOpen(true);
       return;
     }
     if (!uid) return;
@@ -271,6 +305,54 @@ export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail
                   <>🚀 近日公開予定</>
                 )}
               </button>
+            </div>
+          )}
+
+          {/* ウェイトリスト登録フォーム（審査中 & ボタン押下後に展開） */}
+          {!IS_STRIPE_APPROVED && waitlistOpen && (
+            <div className="rounded-xl border border-purple-200 bg-gradient-to-br from-purple-50 to-indigo-50 px-5 py-4">
+              {waitlistDone ? (
+                <div className="text-center py-2">
+                  <p className="text-2xl mb-2">🎉</p>
+                  <p className="font-semibold text-slate-800 text-sm">登録ありがとうございます！</p>
+                  <p className="text-xs text-slate-600 mt-1">
+                    公開時に優先的にご案内します。今しばらくお待ちください。
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <p className="text-sm font-semibold text-slate-800 mb-1">
+                    🚀 Proプラン 先行案内に登録
+                  </p>
+                  <p className="text-xs text-slate-500 mb-3">
+                    現在Stripeによる決済審査中です。公開時にメールでお知らせします。
+                  </p>
+                  <form onSubmit={handleWaitlistSubmit} className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      type="email"
+                      value={waitlistEmail}
+                      onChange={(e) => setWaitlistEmail(e.target.value)}
+                      placeholder="your@email.com"
+                      className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                      required
+                    />
+                    <button
+                      type="submit"
+                      disabled={waitlistLoading}
+                      className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors shrink-0"
+                    >
+                      {waitlistLoading ? (
+                        <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        "案内を受け取る"
+                      )}
+                    </button>
+                  </form>
+                  {waitlistError && (
+                    <p className="text-xs text-red-600 mt-2">{waitlistError}</p>
+                  )}
+                </>
+              )}
             </div>
           )}
 
