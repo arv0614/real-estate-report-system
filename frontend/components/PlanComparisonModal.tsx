@@ -54,7 +54,7 @@ const FEATURES: Feature[] = [
     pro: "○",
   },
   {
-    label: "AIレポート（全10項目）",
+    label: "エリア調査レポート（全10項目）",
     guest: "✕ ロック",
     free: "3項目まで",
     pro: "全項目",
@@ -259,7 +259,7 @@ export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail
             <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-4 flex flex-col sm:flex-row items-center gap-3">
               <div className="flex-1 text-sm text-blue-800">
                 <span className="font-semibold">Googleアカウントで無料ログイン</span>すると、
-                1日{FREE_DAILY_LIMIT}回の検索とAIレポートの一部が無料で使えます。
+                1日{FREE_DAILY_LIMIT}回の検索とエリア調査レポートの一部が無料で使えます。
               </div>
               <button
                 onClick={handleGoogleLogin}
@@ -281,7 +281,7 @@ export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail
             <div className="rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-4 flex flex-col sm:flex-row items-center gap-3">
               <div className="flex-1 text-sm text-amber-800">
                 <span className="font-semibold">プロプランにアップグレード</span>すると、
-                無制限検索・AIレポート全10項目・PDF出力がすべて使えます。
+                無制限検索・エリア調査レポート全10項目・PDF出力がすべて使えます。
               </div>
               <button
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-semibold transition-colors shadow-sm shrink-0 ${

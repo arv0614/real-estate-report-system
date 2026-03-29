@@ -8,22 +8,22 @@ const SITE_URL =
 export const metadata: Metadata = {
   title: "サービス紹介・料金プラン",
   description:
-    "AIと国土交通省データを活用した不動産資産価値・リスク診断SaaS。取引価格の可視化、ハザード情報、AIによる10項目エリア分析、暮らしのイメージ生成、PDF出力機能を提供。不動産営業・投資家・購入検討者向け。",
+    "国土交通省「不動産情報ライブラリ」の公式データを活用した不動産価値・リスク調査レポートサービス。取引価格の可視化、ハザードリスク判定、10項目エリア特性調査、PDF出力機能を提供。不動産営業・投資家・購入検討者向け調査支援ツール。",
   alternates: {
     canonical: `${SITE_URL}/about`,
   },
   openGraph: {
     type: "website",
     url: `${SITE_URL}/about`,
-    title: "サービス紹介・料金プラン | AI不動産診断レポート",
+    title: "サービス紹介・料金プラン | 不動産価値・リスク調査レポート",
     description:
-      "AIと国土交通省データを活用した不動産資産価値・リスク診断SaaS。Proプランは月額980円で無制限診断・PDF出力対応。",
+      "国土交通省の公式データで不動産の資産価値とリスクをプロフェッショナルな視点で徹底調査。Proプランは月額980円で無制限調査・PDF出力対応。",
     images: [{ url: `${SITE_URL}/ogp.png`, width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "サービス紹介・料金プラン | AI不動産診断レポート",
-    description: "AIで不動産の資産価値とリスクを瞬時に分析。月額980円のProプランで無制限診断・PDF出力。",
+    title: "サービス紹介・料金プラン | 不動産価値・リスク調査レポート",
+    description: "国土交通省の公式データで不動産の資産価値とリスクを詳細調査。月額980円のProプランで無制限調査・PDF出力。",
     images: [`${SITE_URL}/ogp.png`],
   },
 };
@@ -41,19 +41,19 @@ const FEATURES = [
     desc: "洪水・土砂・地震リスクをハザードマップと連動して表示。用途地域、学区、最寄り駅、医療機関など生活環境情報も一覧でまとめて確認できます。",
   },
   {
-    icon: "✨",
-    title: "AIによる10項目のエリア分析",
-    desc: "Google Gemini が不動産コンサルタントの視点で、エリア総評・人口動態・投資価値・将来予測・プロのクロージングアドバイスなど10項目を自動レポート。商談前の事前調査を劇的に効率化します。",
+    icon: "📋",
+    title: "10項目エリア特性・専門家見解レポート",
+    desc: "エリア総評・人口動態・開発動向・投資価値・将来予測・物件の魅力とおすすめポイントなど10項目を網羅した詳細レポートを生成。商談前の事前調査を劇的に効率化します。",
   },
   {
     icon: "🖼️",
     title: "暮らしのイメージ画像生成",
-    desc: "AI（Google Imagen）がそのエリアの実際の特徴（雪国・都市部・海沿いなど）を踏まえたリアルな「暮らしのイメージ画像」を自動生成。顧客への提案資料として活用できます。",
+    desc: "そのエリアの実際の特徴（雪国・都市部・海沿いなど）を踏まえたリアルな「暮らしのイメージ画像」を生成。顧客への提案資料として活用できます。",
   },
   {
     icon: "📄",
     title: "PDF出力機能",
-    desc: "サマリー・ハザード・グラフ・AIレポート・取引事例一覧を含む診断レポートをワンクリックでPDF化。地図・イメージ画像の出力有無をカスタマイズして、そのまま顧客への提案資料として提出できます。",
+    desc: "サマリー・ハザード・グラフ・調査レポート・取引事例一覧を含む調査資料をワンクリックでPDF化。地図・イメージ画像の出力有無をカスタマイズして、そのまま顧客への提案資料として提出できます。",
   },
   {
     icon: "🗂️",
@@ -75,7 +75,7 @@ const PLANS = [
       { text: "1日1回の診断", ok: true },
       { text: "取引価格サマリー表示", ok: true },
       { text: "ハザード情報表示", ok: true },
-      { text: "AIエリア分析レポート", ok: false },
+      { text: "エリア特性調査レポート", ok: false },
       { text: "暮らしのイメージ生成", ok: false },
       { text: "検索履歴の保存", ok: false },
       { text: "PDF出力", ok: false },
@@ -95,7 +95,7 @@ const PLANS = [
       { text: "1日3回の診断", ok: true },
       { text: "取引価格サマリー表示", ok: true },
       { text: "ハザード情報表示", ok: true },
-      { text: "AIエリア分析（3項目まで）", ok: true },
+      { text: "エリア調査レポート（3項目まで）", ok: true },
       { text: "暮らしのイメージ生成", ok: false },
       { text: "検索履歴の保存", ok: true },
       { text: "PDF出力", ok: false },
@@ -115,7 +115,7 @@ const PLANS = [
       { text: "無制限の診断", ok: true },
       { text: "取引価格サマリー表示", ok: true },
       { text: "ハザード情報表示", ok: true },
-      { text: "AIエリア分析（全10項目）", ok: true },
+      { text: "エリア特性調査レポート（全10項目）", ok: true },
       { text: "暮らしのイメージ生成", ok: true },
       { text: "検索履歴の保存", ok: true },
       { text: "PDF出力（フルカスタム）", ok: true },
@@ -178,15 +178,15 @@ export default function AboutPage() {
             国土交通省 公式APIデータ × Google Gemini AI
           </div>
           <h1 className="text-3xl sm:text-5xl font-extrabold leading-tight mb-6 tracking-tight">
-            AIが瞬時に不動産価値と<br />
-            リスクを分析。<br className="sm:hidden" />
+            国交省の公式データで、<br />
+            不動産の価値とリスクを<br className="sm:hidden" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-300 to-cyan-300">
-              プロの視点をあなたの手に。
+              プロの視点で徹底調査。
             </span>
           </h1>
           <p className="text-lg text-slate-300 mb-10 max-w-2xl mx-auto leading-relaxed">
-            緯度・経度を入力するだけで、周辺の取引価格推移・ハザード情報・AIによる10項目のエリア分析レポートを即座に生成。
-            不動産営業・投資家・購入検討者のための次世代診断ツールです。
+            緯度・経度を入力するだけで、周辺の取引価格推移・ハザードリスク判定・10項目のエリア特性調査レポートを即座に生成。
+            不動産営業・投資家・購入検討者のための調査支援ツールです。
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
@@ -210,7 +210,7 @@ export default function AboutPage() {
       <div className="bg-slate-50 border-y border-slate-200">
         <div className="max-w-4xl mx-auto px-4 py-6 grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
           {[
-            { num: "10項目", label: "AIエリア分析" },
+            { num: "10項目", label: "エリア特性調査" },
             { num: "全国対応", label: "国交省データ" },
             { num: "数秒", label: "レポート生成時間" },
             { num: "PDF対応", label: "提案資料を即出力" },

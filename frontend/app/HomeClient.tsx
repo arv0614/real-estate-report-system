@@ -53,7 +53,7 @@ const PDF_SECTION_LABELS: { key: keyof PdfSections; label: string }[] = [
   { key: "summary",     label: "取引価格サマリー＆ハザード" },
   { key: "environment", label: "生活環境情報" },
   { key: "chart",       label: "価格推移グラフ" },
-  { key: "aiReport",    label: "AIエリア分析レポート" },
+  { key: "aiReport",    label: "エリア特性調査レポート" },
   { key: "table",       label: "取引事例一覧" },
 ];
 

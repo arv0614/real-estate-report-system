@@ -17,31 +17,31 @@ const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
   "https://realestate-frontend-2hctlfcy6a-an.a.run.app";
 
-const SITE_NAME = "AI不動産診断レポート";
+const SITE_NAME = "不動産価値・リスク調査レポート";
 const DEFAULT_DESCRIPTION =
-  "AIと国土交通省データで不動産の資産価値・リスクを即時分析。取引価格の可視化、ハザード情報、AIによる10項目エリア分析、暮らしイメージ生成、PDF出力まで対応。不動産投資家・営業・購入検討者向けSaaS。";
+  "国土交通省「不動産情報ライブラリ」の公式データを活用し、不動産の資産価値とリスクをプロフェッショナルな視点で詳細にレポート化します。取引価格の可視化・推移分析、ハザードリスク判定、10項目エリア特性調査、PDF出力まで対応。不動産投資家・営業・購入検討者向け調査支援ツール。";
 // デフォルト OGP 画像（住所未指定の汎用版）— 静的画像を使用。動的OGPはpage.tsxで上書き
 const OGP_IMAGE = `${SITE_URL}/ogp.png`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: `${SITE_NAME} | 資産価値・リスクを瞬時に診断`,
+    default: `${SITE_NAME} | 国交省データで資産価値・リスクを徹底調査`,
     template: `%s | ${SITE_NAME}`,
   },
   description: DEFAULT_DESCRIPTION,
   keywords: [
-    "AI不動産診断",
+    "不動産調査レポート",
     "不動産資産価値",
     "不動産リスク分析",
-    "不動産レポート",
-    "取引価格 分析",
+    "不動産 取引価格",
     "ハザードマップ 不動産",
-    "エリア分析 AI",
-    "不動産投資 ツール",
+    "エリア分析 不動産",
+    "不動産投資 調査",
     "国土交通省 不動産情報",
     "不動産 坪単価",
     "不動産 PDF出力",
+    "不動産鑑定 ツール",
   ],
   authors: [{ name: "木下 開" }],
   creator: "木下 開",
@@ -50,20 +50,20 @@ export const metadata: Metadata = {
     locale: "ja_JP",
     url: SITE_URL,
     siteName: SITE_NAME,
-    title: `${SITE_NAME} | 資産価値・リスクを瞬時に診断`,
+    title: `${SITE_NAME} | 国交省データで資産価値・リスクを徹底調査`,
     description: DEFAULT_DESCRIPTION,
     images: [
       {
         url: OGP_IMAGE,
         width: 1200,
         height: 630,
-        alt: "AI不動産診断レポート — 資産価値・リスクを瞬時に診断",
+        alt: "不動産価値・リスク調査レポート — 国交省データで資産価値・リスクを徹底調査",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: `${SITE_NAME} | 資産価値・リスクを瞬時に診断`,
+    title: `${SITE_NAME} | 国交省データで資産価値・リスクを徹底調査`,
     description: DEFAULT_DESCRIPTION,
     images: [OGP_IMAGE],
   },
@@ -124,14 +124,14 @@ const jsonLd = {
           price: "980",
           priceCurrency: "JPY",
           billingIncrement: "P1M",
-          description: "無制限診断・AI全10項目・PDF出力",
+          description: "無制限調査・10項目エリア特性レポート・PDF出力",
         },
       ],
       featureList: [
         "取引価格の可視化・推移グラフ",
         "ハザードマップ連動リスク分析",
-        "AIによる10項目エリア分析レポート",
-        "暮らしイメージ画像生成",
+        "10項目エリア特性・専門家見解レポート",
+        "暮らしイメージ生成",
         "PDFレポート出力",
         "検索履歴の自動保存",
       ],
