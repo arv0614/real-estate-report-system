@@ -20,7 +20,8 @@ const SITE_URL =
 const SITE_NAME = "AI不動産診断レポート";
 const DEFAULT_DESCRIPTION =
   "AIと国土交通省データで不動産の資産価値・リスクを即時分析。取引価格の可視化、ハザード情報、AIによる10項目エリア分析、暮らしイメージ生成、PDF出力まで対応。不動産投資家・営業・購入検討者向けSaaS。";
-const OGP_IMAGE = `${SITE_URL}/ogp.png`;
+// デフォルト OGP 画像（住所未指定の汎用版）
+const OGP_IMAGE = `${SITE_URL}/api/og`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
