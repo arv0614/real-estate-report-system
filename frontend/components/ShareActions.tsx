@@ -6,6 +6,10 @@ import { trackEvent } from "@/lib/posthog";
 interface Props {
   prefecture: string;
   municipality: string;
+  /** 検索に使った緯度 */
+  lat: number;
+  /** 検索に使った経度 */
+  lng: number;
   /** 平均坪単価（円/㎡）。null の場合はスコア表示を省略 */
   avgUnitPrice: number | null;
   /** 平均取引価格（円）*/
@@ -20,7 +24,7 @@ function fmtUnit(yenPerSqm: number): string {
 }
 
 /** シェアテキストを動的生成 */
-function buildShareText(props: Props): string {
+function buildShareText(props: Omit<Props, "lat" | "lng">): string {
   const area = `${props.prefecture}${props.municipality}`;
   const unitPart = props.avgUnitPrice
     ? `平均坪単価 ${fmtUnit(props.avgUnitPrice)}`
@@ -31,12 +35,25 @@ function buildShareText(props: Props): string {
 
 type Platform = "x" | "line" | "copy" | "native";
 
-export function ShareActions({ prefecture, municipality, avgUnitPrice, avgTradePrice, hasFloodRisk }: Props) {
+export function ShareActions({ prefecture, municipality, lat, lng, avgUnitPrice, avgTradePrice, hasFloodRisk }: Props) {
   const [copied, setCopied] = useState(false);
 
-  const shareText = buildShareText({ prefecture, municipality, avgUnitPrice, avgTradePrice, hasFloodRisk });
-  const shareUrl =
-    typeof window !== "undefined" ? window.location.href : "https://realestate-frontend-2hctlfcy6a-an.a.run.app";
+  const shareText = buildShareText({ prefecture, municipality, lat, lng, avgUnitPrice, avgTradePrice, hasFloodRisk });
+
+  const base =
+    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
+    (typeof window !== "undefined" ? window.location.origin : "https://realestate-frontend-2hctlfcy6a-an.a.run.app");
+
+  /** プラットフォーム別に ref パラメータを変えた共有URLを生成 */
+  function buildShareUrl(platform: Platform): string {
+    const params = new URLSearchParams({
+      lat: lat.toFixed(6),
+      lng: lng.toFixed(6),
+      address: `${prefecture}${municipality}`,
+      ref: `share_sns_${platform}`,
+    });
+    return `${base}/?${params}`;
+  }
 
   const track = useCallback((platform: Platform) => {
     trackEvent("share_button_clicked", {
@@ -50,6 +67,7 @@ export function ShareActions({ prefecture, municipality, avgUnitPrice, avgTradeP
   /** OS ネイティブ共有シート（Web Share API）*/
   async function handleNativeShare() {
     track("native");
+    const shareUrl = buildShareUrl("native");
     try {
       await navigator.share({ title: `${prefecture}${municipality} AI不動産診断`, text: shareText, url: shareUrl });
     } catch {
@@ -60,6 +78,7 @@ export function ShareActions({ prefecture, municipality, avgUnitPrice, avgTradeP
   /** X (Twitter) */
   function handleXShare() {
     track("x");
+    const shareUrl = buildShareUrl("x");
     const params = new URLSearchParams({ text: `${shareText}\n${shareUrl}` });
     window.open(`https://twitter.com/intent/tweet?${params}`, "_blank", "noopener,noreferrer");
   }
@@ -67,6 +86,7 @@ export function ShareActions({ prefecture, municipality, avgUnitPrice, avgTradeP
   /** LINE */
   function handleLineShare() {
     track("line");
+    const shareUrl = buildShareUrl("line");
     const params = new URLSearchParams({ url: shareUrl, text: shareText });
     window.open(`https://social-plugins.line.me/lineit/share?${params}`, "_blank", "noopener,noreferrer");
   }
@@ -74,6 +94,7 @@ export function ShareActions({ prefecture, municipality, avgUnitPrice, avgTradeP
   /** URL コピー */
   async function handleCopy() {
     track("copy");
+    const shareUrl = buildShareUrl("copy");
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);

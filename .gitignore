@@ -6,10 +6,15 @@
 # Terraform
 terraform/.terraform/
 terraform/.terraform.lock.hcl
+terraform/**/.terraform.lock.hcl
 terraform/terraform.tfstate
 terraform/terraform.tfstate.backup
+terraform/**/terraform.tfstate
+terraform/**/terraform.tfstate.backup
 terraform/*.tfvars
+terraform/**/*.tfvars
 !terraform/*.tfvars.example
+!terraform/**/*.tfvars.example
 
 # GCPサービスアカウントキー
 *.json

@@ -1,0 +1,14 @@
+# PostHog Terraform 変数テンプレート
+# このファイルを terraform.tfvars にコピーして実際の値を設定してください
+
+# PostHog Personal API Key
+# 取得: https://us.posthog.com/settings/user-api-keys → "Create personal API key"
+posthog_api_key = "phx_xxxxxxxxxxxxxxxxxxxx"
+
+# PostHog Project ID
+# 取得: https://us.posthog.com/settings/project → "Project ID" の数値
+posthog_project_id = "12345"
+
+# PostHog ホスト（US クラウドの場合はデフォルトのまま）
+# EU クラウドの場合: "https://eu.i.posthog.com"
+# posthog_host = "https://us.i.posthog.com"
