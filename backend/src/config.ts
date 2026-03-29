@@ -13,6 +13,11 @@ export const config = {
     region: process.env.GCP_REGION ?? "asia-northeast1",
   },
 
+  // Firebase プロジェクト（GCP プロジェクトと別の場合がある）
+  firebase: {
+    projectId: process.env.FIREBASE_PROJECT_ID ?? process.env.GCP_PROJECT_ID ?? "",
+  },
+
   gcs: {
     bucketName: process.env.GCS_CACHE_BUCKET ?? "",
   },
@@ -36,5 +41,13 @@ export const config = {
   gemini: {
     apiKey: process.env.GEMINI_API_KEY ?? "",
     model: process.env.GEMINI_MODEL ?? "gemini-2.5-flash",
+  },
+
+  stripe: {
+    secretKey: process.env.STRIPE_SECRET_KEY ?? "",
+    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? "",
+    priceId: process.env.STRIPE_PRICE_ID ?? "",
+    successUrl: process.env.STRIPE_SUCCESS_URL ?? "http://localhost:3000/?payment=success",
+    cancelUrl: process.env.STRIPE_CANCEL_URL ?? "http://localhost:3000/?payment=cancel",
   },
 } as const;
