@@ -29,7 +29,23 @@ const OKLCH_COLOR_OVERRIDE_CSS = `
   }
 `;
 
-export async function exportToPdf(elementId: string, municipality: string): Promise<void> {
+export interface PdfExportOptions {
+  /** 暮らしのイメージ画像を含める（data-pdf-lifestyle-image 属性を持つ要素） */
+  includeLifestyleImage: boolean;
+  /** 地図を含める（data-pdf-map 属性を持つ要素） */
+  includeMap: boolean;
+}
+
+export const DEFAULT_PDF_OPTIONS: PdfExportOptions = {
+  includeLifestyleImage: true,
+  includeMap: true,
+};
+
+export async function exportToPdf(
+  elementId: string,
+  municipality: string,
+  options: PdfExportOptions = DEFAULT_PDF_OPTIONS
+): Promise<void> {
   const element = document.getElementById(elementId);
   if (!element) return;
 
@@ -54,6 +70,11 @@ export async function exportToPdf(elementId: string, municipality: string): Prom
       useCORS: true,
       backgroundColor: "#ffffff",
       logging: false,
+      ignoreElements: (el: Element) => {
+        if (!options.includeLifestyleImage && el.hasAttribute("data-pdf-lifestyle-image")) return true;
+        if (!options.includeMap && el.hasAttribute("data-pdf-map")) return true;
+        return false;
+      },
     });
   } finally {
     document.head.removeChild(styleEl);

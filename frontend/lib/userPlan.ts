@@ -29,18 +29,23 @@ export function getTodayString(): string {
 
 /**
  * ログイン時に users/{uid} ドキュメントを作成する（初回のみ）。
- * 既存ユーザーには何もしない。
+ * Firestore エラー時はコンソールにログだけ出して呼び出し元をクラッシュさせない。
  */
 export async function initUserDocument(uid: string): Promise<void> {
-  const ref = doc(db, "users", uid);
-  const snap = await getDoc(ref);
-  if (!snap.exists()) {
-    await setDoc(ref, {
-      plan: "free" as UserPlan,
-      dailySearchCount: 0,
-      lastSearchDate: getTodayString(),
-      createdAt: serverTimestamp(),
-    });
+  try {
+    const ref = doc(db, "users", uid);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) {
+      await setDoc(ref, {
+        plan: "free" as UserPlan,
+        dailySearchCount: 0,
+        lastSearchDate: getTodayString(),
+        createdAt: serverTimestamp(),
+      });
+    }
+  } catch (err) {
+    // Firestore セキュリティルール未設定などで失敗しても致命的ではない
+    console.error("[userPlan] initUserDocument failed:", err);
   }
 }
 
@@ -48,16 +53,28 @@ export async function initUserDocument(uid: string): Promise<void> {
 // 未ログインユーザー（localStorage）
 // ============================================================
 
-/** 未ログインユーザーが本日検索可能かどうかを返す */
+/**
+ * 未ログインユーザーが本日検索可能かどうかを返す。
+ * localStorage へのアクセスが禁止されている環境（Firefox プライベート等）では
+ * true（許可）を返してサイレントクラッシュを防ぐ。
+ */
 export function checkGuestSearchAllowed(): boolean {
-  if (typeof window === "undefined") return true;
-  return localStorage.getItem(GUEST_SEARCH_KEY) !== getTodayString();
+  try {
+    if (typeof window === "undefined") return true;
+    return localStorage.getItem(GUEST_SEARCH_KEY) !== getTodayString();
+  } catch {
+    return true; // localStorage 利用不可の場合は検索を許可
+  }
 }
 
-/** 未ログインの検索消費を記録する */
+/** 未ログインの検索消費を記録する（失敗しても無視） */
 export function recordGuestSearch(): void {
-  if (typeof window !== "undefined") {
-    localStorage.setItem(GUEST_SEARCH_KEY, getTodayString());
+  try {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(GUEST_SEARCH_KEY, getTodayString());
+    }
+  } catch {
+    // 書き込み失敗は無視
   }
 }
 
@@ -69,35 +86,44 @@ export function recordGuestSearch(): void {
  * 無料ユーザーの検索制限をチェックしてカウントをインクリメントする。
  * - allowed: 検索可能か
  * - usedCount: インクリメント後の使用回数
+ *
+ * Firestore エラー（権限エラー含む）が発生した場合は検索を許可してフォールバック。
+ * エラーで検索できなくなるよりも、許可する方が安全側。
  */
 export async function checkAndIncrementFreeSearch(
   uid: string
 ): Promise<{ allowed: boolean; usedCount: number }> {
-  const ref = doc(db, "users", uid);
-  const snap = await getDoc(ref);
-  const today = getTodayString();
+  try {
+    const ref = doc(db, "users", uid);
+    const snap = await getDoc(ref);
+    const today = getTodayString();
 
-  let count = 0;
-  if (snap.exists()) {
-    const data = snap.data();
-    // 日付が変わっていたらカウントをリセット
-    count = data.lastSearchDate === today ? (data.dailySearchCount ?? 0) : 0;
+    let count = 0;
+    if (snap.exists()) {
+      const data = snap.data();
+      // 日付が変わっていたらカウントをリセット
+      count = data.lastSearchDate === today ? (data.dailySearchCount ?? 0) : 0;
+    }
+
+    if (count >= FREE_DAILY_LIMIT) {
+      return { allowed: false, usedCount: count };
+    }
+
+    const newCount = count + 1;
+    if (snap.exists()) {
+      await updateDoc(ref, { dailySearchCount: newCount, lastSearchDate: today });
+    } else {
+      await setDoc(ref, {
+        plan: "free",
+        dailySearchCount: newCount,
+        lastSearchDate: today,
+      });
+    }
+
+    return { allowed: true, usedCount: newCount };
+  } catch (err) {
+    // Firestore エラー（権限不足など）→ 検索を許可してフォールバック
+    console.error("[userPlan] checkAndIncrementFreeSearch failed, allowing search:", err);
+    return { allowed: true, usedCount: 0 };
   }
-
-  if (count >= FREE_DAILY_LIMIT) {
-    return { allowed: false, usedCount: count };
-  }
-
-  const newCount = count + 1;
-  if (snap.exists()) {
-    await updateDoc(ref, { dailySearchCount: newCount, lastSearchDate: today });
-  } else {
-    await setDoc(ref, {
-      plan: "free",
-      dailySearchCount: newCount,
-      lastSearchDate: today,
-    });
-  }
-
-  return { allowed: true, usedCount: newCount };
 }

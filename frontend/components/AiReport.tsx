@@ -110,6 +110,8 @@ interface Props {
   onImageSaved?: (dataUrl: string) => void;
   /** 未ログイン時にログインUIを開くコールバック */
   onLoginRequest?: () => void;
+  /** プラン比較モーダルを開くコールバック */
+  onPlanModalOpen?: () => void;
 }
 
 export function AiReport({
@@ -122,6 +124,7 @@ export function AiReport({
   lifestyleImage,
   onImageSaved,
   onLoginRequest,
+  onPlanModalOpen,
 }: Props) {
   const sections = parseSections(report);
   const allKeys = [IMAGE_KEY, ...sections.map((s) => s.number)];
@@ -296,14 +299,24 @@ export function AiReport({
 
             {imageIsOpen && (
               <div className="px-5 pb-4 pt-2">
-                {!user ? (
-                  /* 未ログイン */
-                  <p className="text-xs text-slate-400 py-2">
-                    🔒 ログインするとAIが{municipality ?? "このエリア"}の暮らしイメージを生成できます
-                  </p>
+                {plan !== "pro" ? (
+                  /* プロプラン限定 */
+                  <div className="flex items-center gap-3 py-2">
+                    <div className="flex-1">
+                      <p className="text-xs text-slate-500">
+                        🔒 暮らしのイメージ画像生成はプロプラン限定です
+                      </p>
+                    </div>
+                    <button
+                      onClick={onPlanModalOpen}
+                      className="shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg border border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 transition-colors"
+                    >
+                      プランを見る
+                    </button>
+                  </div>
                 ) : lifestyleImage ? (
                   /* 画像あり */
-                  <div style={{ animation: "fadeInUp 0.5s ease both" }}>
+                  <div data-pdf-lifestyle-image style={{ animation: "fadeInUp 0.5s ease both" }}>
                     {/* モック画像警告 */}
                     {isMockImage && (
                       <div className="mb-2 flex items-center gap-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-1.5">
@@ -340,7 +353,7 @@ export function AiReport({
                   </div>
                 ) : generating ? (
                   /* スケルトン */
-                  <div className="space-y-2">
+                  <div className="space-y-2" data-pdf-lifestyle-image>
                     <div className="w-full max-w-md h-32 rounded-lg bg-purple-100/80 animate-pulse" />
                     <p className="text-xs text-slate-400">
                       {municipality ?? "エリア"}の暮らしイメージを生成中…
@@ -434,7 +447,7 @@ export function AiReport({
               </p>
               <button
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 text-white font-semibold hover:bg-amber-600 transition-colors shadow-sm text-sm"
-                onClick={() => alert("プロプランへのアップグレードページは近日公開予定です。")}
+                onClick={onPlanModalOpen}
               >
                 ✨ プロプランにアップグレード
               </button>

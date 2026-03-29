@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
+import Link from "next/link";
 import { signInWithPopup, signOut } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { useAuth } from "@/lib/useAuth";
@@ -15,7 +16,8 @@ import {
   FREE_DAILY_LIMIT,
 } from "@/lib/userPlan";
 import { fetchTransactions, calcSummary } from "@/lib/api";
-import { exportToPdf } from "@/lib/exportPdf";
+import { exportToPdf, DEFAULT_PDF_OPTIONS } from "@/lib/exportPdf";
+import type { PdfExportOptions } from "@/lib/exportPdf";
 import { geocodeAddress, reverseGeocodeDistrict, matchDistrictName } from "@/lib/geocode";
 import { saveSearchHistory } from "@/lib/history";
 import type { TransactionApiResponse } from "@/types/api";
@@ -28,6 +30,14 @@ import { TransactionTable } from "@/components/TransactionTable";
 import { PriceTrendChart } from "@/components/PriceTrendChart";
 import { EnvironmentInfoCard } from "@/components/EnvironmentInfo";
 import { AiReport } from "@/components/AiReport";
+import { PlanComparisonModal } from "@/components/PlanComparisonModal";
+import nextDynamic from "next/dynamic";
+
+// レポート内地図（読み取り専用・SSR無効）
+const ReportMap = nextDynamic(
+  () => import("@/components/MapPicker").then((m) => m.MapPicker),
+  { ssr: false, loading: () => <div className="h-48 rounded-lg bg-slate-100 animate-pulse" /> }
+);
 
 // PDF出力するセクションの選択状態
 interface PdfSections {
@@ -56,6 +66,8 @@ export default function HomePage() {
   const [districtMarkers, setDistrictMarkers] = useState<DistrictMarker[]>([]);
   const [externalCoords, setExternalCoords] = useState<{ lat: number; lng: number } | undefined>();
   const [lifestyleImage, setLifestyleImage] = useState<string | undefined>(undefined);
+  const [searchCoords, setSearchCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [planModalOpen, setPlanModalOpen] = useState(false);
 
   // PDF出力セクション選択
   const [pdfSections, setPdfSections] = useState<PdfSections>({
@@ -63,6 +75,8 @@ export default function HomePage() {
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
+
+  const [pdfExportOptions, setPdfExportOptions] = useState<PdfExportOptions>(DEFAULT_PDF_OPTIONS);
 
   // 設定パネル外クリックで閉じる
   useEffect(() => {
@@ -94,28 +108,28 @@ export default function HomePage() {
     setError(null);
 
     // ── 検索回数制限チェック ──────────────────────────────
-    if (!user) {
-      // 未ログイン: localStorage で1日1回
-      if (!checkGuestSearchAllowed()) {
-        setError(
-          "1日1回の無料お試し枠を消費しました。さらに検索するには Google アカウントで無料ログインしてください。"
-        );
-        return;
+    try {
+      if (!user) {
+        // 未ログイン: localStorage で1日1回
+        if (!checkGuestSearchAllowed()) {
+          setPlanModalOpen(true);
+          return;
+        }
+        recordGuestSearch();
+      } else if (plan === "free") {
+        // 無料ログイン: Firestore で1日3回
+        const { allowed, usedCount } = await checkAndIncrementFreeSearch(user.uid);
+        if (!allowed) {
+          setPlanModalOpen(true);
+          return;
+        }
+        if (usedCount === FREE_DAILY_LIMIT) {
+          console.info(`[Plan] 本日の無料検索 ${usedCount}/${FREE_DAILY_LIMIT} 回目（上限到達）`);
+        }
       }
-      recordGuestSearch();
-    } else if (plan === "free") {
-      // 無料ログイン: Firestore で1日3回
-      const { allowed, usedCount } = await checkAndIncrementFreeSearch(user.uid);
-      if (!allowed) {
-        setError(
-          `本日の検索上限（${FREE_DAILY_LIMIT}回）に達しました。無制限に使うにはプロプランへのアップグレードをご検討ください。`
-        );
-        return;
-      }
-      // 残り回数をユーザーに通知（任意）
-      if (usedCount === FREE_DAILY_LIMIT) {
-        console.info(`[Plan] 本日の無料検索 ${usedCount}/${FREE_DAILY_LIMIT} 回目（上限到達）`);
-      }
+    } catch (limitErr) {
+      // 制限チェック自体のエラーは無視して検索を続行
+      console.error("[handleSearch] limit check error, proceeding:", limitErr);
     }
     // plan === "pro" または planLoading 中 → 制限なしで続行
     // ─────────────────────────────────────────────────────
@@ -124,6 +138,7 @@ export default function HomePage() {
     setResult(null);
     setAutoDistrict("");
     setDistrictMarkers([]);
+    setSearchCoords({ lat, lng });
     setLifestyleImage(preservedImage);   // ← undefined なら クリア、savedImage なら即復元
     try {
       const data = await fetchTransactions(lat, lng);
@@ -185,13 +200,13 @@ export default function HomePage() {
 
   async function handleDownloadPdf() {
     if (plan !== "pro") {
-      alert("📄 PDF出力機能はプロプラン限定です。\nアップグレードすると全セクションのPDFを出力できます。");
+      setPlanModalOpen(true);
       return;
     }
     if (!firstRecord) return;
     flushSync(() => setPdfLoading(true));
     try {
-      await exportToPdf("report-content", firstRecord.municipality);
+      await exportToPdf("report-content", firstRecord.municipality, pdfExportOptions);
     } finally {
       setPdfLoading(false);
     }
@@ -226,6 +241,20 @@ export default function HomePage() {
             </p>
           </div>
 
+          {/* ナビゲーションリンク */}
+          <Link
+            href="/about"
+            className="hidden sm:inline-flex text-xs px-3 py-1.5 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
+          >
+            サービスについて
+          </Link>
+          <button
+            onClick={() => setPlanModalOpen(true)}
+            className="hidden sm:inline-flex text-xs px-3 py-1.5 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
+          >
+            プランと料金
+          </button>
+
           {/* 認証UI */}
           {!authLoading && (
             user ? (
@@ -236,6 +265,16 @@ export default function HomePage() {
                   )}
                   <span className="text-sm text-slate-600 max-w-[160px] truncate">{user.displayName ?? user.email}</span>
                 </div>
+                {/* プランバッジ */}
+                {!planLoading && (
+                  <span className={`hidden sm:inline-flex text-xs font-semibold px-2 py-0.5 rounded-full ${
+                    plan === "pro"
+                      ? "bg-amber-100 text-amber-700"
+                      : "bg-blue-100 text-blue-700"
+                  }`}>
+                    {plan === "pro" ? "Pro" : "Free"}
+                  </span>
+                )}
                 <button
                   onClick={handleLogout}
                   className="text-xs px-3 py-1.5 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
@@ -244,6 +283,10 @@ export default function HomePage() {
                 </button>
               </div>
             ) : (
+              <div className="flex items-center gap-2">
+                <span className="hidden sm:inline-flex text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">
+                  Guest
+                </span>
               <button
                 onClick={handleLogin}
                 className="flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium shadow-sm"
@@ -256,6 +299,7 @@ export default function HomePage() {
                 </svg>
                 Googleでログイン
               </button>
+              </div>
             )
           )}
         </div>
@@ -295,7 +339,7 @@ export default function HomePage() {
                 </button>
 
                 {settingsOpen && (
-                  <div className="absolute right-0 top-full mt-1.5 w-60 rounded-xl border border-slate-200 bg-white shadow-xl p-4 z-20">
+                  <div className="absolute right-0 top-full mt-1.5 w-64 rounded-xl border border-slate-200 bg-white shadow-xl p-4 z-20">
                     <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
                       PDFに含めるセクション
                     </p>
@@ -314,8 +358,43 @@ export default function HomePage() {
                         </label>
                       ))}
                     </div>
+
+                    <div className="mt-3 pt-3 border-t border-slate-100">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2.5">
+                        コンテンツオプション
+                      </p>
+                      <div className="space-y-2.5">
+                        <label className="flex items-center gap-2.5 cursor-pointer group">
+                          <input
+                            type="checkbox"
+                            checked={pdfExportOptions.includeMap}
+                            onChange={(e) =>
+                              setPdfExportOptions((prev) => ({ ...prev, includeMap: e.target.checked }))
+                            }
+                            className="w-4 h-4 rounded border-slate-300 cursor-pointer accent-blue-600"
+                          />
+                          <span className="text-sm text-slate-700 group-hover:text-slate-900 transition-colors select-none">
+                            地図を含める
+                          </span>
+                        </label>
+                        <label className="flex items-center gap-2.5 cursor-pointer group">
+                          <input
+                            type="checkbox"
+                            checked={pdfExportOptions.includeLifestyleImage}
+                            onChange={(e) =>
+                              setPdfExportOptions((prev) => ({ ...prev, includeLifestyleImage: e.target.checked }))
+                            }
+                            className="w-4 h-4 rounded border-slate-300 cursor-pointer accent-blue-600"
+                          />
+                          <span className="text-sm text-slate-700 group-hover:text-slate-900 transition-colors select-none">
+                            暮らしのイメージを含める
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+
                     <p className="text-[10px] text-slate-400 mt-3 pt-2.5 border-t border-slate-100">
-                      チェックを外したセクションはPDF非表示（画面は通常表示）
+                      チェックを外した項目はPDF非表示（画面は通常表示）
                     </p>
                   </div>
                 )}
@@ -376,6 +455,21 @@ export default function HomePage() {
                 )}
               </div>
 
+              {/* 診断エリア地図（data-pdf-map で PDF 出力オプション制御） */}
+              {searchCoords && (
+                <div data-pdf-map className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                  <div className="px-4 py-2 border-b border-slate-100 flex items-center gap-2">
+                    <span className="text-sm font-semibold text-slate-700">📍 診断エリアの地図</span>
+                  </div>
+                  <ReportMap
+                    lat={searchCoords.lat}
+                    lng={searchCoords.lng}
+                    onChange={() => {}}
+                    readOnly
+                  />
+                </div>
+              )}
+
               {/* 各セクション: pdfSections の設定に応じて pdf-hide を付与 */}
               <div className={pdfHide(pdfSections.summary)}>
                 <SummaryCards summary={summary} hazard={result.hazard} />
@@ -407,6 +501,7 @@ export default function HomePage() {
                     lifestyleImage={lifestyleImage}
                     onImageSaved={setLifestyleImage}
                     onLoginRequest={handleLogin}
+                    onPlanModalOpen={() => setPlanModalOpen(true)}
                   />
                 </div>
               )}
@@ -433,6 +528,13 @@ export default function HomePage() {
 
       {/* 右下フローティング履歴ボタン（ログイン中のみ） */}
       {user && <HistoryList uid={user.uid} onReplay={handleReplay} />}
+
+      {/* プラン比較モーダル */}
+      <PlanComparisonModal
+        open={planModalOpen}
+        onClose={() => setPlanModalOpen(false)}
+        currentPlan={user ? plan : null}
+      />
 
       <footer className="mt-8 border-t border-slate-200 py-6 text-center text-xs text-slate-400">
         データソース: 国土交通省「不動産情報ライブラリ」 /
