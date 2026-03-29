@@ -57,13 +57,22 @@ gcloud builds submit "$FRONTEND_DIR" \
   --project "$GCP_PROJECT_ID"
 echo "✅ ビルド・プッシュ完了"
 
-# ステップ3: Terraform でフロントエンド Cloud Run を更新
+# ステップ3: Cloud Run を強制リデプロイ（:latest タグは Terraform が変化を検知しないため直接 gcloud を使う）
 echo ""
-echo "🚀 [3/3] Terraform でフロントエンドをデプロイ..."
+echo "🚀 [3/3] Cloud Run に新イメージを強制デプロイ..."
+gcloud run deploy "$FRONTEND_SERVICE" \
+  --image "$IMAGE" \
+  --region "$GCP_REGION" \
+  --platform managed \
+  --project "$GCP_PROJECT_ID" \
+  --quiet
+
+# Terraform state を現状と同期（設定ドリフト防止）
 cd "$TERRAFORM_DIR"
 terraform apply -auto-approve \
   -target=google_cloud_run_v2_service.frontend \
-  -target=google_cloud_run_v2_service_iam_member.frontend_public
+  -target=google_cloud_run_v2_service_iam_member.frontend_public \
+  2>/dev/null || true
 
 FRONTEND_URL=$(terraform output -raw frontend_cloud_run_url)
 
