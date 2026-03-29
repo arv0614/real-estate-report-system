@@ -285,11 +285,11 @@ export default function AboutPage() {
         </h2>
         <div className="space-y-0 divide-y divide-slate-100">
           {[
-            { label: "販売事業者名", value: "【運営者氏名・法人名をここに記載】" },
-            { label: "代表者名", value: "【代表者氏名】" },
-            { label: "所在地", value: "〒000-0000 【都道府県・市区町村・番地】" },
-            { label: "電話番号", value: "【電話番号】（受付時間: 平日 10:00〜18:00）" },
-            { label: "メールアドレス", value: "support@example.com（【実際のメールアドレスに変更してください】）" },
+            { label: "販売事業者名", value: "木下 開" },
+            { label: "代表者名", value: "木下 開" },
+            { label: "所在地", value: "東京都葛飾区東新小岩7-13-20" },
+            { label: "電話番号", value: "070-8397-8965（受付時間: 平日 10:00〜18:00）" },
+            { label: "メールアドレス", value: "realestate.report.support@gmail.com" },
             { label: "サービス名称", value: "不動産価値・リスク診断レポート（β版）" },
             { label: "サービスの内容", value: "国土交通省「不動産情報ライブラリ」データ及びAIを活用した不動産エリア診断SaaSサービス" },
             {
@@ -313,13 +313,7 @@ export default function AboutPage() {
           ))}
         </div>
 
-        <div className="mt-10 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
-          <p className="font-semibold mb-1">⚠️ 注意（運営者向け）</p>
-          <p className="text-xs leading-relaxed">
-            上記の【】内のプレースホルダーは、本番公開前に実際の情報に置き換えてください。
-            特定商取引法に基づく表記は法的義務です。正確な情報を記載してください。
-          </p>
-        </div>
+
       </section>
 
       {/* ── Footer ── */}
