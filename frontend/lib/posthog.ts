@@ -40,3 +40,15 @@ export function trackEvent(
     // 計測エラーは握り潰してメイン機能に影響させない
   }
 }
+
+/**
+ * 検索上限到達時に `limit_reached` イベントを PostHog に送信する。
+ * PostHog 側でこのイベントをトリガーに設定した Survey（ポップアップ）が自動表示される。
+ * PostHog 未設定時はノーオペレーション。
+ */
+export function trackLimitReached(properties?: { plan?: string; uid?: string }) {
+  trackEvent("limit_reached", {
+    plan: properties?.plan ?? "unknown",
+    uid: properties?.uid ?? "",
+  });
+}

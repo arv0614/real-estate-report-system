@@ -75,6 +75,60 @@ resource "posthog_insight" "share_by_platform_pie" {
   })
 }
 
+# ============================================================
+# PostHog Survey — 無料枠到達時 先行案内登録
+# posthog_survey リソースはプロバイダー未実装のため
+# terraform_data + local-exec (Python) で冪等に作成する
+# ============================================================
+
+resource "terraform_data" "survey_limit_reached" {
+  # survey設定が変わった場合のみ再実行
+  triggers_replace = sha256(jsonencode({
+    name    = "無料枠到達時_先行案内登録"
+    version = "1"
+  }))
+
+  provisioner "local-exec" {
+    command = "python3 ${path.module}/scripts/create_survey.py"
+    environment = {
+      POSTHOG_API_KEY    = var.posthog_api_key
+      POSTHOG_PROJECT_ID = var.posthog_project_id
+      POSTHOG_HOST       = var.posthog_host
+    }
+  }
+}
+
+# ============================================================
+# PostHog HogFunction — Survey回答をバックエンドへ Webhook 転送
+# survey sent イベントを受信し、メールアドレスをFirestoreに保存
+# ============================================================
+
+# ============================================================
+# PostHog HogFunction — Survey回答 Webhook
+# posthog_hog_function リソースは inputs_json の読み返しにプロバイダーバグ(v1.0.x)があるため
+# terraform_data + local-exec (Python) で冪等に作成する
+# ============================================================
+
+resource "terraform_data" "hog_function_survey_webhook" {
+  triggers_replace = sha256(jsonencode({
+    name           = "Survey Response → Waitlist Webhook"
+    backend_url    = var.backend_api_url
+    webhook_secret = var.posthog_webhook_secret
+    version        = "1"
+  }))
+
+  provisioner "local-exec" {
+    command = "python3 ${path.module}/scripts/create_hog_function.py"
+    environment = {
+      POSTHOG_API_KEY        = var.posthog_api_key
+      POSTHOG_PROJECT_ID     = var.posthog_project_id
+      POSTHOG_HOST           = var.posthog_host
+      BACKEND_API_URL        = var.backend_api_url
+      POSTHOG_WEBHOOK_SECRET = var.posthog_webhook_secret
+    }
+  }
+}
+
 # ── インサイト3: 都道府県別シェア元エリアランキング ──
 
 resource "posthog_insight" "share_by_prefecture" {

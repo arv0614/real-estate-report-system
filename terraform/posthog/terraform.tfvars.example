@@ -12,3 +12,11 @@ posthog_project_id = "12345"
 # PostHog ホスト（US クラウドの場合はデフォルトのまま）
 # EU クラウドの場合: "https://eu.i.posthog.com"
 # posthog_host = "https://us.i.posthog.com"
+
+# バックエンドCloud Run URL
+# 取得: terraform output -raw cloud_run_url (メインの terraform/ ディレクトリで実行)
+backend_api_url = "https://realestate-api-xxxxxxxxxx.run.app"
+
+# PostHog Webhook 共有シークレット（任意の強いランダム文字列）
+# 生成例: openssl rand -hex 32
+posthog_webhook_secret = "your-strong-random-secret"

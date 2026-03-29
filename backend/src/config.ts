@@ -50,4 +50,8 @@ export const config = {
     successUrl: process.env.STRIPE_SUCCESS_URL ?? "http://localhost:3000/?payment=success",
     cancelUrl: process.env.STRIPE_CANCEL_URL ?? "http://localhost:3000/?payment=cancel",
   },
+
+  posthog: {
+    webhookSecret: process.env.POSTHOG_WEBHOOK_SECRET ?? "",
+  },
 } as const;

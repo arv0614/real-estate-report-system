@@ -38,7 +38,7 @@ type Platform = "x" | "line" | "copy" | "native";
 export function ShareActions({ prefecture, municipality, lat, lng, avgUnitPrice, avgTradePrice, hasFloodRisk }: Props) {
   const [copied, setCopied] = useState(false);
 
-  const shareText = buildShareText({ prefecture, municipality, lat, lng, avgUnitPrice, avgTradePrice, hasFloodRisk });
+  const shareText = buildShareText({ prefecture, municipality, avgUnitPrice, avgTradePrice, hasFloodRisk });
 
   const base =
     process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
