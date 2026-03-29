@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { FREE_DAILY_LIMIT, GUEST_DAILY_LIMIT } from "@/lib/userPlan";
@@ -9,6 +10,8 @@ interface Props {
   open: boolean;
   onClose: () => void;
   currentPlan?: UserPlan | null; // null = guest
+  uid?: string | null;
+  userEmail?: string | null;
 }
 
 type Feature = {
@@ -95,7 +98,9 @@ function Cell({ value, highlight }: { value: string; highlight?: boolean }) {
   );
 }
 
-export function PlanComparisonModal({ open, onClose, currentPlan }: Props) {
+export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail }: Props) {
+  const [checkoutLoading, setCheckoutLoading] = React.useState(false);
+
   if (!open) return null;
 
   async function handleGoogleLogin() {
@@ -104,6 +109,31 @@ export function PlanComparisonModal({ open, onClose, currentPlan }: Props) {
       onClose();
     } catch (e) {
       console.error("ログインエラー:", e);
+    }
+  }
+
+  async function handleUpgrade() {
+    if (!uid) return;
+    setCheckoutLoading(true);
+    try {
+      const apiBase = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
+      const res = await fetch(`${apiBase}/api/stripe/create-checkout-session`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uid, email: userEmail ?? undefined }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error ?? "決済セッションの作成に失敗しました。");
+        return;
+      }
+      const { url } = await res.json();
+      window.location.href = url;
+    } catch (e) {
+      console.error("[Stripe] checkout error:", e);
+      alert("決済処理中にエラーが発生しました。");
+    } finally {
+      setCheckoutLoading(false);
     }
   }
 
@@ -208,10 +238,18 @@ export function PlanComparisonModal({ open, onClose, currentPlan }: Props) {
                 無制限検索・AIレポート全10項目・PDF出力がすべて使えます。
               </div>
               <button
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-500 text-white text-sm font-semibold hover:bg-amber-600 transition-colors shadow-sm shrink-0"
-                onClick={() => alert("プロプランは近日公開予定です。今しばらくお待ちください。")}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-500 text-white text-sm font-semibold hover:bg-amber-600 disabled:opacity-60 disabled:cursor-not-allowed transition-colors shadow-sm shrink-0"
+                onClick={handleUpgrade}
+                disabled={checkoutLoading || !uid}
               >
-                ✨ アップグレード（近日公開）
+                {checkoutLoading ? (
+                  <>
+                    <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    処理中...
+                  </>
+                ) : (
+                  <>✨ Proプランにアップグレード</>
+                )}
               </button>
             </div>
           )}

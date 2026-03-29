@@ -534,6 +534,8 @@ export default function HomePage() {
         open={planModalOpen}
         onClose={() => setPlanModalOpen(false)}
         currentPlan={user ? plan : null}
+        uid={user?.uid ?? null}
+        userEmail={user?.email ?? null}
       />
 
       <footer className="mt-8 border-t border-slate-200 py-6 text-center text-xs text-slate-400">
