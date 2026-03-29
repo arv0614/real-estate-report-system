@@ -243,6 +243,23 @@ function HomePageContent() {
   );
   const firstRecord = result?.data.data[0];
 
+  /** OGP用の総合スコアをハザード情報から簡易計算（0-100） */
+  const ogScore = useMemo(() => {
+    if (!result) return null;
+    let score = 75;
+    if (result.hazard?.flood?.hasRisk) score -= 20;
+    if (result.hazard?.landslide?.hasRisk) score -= 5;
+    if (result.environment?.station?.name) score += 5;
+    if (result.environment?.schools?.elementary) score += 5;
+    return Math.max(0, Math.min(100, score));
+  }, [result]);
+
+  /** OGP用の平均取引単価文字列（例: "45万円/㎡"）*/
+  const ogPriceLabel = useMemo(() => {
+    if (!summary?.avgUnitPrice) return null;
+    return `${Math.round(summary.avgUnitPrice / 10000).toLocaleString()}万円/㎡`;
+  }, [summary]);
+
   // PDF出力時に非表示にするクラスを返す
   function pdfHide(visible: boolean) {
     return visible ? "" : "pdf-hide";
@@ -541,6 +558,8 @@ function HomePageContent() {
                   avgUnitPrice={summary.avgUnitPrice}
                   avgTradePrice={summary.avgTradePrice}
                   hasFloodRisk={result.hazard?.flood?.hasRisk ?? false}
+                  ogScore={ogScore}
+                  ogPriceLabel={ogPriceLabel}
                 />
               )}
             </div>

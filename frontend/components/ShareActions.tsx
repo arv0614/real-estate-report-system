@@ -16,6 +16,10 @@ interface Props {
   avgTradePrice: number;
   /** 洪水リスクあり */
   hasFloodRisk: boolean;
+  /** OGP用: 総合スコア (0-100)。null の場合は OGP スコアカードを省略 */
+  ogScore: number | null;
+  /** OGP用: 平均取引単価の表示文字列（例: "45万円/㎡"）。null の場合は省略 */
+  ogPriceLabel: string | null;
 }
 
 /** 円/㎡ → 万円/㎡ 文字列 */
@@ -26,19 +30,21 @@ function fmtUnit(yenPerSqm: number): string {
 /** シェアテキストを動的生成 */
 function buildShareText(props: Omit<Props, "lat" | "lng">): string {
   const area = `${props.prefecture}${props.municipality}`;
-  const unitPart = props.avgUnitPrice
+  const unitPart = props.ogPriceLabel
+    ? `平均取引単価 ${props.ogPriceLabel}`
+    : props.avgUnitPrice
     ? `平均坪単価 ${fmtUnit(props.avgUnitPrice)}`
     : `平均取引価格 ${Math.round(props.avgTradePrice / 10000).toLocaleString()}万円`;
-  const hazardPart = props.hasFloodRisk ? "⚠️ 洪水リスクあり" : "✅ 洪水リスク低";
+  const hazardPart = props.hasFloodRisk ? "洪水リスクあり" : "洪水リスク低";
   return `${area}の資産価値をAIで診断しました！${unitPart}、${hazardPart}。 #AI不動産診断 #不動産レポート`;
 }
 
 type Platform = "x" | "line" | "copy" | "native";
 
-export function ShareActions({ prefecture, municipality, lat, lng, avgUnitPrice, avgTradePrice, hasFloodRisk }: Props) {
+export function ShareActions({ prefecture, municipality, lat, lng, avgUnitPrice, avgTradePrice, hasFloodRisk, ogScore, ogPriceLabel }: Props) {
   const [copied, setCopied] = useState(false);
 
-  const shareText = buildShareText({ prefecture, municipality, avgUnitPrice, avgTradePrice, hasFloodRisk });
+  const shareText = buildShareText({ prefecture, municipality, avgUnitPrice, avgTradePrice, hasFloodRisk, ogScore, ogPriceLabel });
 
   const base =
     process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
@@ -51,7 +57,10 @@ export function ShareActions({ prefecture, municipality, lat, lng, avgUnitPrice,
       lng: lng.toFixed(6),
       address: `${prefecture}${municipality}`,
       ref: `share_sns_${platform}`,
+      flood: hasFloodRisk ? "1" : "0",
     });
+    if (ogScore !== null) params.set("score", String(ogScore));
+    if (ogPriceLabel) params.set("price", ogPriceLabel);
     return `${base}/?${params}`;
   }
 
