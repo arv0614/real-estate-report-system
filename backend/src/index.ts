@@ -14,10 +14,13 @@ const app = new Hono();
 // ミドルウェア
 app.use("*", logger());
 const allowedOrigins = config.cors.allowedOrigins;
+if (allowedOrigins.length === 0 && config.nodeEnv === "production") {
+  console.warn("[Security] ALLOWED_ORIGINS が未設定です。本番環境では必ず設定してください。");
+}
 app.use(
   "*",
   cors({
-    // ALLOWED_ORIGINS が設定されていれば許可リストを使用、未設定時は全許可（開発用）
+    // ALLOWED_ORIGINS が設定されていれば許可リストを使用、未設定時は全許可（開発用のみ）
     origin: allowedOrigins.length > 0 ? allowedOrigins : "*",
     allowMethods: ["GET", "POST", "OPTIONS"],
   })
@@ -43,7 +46,6 @@ app.use(
 app.get("/health", (c) =>
   c.json({
     status: "ok",
-    env: config.nodeEnv,
     timestamp: new Date().toISOString(),
   })
 );

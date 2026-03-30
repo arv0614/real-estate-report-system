@@ -25,7 +25,8 @@ const app = new Hono();
 
 // ──────────────────────────────────────────────────────────────
 // POST /api/stripe/create-checkout-session
-// Body: { uid: string, email?: string }
+// Header: Authorization: Bearer <Firebase ID Token>
+// Body: { email?: string }
 // Returns: { url: string }
 // ──────────────────────────────────────────────────────────────
 app.post("/create-checkout-session", async (c) => {
@@ -36,17 +37,29 @@ app.post("/create-checkout-session", async (c) => {
     return c.json({ error: "STRIPE_PRICE_ID が設定されていません" }, 503);
   }
 
-  let body: { uid?: string; email?: string };
+  // ── Firebase ID トークン検証（認証必須） ────────────────────
+  const authHeader = c.req.header("authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    return c.json({ error: "Unauthorized: Firebase auth required" }, 401);
+  }
+  const idToken = authHeader.slice(7);
+  let uid: string;
+  try {
+    const decoded = await admin.auth().verifyIdToken(idToken);
+    uid = decoded.uid;
+  } catch (err) {
+    console.warn("[Stripe] ID token verification failed:", err instanceof Error ? err.message : err);
+    return c.json({ error: "Unauthorized: Invalid or expired token" }, 401);
+  }
+
+  let body: { email?: string };
   try {
     body = await c.req.json();
   } catch {
     return c.json({ error: "Invalid JSON body" }, 400);
   }
 
-  const { uid, email } = body;
-  if (!uid) {
-    return c.json({ error: "uid is required" }, 400);
-  }
+  const { email } = body;
 
   try {
     const stripe = getStripe();
