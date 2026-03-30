@@ -27,7 +27,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   if (params.flood) ogUrl.searchParams.set("flood", params.flood);
   const ogImageUrl = ogUrl.toString();
 
-  const title = `${address} | AI不動産診断レポート`;
+  const title = `${address} | 物件目利きリサーチ`;
   return {
     title,
     openGraph: {

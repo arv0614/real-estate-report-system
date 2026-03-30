@@ -8,22 +8,22 @@ const SITE_URL =
 export const metadata: Metadata = {
   title: "サービス紹介・料金プラン",
   description:
-    "国土交通省「不動産情報ライブラリ」の公式データを活用した不動産価値・リスク調査レポートサービス。取引価格の可視化、ハザードリスク判定、10項目エリア特性調査、PDF出力機能を提供。不動産営業・投資家・購入検討者向け調査支援ツール。",
+    "国土交通省「不動産情報ライブラリ」の公式データ × 不動産プロフェッショナルの知見を組み合わせた精密調査サービス。取引価格の可視化、ハザードリスク判定、10項目エリア特性・専門家見解レポート、PDF出力機能を提供。不動産営業・投資家・購入検討者向け精密調査支援ツール。",
   alternates: {
     canonical: `${SITE_URL}/about`,
   },
   openGraph: {
     type: "website",
     url: `${SITE_URL}/about`,
-    title: "サービス紹介・料金プラン | 不動産価値・リスク調査レポート",
+    title: "サービス紹介・料金プラン | 物件目利きリサーチ",
     description:
-      "国土交通省の公式データで不動産の資産価値とリスクをプロフェッショナルな視点で徹底調査。Proプランは月額980円で無制限調査・PDF出力対応。",
+      "国土交通省の公式データと不動産プロフェッショナルの知見で物件の真の価値とリスクを精密調査。Proプランは月額980円で無制限調査・PDF出力対応。",
     images: [{ url: `${SITE_URL}/ogp.png`, width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "サービス紹介・料金プラン | 不動産価値・リスク調査レポート",
-    description: "国土交通省の公式データで不動産の資産価値とリスクを詳細調査。月額980円のProプランで無制限調査・PDF出力。",
+    title: "サービス紹介・料金プラン | 物件目利きリサーチ",
+    description: "国交省データとプロの目利きで物件の価値とリスクを精密調査。月額980円のProプランで無制限調査・PDF出力。",
     images: [`${SITE_URL}/ogp.png`],
   },
 };
@@ -58,7 +58,7 @@ const FEATURES = [
   {
     icon: "🗂️",
     title: "検索履歴の自動保存",
-    desc: "過去に調査したエリアの診断結果・画像をクラウドに自動保存。履歴から一瞬で再表示でき、継続的なエリア研究や複数物件の比較に役立ちます。",
+    desc: "過去に調査したエリアの調査結果・画像をクラウドに自動保存。履歴から一瞬で再表示でき、継続的なエリア研究や複数物件の比較に役立ちます。",
   },
 ];
 
@@ -72,7 +72,7 @@ const PLANS = [
     color: "border-slate-200",
     badge: null,
     features: [
-      { text: "1日1回の診断", ok: true },
+      { text: "1日1回の調査", ok: true },
       { text: "取引価格サマリー表示", ok: true },
       { text: "ハザード情報表示", ok: true },
       { text: "エリア特性調査レポート", ok: false },
@@ -92,7 +92,7 @@ const PLANS = [
     color: "border-blue-200",
     badge: null,
     features: [
-      { text: "1日3回の診断", ok: true },
+      { text: "1日3回の調査", ok: true },
       { text: "取引価格サマリー表示", ok: true },
       { text: "ハザード情報表示", ok: true },
       { text: "エリア調査レポート（3項目まで）", ok: true },
@@ -112,7 +112,7 @@ const PLANS = [
     color: "border-amber-400 ring-2 ring-amber-300",
     badge: "おすすめ",
     features: [
-      { text: "無制限の診断", ok: true },
+      { text: "無制限の調査", ok: true },
       { text: "取引価格サマリー表示", ok: true },
       { text: "ハザード情報表示", ok: true },
       { text: "エリア特性調査レポート（全10項目）", ok: true },
@@ -151,9 +151,8 @@ export default function AboutPage() {
       {/* ── ナビゲーション ── */}
       <nav className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-slate-200">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 font-bold text-slate-800 hover:text-slate-600 transition-colors">
-            <span className="text-xl">🏠</span>
-            <span className="text-sm leading-tight">不動産価値・リスク<br className="hidden sm:block" />診断レポート</span>
+          <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
+            <img src="/logo_mekiki_research.png" alt="物件目利きリサーチ" className="h-8 w-auto object-contain" />
           </Link>
           <div className="flex items-center gap-4">
             <a href="#features" className="hidden sm:block text-sm text-slate-600 hover:text-slate-900 transition-colors">機能</a>
@@ -175,25 +174,25 @@ export default function AboutPage() {
         <div className="relative max-w-4xl mx-auto px-4 py-24 sm:py-32 text-center">
           <div className="inline-flex items-center gap-2 text-xs font-semibold bg-white/10 border border-white/20 rounded-full px-4 py-1.5 mb-8">
             <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-            国土交通省 公式APIデータ × Google Gemini AI
+            国土交通省 公式データ × 不動産プロフェッショナルの知見
           </div>
           <h1 className="text-3xl sm:text-5xl font-extrabold leading-tight mb-6 tracking-tight">
-            国交省の公式データで、<br />
-            不動産の価値とリスクを<br className="sm:hidden" />
+            国交省の公式データと<br />
+            プロの目利きで、<br className="sm:hidden" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-300 to-cyan-300">
-              プロの視点で徹底調査。
+              物件の真価を精密調査。
             </span>
           </h1>
           <p className="text-lg text-slate-300 mb-10 max-w-2xl mx-auto leading-relaxed">
-            緯度・経度を入力するだけで、周辺の取引価格推移・ハザードリスク判定・10項目のエリア特性調査レポートを即座に生成。
-            不動産営業・投資家・購入検討者のための調査支援ツールです。
+            緯度・経度を入力するだけで、周辺の取引価格推移・ハザードリスク判定・10項目のエリア特性・専門家見解レポートを即座に生成。
+            不動産営業・投資家・購入検討者のための精密調査支援ツールです。
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               href="/"
               className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl bg-white text-slate-900 font-bold text-base hover:bg-slate-100 transition-colors shadow-lg"
             >
-              🔍 無料で診断してみる
+              🔍 無料で調査してみる
             </Link>
             <a
               href="#features"
@@ -227,7 +226,7 @@ export default function AboutPage() {
       <section id="features" className="max-w-6xl mx-auto px-4 py-20 sm:py-28">
         <div className="text-center mb-14">
           <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mb-3">
-            診断から提案まで、すべてが1ページで完結
+            調査から提案まで、すべてが1ページで完結
           </h2>
           <p className="text-slate-500 max-w-xl mx-auto">
             物件調査にかかっていた数時間を、数秒に。現場のプロが求める情報を、ワンストップで提供します。
@@ -311,8 +310,8 @@ export default function AboutPage() {
             { label: "所在地", value: "東京都葛飾区東新小岩7-13-20" },
             { label: "電話番号", value: "070-8397-8965（受付時間: 平日 10:00〜18:00）" },
             { label: "メールアドレス", value: "realestate.report.support@gmail.com" },
-            { label: "サービス名称", value: "不動産価値・リスク診断レポート（β版）" },
-            { label: "サービスの内容", value: "国土交通省「不動産情報ライブラリ」データ及びAIを活用した不動産エリア診断SaaSサービス" },
+            { label: "サービス名称", value: "物件目利きリサーチ（β版）" },
+            { label: "サービスの内容", value: "国土交通省「不動産情報ライブラリ」データ及び不動産プロフェッショナルの知見を活用した不動産エリア精密調査SaaSサービス" },
             {
               label: "販売価格",
               value: "Guestプラン: 無料 / Freeプラン: 無料（Googleアカウント登録必須）/ Proプラン: 月額980円（税込）※Proプランは近日公開予定",
@@ -340,9 +339,8 @@ export default function AboutPage() {
       {/* ── Footer ── */}
       <footer className="bg-slate-900 text-slate-400 mt-0">
         <div className="max-w-6xl mx-auto px-4 py-10 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-white font-semibold">
-            <span>🏠</span>
-            <span className="text-sm">不動産価値・リスク診断レポート</span>
+          <div className="flex items-center">
+            <img src="/logo_mekiki_research.png" alt="物件目利きリサーチ" className="h-7 w-auto object-contain brightness-0 invert" />
           </div>
           <nav className="flex flex-wrap justify-center gap-5 text-xs">
             <Link href="/" className="hover:text-white transition-colors">アプリを開く</Link>

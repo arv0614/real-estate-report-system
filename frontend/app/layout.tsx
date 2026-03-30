@@ -17,16 +17,16 @@ const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
   "https://realestate-frontend-2hctlfcy6a-an.a.run.app";
 
-const SITE_NAME = "不動産価値・リスク調査レポート";
+const SITE_NAME = "物件目利きリサーチ";
 const DEFAULT_DESCRIPTION =
-  "国土交通省「不動産情報ライブラリ」の公式データを活用し、不動産の資産価値とリスクをプロフェッショナルな視点で詳細にレポート化します。取引価格の可視化・推移分析、ハザードリスク判定、10項目エリア特性調査、PDF出力まで対応。不動産投資家・営業・購入検討者向け調査支援ツール。";
+  "国土交通省「不動産情報ライブラリ」の公式データ × 不動産鑑定士・エージェントの知見を組み合わせ、物件の真の価値とリスクを目利きします。取引価格の可視化・推移分析、ハザードリスク判定、10項目エリア特性・専門家見解レポート、PDF出力まで対応。不動産投資家・営業・購入検討者向け精密調査支援ツール。";
 // デフォルト OGP 画像（住所未指定の汎用版）— 静的画像を使用。動的OGPはpage.tsxで上書き
 const OGP_IMAGE = `${SITE_URL}/ogp.png`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: `${SITE_NAME} | 国交省データで資産価値・リスクを徹底調査`,
+    default: `${SITE_NAME} | 国交省データとプロの目利きによる不動産精密調査`,
     template: `%s | ${SITE_NAME}`,
   },
   description: DEFAULT_DESCRIPTION,
@@ -50,20 +50,20 @@ export const metadata: Metadata = {
     locale: "ja_JP",
     url: SITE_URL,
     siteName: SITE_NAME,
-    title: `${SITE_NAME} | 国交省データで資産価値・リスクを徹底調査`,
+    title: `${SITE_NAME} | 国交省データとプロの目利きによる不動産精密調査`,
     description: DEFAULT_DESCRIPTION,
     images: [
       {
         url: OGP_IMAGE,
         width: 1200,
         height: 630,
-        alt: "不動産価値・リスク調査レポート — 国交省データで資産価値・リスクを徹底調査",
+        alt: "物件目利きリサーチ — 国交省データとプロの目利きによる不動産精密調査",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: `${SITE_NAME} | 国交省データで資産価値・リスクを徹底調査`,
+    title: `${SITE_NAME} | 国交省データとプロの目利きによる不動産精密調査`,
     description: DEFAULT_DESCRIPTION,
     images: [OGP_IMAGE],
   },
@@ -109,14 +109,14 @@ const jsonLd = {
           name: "Guestプラン",
           price: "0",
           priceCurrency: "JPY",
-          description: "登録不要・1日1回の無料診断",
+          description: "登録不要・1日1回の無料調査",
         },
         {
           "@type": "Offer",
           name: "Freeプラン",
           price: "0",
           priceCurrency: "JPY",
-          description: "Googleアカウント登録・1日3回の無料診断",
+          description: "Googleアカウント登録・1日3回の無料調査",
         },
         {
           "@type": "Offer",

@@ -92,7 +92,7 @@ export async function GET(req: NextRequest) {
               letterSpacing: "-0.5px",
             }}
           >
-            AI不動産診断レポート
+            物件目利きリサーチ
           </div>
         </div>
 
