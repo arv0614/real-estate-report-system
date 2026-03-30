@@ -630,11 +630,15 @@ function HomePageContent() {
 
       <footer className="mt-6 border-t border-slate-200 py-6 text-xs text-slate-400">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-          <span>データソース: 国土交通省「不動産情報ライブラリ」 / キャッシュ: Google Cloud Storage (TTL 30日)</span>
-          <nav className="flex gap-4">
+          <div className="text-center sm:text-left space-y-0.5">
+            <p>本サービスは国土交通省「不動産情報ライブラリ」（CC BY 4.0）を加工して作成しています。</p>
+            <p>地図: © <a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener noreferrer" className="hover:text-slate-600 underline">国土地理院</a></p>
+          </div>
+          <nav className="flex flex-wrap justify-center gap-4">
             <Link href="/terms" className="hover:text-slate-600 transition-colors">利用規約</Link>
             <Link href="/privacy" className="hover:text-slate-600 transition-colors">プライバシーポリシー</Link>
             <Link href="/about#legal" className="hover:text-slate-600 transition-colors">特定商取引法</Link>
+            <Link href="/licenses" className="hover:text-slate-600 transition-colors">OSSライセンス</Link>
           </nav>
         </div>
       </footer>

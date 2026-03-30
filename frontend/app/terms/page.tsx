@@ -164,6 +164,48 @@ export default function TermsPage() {
             </ol>
           </section>
 
+          {/* 第6条の2: AI生成コンテンツ */}
+          <section>
+            <h2 className="text-base font-bold text-slate-900 mb-3 pb-2 border-b border-slate-200">
+              第6条の2（AI生成コンテンツについて）
+            </h2>
+            <ol className="space-y-2 list-none">
+              {[
+                "本サービスのエリア特性調査レポートおよび暮らしのイメージ画像は、Google LLC が提供する生成AI（Gemini・Imagen 等）を利用して自動生成されます。",
+                "AI生成コンテンツは最新情報を反映していない場合があり、事実と異なる情報・不正確な情報が含まれる可能性があります。必ず最新の情報を別途ご確認のうえ、ご自身の責任においてご利用ください。",
+                "AI生成コンテンツの内容を起因とするいかなる損害についても、運営者は責任を負いません。",
+                "AI生成画像は実際のエリアの景観・環境等を保証するものではなく、あくまでもイメージです。",
+              ].map((text, i) => (
+                <li key={i} className="flex gap-2">
+                  <span className="shrink-0 font-semibold text-slate-400">{i + 1}.</span>
+                  <span>{text}</span>
+                </li>
+              ))}
+            </ol>
+          </section>
+
+          {/* 第6条の3: データソース */}
+          <section>
+            <h2 className="text-base font-bold text-slate-900 mb-3 pb-2 border-b border-slate-200">
+              第6条の3（データソースと利用条件）
+            </h2>
+            <p className="mb-2">
+              本サービスが提供する取引価格データおよびハザード情報は、以下のデータソースを加工・利用して作成しています。各データソースの利用規約・ライセンスに従って提供されています。
+            </p>
+            <ul className="space-y-1.5">
+              {[
+                "国土交通省「不動産情報ライブラリ」（CC BY 4.0）— 取引価格データ",
+                "国土交通省「ハザードマップポータルサイト」— 洪水・土砂災害リスク情報",
+                "国土地理院 地図タイル — 地図表示",
+              ].map((item) => (
+                <li key={item} className="flex gap-2">
+                  <span className="shrink-0 text-slate-400">•</span>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+
           {/* 第7条 */}
           <section>
             <h2 className="text-base font-bold text-slate-900 mb-3 pb-2 border-b border-slate-200">
@@ -222,6 +264,7 @@ export default function TermsPage() {
             <Link href="/terms" className="font-medium text-slate-600">利用規約</Link>
             <Link href="/privacy" className="hover:text-slate-600 transition-colors">プライバシーポリシー</Link>
             <Link href="/about#legal" className="hover:text-slate-600 transition-colors">特定商取引法</Link>
+            <Link href="/licenses" className="hover:text-slate-600 transition-colors">OSSライセンス</Link>
             <Link href="/" className="hover:text-slate-600 transition-colors">トップへ</Link>
           </nav>
         </div>
