@@ -151,8 +151,9 @@ export default function AboutPage() {
       {/* ── ナビゲーション ── */}
       <nav className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-slate-200">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
-            <img src="/logo_mekiki_research.png" alt="物件目利きリサーチ" className="h-8 w-auto object-contain" />
+          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <img src="/logo_mekiki_research.png" alt="" className="h-8 w-8 object-contain shrink-0" />
+            <span className="font-bold text-slate-800 text-sm leading-tight">物件目利きリサーチ</span>
           </Link>
           <div className="flex items-center gap-4">
             <a href="#features" className="hidden sm:block text-sm text-slate-600 hover:text-slate-900 transition-colors">機能</a>
