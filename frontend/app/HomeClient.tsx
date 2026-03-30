@@ -582,10 +582,10 @@ function HomePageContent() {
           <div className="rounded-xl border border-dashed border-slate-300 bg-white py-16 text-center text-slate-400">
             <p className="text-4xl mb-3">🗾</p>
             <p className="font-medium text-slate-500">
-              緯度・経度を入力して「診断開始」を押してください
+              住所または緯度・経度を入力して「調査開始」を押してください
             </p>
             <p className="text-sm mt-1">
-              国交省データベースから周辺の不動産取引情報を取得します
+              国土交通省の取引データをもとにエリアの精密調査を行います
             </p>
           </div>
         )}
