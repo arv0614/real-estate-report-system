@@ -54,4 +54,11 @@ export const config = {
   posthog: {
     webhookSecret: process.env.POSTHOG_WEBHOOK_SECRET ?? "",
   },
+
+  cors: {
+    // カンマ区切りで複数オリジン指定可。未設定時は全許可（開発用フォールバック）
+    allowedOrigins: process.env.ALLOWED_ORIGINS
+      ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
+      : [],
+  },
 } as const;

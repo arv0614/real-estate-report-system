@@ -13,10 +13,12 @@ const app = new Hono();
 
 // ミドルウェア
 app.use("*", logger());
+const allowedOrigins = config.cors.allowedOrigins;
 app.use(
   "*",
   cors({
-    origin: "*", // MVP段階。本番ではオリジンを制限すること
+    // ALLOWED_ORIGINS が設定されていれば許可リストを使用、未設定時は全許可（開発用）
+    origin: allowedOrigins.length > 0 ? allowedOrigins : "*",
     allowMethods: ["GET", "POST", "OPTIONS"],
   })
 );
