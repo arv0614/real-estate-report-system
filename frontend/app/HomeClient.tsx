@@ -15,6 +15,7 @@ import {
   FREE_DAILY_LIMIT,
 } from "@/lib/userPlan";
 import { fetchTransactions, calcSummary } from "@/lib/api";
+import { TOKYO_23_WARDS } from "@/lib/areas";
 import { trackLimitReached } from "@/lib/posthog";
 import { exportToPdf, DEFAULT_PDF_OPTIONS } from "@/lib/exportPdf";
 import type { PdfExportOptions } from "@/lib/exportPdf";
@@ -591,7 +592,23 @@ function HomePageContent() {
         userEmail={user?.email ?? null}
       />
 
-      <footer className="mt-8 border-t border-slate-200 py-6 text-center text-xs text-slate-400">
+      {/* 主要エリアから探すリンク集（SEO内部リンク） */}
+      <section className="mt-8 border-t border-slate-200 pt-6">
+        <h2 className="text-sm font-semibold text-slate-600 mb-3">主要エリアから探す</h2>
+        <div className="flex flex-wrap gap-2">
+          {TOKYO_23_WARDS.map((a) => (
+            <Link
+              key={a.citySlug}
+              href={`/reports/${a.prefSlug}/${a.citySlug}`}
+              className="inline-flex items-center text-xs bg-slate-50 border border-slate-200 text-slate-600 rounded-md px-2.5 py-1 hover:border-blue-300 hover:text-blue-600 transition-colors"
+            >
+              {a.city}
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <footer className="mt-6 border-t border-slate-200 py-6 text-center text-xs text-slate-400">
         データソース: 国土交通省「不動産情報ライブラリ」 /
         キャッシュ: Google Cloud Storage (TTL 30日)
       </footer>
