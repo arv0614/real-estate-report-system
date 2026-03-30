@@ -184,8 +184,7 @@ export async function generateLifestyleImage(
   areaFeatures?: string
 ): Promise<GeneratedImage> {
   if (!config.gemini.apiKey) {
-    console.log("[ImageGen] APIキー未設定 - モック画像を返します");
-    return { imageBase64: getMockImageBase64(), mimeType: "image/svg+xml", isMock: true };
+    throw new Error("[ImageGen] APIキー未設定");
   }
 
   console.log(`[ImageGen] 生成開始: ${prefecture}${municipality}`);
@@ -222,7 +221,6 @@ export async function generateLifestyleImage(
     console.warn(`[ImageGen] gemini-2.5-flash-image 失敗: ${err2 instanceof Error ? err2.message : err2}`);
   }
 
-  // ── Fallback: SVG モック ──
-  console.error("[ImageGen] 全モデル失敗 - SVGモックを返します");
-  return { imageBase64: getMockImageBase64(), mimeType: "image/svg+xml", isMock: true };
+  // ── Fallback: 全モデル失敗 → エラーをスロー ──
+  throw new Error("[ImageGen] 全モデルが画像生成に失敗しました");
 }

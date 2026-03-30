@@ -131,7 +131,7 @@ export function SearchForm({ onSearch, loading, districtMarkers, isLoggedIn = fa
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-base">診断する物件の座標を入力</CardTitle>
+        <CardTitle className="text-base">調査エリアの座標を入力</CardTitle>
         <CardDescription className="text-xs">
           地図をクリック・住所検索・現在地取得で座標を指定できます
         </CardDescription>
@@ -229,7 +229,7 @@ export function SearchForm({ onSearch, loading, districtMarkers, isLoggedIn = fa
                 取得中...
               </>
             ) : (
-              "🔍 診断開始"
+              "🔍 調査開始"
             )}
           </Button>
 

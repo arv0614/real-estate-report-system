@@ -1,14 +1,28 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { readCache, writeCache } from "../services/gcsCache";
-import { fetchTransactionPrices, getMockTransactionData, fetchHazardInfo, getMockHazardData, fetchEnvironmentInfo, getMockEnvironmentData } from "../services/mlitApi";
-import { generateAreaReport, getMockAiReport, type AreaReportInput } from "../services/geminiApi";
+import { fetchTransactionPrices, fetchHazardInfo, fetchEnvironmentInfo, type HazardInfo, type EnvironmentInfo } from "../services/mlitApi";
+import { generateAreaReport, type AreaReportInput } from "../services/geminiApi";
 import { generateLifestyleImage } from "../services/imagenApi";
 import { config } from "../config";
 import { buildCacheKey } from "../utils/tile";
 import type { TransactionRecord } from "../services/mlitApi";
 
 const app = new Hono();
+
+/** APIキー未設定・取得失敗時に返す空ハザード情報（モックではなく「データなし」） */
+const EMPTY_HAZARD: HazardInfo = {
+  flood: { hasRisk: false, maxDepthRank: null, maxDepthLabel: null },
+  landslide: { hasRisk: false, phenomena: [] },
+};
+
+/** APIキー未設定・取得失敗時に返す空生活環境情報（モックではなく「データなし」） */
+const EMPTY_ENVIRONMENT: EnvironmentInfo = {
+  zoning: { useArea: null, coverageRatio: null, floorAreaRatio: null },
+  schools: { elementary: null, juniorHigh: null },
+  medical: { count: 0, facilities: [] },
+  station: { name: null, operator: null, dailyPassengers: null },
+};
 
 const querySchema = z.object({
   lat: z.coerce.number().min(24).max(46),
@@ -38,7 +52,7 @@ function calcSummary(records: TransactionRecord[]) {
  * 1. GCSキャッシュHIT + aiReport あり → hazard/environment だけ再取得して即返却
  * 2. GCSキャッシュHIT + aiReport なし → Gemini生成 → バックグラウンドでキャッシュ更新
  * 3. MISS + APIキーあり → MLIT API + Gemini を呼び、GCSに保存
- * 4. MISS + APIキーなし → モックデータ + モックAIレポートを返す
+ * 4. MISS + APIキーなし → 503 を返す
  */
 app.get("/transactions", async (c) => {
   const parsed = querySchema.safeParse({
@@ -64,10 +78,10 @@ app.get("/transactions", async (c) => {
     // 旧キャッシュ（year: number, 1年分のみ）はスキップして再取得
     const isOldFormat = typeof cachedApiData.year === "number" && !Array.isArray(cachedApiData.years);
     if (!isOldFormat) {
-      // hazard・environment は毎回フレッシュ取得
+      // hazard・environment は毎回フレッシュ取得（APIキーなし・失敗時は空データ）
       const [hazard, environment] = await Promise.all([
-        hasApiKey ? fetchHazardInfo(lat, lng).catch(() => getMockHazardData()) : Promise.resolve(getMockHazardData()),
-        hasApiKey ? fetchEnvironmentInfo(lat, lng).catch(() => getMockEnvironmentData()) : Promise.resolve(getMockEnvironmentData()),
+        hasApiKey ? fetchHazardInfo(lat, lng).catch(() => EMPTY_HAZARD) : Promise.resolve(EMPTY_HAZARD),
+        hasApiKey ? fetchEnvironmentInfo(lat, lng).catch(() => EMPTY_ENVIRONMENT) : Promise.resolve(EMPTY_ENVIRONMENT),
       ]);
 
       // AIレポート: キャッシュにあればそのまま使用、なければ生成してキャッシュを更新
@@ -88,7 +102,7 @@ app.get("/transactions", async (c) => {
         };
         aiReport = await generateAreaReport(reportInput).catch((err) => {
           console.error("[Gemini] 生成失敗:", err);
-          return getMockAiReport(reportInput.prefecture, reportInput.municipality);
+          return undefined;
         });
         // バックグラウンドでキャッシュを更新
         writeCache(lat, lng, zoom, cachedApiData, aiReport).catch((err) =>
@@ -110,34 +124,25 @@ app.get("/transactions", async (c) => {
     console.log(`[Route] Old cache format detected, re-fetching 5-year data for (${lat}, ${lng})`);
   }
 
-  // 2. キャッシュなし: APIキーの有無で分岐
-  let apiData;
-  let source: "api" | "mock";
-
-  if (hasApiKey) {
-    try {
-      apiData = await fetchTransactionPrices(lat, lng);
-      source = "api";
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error("[MLIT API] fetch failed, falling back to mock:", msg);
-      apiData = getMockTransactionData(lat, lng);
-      source = "mock";
-    }
-  } else {
-    console.log(`[Route] No API key. Returning mock data for (${lat}, ${lng})`);
-    apiData = getMockTransactionData(lat, lng);
-    source = "mock";
+  // 2. キャッシュなし: APIキー必須
+  if (!hasApiKey) {
+    console.error("[Route] No MLIT API key configured");
+    return c.json({ error: "Service unavailable: API key not configured" }, 503);
   }
 
-  // 3. ハザード・生活環境情報を並列取得
+  let apiData;
+  try {
+    apiData = await fetchTransactionPrices(lat, lng);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[MLIT API] fetch failed:", msg);
+    return c.json({ error: "Failed to fetch transaction data", details: msg }, 502);
+  }
+
+  // 3. ハザード・生活環境情報を並列取得（失敗時は空データ）
   const [hazard, environment] = await Promise.all([
-    hasApiKey
-      ? fetchHazardInfo(lat, lng).catch((err) => { console.error("[Hazard API] fetch failed:", err); return getMockHazardData(); })
-      : Promise.resolve(getMockHazardData()),
-    hasApiKey
-      ? fetchEnvironmentInfo(lat, lng).catch((err) => { console.error("[Environment API] fetch failed:", err); return getMockEnvironmentData(); })
-      : Promise.resolve(getMockEnvironmentData()),
+    fetchHazardInfo(lat, lng).catch((err) => { console.error("[Hazard API] fetch failed:", err); return EMPTY_HAZARD; }),
+    fetchEnvironmentInfo(lat, lng).catch((err) => { console.error("[Environment API] fetch failed:", err); return EMPTY_ENVIRONMENT; }),
   ]);
 
   // 4. Gemini AIレポートを生成
@@ -154,7 +159,7 @@ app.get("/transactions", async (c) => {
   };
   const aiReport = await generateAreaReport(reportInput).catch((err) => {
     console.error("[Gemini] 生成失敗:", err);
-    return getMockAiReport(reportInput.prefecture, reportInput.municipality);
+    return undefined;
   });
 
   // 5. 非同期でGCS保存（aiReport も一緒に保存）
@@ -164,7 +169,7 @@ app.get("/transactions", async (c) => {
   );
 
   return c.json({
-    source,
+    source: "api",
     cacheKey,
     fetchedAt: new Date().toISOString(),
     expiresAt: null,
@@ -199,8 +204,14 @@ app.post("/generate-image", async (c) => {
   }
 
   const { prefecture, municipality, areaFeatures } = parsed.data;
-  const result = await generateLifestyleImage(prefecture, municipality, areaFeatures);
-  return c.json(result);
+  try {
+    const result = await generateLifestyleImage(prefecture, municipality, areaFeatures);
+    return c.json(result);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[/generate-image] 生成失敗:", msg);
+    return c.json({ error: "画像生成に失敗しました", details: msg }, 500);
+  }
 });
 
 export default app;
