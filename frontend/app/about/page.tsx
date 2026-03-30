@@ -349,6 +349,8 @@ export default function AboutPage() {
             <a href="#features" className="hover:text-white transition-colors">機能紹介</a>
             <a href="#pricing" className="hover:text-white transition-colors">料金プラン</a>
             <a href="#legal" className="hover:text-white transition-colors">特定商取引法</a>
+            <Link href="/terms" className="hover:text-white transition-colors">利用規約</Link>
+            <Link href="/privacy" className="hover:text-white transition-colors">プライバシーポリシー</Link>
           </nav>
           <p className="text-xs">
             データソース: 国土交通省「不動産情報ライブラリ」
