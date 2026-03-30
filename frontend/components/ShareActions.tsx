@@ -78,7 +78,7 @@ export function ShareActions({ prefecture, municipality, lat, lng, avgUnitPrice,
     track("native");
     const shareUrl = buildShareUrl("native");
     try {
-      await navigator.share({ title: `${prefecture}${municipality} AI不動産診断`, text: shareText, url: shareUrl });
+      await navigator.share({ title: `${prefecture}${municipality} 物件目利きリサーチ`, text: shareText, url: shareUrl });
     } catch {
       // キャンセルは無視
     }

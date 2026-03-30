@@ -500,7 +500,7 @@ export function AiReport({
         {/* フッター注記 */}
         <div className="px-5 py-3 bg-purple-50/80 border-t border-purple-100">
           <p className="text-[10px] text-slate-400">
-            ※ このレポートはAIが自動生成したものです。補助金・開発計画・人口予測等は変更される場合があります。
+            ※ 本レポートは国土交通省データをもとに専門家の見立てを参考情報として提供するものです。補助金・開発計画・人口予測等は変更される場合があります。
             投資判断の際は必ず最新の公式情報をご確認ください。
           </p>
         </div>

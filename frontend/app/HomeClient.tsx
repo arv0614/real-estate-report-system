@@ -270,14 +270,14 @@ function HomePageContent() {
     <div className="min-h-screen bg-slate-50">
       <header className="bg-white border-b border-slate-200 shadow-sm">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center gap-3">
-          <span className="text-2xl">🏠</span>
           <div className="flex-1">
-            <h1 className="text-xl font-bold text-slate-800 leading-tight">
-              不動産価値・リスク診断レポート
+            <h1 className="leading-none">
+              <img
+                src="/logo_mekiki_research.png"
+                alt="物件目利きリサーチ"
+                className="h-9 w-auto object-contain"
+              />
             </h1>
-            <p className="text-xs text-slate-500">
-              国土交通省「不動産情報ライブラリ」データを活用 — β版
-            </p>
           </div>
 
           {/* ナビゲーションリンク */}
