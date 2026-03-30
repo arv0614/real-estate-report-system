@@ -340,8 +340,9 @@ export default function AboutPage() {
       {/* ── Footer ── */}
       <footer className="bg-slate-900 text-slate-400 mt-0">
         <div className="max-w-6xl mx-auto px-4 py-10 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center">
-            <img src="/logo_mekiki_research.png" alt="物件目利きリサーチ" className="h-7 w-auto object-contain brightness-0 invert" />
+          <div className="flex items-center gap-2">
+            <img src="/logo_mekiki_research.png" alt="" className="h-7 w-7 object-contain shrink-0 brightness-0 invert" />
+            <span className="text-sm text-white font-semibold">物件目利きリサーチ</span>
           </div>
           <nav className="flex flex-wrap justify-center gap-5 text-xs">
             <Link href="/" className="hover:text-white transition-colors">アプリを開く</Link>
