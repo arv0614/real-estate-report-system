@@ -33,6 +33,7 @@ import { EnvironmentInfoCard } from "@/components/EnvironmentInfo";
 import { AiReport } from "@/components/AiReport";
 import { ShareActions } from "@/components/ShareActions";
 import { PlanComparisonModal } from "@/components/PlanComparisonModal";
+import { WaitlistModal } from "@/components/WaitlistModal";
 import nextDynamic from "next/dynamic";
 
 // レポート内地図（読み取り専用・SSR無効）
@@ -71,6 +72,8 @@ function HomePageContent() {
   const [lifestyleImage, setLifestyleImage] = useState<string | undefined>(undefined);
   const [searchCoords, setSearchCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [planModalOpen, setPlanModalOpen] = useState(false);
+  const [waitlistModalOpen, setWaitlistModalOpen] = useState(false);
+  const [waitlistPlan, setWaitlistPlan] = useState<"guest" | "free">("guest");
 
   // PDF出力セクション選択
   const [pdfSections, setPdfSections] = useState<PdfSections>({
@@ -135,6 +138,8 @@ function HomePageContent() {
         // 未ログイン: localStorage で1日1回
         if (!checkGuestSearchAllowed()) {
           trackLimitReached({ plan: "guest" });
+          setWaitlistPlan("guest");
+          setWaitlistModalOpen(true);
           return;
         }
         recordGuestSearch();
@@ -143,6 +148,8 @@ function HomePageContent() {
         const { allowed, usedCount } = await checkAndIncrementFreeSearch(user.uid);
         if (!allowed) {
           trackLimitReached({ plan: "free", uid: user.uid });
+          setWaitlistPlan("free");
+          setWaitlistModalOpen(true);
           return;
         }
         if (usedCount === FREE_DAILY_LIMIT) {
@@ -592,6 +599,15 @@ function HomePageContent() {
         open={planModalOpen}
         onClose={() => setPlanModalOpen(false)}
         currentPlan={user ? plan : null}
+        uid={user?.uid ?? null}
+        userEmail={user?.email ?? null}
+      />
+
+      {/* ウェイティングリストモーダル（上限到達時） */}
+      <WaitlistModal
+        open={waitlistModalOpen}
+        onClose={() => setWaitlistModalOpen(false)}
+        plan={waitlistPlan}
         uid={user?.uid ?? null}
         userEmail={user?.email ?? null}
       />
