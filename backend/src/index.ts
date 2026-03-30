@@ -7,6 +7,7 @@ import { config } from "./config";
 import propertyRoutes from "./routes/property";
 import stripeRoutes from "./routes/stripe";
 import posthogRoutes from "./routes/posthog";
+import waitlistRoutes from "./routes/waitlist";
 
 const app = new Hono();
 
@@ -49,6 +50,7 @@ app.get("/health", (c) =>
 app.route("/api/property", propertyRoutes);
 app.route("/api/stripe", stripeRoutes);
 app.route("/api/posthog", posthogRoutes);
+app.route("/api/waitlist", waitlistRoutes);
 
 // 404
 app.notFound((c) => c.json({ error: "Not Found" }, 404));
