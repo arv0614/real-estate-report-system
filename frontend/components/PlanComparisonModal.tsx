@@ -162,11 +162,20 @@ export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail
     if (!uid) return;
     setCheckoutLoading(true);
     try {
+      // Firebase ID トークンを取得して Authorization ヘッダーに付与
+      const idToken = await auth.currentUser?.getIdToken();
+      if (!idToken) {
+        alert("ログインが必要です。再度ログインしてからお試しください。");
+        return;
+      }
       const apiBase = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
       const res = await fetch(`${apiBase}/api/stripe/create-checkout-session`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ uid, email: userEmail ?? undefined }),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ email: userEmail ?? undefined }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));

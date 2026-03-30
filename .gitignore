@@ -20,6 +20,7 @@ terraform/**/*.tfvars
 *.json
 !package*.json
 !tsconfig*.json
+!firebase.json
 
 # Node.js
 node_modules/

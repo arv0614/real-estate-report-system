@@ -21,13 +21,15 @@ const app = new Hono();
 // Header: X-Webhook-Secret: <POSTHOG_WEBHOOK_SECRET>
 // ──────────────────────────────────────────────────────────────
 app.post("/survey-webhook", async (c) => {
-  // ── シークレット検証 ──────────────────────────────────────
+  // ── シークレット検証（必須） ──────────────────────────────
   const expectedSecret = config.posthog.webhookSecret;
-  if (expectedSecret) {
-    const receivedSecret = c.req.header("x-webhook-secret") ?? "";
-    if (receivedSecret !== expectedSecret) {
-      return c.json({ error: "Unauthorized" }, 401);
-    }
+  if (!expectedSecret) {
+    console.error("[PostHog Webhook] POSTHOG_WEBHOOK_SECRET が未設定です。リクエストを拒否します。");
+    return c.json({ error: "Webhook not configured" }, 503);
+  }
+  const receivedSecret = c.req.header("x-webhook-secret") ?? "";
+  if (receivedSecret !== expectedSecret) {
+    return c.json({ error: "Unauthorized" }, 401);
   }
 
   // ── ペイロード解析 ────────────────────────────────────────

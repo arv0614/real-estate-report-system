@@ -1,0 +1,63 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ──────────────────────────────────────────────────────────
+    // users/{uid} — ユーザープロファイル・プラン情報
+    // ──────────────────────────────────────────────────────────
+    match /users/{uid} {
+      // 読み取り: 本人のみ
+      allow read: if request.auth != null && request.auth.uid == uid;
+
+      // 新規作成（初回ログイン時）:
+      //   - plan は "free" のみ許可（"pro" への直接昇格を防止）
+      //   - Stripe 関連フィールドの直接書き込みを禁止
+      allow create: if request.auth != null
+                    && request.auth.uid == uid
+                    && request.resource.data.get("plan", "free") == "free"
+                    && !request.resource.data.keys().hasAny([
+                         "stripeCustomerId",
+                         "stripeSubscriptionId",
+                         "planActivatedAt"
+                       ]);
+
+      // 更新（検索カウンタ・日付の更新等）:
+      //   - plan / Stripe フィールドはクライアントから変更不可
+      //   - これらは Stripe Webhook → Firebase Admin SDK 経由でのみ更新される
+      allow update: if request.auth != null
+                    && request.auth.uid == uid
+                    && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+                         "plan",
+                         "stripeCustomerId",
+                         "stripeSubscriptionId",
+                         "planActivatedAt"
+                       ]);
+
+      // 削除: 禁止（アカウント削除はバックエンド側で管理）
+      allow delete: if false;
+
+      // ── 検索履歴サブコレクション ────────────────────────────
+      // users/{uid}/search_history/{cityCode}
+      // 本人のみ読み書き可能
+      match /search_history/{cityCode} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+    }
+
+    // ──────────────────────────────────────────────────────────
+    // waitlist — ウェイトリスト（メール登録）
+    // フロントエンドからの一切のアクセスを禁止
+    // バックエンド API 経由（Firebase Admin SDK）でのみアクセス可
+    // ──────────────────────────────────────────────────────────
+    match /waitlist/{docId} {
+      allow read, write: if false;
+    }
+
+    // ──────────────────────────────────────────────────────────
+    // デフォルト: その他すべてのコレクション/ドキュメントへのアクセスを拒否
+    // ──────────────────────────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
