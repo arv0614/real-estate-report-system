@@ -217,7 +217,7 @@ export default function PrivacyPage() {
             </p>
           </section>
 
-          {/* 第7条 */}
+          {/* 第7条: Cookie */}
           <section>
             <h2 className="text-base font-bold text-slate-900 mb-3 pb-2 border-b border-slate-200">
               第7条（Cookieおよびトラッキング技術について）
@@ -225,6 +225,52 @@ export default function PrivacyPage() {
             <p>
               本サービスは、サービス改善・利用状況分析のためにCookieおよびこれに類する技術（ローカルストレージ等）を使用しています。ブラウザの設定によりCookieを無効化できますが、一部の機能が正常に動作しない場合があります。
             </p>
+          </section>
+
+          {/* 第7条の2: 外部送信規律（改正電通事業法） */}
+          <section>
+            <h2 className="text-base font-bold text-slate-900 mb-3 pb-2 border-b border-slate-200">
+              第7条の2（外部送信情報の開示 — 改正電気通信事業法対応）
+            </h2>
+            <p className="mb-3">
+              本サービスは、電気通信事業法第27条の12に基づき、ユーザーの端末から第三者へ送信される情報について以下のとおり開示します。
+            </p>
+            <div className="overflow-x-auto rounded-lg border border-slate-200">
+              <table className="w-full text-sm border-collapse">
+                <thead>
+                  <tr className="bg-slate-100">
+                    <th className="text-left px-3 py-2 font-semibold text-slate-700 w-1/4">送信先</th>
+                    <th className="text-left px-3 py-2 font-semibold text-slate-700 w-1/3">送信される情報</th>
+                    <th className="text-left px-3 py-2 font-semibold text-slate-700">利用目的</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {[
+                    {
+                      dest: "PostHog, Inc.\n（米国）",
+                      info: "ページURL・クリック操作・ブラウザ種別・IPアドレス（匿名化）・セッションID",
+                      purpose: "利用状況分析・機能改善",
+                    },
+                    {
+                      dest: "Google LLC\n（Firebase / GCP）",
+                      info: "メールアドレス・UID・認証トークン",
+                      purpose: "ユーザー認証・データ保管",
+                    },
+                    {
+                      dest: "Stripe, Inc.\n（米国）",
+                      info: "決済フォーム入力情報（カード番号等）・メールアドレス",
+                      purpose: "決済処理（当サービスサーバーには保存されません）",
+                    },
+                  ].map((row) => (
+                    <tr key={row.dest} className="hover:bg-slate-50">
+                      <td className="px-3 py-3 text-slate-600 whitespace-pre-line text-xs">{row.dest}</td>
+                      <td className="px-3 py-3 text-slate-600 text-xs">{row.info}</td>
+                      <td className="px-3 py-3 text-slate-600 text-xs">{row.purpose}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </section>
 
           {/* 第8条 */}
@@ -266,6 +312,7 @@ export default function PrivacyPage() {
             <Link href="/terms" className="hover:text-slate-600 transition-colors">利用規約</Link>
             <Link href="/privacy" className="font-medium text-slate-600">プライバシーポリシー</Link>
             <Link href="/about#legal" className="hover:text-slate-600 transition-colors">特定商取引法</Link>
+            <Link href="/licenses" className="hover:text-slate-600 transition-colors">OSSライセンス</Link>
             <Link href="/" className="hover:text-slate-600 transition-colors">トップへ</Link>
           </nav>
         </div>

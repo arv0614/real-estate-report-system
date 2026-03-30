@@ -351,9 +351,11 @@ export default function AboutPage() {
             <a href="#legal" className="hover:text-white transition-colors">特定商取引法</a>
             <Link href="/terms" className="hover:text-white transition-colors">利用規約</Link>
             <Link href="/privacy" className="hover:text-white transition-colors">プライバシーポリシー</Link>
+            <Link href="/licenses" className="hover:text-white transition-colors">OSSライセンス</Link>
           </nav>
-          <p className="text-xs">
-            データソース: 国土交通省「不動産情報ライブラリ」
+          <p className="text-xs leading-relaxed text-center sm:text-right">
+            国土交通省「不動産情報ライブラリ」（CC BY 4.0）を加工して作成<br />
+            地図: © 国土地理院
           </p>
         </div>
       </footer>
