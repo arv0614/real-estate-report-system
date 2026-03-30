@@ -482,10 +482,10 @@ export function AiReport({
           {plan === "free" && (
             <div className="border-t border-amber-100 bg-gradient-to-r from-amber-50 to-orange-50 px-5 py-5 text-center">
               <p className="text-sm font-semibold text-amber-800 mb-1">
-                🔒 この続きの独自分析・補助金情報・営業トークはプロプラン限定です
+                🔒 この続きの詳細分析・補助金情報・専門家の見立てはプロプラン限定です
               </p>
               <p className="text-xs text-amber-700 mb-4">
-                都市開発動向・投資価値・将来予測・総合スコア・リアルな住環境・プロのクロージングアドバイス（セクション4〜10）を解放
+                都市開発動向・補助金情報・将来人口予測・リアルな住環境の注意点・不動産プロによる総合評価（セクション4〜10）を閲覧できます
               </p>
               <button
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 text-white font-semibold hover:bg-amber-600 transition-colors shadow-sm text-sm"

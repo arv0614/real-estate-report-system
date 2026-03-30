@@ -359,8 +359,11 @@ function HomePageContent() {
         <SearchForm onSearch={handleSearch} loading={loading} districtMarkers={districtMarkers} isLoggedIn={!!user} externalCoords={externalCoords} />
 
         {error && (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            ⚠️ {error}
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 space-y-1">
+            <p>⚠️ {error}</p>
+            <p className="text-xs text-red-500">
+              しばらく待ってから再度お試しください。問題が続く場合は座標を変えるか、別のエリアで検索してみてください。
+            </p>
           </div>
         )}
 
@@ -509,7 +512,7 @@ function HomePageContent() {
               {searchCoords && (
                 <div data-pdf-map className="bg-white rounded-xl border border-slate-200 overflow-hidden">
                   <div className="px-4 py-2 border-b border-slate-100 flex items-center gap-2">
-                    <span className="text-sm font-semibold text-slate-700">📍 診断エリアの地図</span>
+                    <span className="text-sm font-semibold text-slate-700">📍 調査エリアの地図</span>
                   </div>
                   <ReportMap
                     lat={searchCoords.lat}
