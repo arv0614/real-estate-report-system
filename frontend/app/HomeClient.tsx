@@ -270,14 +270,18 @@ function HomePageContent() {
     <div className="min-h-screen bg-slate-50">
       <header className="bg-white border-b border-slate-200 shadow-sm">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center gap-3">
-          <div className="flex-1">
-            <h1 className="leading-none">
-              <img
-                src="/logo_mekiki_research.png"
-                alt="物件目利きリサーチ"
-                className="h-9 w-auto object-contain"
-              />
+          <img
+            src="/logo_mekiki_research.png"
+            alt=""
+            className="h-10 w-10 object-contain shrink-0"
+          />
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl font-bold text-slate-800 leading-tight">
+              物件目利きリサーチ
             </h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              国土交通省データ × プロの目利き — β版
+            </p>
           </div>
 
           {/* ナビゲーションリンク */}
