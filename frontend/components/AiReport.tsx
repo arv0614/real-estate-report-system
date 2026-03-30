@@ -107,6 +107,8 @@ interface Props {
   prefecture?: string;
   municipality?: string;
   lifestyleImage?: string;
+  /** SEOページ等から渡す事前生成済み汎用画像。未ログイン・未生成時でも表示される */
+  defaultLifestyleImage?: string;
   onImageSaved?: (dataUrl: string) => void;
   /** 未ログイン時にログインUIを開くコールバック */
   onLoginRequest?: () => void;
@@ -122,6 +124,7 @@ export function AiReport({
   prefecture,
   municipality,
   lifestyleImage,
+  defaultLifestyleImage,
   onImageSaved,
   onLoginRequest,
   onPlanModalOpen,
@@ -195,6 +198,17 @@ export function AiReport({
             <p className="text-purple-200 text-xs mt-0.5">国土交通省データ × 専門家分析 · 10項目</p>
           </div>
         </div>
+        {/* 汎用暮らしイメージ（提供時のみ表示） */}
+        {defaultLifestyleImage && (
+          <div className="relative">
+            <img
+              src={defaultLifestyleImage}
+              alt={`${municipality ?? ""}の暮らしイメージ`}
+              className="w-full h-40 object-cover opacity-60"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/80" />
+          </div>
+        )}
         {/* ロック本体 */}
         <div className="px-6 py-10 text-center">
           <div className="text-5xl mb-4">🔒</div>
@@ -301,19 +315,47 @@ export function AiReport({
               <div className="px-5 pb-4 pt-2">
                 {plan !== "pro" ? (
                   /* プロプラン限定 */
-                  <div className="flex items-center gap-3 py-2">
-                    <div className="flex-1">
-                      <p className="text-xs text-slate-500">
-                        🔒 暮らしのイメージ画像生成はプロプラン限定です
-                      </p>
+                  defaultLifestyleImage ? (
+                    /* 汎用画像をプレビュー表示 + アップグレード誘導 */
+                    <div>
+                      <div className="relative rounded-lg overflow-hidden max-w-md">
+                        <img
+                          src={defaultLifestyleImage}
+                          alt={`${municipality ?? ""}の暮らしイメージ（プレビュー）`}
+                          className="w-full h-48 object-cover opacity-70"
+                        />
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30">
+                          <span className="text-white text-2xl mb-1">🔒</span>
+                          <p className="text-white text-xs font-semibold text-center px-4">
+                            AI生成のエリア専用画像はProプラン限定
+                          </p>
+                        </div>
+                      </div>
+                      <div className="mt-2 flex items-center justify-between">
+                        <p className="text-[10px] text-slate-400">※ 汎用プレビュー画像</p>
+                        <button
+                          onClick={onPlanModalOpen}
+                          className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 transition-colors"
+                        >
+                          Proにアップグレード
+                        </button>
+                      </div>
                     </div>
-                    <button
-                      onClick={onPlanModalOpen}
-                      className="shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg border border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 transition-colors"
-                    >
-                      プランを見る
-                    </button>
-                  </div>
+                  ) : (
+                    <div className="flex items-center gap-3 py-2">
+                      <div className="flex-1">
+                        <p className="text-xs text-slate-500">
+                          🔒 暮らしのイメージ画像生成はプロプラン限定です
+                        </p>
+                      </div>
+                      <button
+                        onClick={onPlanModalOpen}
+                        className="shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg border border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 transition-colors"
+                      >
+                        プランを見る
+                      </button>
+                    </div>
+                  )
                 ) : lifestyleImage ? (
                   /* 画像あり */
                   <div data-pdf-lifestyle-image style={{ animation: "fadeInUp 0.5s ease both" }}>

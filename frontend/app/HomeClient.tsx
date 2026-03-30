@@ -306,7 +306,7 @@ function HomePageContent() {
                 </div>
                 {/* プランバッジ */}
                 {!planLoading && (
-                  <span className={`hidden sm:inline-flex text-xs font-semibold px-2 py-0.5 rounded-full ${
+                  <span className={`inline-flex text-xs font-semibold px-2 py-0.5 rounded-full ${
                     plan === "pro"
                       ? "bg-amber-100 text-amber-700"
                       : "bg-blue-100 text-blue-700"
@@ -323,7 +323,7 @@ function HomePageContent() {
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <span className="hidden sm:inline-flex text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">
+                <span className="inline-flex text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">
                   Guest
                 </span>
               <button

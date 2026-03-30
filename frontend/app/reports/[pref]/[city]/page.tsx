@@ -194,6 +194,20 @@ export default async function AreaReportPage({ params }: PageProps) {
           </section>
         )}
 
+        {/* 暮らしのイメージ */}
+        <section className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="px-4 py-3 border-b border-slate-100">
+            <h2 className="text-base font-semibold text-slate-700">暮らしのイメージ</h2>
+            <p className="text-xs text-slate-400 mt-0.5">AI生成による参考イメージです（実際のエリアとは異なる場合があります）</p>
+          </div>
+          <img
+            src={`/seo-images/lifestyles/${area.prefSlug}_${area.citySlug}.jpg`}
+            alt={`${area.city}の暮らしイメージ`}
+            className="w-full h-56 object-cover"
+            loading="lazy"
+          />
+        </section>
+
         {/* AIレポート誘導CTA */}
         <section className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl px-6 py-6 text-white">
           <h2 className="text-lg font-bold mb-1">
