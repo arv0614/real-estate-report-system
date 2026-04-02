@@ -2,6 +2,7 @@ import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { logger } from "hono/logger";
 import { cors } from "hono/cors";
+import { secureHeaders } from "hono/secure-headers";
 import { rateLimiter } from "hono-rate-limiter";
 import { config } from "./config";
 import propertyRoutes from "./routes/property";
@@ -13,6 +14,8 @@ const app = new Hono();
 
 // ミドルウェア
 app.use("*", logger());
+// セキュリティヘッダー (X-Content-Type-Options, X-Frame-Options 等)
+app.use("*", secureHeaders());
 const allowedOrigins = config.cors.allowedOrigins;
 if (allowedOrigins.length === 0 && config.nodeEnv === "production") {
   console.warn("[Security] ALLOWED_ORIGINS が未設定です。本番環境では必ず設定してください。");
