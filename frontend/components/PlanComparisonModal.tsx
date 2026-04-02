@@ -56,7 +56,7 @@ const FEATURES: Feature[] = [
   {
     label: "エリア調査レポート（全10項目）",
     guest: "✕ ロック",
-    free: "3項目まで",
+    free: "全項目（ベータ）",
     pro: "全項目",
   },
   {
@@ -204,8 +204,8 @@ export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail
         {/* ヘッダー */}
         <div className="px-6 py-5 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-t-2xl flex items-center justify-between">
           <div>
-            <h2 className="text-white font-bold text-lg leading-tight">プランと料金</h2>
-            <p className="text-purple-200 text-xs mt-0.5">あなたに合ったプランを選んでください</p>
+            <h2 className="text-white font-bold text-lg leading-tight">ベータ版について</h2>
+            <p className="text-purple-200 text-xs mt-0.5">オープンベータ期間中 — 全機能を無料でご利用いただけます</p>
           </div>
           <button
             onClick={onClose}
@@ -285,83 +285,15 @@ export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail
             </div>
           )}
 
-          {/* フリー → プロCTA */}
+          {/* オープンベータ告知（フリープランユーザー向け） */}
           {currentPlan === "free" && (
-            <div className="rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-4 flex flex-col sm:flex-row items-center gap-3">
-              <div className="flex-1 text-sm text-amber-800">
-                <span className="font-semibold">プロプランにアップグレード</span>すると、
-                無制限検索・エリア調査レポート全10項目・PDF出力がすべて使えます。
-              </div>
-              <button
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-semibold transition-colors shadow-sm shrink-0 ${
-                  IS_STRIPE_APPROVED
-                    ? "bg-amber-500 hover:bg-amber-600 disabled:opacity-60 disabled:cursor-not-allowed"
-                    : "bg-slate-400 cursor-not-allowed"
-                }`}
-                onClick={handleUpgrade}
-                disabled={IS_STRIPE_APPROVED && (checkoutLoading || !uid)}
-              >
-                {IS_STRIPE_APPROVED ? (
-                  checkoutLoading ? (
-                    <>
-                      <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      処理中...
-                    </>
-                  ) : (
-                    <>✨ Proプランにアップグレード</>
-                  )
-                ) : (
-                  <>🚀 近日公開予定</>
-                )}
-              </button>
-            </div>
-          )}
-
-          {/* ウェイトリスト登録フォーム（審査中 & ボタン押下後に展開） */}
-          {!IS_STRIPE_APPROVED && waitlistOpen && (
-            <div className="rounded-xl border border-purple-200 bg-gradient-to-br from-purple-50 to-indigo-50 px-5 py-4">
-              {waitlistDone ? (
-                <div className="text-center py-2">
-                  <p className="text-2xl mb-2">🎉</p>
-                  <p className="font-semibold text-slate-800 text-sm">登録ありがとうございます！</p>
-                  <p className="text-xs text-slate-600 mt-1">
-                    公開時に優先的にご案内します。今しばらくお待ちください。
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <p className="text-sm font-semibold text-slate-800 mb-1">
-                    🚀 Proプラン 先行案内に登録
-                  </p>
-                  <p className="text-xs text-slate-500 mb-3">
-                    現在Stripeによる決済審査中です。公開時にメールでお知らせします。
-                  </p>
-                  <form onSubmit={handleWaitlistSubmit} className="flex flex-col sm:flex-row gap-2">
-                    <input
-                      type="email"
-                      value={waitlistEmail}
-                      onChange={(e) => setWaitlistEmail(e.target.value)}
-                      placeholder="your@email.com"
-                      className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-400"
-                      required
-                    />
-                    <button
-                      type="submit"
-                      disabled={waitlistLoading}
-                      className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors shrink-0"
-                    >
-                      {waitlistLoading ? (
-                        <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      ) : (
-                        "案内を受け取る"
-                      )}
-                    </button>
-                  </form>
-                  {waitlistError && (
-                    <p className="text-xs text-red-600 mt-2">{waitlistError}</p>
-                  )}
-                </>
-              )}
+            <div className="rounded-xl border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-4">
+              <p className="text-sm font-semibold text-blue-800 mb-1">
+                🎉 現在、オープンベータ期間中です
+              </p>
+              <p className="text-sm text-blue-700">
+                すべてのアカウントで、エリア調査レポート全10項目・暮らしイメージ生成を含む全機能を<span className="font-semibold">無料</span>でご利用いただけます。ぜひフィードバックをお聞かせください！
+              </p>
             </div>
           )}
 

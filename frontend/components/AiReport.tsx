@@ -8,9 +8,6 @@ import { generateLifestyleImage } from "@/lib/api";
 import { updateLifestyleImage } from "@/lib/history";
 import type { UserPlan } from "@/lib/userPlan";
 
-/** 無料プランで閲覧できるセクション番号の上限（これ以下は表示） */
-const FREE_VISIBLE_SECTIONS = 3;
-
 interface Section {
   number: string;
   title: string;
@@ -119,7 +116,7 @@ interface Props {
 export function AiReport({
   report,
   user,
-  plan,
+  plan: _plan,
   cityCode,
   prefecture,
   municipality,
@@ -127,7 +124,7 @@ export function AiReport({
   defaultLifestyleImage,
   onImageSaved,
   onLoginRequest,
-  onPlanModalOpen,
+  onPlanModalOpen: _onPlanModalOpen,
 }: Props) {
   const sections = parseSections(report);
   const allKeys = [IMAGE_KEY, ...sections.map((s) => s.number)];
@@ -313,50 +310,7 @@ export function AiReport({
 
             {imageIsOpen && (
               <div className="px-5 pb-4 pt-2">
-                {plan !== "pro" ? (
-                  /* プロプラン限定 */
-                  defaultLifestyleImage ? (
-                    /* 汎用画像をプレビュー表示 + アップグレード誘導 */
-                    <div>
-                      <div className="relative rounded-lg overflow-hidden max-w-md">
-                        <img
-                          src={defaultLifestyleImage}
-                          alt={`${municipality ?? ""}の暮らしイメージ（プレビュー）`}
-                          className="w-full h-48 object-cover opacity-70"
-                        />
-                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30">
-                          <span className="text-white text-2xl mb-1">🔒</span>
-                          <p className="text-white text-xs font-semibold text-center px-4">
-                            AI生成のエリア専用画像はProプラン限定
-                          </p>
-                        </div>
-                      </div>
-                      <div className="mt-2 flex items-center justify-between">
-                        <p className="text-[10px] text-slate-400">※ 汎用プレビュー画像</p>
-                        <button
-                          onClick={onPlanModalOpen}
-                          className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 transition-colors"
-                        >
-                          Proにアップグレード
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-3 py-2">
-                      <div className="flex-1">
-                        <p className="text-xs text-slate-500">
-                          🔒 暮らしのイメージ画像生成はプロプラン限定です
-                        </p>
-                      </div>
-                      <button
-                        onClick={onPlanModalOpen}
-                        className="shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg border border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 transition-colors"
-                      >
-                        プランを見る
-                      </button>
-                    </div>
-                  )
-                ) : lifestyleImage ? (
+                {lifestyleImage ? (
                   /* 画像あり */
                   <div data-pdf-lifestyle-image style={{ animation: "fadeInUp 0.5s ease both" }}>
                     {/* モック画像警告 */}
@@ -424,8 +378,8 @@ export function AiReport({
 
           {/* ── 通常セクション ── */}
           {sections.map((section) => {
-            const sectionNum = Number(section.number);
-            const isLocked = plan === "free" && sectionNum > FREE_VISIBLE_SECTIONS;
+            // オープンベータ期間中: ログイン済みユーザーは全セクション開放
+            const isLocked = false;
             const isOpen = openSet.has(section.number);
             const icon = SECTION_ICONS[section.number] ?? "📋";
 
@@ -478,23 +432,12 @@ export function AiReport({
             );
           })}
 
-          {/* ── 無料プラン: セクション4以降のアップグレードCTA ── */}
-          {plan === "free" && (
-            <div className="border-t border-amber-100 bg-gradient-to-r from-amber-50 to-orange-50 px-5 py-5 text-center">
-              <p className="text-sm font-semibold text-amber-800 mb-1">
-                🔒 この続きの詳細分析・補助金情報・専門家の見立てはプロプラン限定です
-              </p>
-              <p className="text-xs text-amber-700 mb-4">
-                都市開発動向・補助金情報・将来人口予測・リアルな住環境の注意点・不動産プロによる総合評価（セクション4〜10）を閲覧できます
-              </p>
-              <button
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 text-white font-semibold hover:bg-amber-600 transition-colors shadow-sm text-sm"
-                onClick={onPlanModalOpen}
-              >
-                ✨ プロプランにアップグレード
-              </button>
-            </div>
-          )}
+          {/* オープンベータ告知 */}
+          <div className="border-t border-blue-100 bg-gradient-to-r from-blue-50 to-indigo-50 px-5 py-3 text-center">
+            <p className="text-xs text-blue-700">
+              🎉 <span className="font-semibold">オープンベータ期間中</span> — すべてのアカウントで全機能を無料でご利用いただけます
+            </p>
+          </div>
         </div>
 
         {/* フッター注記 */}

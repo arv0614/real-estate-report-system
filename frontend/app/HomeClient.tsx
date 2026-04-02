@@ -302,7 +302,7 @@ function HomePageContent() {
             onClick={() => setPlanModalOpen(true)}
             className="hidden sm:inline-flex text-xs px-3 py-1.5 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
           >
-            プランと料金
+            ベータ版について
           </button>
 
           {/* 認証UI */}
