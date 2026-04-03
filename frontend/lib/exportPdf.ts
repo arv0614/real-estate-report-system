@@ -38,7 +38,7 @@ export interface PdfExportOptions {
 
 export const DEFAULT_PDF_OPTIONS: PdfExportOptions = {
   includeLifestyleImage: true,
-  includeMap: true,
+  includeMap: false,
 };
 
 export async function exportToPdf(
@@ -63,6 +63,9 @@ export async function exportToPdf(
   styleEl.textContent = OKLCH_COLOR_OVERRIDE_CSS;
   document.head.appendChild(styleEl);
 
+  // body.pdf-export クラスを付与して pdf-hide 要素を非表示にする
+  document.body.classList.add("pdf-export");
+
   let canvas: HTMLCanvasElement;
   try {
     canvas = await html2canvas(element, {
@@ -77,6 +80,7 @@ export async function exportToPdf(
       },
     });
   } finally {
+    document.body.classList.remove("pdf-export");
     document.head.removeChild(styleEl);
   }
 
@@ -94,20 +98,21 @@ export async function exportToPdf(
   });
   pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
 
-  // iOS Safari では pdf.save() が現在タブを上書きするため、
-  // Blob URL + <a download> によるクリック方式に統一する。
+  // Blob URL を新規タブで開く（ブラウザのPDFビューアー or 保存先選択ダイアログが表示される）
   const blob = pdf.output("blob");
   const blobUrl = URL.createObjectURL(blob);
 
-  const a = document.createElement("a");
-  a.href = blobUrl;
-  a.download = filename;
-  a.target = "_blank";
-  a.rel = "noopener";
-  a.style.display = "none";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  const win = window.open(blobUrl, "_blank", "noopener");
+  if (!win) {
+    // ポップアップブロック時のフォールバック: ダウンロードリンク方式
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = filename;
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
 
-  setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
 }
