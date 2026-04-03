@@ -638,6 +638,7 @@ function HomePageContent() {
             <p>地図: © <a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener noreferrer" className="hover:text-slate-600 underline">国土地理院</a></p>
           </div>
           <nav className="flex flex-wrap justify-center gap-4">
+            <Link href="/about" className="hover:text-slate-600 transition-colors">サービスについて</Link>
             <Link href="/terms" className="hover:text-slate-600 transition-colors">利用規約</Link>
             <Link href="/privacy" className="hover:text-slate-600 transition-colors">プライバシーポリシー</Link>
             <Link href="/about#legal" className="hover:text-slate-600 transition-colors">特定商取引法</Link>
