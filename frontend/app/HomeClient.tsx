@@ -356,7 +356,7 @@ function HomePageContent() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-8 space-y-6">
-        <SearchForm onSearch={handleSearch} loading={loading} districtMarkers={districtMarkers} isLoggedIn={!!user} externalCoords={externalCoords} />
+        <SearchForm onSearch={handleSearch} loading={loading} districtMarkers={districtMarkers} isLoggedIn={!!user} externalCoords={externalCoords} collapseMap={!!result} />
 
         {error && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 space-y-1">
@@ -508,20 +508,18 @@ function HomePageContent() {
                 )}
               </div>
 
-              {/* PDF専用地図: Web画面では非表示、PDF出力直前に exportPdf.ts が一時的に表示してキャプチャする */}
+              {/* 診断エリア地図（data-pdf-map で PDF 出力オプション制御） */}
               {searchCoords && (
-                <div data-pdf-show-only style={{ display: "none" }} aria-hidden="true">
-                  <div data-pdf-map className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                    <div className="px-4 py-2 border-b border-slate-100 flex items-center gap-2">
-                      <span className="text-sm font-semibold text-slate-700">📍 調査エリアの地図</span>
-                    </div>
-                    <ReportMap
-                      lat={searchCoords.lat}
-                      lng={searchCoords.lng}
-                      onChange={() => {}}
-                      readOnly
-                    />
+                <div data-pdf-map className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                  <div className="px-4 py-2 border-b border-slate-100 flex items-center gap-2">
+                    <span className="text-sm font-semibold text-slate-700">📍 調査エリアの地図</span>
                   </div>
+                  <ReportMap
+                    lat={searchCoords.lat}
+                    lng={searchCoords.lng}
+                    onChange={() => {}}
+                    readOnly
+                  />
                 </div>
               )}
 
