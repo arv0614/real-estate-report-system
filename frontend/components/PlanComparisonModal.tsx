@@ -100,11 +100,10 @@ function Cell({ value, highlight }: { value: string; highlight?: boolean }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// 🚦 Stripe 審査フラグ
-//    審査通過後に `true` へ変更するだけで決済導線が有効になる
-//    変更箇所: この1行のみ
+// 🚦 決済有効フラグ
+//    Lemon Squeezy の設定完了後に `true` へ変更するだけで決済導線が有効になる
 // ─────────────────────────────────────────────────────────────
-const IS_STRIPE_APPROVED = false;
+const IS_PAYMENT_ENABLED = false;
 
 export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail }: Props) {
   const [checkoutLoading, setCheckoutLoading] = React.useState(false);
@@ -154,8 +153,8 @@ export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail
   }
 
   async function handleUpgrade() {
-    // 審査中はStripeへ遷移せずウェイトリスト登録フォームを表示
-    if (!IS_STRIPE_APPROVED) {
+    // 決済未有効時はウェイトリスト登録フォームを表示
+    if (!IS_PAYMENT_ENABLED) {
       setWaitlistOpen(true);
       return;
     }
@@ -169,13 +168,12 @@ export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail
         return;
       }
       const apiBase = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
-      const res = await fetch(`${apiBase}/api/stripe/create-checkout-session`, {
+      const res = await fetch(`${apiBase}/api/lemonsqueezy/create-checkout`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${idToken}`,
         },
-        body: JSON.stringify({ email: userEmail ?? undefined }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -185,7 +183,7 @@ export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail
       const { url } = await res.json();
       window.location.href = url;
     } catch (e) {
-      console.error("[Stripe] checkout error:", e);
+      console.error("[LemonSqueezy] checkout error:", e);
       alert("決済処理中にエラーが発生しました。");
     } finally {
       setCheckoutLoading(false);

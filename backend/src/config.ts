@@ -43,12 +43,12 @@ export const config = {
     model: process.env.GEMINI_MODEL ?? "gemini-2.5-flash",
   },
 
-  stripe: {
-    secretKey: process.env.STRIPE_SECRET_KEY ?? "",
-    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? "",
-    priceId: process.env.STRIPE_PRICE_ID ?? "",
-    successUrl: process.env.STRIPE_SUCCESS_URL ?? "http://localhost:3000/?payment=success",
-    cancelUrl: process.env.STRIPE_CANCEL_URL ?? "http://localhost:3000/?payment=cancel",
+  lemonSqueezy: {
+    apiKey: process.env.LEMONSQUEEZY_API_KEY ?? "",
+    storeId: process.env.LEMONSQUEEZY_STORE_ID ?? "",
+    variantId: process.env.LEMONSQUEEZY_VARIANT_ID ?? "",
+    webhookSecret: process.env.LEMONSQUEEZY_WEBHOOK_SECRET ?? "",
+    successUrl: process.env.LEMONSQUEEZY_SUCCESS_URL ?? "http://localhost:3000/?payment=success",
   },
 
   posthog: {
