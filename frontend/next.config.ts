@@ -3,10 +3,12 @@ import type { NextConfig } from "next";
 // ── HTTPセキュリティヘッダー ─────────────────────────────────────────────
 // CSP設計:
 //   - Firebase Auth/Firestore/Storage: *.googleapis.com, *.firebaseio.com
+//   - Firebase Auth hidden iframe:     realestate-report-2026-bf134.firebaseapp.com
 //   - Google OAuth popup:              accounts.google.com
 //   - Google profile photos:           lh3.googleusercontent.com
 //   - PostHog analytics:               us.i.posthog.com (NEXT_PUBLIC_POSTHOG_HOST)
 //   - 国土地理院地図タイル:             cyberjapandata.gsi.go.jp
+//   - 国土地理院住所検索API:            msearch.gsi.go.jp, mreversegeocoder.gsi.go.jp
 //   - Cloud Run バックエンド:           *.run.app
 //   - Next.js (inline styles/scripts): unsafe-inline, unsafe-eval
 const CSP = [
@@ -19,10 +21,10 @@ const CSP = [
   "img-src 'self' data: blob: https://lh3.googleusercontent.com https://firebasestorage.googleapis.com https://cyberjapandata.gsi.go.jp https://maps.gsi.go.jp",
   // フォント
   "font-src 'self' https://fonts.gstatic.com",
-  // API・WebSocket通信
-  "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://firebasestorage.googleapis.com https://storage.googleapis.com https://us.i.posthog.com https://*.run.app",
-  // Google OAuth ポップアップ
-  "frame-src 'self' https://accounts.google.com",
+  // API・WebSocket通信: 国土地理院住所検索APIを追加
+  "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://firebasestorage.googleapis.com https://storage.googleapis.com https://us.i.posthog.com https://*.run.app https://msearch.gsi.go.jp https://mreversegeocoder.gsi.go.jp",
+  // Google OAuth ポップアップ + Firebase Auth hidden iframe（signInWithPopup通信用）
+  "frame-src 'self' https://accounts.google.com https://realestate-report-2026-bf134.firebaseapp.com",
   // Service Worker
   "worker-src 'self' blob:",
   "object-src 'none'",
@@ -41,7 +43,7 @@ const securityHeaders = [
   // リファラー制御
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   // 不要なブラウザAPI無効化
-  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+  { key: "Permissions-Policy", value: "camera=(), microphone=()" },
   // Content Security Policy
   { key: "Content-Security-Policy", value: CSP },
 ];
