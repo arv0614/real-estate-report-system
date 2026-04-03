@@ -21,8 +21,8 @@ const CSP = [
   "img-src 'self' data: blob: https://lh3.googleusercontent.com https://firebasestorage.googleapis.com https://cyberjapandata.gsi.go.jp https://maps.gsi.go.jp",
   // フォント
   "font-src 'self' https://fonts.gstatic.com",
-  // API・WebSocket通信: 国土地理院住所検索APIを追加
-  "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://firebasestorage.googleapis.com https://storage.googleapis.com https://us.i.posthog.com https://*.run.app https://msearch.gsi.go.jp https://mreversegeocoder.gsi.go.jp",
+  // API・WebSocket通信: 国土地理院住所検索API・Firebase Auth domain を追加
+  "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://firebasestorage.googleapis.com https://storage.googleapis.com https://us.i.posthog.com https://*.run.app https://msearch.gsi.go.jp https://mreversegeocoder.gsi.go.jp https://*.firebaseapp.com",
   // Google OAuth ポップアップ + Firebase Auth hidden iframe（signInWithPopup通信用）
   "frame-src 'self' https://accounts.google.com https://realestate-report-2026-bf134.firebaseapp.com",
   // Service Worker
