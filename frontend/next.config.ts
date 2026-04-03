@@ -3,28 +3,29 @@ import type { NextConfig } from "next";
 // ── HTTPセキュリティヘッダー ─────────────────────────────────────────────
 // CSP設計:
 //   - Firebase Auth/Firestore/Storage: *.googleapis.com, *.firebaseio.com
-//   - Firebase Auth hidden iframe:     realestate-report-2026-bf134.firebaseapp.com
+//   - Firebase Auth hidden iframe:     *.firebaseapp.com
+//   - Firebase Auth 動的スクリプト:    apis.google.com, www.gstatic.com
 //   - Google OAuth popup:              accounts.google.com
 //   - Google profile photos:           lh3.googleusercontent.com
-//   - PostHog analytics:               us.i.posthog.com (NEXT_PUBLIC_POSTHOG_HOST)
+//   - PostHog analytics:               us.i.posthog.com, us-assets.i.posthog.com
 //   - 国土地理院地図タイル:             cyberjapandata.gsi.go.jp
 //   - 国土地理院住所検索API:            msearch.gsi.go.jp, mreversegeocoder.gsi.go.jp
 //   - Cloud Run バックエンド:           *.run.app
 //   - Next.js (inline styles/scripts): unsafe-inline, unsafe-eval
 const CSP = [
   "default-src 'self'",
-  // Next.js hydration・FirebaseSDK・PostHog
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+  // Next.js・FirebaseSDK・PostHog・Google API（signInWithPopup が apis.google.com を動的ロード）
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.gstatic.com https://us-assets.i.posthog.com",
   // Tailwind / CSS-in-JS
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   // 画像: Firebase Storage / Google アカウント写真 / 国土地理院タイル / base64
   "img-src 'self' data: blob: https://lh3.googleusercontent.com https://firebasestorage.googleapis.com https://cyberjapandata.gsi.go.jp https://maps.gsi.go.jp",
   // フォント
   "font-src 'self' https://fonts.gstatic.com",
-  // API・WebSocket通信: 国土地理院住所検索API・Firebase Auth domain を追加
-  "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://firebasestorage.googleapis.com https://storage.googleapis.com https://us.i.posthog.com https://*.run.app https://msearch.gsi.go.jp https://mreversegeocoder.gsi.go.jp https://*.firebaseapp.com",
-  // Google OAuth ポップアップ + Firebase Auth hidden iframe（signInWithPopup通信用）
-  "frame-src 'self' https://accounts.google.com https://realestate-report-2026-bf134.firebaseapp.com",
+  // API・WebSocket通信
+  "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://firebasestorage.googleapis.com https://storage.googleapis.com https://us.i.posthog.com https://us-assets.i.posthog.com https://*.run.app https://msearch.gsi.go.jp https://mreversegeocoder.gsi.go.jp https://*.firebaseapp.com",
+  // Google OAuth ポップアップ + Firebase Auth hidden iframe
+  "frame-src 'self' https://accounts.google.com https://*.firebaseapp.com",
   // Service Worker
   "worker-src 'self' blob:",
   "object-src 'none'",
@@ -54,7 +55,7 @@ const nextConfig: NextConfig = {
     return [
       {
         // すべてのルートに適用
-        source: "/(.*)",
+        source: "/:path*",
         headers: securityHeaders,
       },
     ];
