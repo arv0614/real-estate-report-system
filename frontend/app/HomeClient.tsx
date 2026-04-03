@@ -392,7 +392,7 @@ function HomePageContent() {
                 </button>
 
                 {settingsOpen && (
-                  <div className="absolute right-0 top-full mt-1.5 w-64 rounded-xl border border-slate-200 bg-white shadow-xl p-4 z-20">
+                  <div className="absolute right-0 top-full mt-1.5 w-64 rounded-xl border border-slate-200 bg-white shadow-xl p-4 z-20 max-h-[70vh] overflow-y-auto">
                     <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
                       PDFに含めるセクション
                     </p>
@@ -565,17 +565,19 @@ function HomePageContent() {
 
               {/* シェアアクション（PDF非表示・レポート末尾） */}
               {firstRecord && (
-                <ShareActions
-                  prefecture={firstRecord.prefecture ?? ""}
-                  municipality={firstRecord.municipality ?? ""}
-                  lat={searchCoords?.lat ?? 0}
-                  lng={searchCoords?.lng ?? 0}
-                  avgUnitPrice={summary.avgUnitPrice}
-                  avgTradePrice={summary.avgTradePrice}
-                  hasFloodRisk={result.hazard?.flood?.hasRisk ?? false}
-                  ogScore={ogScore}
-                  ogPriceLabel={ogPriceLabel}
-                />
+                <div className="pdf-hide">
+                  <ShareActions
+                    prefecture={firstRecord.prefecture ?? ""}
+                    municipality={firstRecord.municipality ?? ""}
+                    lat={searchCoords?.lat ?? 0}
+                    lng={searchCoords?.lng ?? 0}
+                    avgUnitPrice={summary.avgUnitPrice}
+                    avgTradePrice={summary.avgTradePrice}
+                    hasFloodRisk={result.hazard?.flood?.hasRisk ?? false}
+                    ogScore={ogScore}
+                    ogPriceLabel={ogPriceLabel}
+                  />
+                </div>
               )}
             </div>
           </>
