@@ -63,6 +63,14 @@ export async function exportToPdf(
   styleEl.textContent = OKLCH_COLOR_OVERRIDE_CSS;
   document.head.appendChild(styleEl);
 
+  // PDF専用要素（data-pdf-show-only）を一時的に表示してからキャプチャする
+  // 通常は display:none で Web画面に出ないが、html2canvas は display:none を写さないため
+  // キャプチャ直前に block に変え、完了後に none に戻す
+  const pdfShowEls = Array.from(
+    element.querySelectorAll<HTMLElement>("[data-pdf-show-only]")
+  );
+  pdfShowEls.forEach((el) => { el.style.display = "block"; });
+
   let canvas: HTMLCanvasElement;
   try {
     canvas = await html2canvas(element, {
@@ -77,6 +85,8 @@ export async function exportToPdf(
       },
     });
   } finally {
+    // 表示を元に戻す（エラー時も確実に実行）
+    pdfShowEls.forEach((el) => { el.style.display = "none"; });
     document.head.removeChild(styleEl);
   }
 
