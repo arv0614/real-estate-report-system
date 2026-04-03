@@ -341,7 +341,9 @@ export default function AboutPage() {
       <footer className="bg-slate-900 text-slate-400 mt-0">
         <div className="max-w-6xl mx-auto px-4 py-10 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <img src="/logo_mekiki_research.png" alt="" className="h-7 w-7 object-contain shrink-0 brightness-0 invert" />
+            <div className="h-8 w-8 bg-white rounded-lg p-1 shrink-0 flex items-center justify-center">
+              <img src="/logo_mekiki_research.png" alt="" className="h-full w-full object-contain" />
+            </div>
             <span className="text-sm text-white font-semibold">物件目利きリサーチ</span>
           </div>
           <nav className="flex flex-wrap justify-center gap-5 text-xs">
