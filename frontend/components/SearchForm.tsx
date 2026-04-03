@@ -39,9 +39,11 @@ interface Props {
   isLoggedIn?: boolean;
   /** 履歴クリック時などに外部から座標を注入するときに使う */
   externalCoords?: { lat: number; lng: number };
+  /** 検索結果表示中に地図を折りたたむ（重複表示防止） */
+  collapseMap?: boolean;
 }
 
-export function SearchForm({ onSearch, loading, districtMarkers, isLoggedIn = false, externalCoords }: Props) {
+export function SearchForm({ onSearch, loading, districtMarkers, isLoggedIn = false, externalCoords, collapseMap = false }: Props) {
   const [lat, setLat] = useState("35.7101");
   const [lng, setLng] = useState("139.8107");
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -54,6 +56,11 @@ export function SearchForm({ onSearch, loading, districtMarkers, isLoggedIn = fa
     setValidationError(null);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [externalCoords?.lat, externalCoords?.lng]);
+
+  // 検索結果が表示されたら地図を折りたたむ（ReportMapと重複表示防止）
+  useEffect(() => {
+    if (collapseMap) setShowMap(false);
+  }, [collapseMap]);
   const [addressQuery, setAddressQuery] = useState("");
   const [addressLoading, setAddressLoading] = useState(false);
   const [geoLoading, setGeoLoading] = useState(false);
