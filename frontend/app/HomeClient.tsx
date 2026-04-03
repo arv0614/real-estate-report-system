@@ -508,18 +508,20 @@ function HomePageContent() {
                 )}
               </div>
 
-              {/* 診断エリア地図（data-pdf-map で PDF 出力オプション制御） */}
+              {/* PDF専用地図: Web画面では非表示、PDF出力直前に exportPdf.ts が一時的に表示してキャプチャする */}
               {searchCoords && (
-                <div data-pdf-map className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                  <div className="px-4 py-2 border-b border-slate-100 flex items-center gap-2">
-                    <span className="text-sm font-semibold text-slate-700">📍 調査エリアの地図</span>
+                <div data-pdf-show-only style={{ display: "none" }} aria-hidden="true">
+                  <div data-pdf-map className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                    <div className="px-4 py-2 border-b border-slate-100 flex items-center gap-2">
+                      <span className="text-sm font-semibold text-slate-700">📍 調査エリアの地図</span>
+                    </div>
+                    <ReportMap
+                      lat={searchCoords.lat}
+                      lng={searchCoords.lng}
+                      onChange={() => {}}
+                      readOnly
+                    />
                   </div>
-                  <ReportMap
-                    lat={searchCoords.lat}
-                    lng={searchCoords.lng}
-                    onChange={() => {}}
-                    readOnly
-                  />
                 </div>
               )}
 
