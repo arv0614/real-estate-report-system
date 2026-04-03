@@ -11,25 +11,25 @@ service cloud.firestore {
 
       // 新規作成（初回ログイン時）:
       //   - plan は "free" のみ許可（"pro" への直接昇格を防止）
-      //   - Stripe 関連フィールドの直接書き込みを禁止
+      //   - Lemon Squeezy 関連フィールドの直接書き込みを禁止
       allow create: if request.auth != null
                     && request.auth.uid == uid
                     && request.resource.data.get("plan", "free") == "free"
                     && !request.resource.data.keys().hasAny([
-                         "stripeCustomerId",
-                         "stripeSubscriptionId",
+                         "lemonSqueezyCustomerId",
+                         "lemonSqueezySubscriptionId",
                          "planActivatedAt"
                        ]);
 
       // 更新（検索カウンタ・日付の更新等）:
-      //   - plan / Stripe フィールドはクライアントから変更不可
-      //   - これらは Stripe Webhook → Firebase Admin SDK 経由でのみ更新される
+      //   - plan / Lemon Squeezy フィールドはクライアントから変更不可
+      //   - これらは Lemon Squeezy Webhook → Firebase Admin SDK 経由でのみ更新される
       allow update: if request.auth != null
                     && request.auth.uid == uid
                     && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
                          "plan",
-                         "stripeCustomerId",
-                         "stripeSubscriptionId",
+                         "lemonSqueezyCustomerId",
+                         "lemonSqueezySubscriptionId",
                          "planActivatedAt"
                        ]);
 

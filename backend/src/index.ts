@@ -6,7 +6,7 @@ import { secureHeaders } from "hono/secure-headers";
 import { rateLimiter } from "hono-rate-limiter";
 import { config } from "./config";
 import propertyRoutes from "./routes/property";
-import stripeRoutes from "./routes/stripe";
+import lemonSqueezyRoutes from "./routes/lemonsqueezy";
 import posthogRoutes from "./routes/posthog";
 import waitlistRoutes from "./routes/waitlist";
 
@@ -55,7 +55,7 @@ app.get("/health", (c) =>
 
 // APIルート
 app.route("/api/property", propertyRoutes);
-app.route("/api/stripe", stripeRoutes);
+app.route("/api/lemonsqueezy", lemonSqueezyRoutes);
 app.route("/api/posthog", posthogRoutes);
 app.route("/api/waitlist", waitlistRoutes);
 

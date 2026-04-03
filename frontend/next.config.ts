@@ -11,21 +11,22 @@ import type { NextConfig } from "next";
 //   - 国土地理院地図タイル:             cyberjapandata.gsi.go.jp
 //   - 国土地理院住所検索API:            msearch.gsi.go.jp, mreversegeocoder.gsi.go.jp
 //   - Cloud Run バックエンド:           *.run.app
+//   - Lemon Squeezy 決済:              app.lemonsqueezy.com, assets.lemonsqueezy.com
 //   - Next.js (inline styles/scripts): unsafe-inline, unsafe-eval
 const CSP = [
   "default-src 'self'",
   // Next.js・FirebaseSDK・PostHog・Google API（signInWithPopup が apis.google.com を動的ロード）
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.gstatic.com https://us-assets.i.posthog.com",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.gstatic.com https://us-assets.i.posthog.com https://assets.lemonsqueezy.com",
   // Tailwind / CSS-in-JS
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  // 画像: Firebase Storage / Google アカウント写真 / 国土地理院タイル / base64
-  "img-src 'self' data: blob: https://lh3.googleusercontent.com https://firebasestorage.googleapis.com https://cyberjapandata.gsi.go.jp https://maps.gsi.go.jp",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://assets.lemonsqueezy.com",
+  // 画像: Firebase Storage / Google アカウント写真 / 国土地理院タイル / Lemon Squeezy / base64
+  "img-src 'self' data: blob: https://lh3.googleusercontent.com https://firebasestorage.googleapis.com https://cyberjapandata.gsi.go.jp https://maps.gsi.go.jp https://assets.lemonsqueezy.com",
   // フォント
-  "font-src 'self' https://fonts.gstatic.com",
+  "font-src 'self' https://fonts.gstatic.com https://assets.lemonsqueezy.com",
   // API・WebSocket通信
-  "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://firebasestorage.googleapis.com https://storage.googleapis.com https://us.i.posthog.com https://us-assets.i.posthog.com https://*.run.app https://msearch.gsi.go.jp https://mreversegeocoder.gsi.go.jp https://*.firebaseapp.com",
-  // Google OAuth ポップアップ + Firebase Auth hidden iframe
-  "frame-src 'self' https://accounts.google.com https://*.firebaseapp.com",
+  "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://firebasestorage.googleapis.com https://storage.googleapis.com https://us.i.posthog.com https://us-assets.i.posthog.com https://*.run.app https://msearch.gsi.go.jp https://mreversegeocoder.gsi.go.jp https://*.firebaseapp.com https://app.lemonsqueezy.com https://api.lemonsqueezy.com",
+  // Google OAuth ポップアップ + Firebase Auth hidden iframe + Lemon Squeezy チェックアウト
+  "frame-src 'self' https://accounts.google.com https://*.firebaseapp.com https://app.lemonsqueezy.com",
   // Service Worker
   "worker-src 'self' blob:",
   "object-src 'none'",
