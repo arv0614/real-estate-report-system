@@ -5,6 +5,7 @@ import { signInWithPopup } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, googleProvider, db } from "@/lib/firebase";
 import { FREE_DAILY_LIMIT, GUEST_DAILY_LIMIT } from "@/lib/userPlan";
+import { gtagEvent } from "@/lib/gtag";
 import type { UserPlan } from "@/lib/userPlan";
 
 interface Props {
@@ -153,6 +154,7 @@ export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail
   }
 
   async function handleUpgrade() {
+    gtagEvent({ action: "click_checkout", category: "conversion_funnel", label: "Pro" });
     // 決済未有効時はウェイトリスト登録フォームを表示
     if (!IS_PAYMENT_ENABLED) {
       setWaitlistOpen(true);

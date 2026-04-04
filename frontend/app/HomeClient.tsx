@@ -17,6 +17,7 @@ import {
 import { fetchTransactions, calcSummary } from "@/lib/api";
 import { TOKYO_23_WARDS } from "@/lib/areas";
 import { trackLimitReached } from "@/lib/posthog";
+import { gtagEvent } from "@/lib/gtag";
 import { exportToPdf, DEFAULT_PDF_OPTIONS } from "@/lib/exportPdf";
 import type { PdfExportOptions } from "@/lib/exportPdf";
 import { getLifestyleCache, saveLifestyleCache } from "@/lib/lifestyleCache";
@@ -275,6 +276,7 @@ function HomePageContent() {
 
   async function handleDownloadPdf() {
     if (plan !== "pro") {
+      gtagEvent({ action: "view_plan_modal", category: "conversion_funnel" });
       setPlanModalOpen(true);
       return;
     }
@@ -381,7 +383,7 @@ function HomePageContent() {
             サービスについて
           </Link>
           <button
-            onClick={() => setPlanModalOpen(true)}
+            onClick={() => { gtagEvent({ action: "view_plan_modal", category: "conversion_funnel" }); setPlanModalOpen(true); }}
             className="hidden sm:inline-flex text-xs px-3 py-1.5 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
           >
             ベータ版について
