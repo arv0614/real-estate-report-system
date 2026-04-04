@@ -236,7 +236,11 @@ function HomePageContent() {
     flushSync(() => setPdfLoading(true));
     try {
       await exportToPdf("report-content", firstRecord.municipality, pdfExportOptions);
+    } catch (e) {
+      console.error("[PDF] export error:", e);
     } finally {
+      // exportPdf.ts 内の finally が確実に動作しない稀なケースに備えた安全策
+      document.body.classList.remove("pdf-export");
       setPdfLoading(false);
     }
   }
@@ -392,7 +396,7 @@ function HomePageContent() {
                 </button>
 
                 {settingsOpen && (
-                  <div className="absolute right-0 top-full mt-1.5 w-64 rounded-xl border border-slate-200 bg-white shadow-xl p-4 z-20 max-h-[70vh] overflow-y-auto">
+                  <div className="fixed bottom-16 left-4 right-4 z-50 sm:absolute sm:bottom-auto sm:left-auto sm:right-0 sm:top-full sm:mt-1.5 sm:w-64 sm:z-20 rounded-xl border border-slate-200 bg-white shadow-xl p-4 max-h-[60vh] overflow-y-auto">
                     <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
                       PDFに含めるセクション
                     </p>
