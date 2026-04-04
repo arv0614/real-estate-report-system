@@ -1,5 +1,9 @@
 {
   "firestore": {
     "rules": "firestore.rules"
+  },
+  "storage": {
+    "bucket": "realestate-report-2026-bf134.firebasestorage.app",
+    "rules": "storage.rules"
   }
 }

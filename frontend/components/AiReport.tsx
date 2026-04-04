@@ -5,7 +5,7 @@ import type { User } from "firebase/auth";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { generateLifestyleImage } from "@/lib/api";
-import { updateLifestyleImage } from "@/lib/history";
+import { saveLifestyleCache } from "@/lib/lifestyleCache";
 import type { UserPlan } from "@/lib/userPlan";
 
 interface Section {
@@ -104,6 +104,8 @@ interface Props {
   prefecture?: string;
   municipality?: string;
   lifestyleImage?: string;
+  /** pro が自動生成中のときに true を渡すとローディング表示 */
+  imageGenerating?: boolean;
   /** SEOページ等から渡す事前生成済み汎用画像。未ログイン・未生成時でも表示される */
   defaultLifestyleImage?: string;
   onImageSaved?: (dataUrl: string) => void;
@@ -116,11 +118,12 @@ interface Props {
 export function AiReport({
   report,
   user,
-  plan: _plan,
+  plan,
   cityCode,
   prefecture,
   municipality,
   lifestyleImage,
+  imageGenerating = false,
   defaultLifestyleImage,
   onImageSaved,
   onLoginRequest,
@@ -151,27 +154,20 @@ export function AiReport({
     if (!user || !cityCode || !prefecture || !municipality) return;
     setGenerating(true);
     setGenError(null);
-
-    // Step1: 画像生成（失敗したらエラー表示して終了）
-    let result;
     try {
-      result = await generateLifestyleImage(prefecture, municipality, areaFeatures);
+      const result = await generateLifestyleImage(prefecture, municipality, areaFeatures);
+      const dataUrl = `data:${result.mimeType};base64,${result.imageBase64}`;
+      setIsMockImage(result.isMock);
+      onImageSaved?.(dataUrl); // 即時表示
+      // ロケーションキャッシュに保存（バックグラウンド）
+      saveLifestyleCache(cityCode, dataUrl, prefecture, municipality).catch((e) =>
+        console.error("[AiReport] cache save error:", e)
+      );
     } catch (e) {
       setGenError(e instanceof Error ? e.message : "生成に失敗しました");
+    } finally {
       setGenerating(false);
-      return;
     }
-
-    // Step2: 生成成功 → Base64 data URL で即時表示（CORSエラーなし）
-    const dataUrl = `data:${result.mimeType};base64,${result.imageBase64}`;
-    setIsMockImage(result.isMock);
-    onImageSaved?.(dataUrl);
-    setGenerating(false);
-
-    // Step3: Storage保存はバックグラウンド（失敗しても throw せずコンソール出力のみ）
-    updateLifestyleImage(user.uid, cityCode, dataUrl).catch((e) =>
-      console.error("[AiReport] Storage保存エラー:", e)
-    );
   }
 
   // パース失敗フォールバック
@@ -311,9 +307,8 @@ export function AiReport({
             {imageIsOpen && (
               <div className="px-5 pb-4 pt-2">
                 {lifestyleImage ? (
-                  /* 画像あり */
+                  /* 画像あり（キャッシュ or 再生成直後） */
                   <div data-pdf-lifestyle-image style={{ animation: "fadeInUp 0.5s ease both" }}>
-                    {/* モック画像警告 */}
                     {isMockImage && (
                       <div className="mb-2 flex items-center gap-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-1.5">
                         <span className="text-red-500 text-xs font-medium">⚠️ APIエラーのためダミー画像を表示しています（実際のエリアとは異なります）</span>
@@ -338,25 +333,28 @@ export function AiReport({
                       <p className="text-[10px] text-slate-400 flex-1">
                         ※ 生成AIによる暮らしイメージです（実際のエリアとは異なります）
                       </p>
-                      <button
-                        onClick={handleGenerate}
-                        disabled={generating}
-                        className="text-xs text-purple-500 hover:text-purple-700 disabled:opacity-40 transition-colors"
-                      >
-                        {generating ? "生成中…" : "🔄 再生成"}
-                      </button>
+                      {/* 再生成ボタンは pro のみ */}
+                      {plan === "pro" && (
+                        <button
+                          onClick={handleGenerate}
+                          disabled={generating}
+                          className="text-xs text-purple-500 hover:text-purple-700 disabled:opacity-40 transition-colors"
+                        >
+                          {generating ? "生成中…" : "🔄 再生成"}
+                        </button>
+                      )}
                     </div>
                   </div>
-                ) : generating ? (
-                  /* スケルトン */
+                ) : (generating || imageGenerating) ? (
+                  /* スケルトン（再生成中 or pro 自動生成中） */
                   <div className="space-y-2" data-pdf-lifestyle-image>
                     <div className="w-full max-w-md h-32 rounded-lg bg-purple-100/80 animate-pulse" />
                     <p className="text-xs text-slate-400">
                       {municipality ?? "エリア"}の暮らしイメージを生成中…
                     </p>
                   </div>
-                ) : (
-                  /* 未生成 */
+                ) : plan === "pro" ? (
+                  /* pro かつ画像なし・生成中でない（通常は起きないが念のため） */
                   <div className="flex items-center gap-3 py-1">
                     <button
                       onClick={handleGenerate}
@@ -364,13 +362,13 @@ export function AiReport({
                     >
                       ✨ 暮らしイメージを生成
                     </button>
-                    {genError && (
-                      <p className="text-xs text-red-500">⚠️ {genError}</p>
-                    )}
-                    <p className="text-xs text-slate-400">
-                      約10〜15秒、履歴に自動保存
-                    </p>
+                    {genError && <p className="text-xs text-red-500">⚠️ {genError}</p>}
                   </div>
+                ) : (
+                  /* free かつキャッシュなし */
+                  <p className="text-xs text-slate-400 py-2">
+                    このエリアの暮らしイメージは現在準備中です
+                  </p>
                 )}
               </div>
             )}

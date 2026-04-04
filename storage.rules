@@ -1,0 +1,20 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ユーザー個人の画像（検索履歴サムネイル等）
+    match /users/{uid}/{allPaths=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // 暮らしイメージ ロケーションキャッシュ（市区町村単位で共有）
+    // 読み取り: ログイン済みユーザー全員
+    // 書き込み: ログイン済みユーザー（pro が自動生成・再生成）
+    match /lifestyle_cache/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+                   && request.resource.size < 5 * 1024 * 1024  // 5MB 以内
+                   && request.resource.contentType.matches('image/.*');
+    }
+  }
+}
