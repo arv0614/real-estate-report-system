@@ -432,8 +432,8 @@ export function AiReport({
             );
           })}
 
-          {/* オープンベータ告知 */}
-          <div className="border-t border-blue-100 bg-gradient-to-r from-blue-50 to-indigo-50 px-5 py-3 text-center">
+          {/* オープンベータ告知（PDF非表示） */}
+          <div className="pdf-hide border-t border-blue-100 bg-gradient-to-r from-blue-50 to-indigo-50 px-5 py-3 text-center">
             <p className="text-xs text-blue-700">
               🎉 <span className="font-semibold">オープンベータ期間中</span> — すべてのアカウントで全機能を無料でご利用いただけます
             </p>

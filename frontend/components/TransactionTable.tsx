@@ -17,7 +17,8 @@ const TYPE_FILTERS = ["すべて", "宅地(土地と建物)", "宅地(土地)", 
 type Filter = (typeof TYPE_FILTERS)[number];
 
 const COLUMN_COUNT = 9;
-const PAGE_SIZE = 20;
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
+type PageSizeOption = (typeof PAGE_SIZE_OPTIONS)[number];
 
 interface Props {
   records: TransactionRecord[];
@@ -35,6 +36,7 @@ export function TransactionTable({ records, isPdfExporting = false, autoDistrict
   const [filter, setFilter] = useState<Filter>("すべて");
   const [districtFilter, setDistrictFilter] = useState("");
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState<PageSizeOption>(20);
 
   // 新しい検索結果が来たとき（autoDistrictが変わったとき）にドロップダウンを自動選択
   useEffect(() => {
@@ -69,14 +71,14 @@ export function TransactionTable({ records, isPdfExporting = false, autoDistrict
     return [...base].sort((a, b) => periodSortKey(b.period) - periodSortKey(a.period));
   }, [records, filter, districtFilter]);
 
-  const totalPages = Math.ceil(sortedFiltered.length / PAGE_SIZE);
+  const totalPages = Math.ceil(sortedFiltered.length / pageSize);
 
-  // PDF出力中は常に1ページ目（最新20件）を強制表示
+  // PDF出力中は常に1ページ目（選択件数）を強制表示
   const effectivePage = isPdfExporting ? 0 : page;
 
   const displayed = useMemo(
-    () => sortedFiltered.slice(effectivePage * PAGE_SIZE, (effectivePage + 1) * PAGE_SIZE),
-    [sortedFiltered, effectivePage]
+    () => sortedFiltered.slice(effectivePage * pageSize, (effectivePage + 1) * pageSize),
+    [sortedFiltered, effectivePage, pageSize]
   );
 
   return (
@@ -86,12 +88,23 @@ export function TransactionTable({ records, isPdfExporting = false, autoDistrict
           <CardTitle className="text-base">
             取引事例一覧
             <span className="ml-2 text-sm font-normal text-slate-500">
-              （{sortedFiltered.length === 0 ? 0 : effectivePage * PAGE_SIZE + 1}〜{Math.min((effectivePage + 1) * PAGE_SIZE, sortedFiltered.length)} 件表示 / 全 {sortedFiltered.length} 件）
+              （{sortedFiltered.length === 0 ? 0 : effectivePage * pageSize + 1}〜{Math.min((effectivePage + 1) * pageSize, sortedFiltered.length)} 件表示 / 全 {sortedFiltered.length} 件）
             </span>
           </CardTitle>
 
           {!isPdfExporting && (
             <div className="flex flex-wrap items-center gap-2">
+              {/* 表示件数 */}
+              <select
+                value={pageSize}
+                onChange={(e) => { setPageSize(Number(e.target.value) as PageSizeOption); setPage(0); }}
+                className="text-xs px-2 py-1 rounded border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 focus:outline-none focus:ring-1 focus:ring-blue-400"
+              >
+                {PAGE_SIZE_OPTIONS.map((n) => (
+                  <option key={n} value={n}>{n}件表示</option>
+                ))}
+              </select>
+
               {/* 地区名フィルター */}
               <select
                 value={districtFilter}
