@@ -11,9 +11,12 @@ import { useAuth } from "@/lib/useAuth";
 import {
   checkGuestSearchAllowed,
   recordGuestSearch,
+  getGuestSearchCountToday,
   checkAndIncrementFreeSearch,
   FREE_DAILY_LIMIT,
+  GUEST_DAILY_LIMIT,
 } from "@/lib/userPlan";
+import { dataLayerPush } from "@/lib/analytics";
 import { fetchTransactions, calcSummary } from "@/lib/api";
 import { TOKYO_23_WARDS } from "@/lib/areas";
 import { trackLimitReached } from "@/lib/posthog";
@@ -78,6 +81,7 @@ function HomePageContent() {
   const [planModalOpen, setPlanModalOpen] = useState(false);
   const [waitlistModalOpen, setWaitlistModalOpen] = useState(false);
   const [waitlistPlan, setWaitlistPlan] = useState<"guest" | "free">("guest");
+  const [searchCountToday, setSearchCountToday] = useState(0);
 
   // PDF出力セクション選択
   const [pdfSections, setPdfSections] = useState<PdfSections>({
@@ -147,27 +151,33 @@ function HomePageContent() {
 
   async function handleSearch(lat: number, lng: number) {
     setError(null);
+    const userPlanDL = !user ? "guest" : (plan ?? "free");
 
     // ── 検索回数制限チェック ──────────────────────────────
+    let todayCount = 0;
     try {
       if (!user) {
         // 未ログイン: localStorage で1日5回
         if (!checkGuestSearchAllowed()) {
           trackLimitReached({ plan: "guest" });
+          dataLayerPush({ event: "limit_reached", user_plan: "guest", search_count_today: GUEST_DAILY_LIMIT });
           setWaitlistPlan("guest");
           setWaitlistModalOpen(true);
           return;
         }
         recordGuestSearch();
+        todayCount = getGuestSearchCountToday();
       } else if (plan === "free") {
         // 無料ログイン: Firestore で1日20回
         const { allowed, usedCount } = await checkAndIncrementFreeSearch(user.uid);
         if (!allowed) {
           trackLimitReached({ plan: "free", uid: user.uid });
+          dataLayerPush({ event: "limit_reached", user_plan: "free", search_count_today: FREE_DAILY_LIMIT });
           setWaitlistPlan("free");
           setWaitlistModalOpen(true);
           return;
         }
+        todayCount = usedCount;
         if (usedCount === FREE_DAILY_LIMIT) {
           console.info(`[Plan] 本日の無料検索 ${usedCount}/${FREE_DAILY_LIMIT} 回目（上限到達）`);
         }
@@ -189,6 +199,8 @@ function HomePageContent() {
     try {
       const data = await fetchTransactions(lat, lng);
       setResult(data);
+      setSearchCountToday(todayCount);
+      dataLayerPush({ event: "generate_report", user_plan: userPlanDL, search_count_today: todayCount });
 
       // Firestore に検索履歴を保存（ログイン中のみ）
       if (user) {
@@ -700,6 +712,7 @@ function HomePageContent() {
         currentPlan={user ? plan : null}
         uid={user?.uid ?? null}
         userEmail={user?.email ?? null}
+        searchCountToday={searchCountToday}
       />
 
       {/* ウェイティングリストモーダル（上限到達時） */}

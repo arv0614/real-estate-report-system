@@ -72,6 +72,19 @@ export function checkGuestSearchAllowed(): boolean {
   }
 }
 
+/** 今日のゲスト検索回数を返す（recordGuestSearch 後に呼ぶと最新値が取れる） */
+export function getGuestSearchCountToday(): number {
+  try {
+    if (typeof window === "undefined") return 0;
+    const today = getTodayString();
+    const savedDate = localStorage.getItem(GUEST_SEARCH_DATE_KEY);
+    if (savedDate !== today) return 0;
+    return parseInt(localStorage.getItem(GUEST_SEARCH_KEY) ?? "0", 10);
+  } catch {
+    return 0;
+  }
+}
+
 /** 未ログインの検索消費を記録する（失敗しても無視） */
 export function recordGuestSearch(): void {
   try {
