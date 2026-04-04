@@ -115,6 +115,19 @@ function HomePageContent() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [settingsOpen]);
 
+  // iOS Safari の bfcache 復元時（戻るボタン）に PDF 出力状態を強制リセット
+  // window.open(blobUrl) で現タブがナビゲートされた場合でも、戻り後は必ずクリーンな状態に戻す
+  useEffect(() => {
+    function handlePageShow(e: PageTransitionEvent) {
+      if (e.persisted) {
+        document.body.classList.remove("pdf-export");
+        setPdfLoading(false);
+      }
+    }
+    window.addEventListener("pageshow", handlePageShow);
+    return () => window.removeEventListener("pageshow", handlePageShow);
+  }, []);
+
   async function handleLogin() {
     try {
       await signInWithPopup(auth, googleProvider);
@@ -249,9 +262,10 @@ function HomePageContent() {
     // 状態リセット完了後に PDF を開く
     if (result) {
       const { blobUrl, filename } = result;
-      const win = window.open(blobUrl, "_blank", "noopener");
-      if (!win) {
-        // ポップアップブロック時フォールバック
+      // iOS Safari は window.open(blob:...) で現タブをナビゲートするため anchor download を使う。
+      // iOS 13.4+ では <a download> が blob URL に対応しており「ファイルに保存」シートが開く。
+      const isIOS = /iP(ad|hone|od)/.test(navigator.userAgent);
+      if (isIOS) {
         const a = document.createElement("a");
         a.href = blobUrl;
         a.download = filename;
@@ -259,8 +273,20 @@ function HomePageContent() {
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
+      } else {
+        const win = window.open(blobUrl, "_blank", "noopener");
+        if (!win) {
+          // ポップアップブロック時フォールバック
+          const a = document.createElement("a");
+          a.href = blobUrl;
+          a.download = filename;
+          a.style.display = "none";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        }
       }
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 3000);
     }
   }
 
