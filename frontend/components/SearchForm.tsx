@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { gtagEvent } from "@/lib/gtag";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -132,6 +133,7 @@ export function SearchForm({ onSearch, loading, districtMarkers, isLoggedIn = fa
       return;
     }
     setValidationError(null);
+    gtagEvent({ action: "generate_report", category: "engagement" });
     onSearch(latNum, lngNum);
   }
 
