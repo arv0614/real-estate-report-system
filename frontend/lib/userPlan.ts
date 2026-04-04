@@ -11,10 +11,17 @@ import { db } from "@/lib/firebase";
 
 export type UserPlan = "free" | "pro";
 
-/** 無料プランの1日の検索上限 */
-export const FREE_DAILY_LIMIT = 20;
+/** 無料プランの1日の検索上限（通常時） */
+export const FREE_DAILY_LIMIT = 3;
 /** 未ログインの1日の検索上限 */
-export const GUEST_DAILY_LIMIT = 5;
+export const GUEST_DAILY_LIMIT = 1;
+
+/**
+ * Freeプラン 検索無制限キャンペーンフラグ
+ * true の間、Free ユーザーの回数制限チェックをバイパスする。
+ * Firestore への回数記録は継続。
+ */
+export const IS_FREE_UNLIMITED_CAMPAIGN = true;
 
 const GUEST_SEARCH_KEY = "guest_search_count";
 const GUEST_SEARCH_DATE_KEY = "guest_search_date";

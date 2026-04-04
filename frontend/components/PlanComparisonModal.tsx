@@ -4,7 +4,7 @@ import React from "react";
 import { signInWithPopup } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, googleProvider, db } from "@/lib/firebase";
-import { FREE_DAILY_LIMIT, GUEST_DAILY_LIMIT } from "@/lib/userPlan";
+import { FREE_DAILY_LIMIT, GUEST_DAILY_LIMIT, IS_FREE_UNLIMITED_CAMPAIGN } from "@/lib/userPlan";
 import { gtagEvent } from "@/lib/gtag";
 import { dataLayerPush } from "@/lib/analytics";
 import type { UserPlan } from "@/lib/userPlan";
@@ -29,7 +29,7 @@ const FEATURES: Feature[] = [
   {
     label: "1日の検索回数",
     guest: `${GUEST_DAILY_LIMIT}回`,
-    free: `${FREE_DAILY_LIMIT}回`,
+    free: IS_FREE_UNLIMITED_CAMPAIGN ? "🎉 無制限（CP中）" : `${FREE_DAILY_LIMIT}回`,
     pro: "無制限",
   },
   {
@@ -271,7 +271,10 @@ export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail
             <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-4 flex flex-col sm:flex-row items-center gap-3">
               <div className="flex-1 text-sm text-blue-800">
                 <span className="font-semibold">Googleアカウントで無料ログイン</span>すると、
-                1日{FREE_DAILY_LIMIT}回の検索とエリア調査レポートの一部が無料で使えます。
+                {IS_FREE_UNLIMITED_CAMPAIGN
+                  ? <>🎉 <span className="font-semibold text-blue-900">キャンペーン中につき検索無制限！</span>エリア調査レポートの一部も無料で使えます。</>
+                  : <>1日{FREE_DAILY_LIMIT}回の検索とエリア調査レポートの一部が無料で使えます。</>
+                }
               </div>
               <button
                 onClick={handleGoogleLogin}

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { IS_FREE_UNLIMITED_CAMPAIGN } from "@/lib/userPlan";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
@@ -72,7 +73,7 @@ const PLANS = [
     color: "border-slate-200",
     badge: null,
     features: [
-      { text: "1日5回の調査", ok: true },
+      { text: "1日1回の調査", ok: true },
       { text: "取引価格サマリー表示", ok: true },
       { text: "ハザード情報表示", ok: true },
       { text: "エリア特性調査レポート", ok: false },
@@ -92,7 +93,7 @@ const PLANS = [
     color: "border-blue-200",
     badge: null,
     features: [
-      { text: "1日20回の調査", ok: true },
+      { text: IS_FREE_UNLIMITED_CAMPAIGN ? "🎉 キャンペーン中：検索無制限！（通常1日3回）" : "1日3回の調査", ok: true },
       { text: "取引価格サマリー表示", ok: true },
       { text: "ハザード情報表示", ok: true },
       { text: "エリア調査レポート（3項目まで）", ok: true },
