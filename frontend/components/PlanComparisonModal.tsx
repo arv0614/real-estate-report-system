@@ -6,6 +6,7 @@ import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, googleProvider, db } from "@/lib/firebase";
 import { FREE_DAILY_LIMIT, GUEST_DAILY_LIMIT } from "@/lib/userPlan";
 import { gtagEvent } from "@/lib/gtag";
+import { dataLayerPush } from "@/lib/analytics";
 import type { UserPlan } from "@/lib/userPlan";
 
 interface Props {
@@ -14,6 +15,7 @@ interface Props {
   currentPlan?: UserPlan | null; // null = guest
   uid?: string | null;
   userEmail?: string | null;
+  searchCountToday?: number;
 }
 
 type Feature = {
@@ -106,7 +108,7 @@ function Cell({ value, highlight }: { value: string; highlight?: boolean }) {
 // ─────────────────────────────────────────────────────────────
 const IS_PAYMENT_ENABLED = false;
 
-export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail }: Props) {
+export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail, searchCountToday = 0 }: Props) {
   const [checkoutLoading, setCheckoutLoading] = React.useState(false);
   // ウェイトリスト登録フォームの状態
   const [waitlistOpen, setWaitlistOpen] = React.useState(false);
@@ -155,6 +157,7 @@ export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail
 
   async function handleUpgrade() {
     gtagEvent({ action: "click_checkout", category: "conversion_funnel", label: "Pro" });
+    dataLayerPush({ event: "begin_checkout", user_plan: currentPlan ?? "guest", search_count_today: searchCountToday });
     // 決済未有効時はウェイトリスト登録フォームを表示
     if (!IS_PAYMENT_ENABLED) {
       setWaitlistOpen(true);
