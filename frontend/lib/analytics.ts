@@ -1,9 +1,8 @@
 /**
  * GTM DataLayer ユーティリティ
  *
- * window.dataLayer.push() のラッパー。
- * GTM が読み込まれる前に呼ばれた場合も配列に積まれ、
- * GTM 初期化後に自動的に処理される。
+ * - GTM が読み込まれる前に呼ばれた場合も配列に積まれ、GTM 初期化後に自動処理される
+ * - SSR / Next.js Server Components でも安全（window チェック済み）
  */
 
 export type UserPlanDL = "guest" | "free" | "pro";
