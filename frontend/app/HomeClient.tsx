@@ -19,6 +19,8 @@ import { TOKYO_23_WARDS } from "@/lib/areas";
 import { trackLimitReached } from "@/lib/posthog";
 import { exportToPdf, DEFAULT_PDF_OPTIONS } from "@/lib/exportPdf";
 import type { PdfExportOptions } from "@/lib/exportPdf";
+import { getLifestyleCache, saveLifestyleCache } from "@/lib/lifestyleCache";
+import { generateLifestyleImage } from "@/lib/api";
 import { geocodeAddress, reverseGeocodeDistrict, matchDistrictName } from "@/lib/geocode";
 import { saveSearchHistory } from "@/lib/history";
 import type { TransactionApiResponse } from "@/types/api";
@@ -70,6 +72,7 @@ function HomePageContent() {
   const [districtMarkers, setDistrictMarkers] = useState<DistrictMarker[]>([]);
   const [externalCoords, setExternalCoords] = useState<{ lat: number; lng: number } | undefined>();
   const [lifestyleImage, setLifestyleImage] = useState<string | undefined>(undefined);
+  const [lifestyleImageLoading, setLifestyleImageLoading] = useState(false);
   const [searchCoords, setSearchCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [planModalOpen, setPlanModalOpen] = useState(false);
   const [waitlistModalOpen, setWaitlistModalOpen] = useState(false);
@@ -141,8 +144,7 @@ function HomePageContent() {
     setResult(null);
   }
 
-  // preservedImage: リプレイ時に復元する画像（通常検索時は undefined でクリア）
-  async function handleSearch(lat: number, lng: number, preservedImage?: string) {
+  async function handleSearch(lat: number, lng: number) {
     setError(null);
 
     // ── 検索回数制限チェック ──────────────────────────────
@@ -181,7 +183,8 @@ function HomePageContent() {
     setAutoDistrict("");
     setDistrictMarkers([]);
     setSearchCoords({ lat, lng });
-    setLifestyleImage(preservedImage);
+    setLifestyleImage(undefined);
+    setLifestyleImageLoading(false);
     try {
       const data = await fetchTransactions(lat, lng);
       setResult(data);
@@ -214,6 +217,36 @@ function HomePageContent() {
         setAutoDistrict(matchDistrictName(gsiName, uniqueDistricts));
       }
 
+      // 暮らしイメージ: ロケーションキャッシュ確認 → pro はなければ自動生成（バックグラウンド）
+      {
+        const pref = data.data.data[0]?.prefecture ?? "";
+        const muni = data.data.data[0]?.municipality ?? data.data.geocodedDistrict ?? "";
+        const cityCode = data.data.cityCode;
+        if (pref && muni && cityCode) {
+          (async () => {
+            const cached = await getLifestyleCache(cityCode);
+            if (cached) {
+              setLifestyleImage(cached);
+            } else if (plan === "pro") {
+              setLifestyleImageLoading(true);
+              try {
+                const result = await generateLifestyleImage(
+                  pref, muni,
+                  data.aiReport?.slice(0, 800)
+                );
+                const dataUrl = `data:${result.mimeType};base64,${result.imageBase64}`;
+                setLifestyleImage(dataUrl);
+                saveLifestyleCache(cityCode, dataUrl, pref, muni).catch(console.error);
+              } catch (err) {
+                console.error("[HomeClient] lifestyle auto-generate failed:", err);
+              } finally {
+                setLifestyleImageLoading(false);
+              }
+            }
+          })();
+        }
+      }
+
       // 各地区をジオコーディングしてマップマーカーを生成（バックグラウンド）
       const firstRecord = data.data.data[0];
       if (firstRecord) {
@@ -234,10 +267,10 @@ function HomePageContent() {
     }
   }
 
-  // 履歴リプレイ: 保存済み画像を復元しつつ再検索
-  function handleReplay(lat: number, lng: number, savedImage?: string) {
+  // 履歴リプレイ: ロケーションキャッシュを再取得して再検索
+  function handleReplay(lat: number, lng: number) {
     setExternalCoords({ lat, lng });
-    handleSearch(lat, lng, savedImage);
+    handleSearch(lat, lng);
   }
 
   async function handleDownloadPdf() {
@@ -610,6 +643,7 @@ function HomePageContent() {
                       ""
                     }
                     lifestyleImage={lifestyleImage}
+                    imageGenerating={lifestyleImageLoading}
                     onImageSaved={setLifestyleImage}
                     onLoginRequest={handleLogin}
                     onPlanModalOpen={() => setPlanModalOpen(true)}
