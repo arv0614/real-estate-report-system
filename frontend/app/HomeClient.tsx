@@ -234,14 +234,33 @@ function HomePageContent() {
     }
     if (!firstRecord) return;
     flushSync(() => setPdfLoading(true));
+    let result: { blobUrl: string; filename: string } | null = null;
     try {
-      await exportToPdf("report-content", firstRecord.municipality, pdfExportOptions);
+      result = await exportToPdf("report-content", firstRecord.municipality, pdfExportOptions);
     } catch (e) {
       console.error("[PDF] export error:", e);
     } finally {
-      // exportPdf.ts 内の finally が確実に動作しない稀なケースに備えた安全策
+      // window.open より先に状態を完全リセットする。
+      // iOS Safari は window.open(blobUrl) で現タブをナビゲートする場合があり、
+      // その時点で JS コンテキストが止まると bfcache 復元時に UI がフリーズする。
       document.body.classList.remove("pdf-export");
       setPdfLoading(false);
+    }
+    // 状態リセット完了後に PDF を開く
+    if (result) {
+      const { blobUrl, filename } = result;
+      const win = window.open(blobUrl, "_blank", "noopener");
+      if (!win) {
+        // ポップアップブロック時フォールバック
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = filename;
+        a.style.display = "none";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
     }
   }
 
@@ -479,7 +498,15 @@ function HomePageContent() {
 
             <div id="report-content" className="space-y-5 bg-slate-50 p-1 rounded-xl">
               <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600 bg-white rounded-lg border border-slate-200 px-4 py-3">
-                <SourceBadge source={result.source} />
+                {/* Web のみ: キャッシュ状態バッジ */}
+                <span className="pdf-hide inline-flex items-center gap-3">
+                  <SourceBadge source={result.source} />
+                  <span className="text-slate-300">|</span>
+                </span>
+                {/* PDF・Web 共通: 出典 */}
+                <span className="text-xs text-slate-500">
+                  出典: 国土交通省 不動産情報ライブラリ
+                </span>
                 <span className="text-slate-300">|</span>
                 {firstRecord && (
                   <span className="flex flex-wrap items-center gap-1.5">
@@ -487,8 +514,8 @@ function HomePageContent() {
                     <strong className="text-slate-800">
                       {firstRecord.prefecture} {firstRecord.municipality}
                     </strong>
-                    （市区町村コード: {result.data.cityCode}）
-                    <span className="text-xs text-slate-500">※選択した地点を含む市区町村全体のデータです</span>
+                    <span className="text-xs text-slate-500 pdf-hide">（市区町村コード: {result.data.cityCode}）</span>
+                    <span className="text-xs text-slate-500 pdf-hide">※選択した地点を含む市区町村全体のデータです</span>
                   </span>
                 )}
                 <span className="text-slate-300">|</span>
@@ -502,13 +529,14 @@ function HomePageContent() {
                       : `${result.data.years[0]}〜${result.data.years[result.data.years.length - 1]}年`}
                   </strong>
                 </span>
+                {/* Web のみ: キャッシュ期限 */}
                 {result.expiresAt && (
-                  <>
+                  <span className="pdf-hide inline-flex items-center gap-3">
                     <span className="text-slate-300">|</span>
                     <span className="text-xs text-slate-400">
                       キャッシュ期限: {new Date(result.expiresAt).toLocaleDateString("ja-JP")}
                     </span>
-                  </>
+                  </span>
                 )}
               </div>
 

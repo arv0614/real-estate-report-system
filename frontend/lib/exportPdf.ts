@@ -41,13 +41,17 @@ export const DEFAULT_PDF_OPTIONS: PdfExportOptions = {
   includeMap: false,
 };
 
+/**
+ * PDF を生成して Blob URL を返す。
+ * window.open はカスタマで呼ぶこと（状態リセット後に実行しないと iOS bfcache でフリーズする）。
+ */
 export async function exportToPdf(
   elementId: string,
   municipality: string,
   options: PdfExportOptions = DEFAULT_PDF_OPTIONS
-): Promise<void> {
+): Promise<{ blobUrl: string; filename: string }> {
   const element = document.getElementById(elementId);
-  if (!element) return;
+  if (!element) throw new Error(`element #${elementId} not found`);
 
   const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
     import("html2canvas-pro"),
@@ -98,21 +102,8 @@ export async function exportToPdf(
   });
   pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
 
-  // Blob URL を新規タブで開く（ブラウザのPDFビューアー or 保存先選択ダイアログが表示される）
   const blob = pdf.output("blob");
   const blobUrl = URL.createObjectURL(blob);
 
-  const win = window.open(blobUrl, "_blank", "noopener");
-  if (!win) {
-    // ポップアップブロック時のフォールバック: ダウンロードリンク方式
-    const a = document.createElement("a");
-    a.href = blobUrl;
-    a.download = filename;
-    a.style.display = "none";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  }
-
-  setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+  return { blobUrl, filename };
 }
