@@ -15,6 +15,7 @@ import {
   checkAndIncrementFreeSearch,
   FREE_DAILY_LIMIT,
   GUEST_DAILY_LIMIT,
+  IS_FREE_UNLIMITED_CAMPAIGN,
 } from "@/lib/userPlan";
 import { dataLayerPush } from "@/lib/analytics";
 import { fetchTransactions, calcSummary } from "@/lib/api";
@@ -168,9 +169,9 @@ function HomePageContent() {
         recordGuestSearch();
         todayCount = getGuestSearchCountToday();
       } else if (plan === "free") {
-        // 無料ログイン: Firestore で1日20回
+        // 無料ログイン: キャンペーン中は上限チェックをバイパス（Firestore記録は継続）
         const { allowed, usedCount } = await checkAndIncrementFreeSearch(user.uid);
-        if (!allowed) {
+        if (!IS_FREE_UNLIMITED_CAMPAIGN && !allowed) {
           trackLimitReached({ plan: "free", uid: user.uid });
           dataLayerPush({ event: "limit_reached", user_plan: "free", search_count_today: FREE_DAILY_LIMIT });
           setWaitlistPlan("free");
@@ -178,9 +179,6 @@ function HomePageContent() {
           return;
         }
         todayCount = usedCount;
-        if (usedCount === FREE_DAILY_LIMIT) {
-          console.info(`[Plan] 本日の無料検索 ${usedCount}/${FREE_DAILY_LIMIT} 回目（上限到達）`);
-        }
       }
     } catch (limitErr) {
       // 制限チェック自体のエラーは無視して検索を続行
