@@ -150,7 +150,7 @@ function HomePageContent() {
     // ── 検索回数制限チェック ──────────────────────────────
     try {
       if (!user) {
-        // 未ログイン: localStorage で1日1回
+        // 未ログイン: localStorage で1日5回
         if (!checkGuestSearchAllowed()) {
           trackLimitReached({ plan: "guest" });
           setWaitlistPlan("guest");
@@ -159,7 +159,7 @@ function HomePageContent() {
         }
         recordGuestSearch();
       } else if (plan === "free") {
-        // 無料ログイン: Firestore で1日3回
+        // 無料ログイン: Firestore で1日20回
         const { allowed, usedCount } = await checkAndIncrementFreeSearch(user.uid);
         if (!allowed) {
           trackLimitReached({ plan: "free", uid: user.uid });
