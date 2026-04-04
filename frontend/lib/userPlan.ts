@@ -12,11 +12,12 @@ import { db } from "@/lib/firebase";
 export type UserPlan = "free" | "pro";
 
 /** 無料プランの1日の検索上限 */
-export const FREE_DAILY_LIMIT = 3;
+export const FREE_DAILY_LIMIT = 20;
 /** 未ログインの1日の検索上限 */
-export const GUEST_DAILY_LIMIT = 1;
+export const GUEST_DAILY_LIMIT = 5;
 
-const GUEST_SEARCH_KEY = "guest_last_search_date";
+const GUEST_SEARCH_KEY = "guest_search_count";
+const GUEST_SEARCH_DATE_KEY = "guest_search_date";
 
 /** "YYYY-MM-DD" 形式で今日の日付を返す */
 export function getTodayString(): string {
@@ -61,7 +62,11 @@ export async function initUserDocument(uid: string): Promise<void> {
 export function checkGuestSearchAllowed(): boolean {
   try {
     if (typeof window === "undefined") return true;
-    return localStorage.getItem(GUEST_SEARCH_KEY) !== getTodayString();
+    const today = getTodayString();
+    const savedDate = localStorage.getItem(GUEST_SEARCH_DATE_KEY);
+    if (savedDate !== today) return true; // 日付が変わっていたら許可
+    const count = parseInt(localStorage.getItem(GUEST_SEARCH_KEY) ?? "0", 10);
+    return count < GUEST_DAILY_LIMIT;
   } catch {
     return true; // localStorage 利用不可の場合は検索を許可
   }
@@ -71,7 +76,13 @@ export function checkGuestSearchAllowed(): boolean {
 export function recordGuestSearch(): void {
   try {
     if (typeof window !== "undefined") {
-      localStorage.setItem(GUEST_SEARCH_KEY, getTodayString());
+      const today = getTodayString();
+      const savedDate = localStorage.getItem(GUEST_SEARCH_DATE_KEY);
+      const current = savedDate === today
+        ? parseInt(localStorage.getItem(GUEST_SEARCH_KEY) ?? "0", 10)
+        : 0;
+      localStorage.setItem(GUEST_SEARCH_DATE_KEY, today);
+      localStorage.setItem(GUEST_SEARCH_KEY, String(current + 1));
     }
   } catch {
     // 書き込み失敗は無視
