@@ -70,6 +70,9 @@ function HomePageContent() {
   const { user, loading: authLoading, plan, planLoading } = useAuth();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
+  const [progressPercent, setProgressPercent] = useState(0);
+  const [progressMessage, setProgressMessage] = useState("");
+  const progressTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<TransactionApiResponse | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -137,6 +140,31 @@ function HomePageContent() {
     return () => window.removeEventListener("pageshow", handlePageShow);
   }, []);
 
+  function startProgressSimulation() {
+    progressTimersRef.current.forEach(clearTimeout);
+    progressTimersRef.current = [];
+    setProgressPercent(5);
+    setProgressMessage("国土交通省APIへ接続中...");
+    const steps: { delay: number; percent: number; message: string }[] = [
+      { delay: 1200,  percent: 28, message: "取引データを取得中..." },
+      { delay: 3500,  percent: 52, message: "AIでエリアを分析中..." },
+      { delay: 6500,  percent: 72, message: "専門家視点でレポートを生成中..." },
+      { delay: 9500,  percent: 88, message: "データを整理中..." },
+    ];
+    steps.forEach(({ delay, percent, message }) => {
+      const id = setTimeout(() => {
+        setProgressPercent(percent);
+        setProgressMessage(message);
+      }, delay);
+      progressTimersRef.current.push(id);
+    });
+  }
+
+  function stopProgressSimulation() {
+    progressTimersRef.current.forEach(clearTimeout);
+    progressTimersRef.current = [];
+  }
+
   async function handleLogin() {
     try {
       await signInWithPopup(auth, googleProvider);
@@ -187,6 +215,7 @@ function HomePageContent() {
     // plan === "pro" または planLoading 中 → 制限なしで続行
     // ─────────────────────────────────────────────────────
 
+    startProgressSimulation();
     setLoading(true);
     setResult(null);
     setAutoDistrict("");
@@ -196,6 +225,9 @@ function HomePageContent() {
     setLifestyleImageLoading(false);
     try {
       const data = await fetchTransactions(lat, lng);
+      stopProgressSimulation();
+      setProgressPercent(100);
+      setProgressMessage("レポートを表示中...");
       setResult(data);
       setSearchCountToday(todayCount);
       dataLayerPush({ event: "generate_report", user_plan: userPlanDL, search_count_today: todayCount });
@@ -272,6 +304,7 @@ function HomePageContent() {
         });
       }
     } catch (e) {
+      stopProgressSimulation();
       setError(e instanceof Error ? e.message : "不明なエラーが発生しました");
     } finally {
       setLoading(false);
@@ -462,11 +495,50 @@ function HomePageContent() {
         )}
 
         {loading && (
-          <div className="rounded-xl border border-slate-200 bg-white py-16 text-center text-slate-500">
-            <div className="inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4" />
-            <p className="font-medium">データを取得中...</p>
-            <p className="text-sm text-slate-400 mt-1">
-              初回は国土交通省APIへのリクエストが発生します（数秒かかります）
+          <div className="rounded-xl border border-slate-200 bg-white px-6 py-10 text-center">
+            {/* ステップインジケーター */}
+            <div className="flex justify-center items-center gap-2 mb-6">
+              {[
+                { threshold: 5,  label: "接続" },
+                { threshold: 28, label: "取得" },
+                { threshold: 52, label: "分析" },
+                { threshold: 72, label: "生成" },
+                { threshold: 95, label: "完了" },
+              ].map((step, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <div className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold transition-all duration-500 ${
+                    progressPercent >= step.threshold
+                      ? "bg-blue-500 text-white shadow-md shadow-blue-200"
+                      : "bg-slate-100 text-slate-400"
+                  }`}>
+                    {progressPercent >= step.threshold && progressPercent < (i === 4 ? 101 : [28,52,72,95,101][i+1] ?? 101) ? (
+                      <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : progressPercent >= step.threshold ? "✓" : i + 1}
+                  </div>
+                  <span className={`text-xs font-medium hidden sm:block transition-colors duration-300 ${
+                    progressPercent >= step.threshold ? "text-blue-600" : "text-slate-400"
+                  }`}>{step.label}</span>
+                  {i < 4 && <div className={`w-6 h-0.5 transition-all duration-500 ${progressPercent > step.threshold ? "bg-blue-400" : "bg-slate-200"}`} />}
+                </div>
+              ))}
+            </div>
+
+            {/* プログレスバー */}
+            <div className="max-w-sm mx-auto mb-3">
+              <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                <div
+                  className="bg-gradient-to-r from-blue-400 to-blue-600 h-2 rounded-full transition-all duration-700 ease-out"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+            </div>
+
+            {/* ステータスメッセージ */}
+            <p className="text-sm font-semibold text-slate-700 mb-1 transition-all duration-300">
+              {progressMessage}
+            </p>
+            <p className="text-xs text-slate-400">
+              国土交通省APIへのリクエストが発生します（通常5〜15秒）
             </p>
           </div>
         )}
