@@ -175,7 +175,19 @@ function HomePageContent() {
     try {
       await signInWithPopup(auth, googleProvider);
     } catch (e) {
-      console.error("ログインエラー:", e);
+      const code = (e as { code?: string })?.code ?? "";
+      // These errors are expected UX flows (user cancelled / popup blocked / duplicate request)
+      // — swallow silently so the app doesn't crash or show a spurious error banner.
+      const silentCodes = [
+        "auth/cancelled-popup-request",
+        "auth/popup-closed-by-user",
+        "auth/popup-blocked",
+      ];
+      if (silentCodes.includes(code)) {
+        console.info("[Auth] popup dismissed:", code);
+        return;
+      }
+      console.error("[Auth] login error:", e);
     }
   }
 

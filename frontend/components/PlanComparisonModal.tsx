@@ -3,6 +3,7 @@
 import React from "react";
 import { useTranslations } from "next-intl";
 import { signInWithPopup } from "firebase/auth";
+import { getApiBase } from "@/lib/api";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, googleProvider, db } from "@/lib/firebase";
 import { FREE_DAILY_LIMIT, GUEST_DAILY_LIMIT, IS_FREE_UNLIMITED_CAMPAIGN } from "@/lib/userPlan";
@@ -123,8 +124,7 @@ export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail
         alert("Login required.");
         return;
       }
-      const apiBase = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
-      const res = await fetch(`${apiBase}/api/lemonsqueezy/create-checkout`, {
+      const res = await fetch(`${getApiBase()}/api/lemonsqueezy/create-checkout`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

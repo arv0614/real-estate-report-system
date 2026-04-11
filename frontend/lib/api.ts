@@ -1,9 +1,32 @@
 import type { TransactionApiResponse, TransactionSummary, TransactionRecord } from "@/types/api";
 
-// 末尾スラッシュを除去してベースURLを正規化
-// NEXT_PUBLIC_API_URL が空の場合は相対パスでフォールバック（開発時は /api プロキシを使う想定）
-const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
-const API_BASE = RAW_API_URL.replace(/\/$/, "") || "";
+/**
+ * API ベース URL を解決する（クライアント・サーバー両対応）
+ *
+ * 優先順位:
+ *  1. NEXT_PUBLIC_API_URL（バックエンド Cloud Run の URL。本番・開発ともに推奨）
+ *  2. クライアントサイド: window.location.origin（ブラウザのオリジン）
+ *  3. サーバーサイド: NEXT_PUBLIC_SITE_URL（フロントエンドのベース URL）
+ *  4. フォールバック: http://localhost:3000
+ *
+ * 空文字列や相対パスを返さない。
+ * サーバーサイドの fetch が現在のリクエスト URL を基準に相対解決し
+ * /en/ が混入するのを防ぐ（例: /en/api/... → 404）。
+ */
+export function getApiBase(): string {
+  const configured = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
+  if (configured) return configured;
+
+  // Client-side: always resolve against the browser origin, never the page path
+  if (typeof window !== "undefined") {
+    return window.location.origin;
+  }
+
+  // Server-side: need an absolute URL; relative paths in server components are
+  // resolved against the current request URL and would produce /en/api/... on /en/* pages
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
+  return siteUrl || "http://localhost:3000";
+}
 
 export async function fetchTransactions(
   lat: number,
@@ -11,13 +34,11 @@ export async function fetchTransactions(
   zoom = 15,
   locale = "ja"
 ): Promise<TransactionApiResponse> {
-  // new URL() は NEXT_PUBLIC_API_URL が空だと "Invalid URL" でクラッシュするため文字列結合を使う
-  const url = `${API_BASE}/api/property/transactions?lat=${lat}&lng=${lng}&zoom=${zoom}&locale=${locale}`;
+  const url = `${getApiBase()}/api/property/transactions?lat=${lat}&lng=${lng}&zoom=${zoom}&locale=${locale}`;
 
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) {
     if (res.status === 429) {
-      // Use a sentinel that HomeClient.tsx can map to the i18n "Error.rateLimited" key
       throw Object.assign(new Error("RATE_LIMITED"), { code: "RATE_LIMITED" });
     }
     const body = await res.text();
@@ -44,7 +65,6 @@ export function calcSummary(records: TransactionRecord[]): TransactionSummary {
       : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
   };
 
-  // Math.min/max(...arr) can overflow the call stack for large arrays; use reduce instead
   const minOf = (arr: number[]) => arr.reduce((a, b) => (b < a ? b : a), arr[0]);
   const maxOf = (arr: number[]) => arr.reduce((a, b) => (b > a ? b : a), arr[0]);
 
@@ -70,13 +90,13 @@ export interface GeneratedImageResponse {
   isMock: boolean;
 }
 
-/** 指定エリアの「暮らしイメージ」画像をバックエンド経由でImagen 4生成する */
+/** 指定エリアの「暮らしイメージ」画像をバックエンド経由で Imagen 4 生成する */
 export async function generateLifestyleImage(
   prefecture: string,
   municipality: string,
   areaFeatures?: string
 ): Promise<GeneratedImageResponse> {
-  const url = `${API_BASE}/api/property/generate-image`;
+  const url = `${getApiBase()}/api/property/generate-image`;
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -85,7 +105,7 @@ export async function generateLifestyleImage(
   });
   if (!res.ok) {
     if (res.status === 429) {
-      throw new Error("アクセスが集中しています。しばらく待ってから再度お試しください。");
+      throw Object.assign(new Error("RATE_LIMITED"), { code: "RATE_LIMITED" });
     }
     const body = await res.text();
     throw new Error(`API error ${res.status}: ${body}`);
