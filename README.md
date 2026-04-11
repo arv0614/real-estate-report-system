@@ -19,15 +19,17 @@
 3. [料金プランと利用制限](#-料金プランと利用制限)
 4. [システムアーキテクチャ](#-システムアーキテクチャ)
 5. [技術スタック (Tech Stack)](#-技術スタック-tech-stack)
-6. [セキュリティ・コンプライアンス対策](#-セキュリティコンプライアンス対策)
-7. [SEO 戦略と sitemap](#-seo-戦略と-sitemap)
-8. [テストと品質保証 (QA)](#-テストと品質保証-qa)
-9. [ローカル開発環境のセットアップ](#-ローカル開発環境のセットアップ)
-10. [Cloud Run へのデプロイ](#-cloud-run-へのデプロイ)
-11. [Stripe 決済の本番稼働手順](#-stripe-決済の本番稼働手順)
-12. [ディレクトリ構成](#-ディレクトリ構成)
-13. [注意事項](#-注意事項)
-14. [ライセンス](#-ライセンス)
+6. [多言語対応（i18n）の仕組み](#-多言語対応i18nの仕組み)
+7. [セキュリティ・コンプライアンス対策](#-セキュリティコンプライアンス対策)
+8. [SEO 戦略と sitemap](#-seo-戦略と-sitemap)
+9. [テストと品質保証 (QA)](#-テストと品質保証-qa)
+10. [ローカル開発環境のセットアップ](#-ローカル開発環境のセットアップ)
+11. [Cloud Run へのデプロイ](#-cloud-run-へのデプロイ)
+12. [Artifact Registry コスト最適化](#-artifact-registry-コスト最適化)
+13. [Stripe 決済の本番稼働手順](#-stripe-決済の本番稼働手順)
+14. [ディレクトリ構成](#-ディレクトリ構成)
+15. [注意事項](#-注意事項)
+16. [ライセンス](#-ライセンス)
 
 ---
 
@@ -242,6 +244,80 @@ Google アカウントでログイン後、AI レポート内の **「✨ 暮ら
 | Gemini 2.5 Flash | エリア分析レポート生成 / 画像プロンプト動的生成 |
 | Imagen 4 Fast | 暮らしのイメージ画像生成（Primary） |
 | Gemini 2.5 Flash Image | 画像生成 Fallback |
+
+---
+
+## 🌐 多言語対応（i18n）の仕組み
+
+`next-intl` を用いて **日本語（`/`）と英語（`/en/`）** の2言語に対応しています。SSG（静的生成）を維持したままルーティングを切り替えています。
+
+### ルーティング構造
+
+```
+/                          → app/page.tsx（日本語ホーム）
+/en                        → app/[locale]/page.tsx（英語ホーム、locale="en"）
+/reports/tokyo/shinjuku    → app/[locale]/reports/[pref]/[city]/page.tsx（日本語）
+/en/reports/tokyo/shinjuku → app/[locale]/reports/[pref]/[city]/page.tsx（英語）
+/terms, /privacy, /about, /licenses → app/[locale]/... でロケール対応済み
+```
+
+`next.config.ts` の `i18n` 設定と `middleware.ts` で `/en` プレフィックスを自動付与します。
+
+### バックエンド API の多言語対応
+
+フロントエンドから API を呼ぶ際に `locale` パラメータを付与します。
+
+```typescript
+// frontend/lib/api.ts
+const res = await fetch(`${getApiBase()}/api/property/transactions?lat=...&locale=${locale}`);
+```
+
+バックエンドはこの `locale` を受け取り、Gemini へのプロンプトを切り替えます。
+
+```typescript
+// backend/src/services/geminiApi.ts
+const report = locale === "en" ? await buildPromptEn(data) : await buildPromptJa(data);
+```
+
+生成されたレポートは GCS へ **ロケール別キー** で独立してキャッシュされます。
+
+```
+z15/x29100/y12901/ja   ← 日本語レポート
+z15/x29100/y12901/en   ← 英語レポート（独立して保持）
+```
+
+> **言語ミスマッチ検出**: 旧キャッシュが誤ったロケールで保存されていた場合、
+> レポート冒頭80文字の日本語文字数（≥10文字）を判定してミスマッチを検出し、
+> Gemini に再生成を依頼します（`backend/src/routes/property.ts`）。
+
+### API クライアントの絶対パス要件
+
+クライアントコンポーネントからバックエンドを呼ぶ際は **必ず `getApiBase()` で絶対パスを使用** してください。
+
+```typescript
+// ✅ 正しい（frontend/lib/api.ts）
+export function getApiBase(): string {
+  return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+}
+fetch(`${getApiBase()}/api/property/transactions?...`);
+
+// ❌ NG — 相対パスは /en/api/... に解決されて 404 になる
+fetch(`/api/property/transactions?...`);
+```
+
+### CORS とローカル開発
+
+バックエンドの CORS 設定では、`ALLOWED_ORIGINS` に指定した本番ドメインに加えて、
+**ローカル開発用の `http://localhost:3000` と `http://localhost:3001` を常に追加** しています。
+
+```typescript
+// backend/src/index.ts
+const devOrigins = ["http://localhost:3000", "http://localhost:3001", "http://localhost:8080"];
+const effectiveOrigins = allowedOrigins.length > 0 ? [...allowedOrigins, ...devOrigins] : [];
+```
+
+これにより、`.env` の `ALLOWED_ORIGINS` を本番ドメイン限定に設定した状態でも、
+ローカル開発で `Failed to fetch` エラーが発生しません。
 
 ---
 
@@ -539,6 +615,58 @@ bash scripts/deploy_frontend.sh
 
 ---
 
+## 💰 Artifact Registry コスト最適化
+
+デプロイのたびに `:latest` タグが新しいイメージへ移動し、古いイメージはタグなし（untagged）で蓄積されます。
+放置すると Artifact Registry のストレージ料金が継続的に増加するため、**クリーンアップポリシー**を設定しています。
+
+### 対象リポジトリ
+
+| リポジトリ | ロケーション | 用途 |
+|---|---|---|
+| `realestate-api` | `asia-northeast1` | `backend:latest` と `frontend:latest` イメージ |
+| `cloud-run-source-deploy` | `asia-northeast1` | Cloud Run ソースデプロイ用自動生成イメージ |
+
+### 適用ポリシー（2ルール）
+
+| ルール名 | アクション | 条件 |
+|---|---|---|
+| `keep-5-most-recent` | **保持** | 各パッケージの最新5バージョンを常に保持（ロールバック用） |
+| `delete-old-untagged` | **削除** | タグなし（untagged）かつ作成から1日（86400秒）以上経過したイメージ |
+
+### ポリシーの再適用方法
+
+設定変更が必要な場合は以下のコマンドを実行してください。
+
+```bash
+cat > /tmp/cleanup-policy.json <<'EOF'
+[
+  {
+    "name": "keep-5-most-recent",
+    "action": { "type": "Keep" },
+    "mostRecentVersions": { "keepCount": 5 }
+  },
+  {
+    "name": "delete-old-untagged",
+    "action": { "type": "Delete" },
+    "condition": { "tagState": "untagged", "olderThan": "86400s" }
+  }
+]
+EOF
+
+for REPO in realestate-api cloud-run-source-deploy; do
+  gcloud artifacts repositories set-cleanup-policies "$REPO" \
+    --project realestate-report-2026 \
+    --location asia-northeast1 \
+    --policy /tmp/cleanup-policy.json \
+    --no-dry-run
+done
+```
+
+> GCP がクリーンアップを実行するタイミングはプラットフォーム側のスケジュール依存ですが、通常は数時間以内に古いイメージが自動削除されます。
+
+---
+
 ## 💳 Stripe 決済の本番稼働手順
 
 ### 現在の状態
@@ -625,14 +753,16 @@ real-estate-report-system/
 │           └── tile.ts               # タイル座標変換
 ├── frontend/
 │   ├── app/
-│   │   ├── page.tsx                  # メインページ（検索・結果表示）
+│   │   ├── page.tsx                  # 日本語ホームページ
 │   │   ├── HomeClient.tsx            # メインページクライアントコンポーネント
 │   │   ├── sitemap.ts                # sitemap.xml 自動生成（静的5件 + 動的33件 = 38件）
-│   │   ├── about/                    # サービス紹介ページ
-│   │   ├── reports/[pref]/[city]/    # エリア別 SEO ページ（ISR 24h・全33エリア）
-│   │   ├── terms/                    # 利用規約
-│   │   ├── privacy/                  # プライバシーポリシー
-│   │   ├── licenses/                 # OSS ライセンス一覧（自動生成）
+│   │   ├── [locale]/                 # next-intl ロケール対応ルート（en / ja）
+│   │   │   ├── page.tsx              # 英語ホームページ (/en)
+│   │   │   ├── reports/[pref]/[city]/# エリア別 SEO ページ（ISR 24h・全33エリア）
+│   │   │   ├── about/                # サービス紹介ページ（日英）
+│   │   │   ├── terms/                # 利用規約（日英）
+│   │   │   ├── privacy/              # プライバシーポリシー（日英）
+│   │   │   └── licenses/             # OSS ライセンス一覧（日英）
 │   │   └── layout.tsx
 │   ├── components/
 │   │   ├── AiReport.tsx              # AI レポートアコーディオン + 暮らしイメージ生成 UI
@@ -644,8 +774,11 @@ real-estate-report-system/
 │   │   ├── SearchForm.tsx            # 検索フォーム + Leaflet 地図
 │   │   ├── HistoryList.tsx           # 検索履歴一覧（フローティング）
 │   │   └── WaitlistModal.tsx         # ゲスト上限到達時のウェイトリスト登録モーダル
+│   ├── messages/
+│   │   ├── ja.json                   # 日本語翻訳リソース（全ページ・全コンポーネント対応）
+│   │   └── en.json                   # 英語翻訳リソース
 │   ├── lib/
-│   │   ├── api.ts                    # バックエンド API クライアント
+│   │   ├── api.ts                    # バックエンド API クライアント（getApiBase() 絶対パス・locale 対応）
 │   │   ├── areas.ts                  # エリアマスターデータ（SEO・sitemap・ページ生成に使用）
 │   │   ├── firebase.ts               # Firebase 初期化
 │   │   ├── history.ts                # Firestore 履歴 CRUD + Storage 画像保存
