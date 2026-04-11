@@ -25,7 +25,8 @@
   },
   "Error": {
     "unknown": "An unknown error occurred.",
-    "retryNote": "Please wait and try again. If the issue persists, try different coordinates or another area."
+    "retryNote": "Please wait and try again. If the issue persists, try different coordinates or another area.",
+    "rateLimited": "Too many requests. Please wait a moment and try again."
   },
   "Empty": {
     "prompt": "Enter an address or coordinates, then press \"Start Research\"",
@@ -127,6 +128,37 @@
     "waitlistDone": "Registered! We'll be in touch when we launch.",
     "waitlistError": "Please enter a valid email address.",
     "waitlistSaveError": "Registration failed. Please try again later."
+  },
+  "ReportPage": {
+    "backLink": "← Back to Home",
+    "headerSuffix": "Property Report",
+    "badge": "Area Property Value & Risk Analysis",
+    "titleSuffix": "Property Prices, Asset Value & Hazard Report",
+    "descTemplate": " — latest transaction prices, per-㎡ unit prices, flood and landslide risk data.",
+    "descPrefix": "Based on open data from Japan's MLIT Property Information Library,",
+    "badgeMlit": "MLIT Gov Data",
+    "badgeHazard": "Hazard Map",
+    "badgeDaily": "Daily Updated",
+    "noDataMsg": "Data for {city} is currently loading. Please check back shortly.",
+    "sectionPrice": "Transaction Price Summary",
+    "sectionTrend": "Price Trend",
+    "overviewTitle": "Property Transaction Overview",
+    "overviewPrefix": "According to MLIT data,",
+    "overviewCount": " {count} transaction records have been confirmed in {pref}{city}.",
+    "overviewAvgPrice": " Average transaction price: {price}",
+    "overviewUnitPrice": ", avg. unit price: {unitPrice}",
+    "overviewSuffix": ".",
+    "hazardTrue": "Part of the area falls within a flood inundation zone. We recommend checking the MLIT Hazard Map when selecting a property.",
+    "hazardFalse": "No flood inundation zone designation has been confirmed in this area, indicating relatively low hazard risk.",
+    "lifestyleTitle": "Area Lifestyle Image",
+    "lifestyleNote": "AI-generated reference image (may differ from the actual area)",
+    "ctaTitle": "Try a Free Detailed Area Report for {city}",
+    "ctaDesc": "Generate a 10-section area analysis report powered by MLIT data and expert insights, covering living environment, nearby facilities, and asset value trends.",
+    "ctaBtn": "See Full Report for {city} →",
+    "relatedTitle": "Explore Other Areas in {pref}",
+    "footerSource": "Data source: Japan MLIT Property Information Library",
+    "footerSiteLink": "Property Value & Risk Reports",
+    "footerCopyright": "Data is for reference only. Consult a professional for investment decisions."
   },
   "Home": {
     "exploreTitle": "Explore major areas",

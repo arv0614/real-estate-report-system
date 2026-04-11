@@ -17,7 +17,8 @@ export async function fetchTransactions(
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) {
     if (res.status === 429) {
-      throw new Error("アクセスが集中しています。しばらく待ってから再度お試しください。");
+      // Use a sentinel that HomeClient.tsx can map to the i18n "Error.rateLimited" key
+      throw Object.assign(new Error("RATE_LIMITED"), { code: "RATE_LIMITED" });
     }
     const body = await res.text();
     throw new Error(`API error ${res.status}: ${body}`);
