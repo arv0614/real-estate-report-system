@@ -19,15 +19,16 @@ export function latLngToTile(
 
 /**
  * キャッシュキーを生成する
- * 形式: z{zoom}/x{x}/y{y}
+ * 形式: z{zoom}/x{x}/y{y}/{locale}
  */
 export function buildCacheKey(
   lat: number,
   lng: number,
-  zoom: number = 15
+  zoom: number = 15,
+  locale: string = "ja"
 ): string {
   const { x, y, z } = latLngToTile(lat, lng, zoom);
-  return `z${z}/x${x}/y${y}`;
+  return `z${z}/x${x}/y${y}/${locale}`;
 }
 
 /**

@@ -28,6 +28,7 @@ const querySchema = z.object({
   lat: z.coerce.number().min(24).max(46),
   lng: z.coerce.number().min(122).max(154),
   zoom: z.coerce.number().min(10).max(18).default(15),
+  locale: z.enum(["ja", "en"]).default("ja"),
 });
 
 /** TransactionRecord の配列から統計サマリーを計算 */
@@ -59,6 +60,7 @@ app.get("/transactions", async (c) => {
     lat: c.req.query("lat"),
     lng: c.req.query("lng"),
     zoom: c.req.query("zoom"),
+    locale: c.req.query("locale"),
   });
 
   if (!parsed.success) {
@@ -68,11 +70,11 @@ app.get("/transactions", async (c) => {
     );
   }
 
-  const { lat, lng, zoom } = parsed.data;
+  const { lat, lng, zoom, locale } = parsed.data;
   const hasApiKey = !!config.mlit.apiKey;
 
   // 1. GCSキャッシュを確認
-  const cached = await readCache(lat, lng, zoom);
+  const cached = await readCache(lat, lng, zoom, locale);
   if (cached) {
     const cachedApiData = cached.data as Record<string, unknown>;
     // 旧キャッシュ（year: number, 1年分のみ）はスキップして再取得
@@ -99,13 +101,14 @@ app.get("/transactions", async (c) => {
           ...summary,
           hazard,
           environment,
+          locale,
         };
         aiReport = await generateAreaReport(reportInput).catch((err) => {
           console.error("[Gemini] 生成失敗:", err);
           return undefined;
         });
         // バックグラウンドでキャッシュを更新
-        writeCache(lat, lng, zoom, cachedApiData, aiReport).catch((err) =>
+        writeCache(lat, lng, zoom, cachedApiData, aiReport, locale).catch((err) =>
           console.error("[GCS Cache] aiReport update failed:", err)
         );
       }
@@ -156,6 +159,7 @@ app.get("/transactions", async (c) => {
     ...summary,
     hazard,
     environment,
+    locale,
   };
   const aiReport = await generateAreaReport(reportInput).catch((err) => {
     console.error("[Gemini] 生成失敗:", err);
@@ -163,8 +167,8 @@ app.get("/transactions", async (c) => {
   });
 
   // 5. 非同期でGCS保存（aiReport も一緒に保存）
-  const cacheKey = buildCacheKey(lat, lng, zoom);
-  writeCache(lat, lng, zoom, apiData, aiReport).catch((err) =>
+  const cacheKey = buildCacheKey(lat, lng, zoom, locale);
+  writeCache(lat, lng, zoom, apiData, aiReport, locale).catch((err) =>
     console.error("[GCS Cache] Background write failed:", err)
   );
 
