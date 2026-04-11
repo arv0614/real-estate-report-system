@@ -2,6 +2,7 @@
 
 import { Suspense } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslations, useLocale } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { flushSync } from "react-dom";
 import Link from "next/link";
@@ -58,15 +59,17 @@ interface PdfSections {
   table: boolean;
 }
 
-const PDF_SECTION_LABELS: { key: keyof PdfSections; label: string }[] = [
-  { key: "summary",     label: "取引価格サマリー＆ハザード" },
-  { key: "environment", label: "生活環境情報" },
-  { key: "chart",       label: "価格推移グラフ" },
-  { key: "aiReport",    label: "エリア特性調査レポート" },
-  { key: "table",       label: "取引事例一覧" },
+const PDF_SECTION_KEYS: { key: keyof PdfSections; msgKey: string }[] = [
+  { key: "summary",     msgKey: "PdfSections.summary" },
+  { key: "environment", msgKey: "PdfSections.environment" },
+  { key: "chart",       msgKey: "PdfSections.chart" },
+  { key: "aiReport",    msgKey: "PdfSections.aiReport" },
+  { key: "table",       msgKey: "PdfSections.table" },
 ];
 
 function HomePageContent() {
+  const t = useTranslations();
+  const locale = useLocale();
   const { user, loading: authLoading, plan, planLoading } = useAuth();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
@@ -144,12 +147,12 @@ function HomePageContent() {
     progressTimersRef.current.forEach(clearTimeout);
     progressTimersRef.current = [];
     setProgressPercent(5);
-    setProgressMessage("国土交通省APIへ接続中...");
+    setProgressMessage(t("Progress.connecting"));
     const steps: { delay: number; percent: number; message: string }[] = [
-      { delay: 1200,  percent: 28, message: "取引データを取得中..." },
-      { delay: 3500,  percent: 52, message: "AIでエリアを分析中..." },
-      { delay: 6500,  percent: 72, message: "専門家視点でレポートを生成中..." },
-      { delay: 9500,  percent: 88, message: "データを整理中..." },
+      { delay: 1200,  percent: 28, message: t("Progress.fetching") },
+      { delay: 3500,  percent: 52, message: t("Progress.analyzing") },
+      { delay: 6500,  percent: 72, message: t("Progress.generating") },
+      { delay: 9500,  percent: 88, message: t("Progress.organizing") },
     ];
     steps.forEach(({ delay, percent, message }) => {
       const id = setTimeout(() => {
@@ -227,7 +230,7 @@ function HomePageContent() {
       const data = await fetchTransactions(lat, lng);
       stopProgressSimulation();
       setProgressPercent(100);
-      setProgressMessage("レポートを表示中...");
+      setProgressMessage(t("Progress.displaying"));
       setResult(data);
       setSearchCountToday(todayCount);
       dataLayerPush({ event: "generate_report", user_plan: userPlanDL, search_count_today: todayCount });
@@ -305,7 +308,7 @@ function HomePageContent() {
       }
     } catch (e) {
       stopProgressSimulation();
-      setError(e instanceof Error ? e.message : "不明なエラーが発生しました");
+      setError(e instanceof Error ? e.message : t("Error.unknown"));
     } finally {
       setLoading(false);
     }
@@ -411,10 +414,10 @@ function HomePageContent() {
           />
           <div className="flex-1 min-w-0">
             <h1 className="text-xl font-bold text-slate-800 leading-tight">
-              物件目利きリサーチ
+              {t("Header.title")}
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
-              国土交通省データ × プロの目利き — β版
+              {t("Header.subtitle")}
             </p>
           </div>
 
@@ -423,14 +426,23 @@ function HomePageContent() {
             href="/about"
             className="hidden sm:inline-flex text-xs px-3 py-1.5 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
           >
-            サービスについて
+            {t("Header.aboutLink")}
           </Link>
           <button
             onClick={() => { gtagEvent({ action: "view_plan_modal", category: "conversion_funnel" }); setPlanModalOpen(true); }}
             className="hidden sm:inline-flex text-xs px-3 py-1.5 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
           >
-            ベータ版について
+            {t("Header.betaLink")}
           </button>
+
+          {/* 言語切り替え */}
+          <a
+            href={locale === "en" ? "/" : "/en"}
+            className="hidden sm:inline-flex text-xs px-3 py-1.5 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors font-medium"
+            aria-label="Switch language"
+          >
+            {t("Header.langSwitch")}
+          </a>
 
           {/* 認証UI */}
           {!authLoading && (
@@ -456,7 +468,7 @@ function HomePageContent() {
                   onClick={handleLogout}
                   className="text-xs px-3 py-1.5 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
                 >
-                  ログアウト
+                  {t("Header.logoutButton")}
                 </button>
               </div>
             ) : (
@@ -474,7 +486,7 @@ function HomePageContent() {
                   <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
                   <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
                 </svg>
-                Googleでログイン
+                {t("Header.loginButton")}
               </button>
               </div>
             )
@@ -489,7 +501,7 @@ function HomePageContent() {
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 space-y-1">
             <p>⚠️ {error}</p>
             <p className="text-xs text-red-500">
-              しばらく待ってから再度お試しください。問題が続く場合は座標を変えるか、別のエリアで検索してみてください。
+              {t("Error.retryNote")}
             </p>
           </div>
         )}
@@ -499,11 +511,11 @@ function HomePageContent() {
             {/* ステップインジケーター */}
             <div className="flex justify-center items-center gap-2 mb-6">
               {[
-                { threshold: 5,  label: "接続" },
-                { threshold: 28, label: "取得" },
-                { threshold: 52, label: "分析" },
-                { threshold: 72, label: "生成" },
-                { threshold: 95, label: "完了" },
+                { threshold: 5,  label: t("Progress.stepConnect") },
+                { threshold: 28, label: t("Progress.stepFetch") },
+                { threshold: 52, label: t("Progress.stepAnalyze") },
+                { threshold: 72, label: t("Progress.stepGenerate") },
+                { threshold: 95, label: t("Progress.stepComplete") },
               ].map((step, i) => (
                 <div key={i} className="flex items-center gap-2">
                   <div className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold transition-all duration-500 ${
@@ -538,7 +550,7 @@ function HomePageContent() {
               {progressMessage}
             </p>
             <p className="text-xs text-slate-400">
-              国土交通省APIへのリクエストが発生します（通常5〜15秒）
+              {t("Progress.apiNote")}
             </p>
           </div>
         )}
@@ -554,16 +566,16 @@ function HomePageContent() {
                   className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 transition-colors shadow-sm"
                 >
                   <span>⚙️</span>
-                  出力設定
+                  {t("Report.exportSettings")}
                 </button>
 
                 {settingsOpen && (
                   <div className="fixed bottom-16 left-4 right-4 z-50 sm:absolute sm:bottom-auto sm:left-auto sm:right-0 sm:top-full sm:mt-1.5 sm:w-64 sm:z-20 rounded-xl border border-slate-200 bg-white shadow-xl p-4 max-h-[60vh] overflow-y-auto">
                     <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
-                      PDFに含めるセクション
+                      {t("Report.pdfSections")}
                     </p>
                     <div className="space-y-2.5">
-                      {PDF_SECTION_LABELS.map(({ key, label }) => (
+                      {PDF_SECTION_KEYS.map(({ key, msgKey }) => (
                         <label key={key} className="flex items-center gap-2.5 cursor-pointer group">
                           <input
                             type="checkbox"
@@ -572,7 +584,7 @@ function HomePageContent() {
                             className="w-4 h-4 rounded border-slate-300 text-blue-600 cursor-pointer accent-blue-600"
                           />
                           <span className="text-sm text-slate-700 group-hover:text-slate-900 transition-colors select-none">
-                            {label}
+                            {t(msgKey as Parameters<typeof t>[0])}
                           </span>
                         </label>
                       ))}
@@ -580,7 +592,7 @@ function HomePageContent() {
 
                     <div className="mt-3 pt-3 border-t border-slate-100">
                       <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2.5">
-                        コンテンツオプション
+                        {t("Report.contentOptions")}
                       </p>
                       <div className="space-y-2.5">
                         <label className="flex items-center gap-2.5 cursor-pointer group">
@@ -593,7 +605,7 @@ function HomePageContent() {
                             className="w-4 h-4 rounded border-slate-300 cursor-pointer accent-blue-600"
                           />
                           <span className="text-sm text-slate-700 group-hover:text-slate-900 transition-colors select-none">
-                            地図を含める
+                            {t("Report.includeMap")}
                           </span>
                         </label>
                         <label className="flex items-center gap-2.5 cursor-pointer group">
@@ -606,14 +618,14 @@ function HomePageContent() {
                             className="w-4 h-4 rounded border-slate-300 cursor-pointer accent-blue-600"
                           />
                           <span className="text-sm text-slate-700 group-hover:text-slate-900 transition-colors select-none">
-                            暮らしのイメージを含める
+                            {t("Report.includeLifestyle")}
                           </span>
                         </label>
                       </div>
                     </div>
 
                     <p className="text-[10px] text-slate-400 mt-3 pt-2.5 border-t border-slate-100">
-                      チェックを外した項目はPDF非表示（画面は通常表示）
+                      {t("Report.hideNote")}
                     </p>
                   </div>
                 )}
@@ -628,12 +640,12 @@ function HomePageContent() {
                 {pdfLoading ? (
                   <>
                     <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    PDF生成中...
+                    {t("Report.generatingPdf")}
                   </>
                 ) : (
                   <>
                     <span>📄</span>
-                    PDFをダウンロード
+                    {t("Report.downloadPdf")}
                   </>
                 )}
               </button>
@@ -648,25 +660,25 @@ function HomePageContent() {
                 </span>
                 {/* PDF・Web 共通: 出典 */}
                 <span className="text-xs text-slate-500">
-                  出典: 国土交通省 不動産情報ライブラリ
+                  {t("Report.source")}
                 </span>
                 <span className="text-slate-300">|</span>
                 {firstRecord && (
                   <span className="flex flex-wrap items-center gap-1.5">
-                    対象エリア:{" "}
+                    {t("Report.targetArea")}{" "}
                     <strong className="text-slate-800">
                       {firstRecord.prefecture} {firstRecord.municipality}
                     </strong>
-                    <span className="text-xs text-slate-500 pdf-hide">（市区町村コード: {result.data.cityCode}）</span>
-                    <span className="text-xs text-slate-500 pdf-hide">※選択した地点を含む市区町村全体のデータです</span>
+                    <span className="text-xs text-slate-500 pdf-hide">（{t("Report.cityCode")} {result.data.cityCode}）</span>
+                    <span className="text-xs text-slate-500 pdf-hide">※{t("Report.areaNote")}</span>
                   </span>
                 )}
                 <span className="text-slate-300">|</span>
                 <span>
-                  対象年:{" "}
+                  {t("Report.targetYear")}{" "}
                   <strong className="text-slate-800">
                     {result.data.years.length === 0
-                      ? "データなし"
+                      ? t("Report.noData")
                       : result.data.years.length === 1
                       ? `${result.data.years[0]}年`
                       : `${result.data.years[0]}〜${result.data.years[result.data.years.length - 1]}年`}
@@ -677,7 +689,7 @@ function HomePageContent() {
                   <span className="pdf-hide inline-flex items-center gap-3">
                     <span className="text-slate-300">|</span>
                     <span className="text-xs text-slate-400">
-                      キャッシュ期限: {new Date(result.expiresAt).toLocaleDateString("ja-JP")}
+                      {t("Report.cacheExpiry")} {new Date(result.expiresAt).toLocaleDateString(locale === "en" ? "en-US" : "ja-JP")}
                     </span>
                   </span>
                 )}
@@ -687,7 +699,7 @@ function HomePageContent() {
               {searchCoords && (
                 <div data-pdf-map className="bg-white rounded-xl border border-slate-200 overflow-hidden">
                   <div className="px-4 py-2 border-b border-slate-100 flex items-center gap-2">
-                    <span className="text-sm font-semibold text-slate-700">📍 調査エリアの地図</span>
+                    <span className="text-sm font-semibold text-slate-700">📍 {t("Report.mapTitle")}</span>
                   </div>
                   <ReportMap
                     lat={searchCoords.lat}
@@ -763,10 +775,10 @@ function HomePageContent() {
           <div className="rounded-xl border border-dashed border-slate-300 bg-white py-16 text-center text-slate-400">
             <p className="text-4xl mb-3">🗾</p>
             <p className="font-medium text-slate-500">
-              住所または緯度・経度を入力して「調査開始」を押してください
+              {t("Empty.prompt")}
             </p>
             <p className="text-sm mt-1">
-              国土交通省の取引データをもとにエリアの精密調査を行います
+              {t("Empty.description")}
             </p>
           </div>
         )}
