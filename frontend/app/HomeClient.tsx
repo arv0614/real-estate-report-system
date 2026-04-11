@@ -152,10 +152,14 @@ function HomePageContent() {
     setProgressPercent(5);
     setProgressMessage(t("Progress.connecting"));
     const steps: { delay: number; percent: number; message: string }[] = [
-      { delay: 1200,  percent: 28, message: t("Progress.fetching") },
-      { delay: 3500,  percent: 52, message: t("Progress.analyzing") },
-      { delay: 6500,  percent: 72, message: t("Progress.generating") },
-      { delay: 9500,  percent: 88, message: t("Progress.organizing") },
+      { delay: 1500,   percent: 18, message: t("Progress.fetching") },
+      { delay: 4000,   percent: 30, message: t("Progress.collectingData") },
+      { delay: 8000,   percent: 42, message: t("Progress.analyzingData") },
+      { delay: 14000,  percent: 53, message: t("Progress.evaluatingArea") },
+      { delay: 22000,  percent: 62, message: t("Progress.assessingHazard") },
+      { delay: 35000,  percent: 71, message: t("Progress.writingReport") },
+      { delay: 60000,  percent: 80, message: t("Progress.reviewingReport") },
+      { delay: 90000,  percent: 87, message: t("Progress.finalizing") },
     ];
     steps.forEach(({ delay, percent, message }) => {
       const id = setTimeout(() => {
