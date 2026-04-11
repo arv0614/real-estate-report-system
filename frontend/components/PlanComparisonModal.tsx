@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslations } from "next-intl";
 import { signInWithPopup } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, googleProvider, db } from "@/lib/firebase";
@@ -18,73 +19,15 @@ interface Props {
   searchCountToday?: number;
 }
 
-type Feature = {
-  label: string;
-  guest: string;
-  free: string;
-  pro: string;
-};
-
-const FEATURES: Feature[] = [
-  {
-    label: "1日の検索回数",
-    guest: `${GUEST_DAILY_LIMIT}回`,
-    free: IS_FREE_UNLIMITED_CAMPAIGN ? "🎉 無制限（CP中）" : `${FREE_DAILY_LIMIT}回`,
-    pro: "無制限",
-  },
-  {
-    label: "取引価格サマリー",
-    guest: "○",
-    free: "○",
-    pro: "○",
-  },
-  {
-    label: "ハザード情報",
-    guest: "○",
-    free: "○",
-    pro: "○",
-  },
-  {
-    label: "生活環境情報",
-    guest: "○",
-    free: "○",
-    pro: "○",
-  },
-  {
-    label: "価格推移グラフ",
-    guest: "○",
-    free: "○",
-    pro: "○",
-  },
-  {
-    label: "エリア調査レポート（全10項目）",
-    guest: "✕ ロック",
-    free: "全項目（ベータ）",
-    pro: "全項目",
-  },
-  {
-    label: "暮らしイメージ生成",
-    guest: "✕",
-    free: "○",
-    pro: "○",
-  },
-  {
-    label: "PDF出力",
-    guest: "✕",
-    free: "✕",
-    pro: "○",
-  },
-  {
-    label: "検索履歴の保存",
-    guest: "✕",
-    free: "○",
-    pro: "○",
-  },
-];
+// ─────────────────────────────────────────────────────────────
+// 🚦 決済有効フラグ
+//    Lemon Squeezy の設定完了後に `true` へ変更するだけで決済導線が有効になる
+// ─────────────────────────────────────────────────────────────
+const IS_PAYMENT_ENABLED = false;
 
 function Cell({ value, highlight }: { value: string; highlight?: boolean }) {
   const isX = value.startsWith("✕");
-  const isUnlimited = value === "無制限" || value === "全項目";
+  const isUnlimited = value.includes("Unlimited") || value === "All" || value === "全項目" || value === "無制限";
   return (
     <td
       className={`px-3 py-3 text-center text-sm border-b border-slate-100 ${
@@ -102,15 +45,9 @@ function Cell({ value, highlight }: { value: string; highlight?: boolean }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────
-// 🚦 決済有効フラグ
-//    Lemon Squeezy の設定完了後に `true` へ変更するだけで決済導線が有効になる
-// ─────────────────────────────────────────────────────────────
-const IS_PAYMENT_ENABLED = false;
-
 export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail, searchCountToday = 0 }: Props) {
+  const t = useTranslations("PlanModal");
   const [checkoutLoading, setCheckoutLoading] = React.useState(false);
-  // ウェイトリスト登録フォームの状態
   const [waitlistOpen, setWaitlistOpen] = React.useState(false);
   const [waitlistEmail, setWaitlistEmail] = React.useState(userEmail ?? "");
   const [waitlistLoading, setWaitlistLoading] = React.useState(false);
@@ -119,12 +56,29 @@ export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail
 
   if (!open) return null;
 
+  const FEATURES = [
+    {
+      label: t("featureSearchCount"),
+      guest: `${GUEST_DAILY_LIMIT}`,
+      free: IS_FREE_UNLIMITED_CAMPAIGN ? t("featureCpUnlimited") : `${FREE_DAILY_LIMIT}`,
+      pro: t("featureUnlimited"),
+    },
+    { label: t("featurePriceSummary"), guest: t("featureAvail"), free: t("featureAvail"), pro: t("featureAvail") },
+    { label: t("featureHazard"),       guest: t("featureAvail"), free: t("featureAvail"), pro: t("featureAvail") },
+    { label: t("featureLifestyle"),    guest: t("featureAvail"), free: t("featureAvail"), pro: t("featureAvail") },
+    { label: t("featurePriceChart"),   guest: t("featureAvail"), free: t("featureAvail"), pro: t("featureAvail") },
+    { label: t("featureAreaReport"),   guest: t("featureGuestLocked"), free: t("featureBetaAll"), pro: t("featureAll") },
+    { label: t("featureLifestyleImage"), guest: t("featureNone"), free: t("featureAvail"), pro: t("featureAvail") },
+    { label: t("featurePdf"),          guest: t("featureNone"), free: t("featureNone"), pro: t("featureAvail") },
+    { label: t("featureHistory"),      guest: t("featureNone"), free: t("featureAvail"), pro: t("featureAvail") },
+  ];
+
   async function handleGoogleLogin() {
     try {
       await signInWithPopup(auth, googleProvider);
       onClose();
     } catch (e) {
-      console.error("ログインエラー:", e);
+      console.error("login error:", e);
     }
   }
 
@@ -132,13 +86,12 @@ export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail
     e.preventDefault();
     const email = waitlistEmail.trim();
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setWaitlistError("有効なメールアドレスを入力してください。");
+      setWaitlistError(t("waitlistError"));
       return;
     }
     setWaitlistLoading(true);
     setWaitlistError("");
     try {
-      // Firestore の waitlist コレクションに保存（メールアドレスをIDとして使用）
       const docId = email.replace(/[^a-zA-Z0-9]/g, "_");
       await setDoc(doc(db, "waitlist", docId), {
         email,
@@ -149,7 +102,7 @@ export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail
       setWaitlistDone(true);
     } catch (err) {
       console.error("[Waitlist] save error:", err);
-      setWaitlistError("登録に失敗しました。しばらく後にもう一度お試しください。");
+      setWaitlistError(t("waitlistSaveError"));
     } finally {
       setWaitlistLoading(false);
     }
@@ -158,7 +111,6 @@ export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail
   async function handleUpgrade() {
     gtagEvent({ action: "click_checkout", category: "conversion_funnel", label: "Pro" });
     dataLayerPush({ event: "begin_checkout", user_plan: currentPlan ?? "guest", search_count_today: searchCountToday });
-    // 決済未有効時はウェイトリスト登録フォームを表示
     if (!IS_PAYMENT_ENABLED) {
       setWaitlistOpen(true);
       return;
@@ -166,10 +118,9 @@ export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail
     if (!uid) return;
     setCheckoutLoading(true);
     try {
-      // Firebase ID トークンを取得して Authorization ヘッダーに付与
       const idToken = await auth.currentUser?.getIdToken();
       if (!idToken) {
-        alert("ログインが必要です。再度ログインしてからお試しください。");
+        alert("Login required.");
         return;
       }
       const apiBase = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
@@ -182,14 +133,14 @@ export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        alert(err.error ?? "決済セッションの作成に失敗しました。");
+        alert(err.error ?? "Failed to create checkout session.");
         return;
       }
       const { url } = await res.json();
       window.location.href = url;
     } catch (e) {
       console.error("[LemonSqueezy] checkout error:", e);
-      alert("決済処理中にエラーが発生しました。");
+      alert("An error occurred during checkout.");
     } finally {
       setCheckoutLoading(false);
     }
@@ -207,13 +158,13 @@ export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail
         {/* ヘッダー */}
         <div className="px-6 py-5 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-t-2xl flex items-center justify-between">
           <div>
-            <h2 className="text-white font-bold text-lg leading-tight">ベータ版について</h2>
-            <p className="text-purple-200 text-xs mt-0.5">オープンベータ期間中 — 全機能を無料でご利用いただけます</p>
+            <h2 className="text-white font-bold text-lg leading-tight">{t("modalTitle")}</h2>
+            <p className="text-purple-200 text-xs mt-0.5">{t("modalSubtitle")}</p>
           </div>
           <button
             onClick={onClose}
             className="text-white/70 hover:text-white text-2xl leading-none transition-colors"
-            aria-label="閉じる"
+            aria-label={t("closeBtn")}
           >
             ×
           </button>
@@ -227,24 +178,24 @@ export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail
                 <tr>
                   <th className="text-left px-3 py-2 text-sm text-slate-500 font-medium w-40" />
                   <th className="px-3 py-2 text-center w-28">
-                    <div className="text-slate-600 font-semibold text-sm">ゲスト</div>
-                    <div className="text-slate-400 text-xs">未ログイン</div>
-                    <div className="mt-1.5 text-slate-500 font-bold text-base">無料</div>
+                    <div className="text-slate-600 font-semibold text-sm">{t("guestPlan")}</div>
+                    <div className="text-slate-400 text-xs">{t("guestSub")}</div>
+                    <div className="mt-1.5 text-slate-500 font-bold text-base">{t("guestPrice")}</div>
                   </th>
                   <th className="px-3 py-2 text-center w-28">
-                    <div className="text-blue-600 font-semibold text-sm">フリー</div>
-                    <div className="text-slate-400 text-xs">無料ログイン</div>
-                    <div className="mt-1.5 text-blue-600 font-bold text-base">¥0</div>
+                    <div className="text-blue-600 font-semibold text-sm">{t("freePlan")}</div>
+                    <div className="text-slate-400 text-xs">{t("freeSub")}</div>
+                    <div className="mt-1.5 text-blue-600 font-bold text-base">{t("freePrice")}</div>
                   </th>
                   <th className="px-3 py-2 text-center w-28 relative">
                     <div className="absolute -top-1 left-1/2 -translate-x-1/2">
                       <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap">
-                        おすすめ
+                        {t("proRecommended")}
                       </span>
                     </div>
-                    <div className="text-amber-600 font-semibold text-sm pt-3">プロ</div>
-                    <div className="text-slate-400 text-xs">有料プラン</div>
-                    <div className="mt-1.5 text-amber-600 font-bold text-base">近日公開</div>
+                    <div className="text-amber-600 font-semibold text-sm pt-3">{t("proPlan")}</div>
+                    <div className="text-slate-400 text-xs">{t("proSub")}</div>
+                    <div className="mt-1.5 text-amber-600 font-bold text-base">{t("proPrice")}</div>
                   </th>
                 </tr>
               </thead>
@@ -270,10 +221,10 @@ export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail
           {!currentPlan && (
             <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-4 flex flex-col sm:flex-row items-center gap-3">
               <div className="flex-1 text-sm text-blue-800">
-                <span className="font-semibold">Googleアカウントで無料ログイン</span>すると、
+                <span className="font-semibold">{t("ctaGuestTitle")}</span>
                 {IS_FREE_UNLIMITED_CAMPAIGN
-                  ? <>🎉 <span className="font-semibold text-blue-900">キャンペーン中につき検索無制限！</span>エリア調査レポートの一部も無料で使えます。</>
-                  : <>1日{FREE_DAILY_LIMIT}回の検索とエリア調査レポートの一部が無料で使えます。</>
+                  ? <> {t("ctaGuestCpText")} {t("ctaGuestCpSuffix")}</>
+                  : <> {t("ctaGuestNormalText", { limit: FREE_DAILY_LIMIT })}</>
                 }
               </div>
               <button
@@ -286,7 +237,7 @@ export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail
                   <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
                   <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
                 </svg>
-                無料ではじめる
+                {t("ctaGuestBtn")}
               </button>
             </div>
           )}
@@ -295,10 +246,10 @@ export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail
           {currentPlan === "free" && (
             <div className="rounded-xl border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-4">
               <p className="text-sm font-semibold text-blue-800 mb-1">
-                🎉 現在、オープンベータ期間中です
+                {t("ctaBetaTitle")}
               </p>
               <p className="text-sm text-blue-700">
-                すべてのアカウントで、エリア調査レポート全10項目・暮らしイメージ生成を含む全機能を<span className="font-semibold">無料</span>でご利用いただけます。ぜひフィードバックをお聞かせください！
+                {t("ctaBetaBody")}
               </p>
             </div>
           )}
@@ -306,7 +257,37 @@ export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail
           {/* プロユーザー */}
           {currentPlan === "pro" && (
             <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 text-center">
-              ✅ プロプランをご利用いただいています。すべての機能が使えます。
+              {t("ctaProActive")}
+            </div>
+          )}
+
+          {/* ウェイトリスト登録フォーム */}
+          {waitlistOpen && !waitlistDone && (
+            <div className="rounded-xl border border-purple-200 bg-purple-50 px-4 py-4">
+              <p className="text-sm font-semibold text-purple-800 mb-1">{t("waitlistTitle")}</p>
+              <p className="text-xs text-purple-700 mb-3">{t("waitlistDesc")}</p>
+              <form onSubmit={handleWaitlistSubmit} className="flex gap-2">
+                <input
+                  type="email"
+                  value={waitlistEmail}
+                  onChange={(e) => setWaitlistEmail(e.target.value)}
+                  placeholder={t("waitlistPlaceholder")}
+                  className="flex-1 text-sm border border-purple-300 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                />
+                <button
+                  type="submit"
+                  disabled={waitlistLoading}
+                  className="shrink-0 px-4 py-1.5 rounded-lg bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700 transition-colors"
+                >
+                  {waitlistLoading ? "..." : t("waitlistSubmit")}
+                </button>
+              </form>
+              {waitlistError && <p className="text-xs text-red-600 mt-1">{waitlistError}</p>}
+            </div>
+          )}
+          {waitlistDone && (
+            <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 text-center">
+              {t("waitlistDone")}
             </div>
           )}
         </div>

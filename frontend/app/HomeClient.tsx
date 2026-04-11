@@ -3,6 +3,7 @@
 import { Suspense } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
+import { usePathname, useRouter as useIntlRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { flushSync } from "react-dom";
 import Link from "next/link";
@@ -70,6 +71,8 @@ const PDF_SECTION_KEYS: { key: keyof PdfSections; msgKey: string }[] = [
 function HomePageContent() {
   const t = useTranslations();
   const locale = useLocale();
+  const pathname = usePathname();
+  const intlRouter = useIntlRouter();
   const { user, loading: authLoading, plan, planLoading } = useAuth();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
@@ -227,7 +230,7 @@ function HomePageContent() {
     setLifestyleImage(undefined);
     setLifestyleImageLoading(false);
     try {
-      const data = await fetchTransactions(lat, lng);
+      const data = await fetchTransactions(lat, lng, 15, locale);
       stopProgressSimulation();
       setProgressPercent(100);
       setProgressMessage(t("Progress.displaying"));
@@ -436,13 +439,13 @@ function HomePageContent() {
           </button>
 
           {/* 言語切り替え */}
-          <a
-            href={locale === "en" ? "/" : "/en"}
+          <button
+            onClick={() => intlRouter.replace(pathname, { locale: locale === "en" ? "ja" : "en" })}
             className="hidden sm:inline-flex text-xs px-3 py-1.5 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors font-medium"
             aria-label="Switch language"
           >
             {t("Header.langSwitch")}
-          </a>
+          </button>
 
           {/* 認証UI */}
           {!authLoading && (
@@ -808,7 +811,7 @@ function HomePageContent() {
 
       {/* 主要エリアから探すリンク集（SEO内部リンク） */}
       <section className="mt-8 border-t border-slate-200 pt-6">
-        <h2 className="text-sm font-semibold text-slate-600 mb-3">主要エリアから探す</h2>
+        <h2 className="text-sm font-semibold text-slate-600 mb-3">{t("Home.exploreTitle")}</h2>
         <div className="flex flex-wrap gap-2">
           {TOKYO_23_WARDS.map((a) => (
             <Link
@@ -825,15 +828,15 @@ function HomePageContent() {
       <footer className="mt-6 border-t border-slate-200 py-6 text-xs text-slate-400">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="text-center sm:text-left space-y-0.5">
-            <p>本サービスは国土交通省「不動産情報ライブラリ」（CC BY 4.0）を加工して作成しています。</p>
-            <p>地図: © <a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener noreferrer" className="hover:text-slate-600 underline">国土地理院</a></p>
+            <p>{t("Home.footerCredit")}</p>
+            <p>{t("Home.footerMap")} <a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener noreferrer" className="hover:text-slate-600 underline">{t("Home.footerMapLink")}</a></p>
           </div>
           <nav className="flex flex-wrap justify-center gap-4">
-            <Link href="/about" className="hover:text-slate-600 transition-colors">サービスについて</Link>
-            <Link href="/terms" className="hover:text-slate-600 transition-colors">利用規約</Link>
-            <Link href="/privacy" className="hover:text-slate-600 transition-colors">プライバシーポリシー</Link>
-            <Link href="/about#legal" className="hover:text-slate-600 transition-colors">特定商取引法</Link>
-            <Link href="/licenses" className="hover:text-slate-600 transition-colors">OSSライセンス</Link>
+            <Link href="/about" className="hover:text-slate-600 transition-colors">{t("Home.footerAbout")}</Link>
+            <Link href="/terms" className="hover:text-slate-600 transition-colors">{t("Home.footerTerms")}</Link>
+            <Link href="/privacy" className="hover:text-slate-600 transition-colors">{t("Home.footerPrivacy")}</Link>
+            <Link href="/about#legal" className="hover:text-slate-600 transition-colors">{t("Home.footerCommercial")}</Link>
+            <Link href="/licenses" className="hover:text-slate-600 transition-colors">{t("Home.footerLicenses")}</Link>
           </nav>
         </div>
       </footer>

@@ -8,10 +8,11 @@ const API_BASE = RAW_API_URL.replace(/\/$/, "") || "";
 export async function fetchTransactions(
   lat: number,
   lng: number,
-  zoom = 15
+  zoom = 15,
+  locale = "ja"
 ): Promise<TransactionApiResponse> {
   // new URL() は NEXT_PUBLIC_API_URL が空だと "Invalid URL" でクラッシュするため文字列結合を使う
-  const url = `${API_BASE}/api/property/transactions?lat=${lat}&lng=${lng}&zoom=${zoom}`;
+  const url = `${API_BASE}/api/property/transactions?lat=${lat}&lng=${lng}&zoom=${zoom}&locale=${locale}`;
 
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) {

@@ -38,13 +38,14 @@ function isValid(cached: CachedData): boolean {
 export async function readCache(
   lat: number,
   lng: number,
-  zoom: number = 15
+  zoom: number = 15,
+  locale: string = "ja"
 ): Promise<CachedData | null> {
   if (!config.gcs.bucketName) {
     console.log("[GCS Cache] SKIP: GCS_CACHE_BUCKET not configured");
     return null;
   }
-  const cacheKey = buildCacheKey(lat, lng, zoom);
+  const cacheKey = buildCacheKey(lat, lng, zoom, locale);
   const bucket = storage.bucket(config.gcs.bucketName);
   const file = bucket.file(objectPath(cacheKey));
 
@@ -76,13 +77,14 @@ export async function writeCache(
   lng: number,
   zoom: number = 15,
   data: unknown,
-  aiReport?: string
+  aiReport?: string,
+  locale: string = "ja"
 ): Promise<void> {
   if (!config.gcs.bucketName) {
     console.log("[GCS Cache] SKIP write: GCS_CACHE_BUCKET not configured");
     return;
   }
-  const cacheKey = buildCacheKey(lat, lng, zoom);
+  const cacheKey = buildCacheKey(lat, lng, zoom, locale);
   const now = new Date();
   const expiresAt = new Date(now);
   expiresAt.setDate(expiresAt.getDate() + config.cache.ttlDays);

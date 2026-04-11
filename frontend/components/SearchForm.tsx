@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { gtagEvent } from "@/lib/gtag";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
@@ -8,18 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { geocodeAddress } from "@/lib/geocode";
-
-const MapPicker = dynamic(
-  () => import("./MapPicker").then((m) => m.MapPicker),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="h-80 rounded-lg border border-slate-200 bg-slate-100 animate-pulse flex items-center justify-center text-slate-400 text-sm">
-        地図を読み込み中...
-      </div>
-    ),
-  }
-);
 
 const QUICK_LINKS = [
   { label: "葛飾区", lat: 35.74, lng: 139.86 },
@@ -45,6 +34,7 @@ interface Props {
 }
 
 export function SearchForm({ onSearch, loading, districtMarkers, isLoggedIn = false, externalCoords, collapseMap = false }: Props) {
+  const t = useTranslations("SearchForm");
   const [lat, setLat] = useState("35.7101");
   const [lng, setLng] = useState("139.8107");
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -66,6 +56,18 @@ export function SearchForm({ onSearch, loading, districtMarkers, isLoggedIn = fa
   const [addressLoading, setAddressLoading] = useState(false);
   const [geoLoading, setGeoLoading] = useState(false);
   const [showMap, setShowMap] = useState(true);
+
+  const MapPicker = dynamic(
+    () => import("./MapPicker").then((m) => m.MapPicker),
+    {
+      ssr: false,
+      loading: () => (
+        <div className="h-80 rounded-lg border border-slate-200 bg-slate-100 animate-pulse flex items-center justify-center text-slate-400 text-sm">
+          {t("mapLoading")}
+        </div>
+      ),
+    }
+  );
 
   const mapLat = parseFloat(lat);
   const mapLng = parseFloat(lng);
@@ -89,10 +91,10 @@ export function SearchForm({ onSearch, loading, districtMarkers, isLoggedIn = fa
           Math.round(result.lng * 1e6) / 1e6
         );
       } else {
-        setValidationError("住所が見つかりませんでした。別のキーワードで試してください。");
+        setValidationError(t("addressNotFound"));
       }
     } catch {
-      setValidationError("住所検索中にエラーが発生しました。");
+      setValidationError(t("addressError"));
     } finally {
       setAddressLoading(false);
     }
@@ -100,7 +102,7 @@ export function SearchForm({ onSearch, loading, districtMarkers, isLoggedIn = fa
 
   function handleGeolocate() {
     if (!navigator.geolocation) {
-      setValidationError("このブラウザは現在地取得に対応していません。");
+      setValidationError(t("geoNotSupported"));
       return;
     }
     setGeoLoading(true);
@@ -113,7 +115,7 @@ export function SearchForm({ onSearch, loading, districtMarkers, isLoggedIn = fa
         setGeoLoading(false);
       },
       () => {
-        setValidationError("現在地の取得に失敗しました。ブラウザの位置情報許可を確認してください。");
+        setValidationError(t("geoFailed"));
         setGeoLoading(false);
       }
     );
@@ -125,11 +127,11 @@ export function SearchForm({ onSearch, loading, districtMarkers, isLoggedIn = fa
     const lngNum = parseFloat(lng);
 
     if (isNaN(latNum) || latNum < 24 || latNum > 46) {
-      setValidationError("緯度は 24〜46 の数値で入力してください（日本国内）");
+      setValidationError(t("latError"));
       return;
     }
     if (isNaN(lngNum) || lngNum < 122 || lngNum > 154) {
-      setValidationError("経度は 122〜154 の数値で入力してください（日本国内）");
+      setValidationError(t("lngError"));
       return;
     }
     setValidationError(null);
@@ -140,9 +142,9 @@ export function SearchForm({ onSearch, loading, districtMarkers, isLoggedIn = fa
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-base">調査エリアの座標を入力</CardTitle>
+        <CardTitle className="text-base">{t("cardTitle")}</CardTitle>
         <CardDescription className="text-xs">
-          地図をクリック・住所検索・現在地取得で座標を指定できます
+          {t("cardDesc")}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -150,7 +152,7 @@ export function SearchForm({ onSearch, loading, districtMarkers, isLoggedIn = fa
         <form onSubmit={handleAddressSearch} className="flex gap-2">
           <Input
             type="text"
-            placeholder="住所・地名で検索（例：東京都墨田区押上）"
+            placeholder={t("addressPlaceholder")}
             value={addressQuery}
             onChange={(e) => setAddressQuery(e.target.value)}
             className="flex-1 text-sm"
@@ -165,7 +167,7 @@ export function SearchForm({ onSearch, loading, districtMarkers, isLoggedIn = fa
             {addressLoading ? (
               <span className="inline-block w-3.5 h-3.5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
             ) : (
-              "📍 検索"
+              t("searchBtn")
             )}
           </Button>
           <Button
@@ -175,12 +177,12 @@ export function SearchForm({ onSearch, loading, districtMarkers, isLoggedIn = fa
             disabled={geoLoading}
             onClick={handleGeolocate}
             className="shrink-0"
-            title="現在地を取得"
+            title={t("geoBtn")}
           >
             {geoLoading ? (
               <span className="inline-block w-3.5 h-3.5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
             ) : (
-              "🎯 現在地"
+              t("geoBtn")
             )}
           </Button>
         </form>
@@ -192,7 +194,7 @@ export function SearchForm({ onSearch, loading, districtMarkers, isLoggedIn = fa
             onClick={() => setShowMap((v) => !v)}
             className="text-xs text-blue-600 hover:underline mb-2 block"
           >
-            {showMap ? "▲ 地図を非表示" : "▼ 地図を表示"}
+            {showMap ? t("hideMap") : t("showMap")}
           </button>
           {showMap && mapReady && (
             <MapPicker lat={mapLat} lng={mapLng} onChange={applyCoords} districtMarkers={districtMarkers} />
@@ -203,13 +205,13 @@ export function SearchForm({ onSearch, loading, districtMarkers, isLoggedIn = fa
         <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-4">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="lat" className="text-xs text-slate-600">
-              緯度（Latitude）
+              {t("latLabel")}
             </Label>
             <Input
               id="lat"
               type="number"
               step="0.000001"
-              placeholder="例: 35.7101"
+              placeholder={t("latPlaceholder")}
               value={lat}
               onChange={(e) => setLat(e.target.value)}
               className="w-40"
@@ -218,13 +220,13 @@ export function SearchForm({ onSearch, loading, districtMarkers, isLoggedIn = fa
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="lng" className="text-xs text-slate-600">
-              経度（Longitude）
+              {t("lngLabel")}
             </Label>
             <Input
               id="lng"
               type="number"
               step="0.000001"
-              placeholder="例: 139.8107"
+              placeholder={t("lngPlaceholder")}
               value={lng}
               onChange={(e) => setLng(e.target.value)}
               className="w-40"
@@ -235,10 +237,10 @@ export function SearchForm({ onSearch, loading, districtMarkers, isLoggedIn = fa
             {loading ? (
               <>
                 <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                取得中...
+                {t("fetching")}
               </>
             ) : (
-              "🔍 調査開始"
+              t("submitBtn")
             )}
           </Button>
 
