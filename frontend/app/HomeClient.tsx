@@ -311,7 +311,12 @@ function HomePageContent() {
       }
     } catch (e) {
       stopProgressSimulation();
-      setError(e instanceof Error ? e.message : t("Error.unknown"));
+      const errCode = (e as { code?: string })?.code;
+      setError(
+        errCode === "RATE_LIMITED"
+          ? t("Error.rateLimited")
+          : e instanceof Error ? e.message : t("Error.unknown")
+      );
     } finally {
       setLoading(false);
     }
@@ -498,7 +503,7 @@ function HomePageContent() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-8 space-y-6">
-        <SearchForm onSearch={handleSearch} loading={loading} districtMarkers={districtMarkers} isLoggedIn={!!user} externalCoords={externalCoords} collapseMap={!!result} />
+        <SearchForm onSearch={handleSearch} loading={loading} districtMarkers={districtMarkers} isLoggedIn={!!user} externalCoords={externalCoords} collapseMap={!!result} locale={locale} />
 
         {error && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 space-y-1">
@@ -819,7 +824,7 @@ function HomePageContent() {
               href={`/reports/${a.prefSlug}/${a.citySlug}`}
               className="inline-flex items-center text-xs bg-slate-50 border border-slate-200 text-slate-600 rounded-md px-2.5 py-1 hover:border-blue-300 hover:text-blue-600 transition-colors"
             >
-              {a.city}
+              {locale === "en" ? a.cityEn : a.city}
             </Link>
           ))}
         </div>

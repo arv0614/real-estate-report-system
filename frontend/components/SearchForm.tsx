@@ -10,10 +10,22 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { geocodeAddress } from "@/lib/geocode";
 
+// Must be defined at module level — calling dynamic() inside a component creates a new type
+// on every render, causing React to unmount/remount the map on every state change.
+const MapPickerLazy = dynamic(
+  () => import("./MapPicker").then((m) => m.MapPicker),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-80 rounded-lg border border-slate-200 bg-slate-100 animate-pulse" />
+    ),
+  }
+);
+
 const QUICK_LINKS = [
-  { label: "葛飾区", lat: 35.74, lng: 139.86 },
-  { label: "渋谷区", lat: 35.661, lng: 139.703 },
-  { label: "新宿区", lat: 35.693, lng: 139.703 },
+  { label: "葛飾区", labelEn: "Katsushika", lat: 35.74, lng: 139.86 },
+  { label: "渋谷区", labelEn: "Shibuya",    lat: 35.661, lng: 139.703 },
+  { label: "新宿区", labelEn: "Shinjuku",   lat: 35.693, lng: 139.703 },
 ] as const;
 
 export interface DistrictMarker {
@@ -31,10 +43,12 @@ interface Props {
   externalCoords?: { lat: number; lng: number };
   /** 検索結果表示中に地図を折りたたむ（重複表示防止） */
   collapseMap?: boolean;
+  locale?: string;
 }
 
-export function SearchForm({ onSearch, loading, districtMarkers, isLoggedIn = false, externalCoords, collapseMap = false }: Props) {
+export function SearchForm({ onSearch, loading, districtMarkers, isLoggedIn = false, externalCoords, collapseMap = false, locale = "ja" }: Props) {
   const t = useTranslations("SearchForm");
+  const isEn = locale === "en";
   const [lat, setLat] = useState("35.7101");
   const [lng, setLng] = useState("139.8107");
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -56,18 +70,6 @@ export function SearchForm({ onSearch, loading, districtMarkers, isLoggedIn = fa
   const [addressLoading, setAddressLoading] = useState(false);
   const [geoLoading, setGeoLoading] = useState(false);
   const [showMap, setShowMap] = useState(true);
-
-  const MapPicker = dynamic(
-    () => import("./MapPicker").then((m) => m.MapPicker),
-    {
-      ssr: false,
-      loading: () => (
-        <div className="h-80 rounded-lg border border-slate-200 bg-slate-100 animate-pulse flex items-center justify-center text-slate-400 text-sm">
-          {t("mapLoading")}
-        </div>
-      ),
-    }
-  );
 
   const mapLat = parseFloat(lat);
   const mapLng = parseFloat(lng);
@@ -197,7 +199,7 @@ export function SearchForm({ onSearch, loading, districtMarkers, isLoggedIn = fa
             {showMap ? t("hideMap") : t("showMap")}
           </button>
           {showMap && mapReady && (
-            <MapPicker lat={mapLat} lng={mapLng} onChange={applyCoords} districtMarkers={districtMarkers} />
+            <MapPickerLazy lat={mapLat} lng={mapLng} onChange={applyCoords} districtMarkers={districtMarkers} />
           )}
         </div>
 
@@ -252,7 +254,7 @@ export function SearchForm({ onSearch, loading, districtMarkers, isLoggedIn = fa
                 onClick={() => applyCoords(p.lat, p.lng)}
                 className="text-xs text-blue-600 hover:underline px-2 py-1 rounded border border-blue-100 hover:bg-blue-50"
               >
-                {p.label}
+                {isEn ? p.labelEn : p.label}
               </button>
             ))}
           </div>
