@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatPrice, formatUnitPrice } from "@/lib/api";
 import type { HazardInfo, TransactionSummary } from "@/types/api";
@@ -20,29 +21,31 @@ function floodValueColor(hasRisk: boolean, rank: number | null) {
 }
 
 export function SummaryCards({ summary, hazard }: Props) {
+  const t = useTranslations("SummaryCards");
+
   const statsCards = [
     {
-      title: "データ件数",
-      value: `${summary.totalCount.toLocaleString()} 件`,
-      sub: "取得した取引事例数",
+      title: t("dataCount"),
+      value: t("dataCountValue", { count: summary.totalCount.toLocaleString() }),
+      sub: t("dataCountSub"),
       icon: "📊",
     },
     {
-      title: "平均取引価格",
+      title: t("avgPrice"),
       value: formatPrice(summary.avgTradePrice),
-      sub: `中央値: ${formatPrice(summary.medianTradePrice)}`,
+      sub: t("median", { price: formatPrice(summary.medianTradePrice) }),
       icon: "💴",
     },
     {
-      title: "平均㎡単価",
+      title: t("avgUnitPrice"),
       value: summary.avgUnitPrice ? formatUnitPrice(summary.avgUnitPrice) : "—",
-      sub: "（単価データが存在する物件のみ）",
+      sub: t("avgUnitPriceSub"),
       icon: "📐",
     },
     {
-      title: "取引価格レンジ",
-      value: `${formatPrice(summary.minTradePrice)} 〜`,
-      sub: `最高: ${formatPrice(summary.maxTradePrice)}`,
+      title: t("priceRange"),
+      value: t("priceTo", { min: formatPrice(summary.minTradePrice) }),
+      sub: t("priceMax", { max: formatPrice(summary.maxTradePrice) }),
       icon: "📈",
     },
   ];
@@ -69,10 +72,10 @@ export function SummaryCards({ summary, hazard }: Props) {
       {hazard ? (
         <>
         <div className="flex items-center gap-4 text-xs text-slate-500 px-1">
-          <span className="font-medium">凡例:</span>
-          <span className="flex items-center gap-1"><span className="inline-block w-2.5 h-2.5 rounded-full bg-green-400" />該当なし</span>
-          <span className="flex items-center gap-1"><span className="inline-block w-2.5 h-2.5 rounded-full bg-amber-400" />注意（0.5m未満）</span>
-          <span className="flex items-center gap-1"><span className="inline-block w-2.5 h-2.5 rounded-full bg-red-400" />危険（3m以上）</span>
+          <span className="font-medium">{t("legend")}</span>
+          <span className="flex items-center gap-1"><span className="inline-block w-2.5 h-2.5 rounded-full bg-green-400" />{t("legendNone")}</span>
+          <span className="flex items-center gap-1"><span className="inline-block w-2.5 h-2.5 rounded-full bg-amber-400" />{t("legendCaution")}</span>
+          <span className="flex items-center gap-1"><span className="inline-block w-2.5 h-2.5 rounded-full bg-red-400" />{t("legendDanger")}</span>
         </div>
         <div className="grid grid-cols-2 gap-3">
           {/* 洪水リスク */}
@@ -80,15 +83,15 @@ export function SummaryCards({ summary, hazard }: Props) {
             <CardHeader className="pb-1 pt-4 px-4">
               <CardTitle className="text-xs text-slate-500 font-medium flex items-center gap-1">
                 <span>🌊</span>
-                洪水浸水想定区域
+                {t("floodTitle")}
               </CardTitle>
             </CardHeader>
             <CardContent className="px-4 pb-4">
               <p className={`text-xl font-bold leading-tight ${floodValueColor(hazard.flood.hasRisk, hazard.flood.maxDepthRank)}`}>
-                {hazard.flood.hasRisk ? `最大 ${hazard.flood.maxDepthLabel}` : "該当なし"}
+                {hazard.flood.hasRisk ? t("floodMaxDepth", { depth: hazard.flood.maxDepthLabel ?? "" }) : t("floodNone")}
               </p>
               <p className="text-xs text-slate-400 mt-0.5">
-                {hazard.flood.hasRisk ? "浸水想定区域内（想定最大規模）" : "浸水想定区域外"}
+                {hazard.flood.hasRisk ? t("floodInside") : t("floodOutside")}
               </p>
             </CardContent>
           </Card>
@@ -98,17 +101,17 @@ export function SummaryCards({ summary, hazard }: Props) {
             <CardHeader className="pb-1 pt-4 px-4">
               <CardTitle className="text-xs text-slate-500 font-medium flex items-center gap-1">
                 <span>⛰️</span>
-                土砂災害警戒区域
+                {t("landslideTitle")}
               </CardTitle>
             </CardHeader>
             <CardContent className="px-4 pb-4">
               <p className={`text-xl font-bold leading-tight ${hazard.landslide.hasRisk ? "text-red-700" : "text-green-700"}`}>
-                {hazard.landslide.hasRisk ? "警戒区域内" : "該当なし"}
+                {hazard.landslide.hasRisk ? t("landslideInside") : t("landslideNone")}
               </p>
               <p className="text-xs text-slate-400 mt-0.5">
                 {hazard.landslide.hasRisk && hazard.landslide.phenomena.length > 0
                   ? hazard.landslide.phenomena.join("・")
-                  : "土砂災害警戒区域外"}
+                  : t("landslideOutside")}
               </p>
             </CardContent>
           </Card>
