@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useTranslations, useLocale } from "next-intl";
 import { trackEvent } from "@/lib/posthog";
 
 interface Props {
@@ -22,40 +23,33 @@ interface Props {
   ogPriceLabel: string | null;
 }
 
-/** 円/㎡ → 万円/㎡ 文字列 */
-function fmtUnit(yenPerSqm: number): string {
-  return `${Math.round(yenPerSqm / 10000).toLocaleString()}万円/㎡`;
-}
-
-/** シェアテキストを動的生成 */
-function buildShareText(props: Omit<Props, "lat" | "lng">): string {
-  const area = `${props.prefecture}${props.municipality}`;
-  const unitPart = props.ogPriceLabel
-    ? `平均取引単価 ${props.ogPriceLabel}`
-    : props.avgUnitPrice
-    ? `平均坪単価 ${fmtUnit(props.avgUnitPrice)}`
-    : `平均取引価格 ${Math.round(props.avgTradePrice / 10000).toLocaleString()}万円`;
-  const hazardPart = props.hasFloodRisk ? "洪水リスクあり" : "洪水リスク低";
-  return `${area}の不動産価値・リスクを調査しました！${unitPart}、${hazardPart}。 #不動産調査レポート #不動産リスク分析`;
-}
-
 type Platform = "x" | "line" | "facebook" | "copy" | "native";
 
 export function ShareActions({ prefecture, municipality, lat, lng, avgUnitPrice, avgTradePrice, hasFloodRisk, ogScore, ogPriceLabel }: Props) {
+  const t = useTranslations("ShareActions");
+  const locale = useLocale();
   const [copied, setCopied] = useState(false);
 
-  const shareText = buildShareText({ prefecture, municipality, avgUnitPrice, avgTradePrice, hasFloodRisk, ogScore, ogPriceLabel });
+  const area = `${prefecture}${municipality}`;
+
+  // Build share text based on locale
+  const priceText = ogPriceLabel
+    ? t("shareTextUnitPrice", { price: ogPriceLabel })
+    : avgUnitPrice
+    ? t("shareTextUnitPrice", { price: `${Math.round(avgUnitPrice / 10000).toLocaleString()}${locale === "en" ? "k/㎡" : "万円/㎡"}` })
+    : t("shareTextAvgPrice", { price: Math.round(avgTradePrice / 10000).toLocaleString() });
+  const hazardText = hasFloodRisk ? t("floodRisk") : t("floodSafe");
+  const shareText = t("shareText", { area, price: priceText, hazard: hazardText });
 
   const base =
     process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
     (typeof window !== "undefined" ? window.location.origin : "https://mekiki-research.com");
 
-  /** プラットフォーム別に ref パラメータを変えた共有URLを生成 */
   function buildShareUrl(platform: Platform): string {
     const params = new URLSearchParams({
       lat: lat.toFixed(6),
       lng: lng.toFixed(6),
-      address: `${prefecture}${municipality}`,
+      address: area,
       ref: `share_sns_${platform}`,
       flood: hasFloodRisk ? "1" : "0",
     });
@@ -73,18 +67,16 @@ export function ShareActions({ prefecture, municipality, lat, lng, avgUnitPrice,
     });
   }, [prefecture, municipality, hasFloodRisk]);
 
-  /** OS ネイティブ共有シート（Web Share API）*/
   async function handleNativeShare() {
     track("native");
     const shareUrl = buildShareUrl("native");
     try {
-      await navigator.share({ title: `${prefecture}${municipality} 物件目利きリサーチ`, text: shareText, url: shareUrl });
+      await navigator.share({ title: t("nativeTitle", { area }), text: shareText, url: shareUrl });
     } catch {
       // キャンセルは無視
     }
   }
 
-  /** X (Twitter) */
   function handleXShare() {
     track("x");
     const shareUrl = buildShareUrl("x");
@@ -92,7 +84,6 @@ export function ShareActions({ prefecture, municipality, lat, lng, avgUnitPrice,
     window.open(`https://twitter.com/intent/tweet?${params}`, "_blank", "noopener,noreferrer");
   }
 
-  /** Facebook */
   function handleFacebookShare() {
     track("facebook");
     const shareUrl = buildShareUrl("facebook");
@@ -100,7 +91,6 @@ export function ShareActions({ prefecture, municipality, lat, lng, avgUnitPrice,
     window.open(`https://www.facebook.com/sharer/sharer.php?${params}`, "_blank", "noopener,noreferrer");
   }
 
-  /** LINE */
   function handleLineShare() {
     track("line");
     const shareUrl = buildShareUrl("line");
@@ -108,7 +98,6 @@ export function ShareActions({ prefecture, municipality, lat, lng, avgUnitPrice,
     window.open(`https://social-plugins.line.me/lineit/share?${params}`, "_blank", "noopener,noreferrer");
   }
 
-  /** URL コピー */
   async function handleCopy() {
     track("copy");
     const shareUrl = buildShareUrl("copy");
@@ -117,7 +106,6 @@ export function ShareActions({ prefecture, municipality, lat, lng, avgUnitPrice,
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     } catch {
-      // フォールバック: input 要素を使った旧来のコピー
       const el = document.createElement("input");
       el.value = shareUrl;
       document.body.appendChild(el);
@@ -136,55 +124,50 @@ export function ShareActions({ prefecture, municipality, lat, lng, avgUnitPrice,
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
         {/* 左: ラベル */}
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-slate-700">診断結果をシェア</p>
+          <p className="text-sm font-semibold text-slate-700">{t("shareTitle")}</p>
           <p className="text-xs text-slate-400 mt-0.5 truncate">{shareText.slice(0, 60)}…</p>
         </div>
 
         {/* 右: ボタン群 */}
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Web Share API（スマホ等） */}
           {canNativeShare && (
             <button
               onClick={handleNativeShare}
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-800 text-white text-xs font-semibold hover:bg-slate-700 transition-colors"
-              aria-label="共有"
+              aria-label={t("share")}
             >
               <ShareIcon />
-              共有
+              {t("share")}
             </button>
           )}
 
-          {/* X (Twitter) */}
           <button
             onClick={handleXShare}
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-black text-white text-xs font-semibold hover:bg-neutral-800 transition-colors"
-            aria-label="X (Twitter) でシェア"
+            aria-label={t("post")}
           >
             <XIcon />
-            ポスト
+            {t("post")}
           </button>
 
-          {/* Facebook */}
           <button
             onClick={handleFacebookShare}
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#1877F2] text-white text-xs font-semibold hover:bg-[#1460cc] transition-colors"
-            aria-label="Facebook でシェア"
+            aria-label="Facebook"
           >
             <FacebookIcon />
             FB
           </button>
 
-          {/* LINE */}
           <button
             onClick={handleLineShare}
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#06C755] text-white text-xs font-semibold hover:bg-[#05b34c] transition-colors"
-            aria-label="LINE で送る"
+            aria-label="LINE"
           >
             <LineIcon />
             LINE
           </button>
 
-          {/* URLコピー */}
           <button
             onClick={handleCopy}
             className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
@@ -192,17 +175,17 @@ export function ShareActions({ prefecture, municipality, lat, lng, avgUnitPrice,
                 ? "bg-green-500 text-white"
                 : "bg-slate-100 text-slate-700 hover:bg-slate-200"
             }`}
-            aria-label="URLをコピー"
+            aria-label={t("urlCopy")}
           >
             {copied ? (
               <>
                 <CheckIcon />
-                コピー済み
+                {t("copied")}
               </>
             ) : (
               <>
                 <CopyIcon />
-                URLコピー
+                {t("urlCopy")}
               </>
             )}
           </button>

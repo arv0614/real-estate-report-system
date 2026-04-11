@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { gtagEvent } from "@/lib/gtag";
 import type { User } from "firebase/auth";
 import ReactMarkdown from "react-markdown";
@@ -49,7 +50,6 @@ function parseSections(report: string): Section[] {
     const match = line.match(/^#{2,3} (\d+)\.\s+(.+)$/);
     if (match) {
       if (current) sections.push(current);
-      // タイトルはプレーンテキストとして表示するためインラインマークダウンを除去
       current = { number: match[1], title: stripInlineMarkdown(match[2].trim()), content: "" };
     } else if (current) {
       current.content += line + "\n";
@@ -97,22 +97,16 @@ function SectionBody({ content }: { content: string }) {
 
 interface Props {
   report: string;
-  /** 画像生成機能用（任意） */
   user?: User | null;
-  /** ユーザープラン。null=未ログイン, "free"=無料, "pro"=有料 */
   plan?: UserPlan | null;
   cityCode?: string;
   prefecture?: string;
   municipality?: string;
   lifestyleImage?: string;
-  /** pro が自動生成中のときに true を渡すとローディング表示 */
   imageGenerating?: boolean;
-  /** SEOページ等から渡す事前生成済み汎用画像。未ログイン・未生成時でも表示される */
   defaultLifestyleImage?: string;
   onImageSaved?: (dataUrl: string) => void;
-  /** 未ログイン時にログインUIを開くコールバック */
   onLoginRequest?: () => void;
-  /** プラン比較モーダルを開くコールバック */
   onPlanModalOpen?: () => void;
 }
 
@@ -130,10 +124,10 @@ export function AiReport({
   onLoginRequest,
   onPlanModalOpen: _onPlanModalOpen,
 }: Props) {
+  const t = useTranslations("AiReport");
   const sections = parseSections(report);
   const allKeys = [IMAGE_KEY, ...sections.map((s) => s.number)];
 
-  // セクション1「エリア総評」のテキストを画像生成プロンプトに流し込む
   const areaFeatures = sections.find((s) => s.number === "1")?.content.trim() || undefined;
 
   const [openSet, setOpenSet] = useState<Set<string>>(() => new Set([IMAGE_KEY, "1"]));
@@ -160,13 +154,12 @@ export function AiReport({
       const result = await generateLifestyleImage(prefecture, municipality, areaFeatures);
       const dataUrl = `data:${result.mimeType};base64,${result.imageBase64}`;
       setIsMockImage(result.isMock);
-      onImageSaved?.(dataUrl); // 即時表示
-      // ロケーションキャッシュに保存（バックグラウンド）
+      onImageSaved?.(dataUrl);
       saveLifestyleCache(cityCode, dataUrl, prefecture, municipality).catch((e) =>
         console.error("[AiReport] cache save error:", e)
       );
     } catch (e) {
-      setGenError(e instanceof Error ? e.message : "生成に失敗しました");
+      setGenError(e instanceof Error ? e.message : t("genError"));
     } finally {
       setGenerating(false);
     }
@@ -189,8 +182,8 @@ export function AiReport({
         <div className="px-5 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 flex items-center gap-3">
           <span className="text-2xl">✨</span>
           <div>
-            <h2 className="text-white font-bold text-base leading-tight">エリア特性・プロフェッショナル調査レポート</h2>
-            <p className="text-purple-200 text-xs mt-0.5">国土交通省データ × 専門家分析 · 10項目</p>
+            <h2 className="text-white font-bold text-base leading-tight">{t("title")}</h2>
+            <p className="text-purple-200 text-xs mt-0.5">{t("subtitle", { count: 10 })}</p>
           </div>
         </div>
         {/* 汎用暮らしイメージ（提供時のみ表示） */}
@@ -198,7 +191,7 @@ export function AiReport({
           <div className="relative">
             <img
               src={defaultLifestyleImage}
-              alt={`${municipality ?? ""}の暮らしイメージ`}
+              alt={t("lifestyleAlt", { municipality: municipality ?? "" })}
               className="w-full h-40 object-cover opacity-60"
             />
             <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/80" />
@@ -208,11 +201,10 @@ export function AiReport({
         <div className="px-6 py-10 text-center">
           <div className="text-5xl mb-4">🔒</div>
           <h3 className="font-bold text-slate-800 text-lg mb-2">
-            エリア調査レポート・専門家見解を読む
+            {t("lockedTitle")}
           </h3>
           <p className="text-slate-500 text-sm mb-6 max-w-sm mx-auto">
-            10項目のエリア特性調査レポート（リアルな住環境・注意点・物件の魅力とおすすめポイントを含む）は、
-            無料アカウントでログインすると閲覧できます。
+            {t("lockedDesc")}
           </p>
           <button
             onClick={onLoginRequest}
@@ -224,9 +216,9 @@ export function AiReport({
               <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
             </svg>
-            Google で無料ログイン
+            {t("loginBtn")}
           </button>
-          <p className="text-xs text-slate-400 mt-3">登録・利用は無料です</p>
+          <p className="text-xs text-slate-400 mt-3">{t("loginFree")}</p>
         </div>
       </div>
     );
@@ -244,7 +236,7 @@ export function AiReport({
         >
           <img
             src={lifestyleImage}
-            alt="暮らしイメージ 拡大"
+            alt={t("lifestyleAltExpanded")}
             className="max-w-full max-h-full rounded-xl shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           />
@@ -263,10 +255,10 @@ export function AiReport({
           <span className="text-2xl">✨</span>
           <div className="flex-1">
             <h2 className="text-white font-bold text-base leading-tight">
-              エリア特性・プロフェッショナル調査レポート
+              {t("title")}
             </h2>
             <p className="text-purple-200 text-xs mt-0.5">
-              国土交通省データ × 専門家分析 · {sections.length}項目
+              {t("subtitle", { count: sections.length })}
             </p>
           </div>
           <button
@@ -279,7 +271,7 @@ export function AiReport({
             }
             className="text-xs text-purple-200 hover:text-white border border-purple-400 hover:border-white rounded px-2 py-1 transition-colors shrink-0"
           >
-            {openSet.size === allKeys.length ? "すべて折りたたむ" : "すべて展開"}
+            {openSet.size === allKeys.length ? t("collapseAll") : t("expandAll")}
           </button>
         </div>
 
@@ -295,7 +287,7 @@ export function AiReport({
               <span className="text-lg shrink-0">🖼️</span>
               <span className="flex-1 text-sm font-semibold text-slate-700">
                 <span className="text-purple-500 mr-1">✦</span>
-                暮らしのイメージ
+                {t("lifestyleTitle")}
               </span>
               <span
                 className={`text-purple-400 text-xs shrink-0 transition-transform duration-200 ${
@@ -309,11 +301,10 @@ export function AiReport({
             {imageIsOpen && (
               <div className="px-5 pb-4 pt-2">
                 {lifestyleImage ? (
-                  /* 画像あり（キャッシュ or 再生成直後） */
                   <div data-pdf-lifestyle-image style={{ animation: "fadeInUp 0.5s ease both" }}>
                     {isMockImage && (
                       <div className="mb-2 flex items-center gap-1.5 rounded-md bg-red-50 border border-red-200 px-3 py-1.5">
-                        <span className="text-red-500 text-xs font-medium">⚠️ APIエラーのためダミー画像を表示しています（実際のエリアとは異なります）</span>
+                        <span className="text-red-500 text-xs font-medium">{t("mockImageWarning")}</span>
                       </div>
                     )}
                     <div
@@ -322,54 +313,50 @@ export function AiReport({
                     >
                       <img
                         src={lifestyleImage}
-                        alt={`${municipality ?? ""}の暮らしイメージ`}
+                        alt={t("lifestyleAlt", { municipality: municipality ?? "" })}
                         className="w-full h-48 object-cover rounded-lg shadow-sm group-hover:opacity-90 transition-opacity"
                       />
                       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                         <span className="bg-black/50 text-white text-xs px-3 py-1 rounded-full">
-                          🔍 クリックで拡大
+                          {t("zoomIn")}
                         </span>
                       </div>
                     </div>
                     <div className="mt-2 flex items-center gap-3">
                       <p className="text-[10px] text-slate-400 flex-1">
-                        ※ 生成AIによる暮らしイメージです（実際のエリアとは異なります）
+                        {t("imageNote")}
                       </p>
-                      {/* 再生成ボタンは pro のみ */}
                       {plan === "pro" && (
                         <button
                           onClick={handleGenerate}
                           disabled={generating}
                           className="text-xs text-purple-500 hover:text-purple-700 disabled:opacity-40 transition-colors"
                         >
-                          {generating ? "生成中…" : "🔄 再生成"}
+                          {generating ? t("generating") : t("regenerate")}
                         </button>
                       )}
                     </div>
                   </div>
                 ) : (generating || imageGenerating) ? (
-                  /* スケルトン（再生成中 or pro 自動生成中） */
                   <div className="space-y-2" data-pdf-lifestyle-image>
                     <div className="w-full max-w-md h-32 rounded-lg bg-purple-100/80 animate-pulse" />
                     <p className="text-xs text-slate-400">
-                      {municipality ?? "エリア"}の暮らしイメージを生成中…
+                      {t("generatingArea", { area: municipality ?? t("defaultArea") })}
                     </p>
                   </div>
                 ) : plan === "pro" ? (
-                  /* pro かつ画像なし・生成中でない（通常は起きないが念のため） */
                   <div className="flex items-center gap-3 py-1">
                     <button
                       onClick={handleGenerate}
                       className="inline-flex items-center gap-1.5 border border-purple-300 text-purple-700 bg-white hover:bg-purple-50 rounded-lg px-4 py-1.5 text-sm transition-colors shadow-sm"
                     >
-                      ✨ 暮らしイメージを生成
+                      {t("generateBtn")}
                     </button>
                     {genError && <p className="text-xs text-red-500">⚠️ {genError}</p>}
                   </div>
                 ) : (
-                  /* free かつキャッシュなし */
                   <p className="text-xs text-slate-400 py-2">
-                    このエリアの暮らしイメージは現在準備中です
+                    {t("imageNotReady")}
                   </p>
                 )}
               </div>
@@ -378,7 +365,6 @@ export function AiReport({
 
           {/* ── 通常セクション ── */}
           {sections.map((section) => {
-            // オープンベータ期間中: ログイン済みユーザーは全セクション開放
             const isLocked = false;
             const isOpen = openSet.has(section.number);
             const icon = SECTION_ICONS[section.number] ?? "📋";
@@ -411,7 +397,6 @@ export function AiReport({
                   )}
                 </button>
 
-                {/* ロックされたセクションのぼかしプレビュー */}
                 {isLocked && (
                   <div className="px-5 pb-3 pt-1 relative select-none pointer-events-none">
                     <div className="blur-sm opacity-40 text-sm text-slate-700 line-clamp-3">
@@ -420,7 +405,6 @@ export function AiReport({
                   </div>
                 )}
 
-                {/* 通常の展開コンテンツ */}
                 {!isLocked && isOpen && (
                   <div className="px-5 pb-4 pt-1">
                     {section.content.trim() === "" ? null : (
@@ -435,7 +419,7 @@ export function AiReport({
           {/* オープンベータ告知（PDF非表示） */}
           <div className="pdf-hide border-t border-blue-100 bg-gradient-to-r from-blue-50 to-indigo-50 px-5 py-3 text-center">
             <p className="text-xs text-blue-700">
-              🎉 <span className="font-semibold">オープンベータ期間中</span> — すべてのアカウントで全機能を無料でご利用いただけます
+              🎉 <span className="font-semibold">{t("betaBannerBold")}</span> {t("betaBannerSuffix")}
             </p>
           </div>
         </div>
@@ -443,8 +427,7 @@ export function AiReport({
         {/* フッター注記 */}
         <div className="px-5 py-3 bg-purple-50/80 border-t border-purple-100">
           <p className="text-[10px] text-slate-400">
-            ※ 本レポートは国土交通省データをもとに専門家の見立てを参考情報として提供するものです。補助金・開発計画・人口予測等は変更される場合があります。
-            投資判断の際は必ず最新の公式情報をご確認ください。
+            {t("disclaimer")}
           </p>
         </div>
       </div>

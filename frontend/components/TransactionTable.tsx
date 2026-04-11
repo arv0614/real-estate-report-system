@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import {
   Table,
   TableBody,
@@ -13,8 +14,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatPrice, formatUnitPrice } from "@/lib/api";
 import type { TransactionRecord } from "@/types/api";
 
-const TYPE_FILTERS = ["すべて", "宅地(土地と建物)", "宅地(土地)", "中古マンション等", "農地", "林地"] as const;
-type Filter = (typeof TYPE_FILTERS)[number];
+// Filter values stay in Japanese to match API data (r.type is always Japanese from MLIT)
+const TYPE_FILTER_VALUES = ["すべて", "宅地(土地と建物)", "宅地(土地)", "中古マンション等", "農地", "林地"] as const;
+type FilterValue = (typeof TYPE_FILTER_VALUES)[number];
+
+// Maps Japanese filter values to translation keys
+const TYPE_FILTER_KEYS: Record<FilterValue, string> = {
+  "すべて": "filterAll",
+  "宅地(土地と建物)": "filterLandBuilding",
+  "宅地(土地)": "filterLand",
+  "中古マンション等": "filterCondoUsed",
+  "農地": "filterFarm",
+  "林地": "filterForest",
+};
 
 const COLUMN_COUNT = 9;
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
@@ -33,18 +45,18 @@ function periodSortKey(period: string): number {
 }
 
 export function TransactionTable({ records, isPdfExporting = false, autoDistrict }: Props) {
-  const [filter, setFilter] = useState<Filter>("すべて");
+  const t = useTranslations("TransactionTable");
+  const [filter, setFilter] = useState<FilterValue>("すべて");
   const [districtFilter, setDistrictFilter] = useState("");
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState<PageSizeOption>(20);
 
-  // 新しい検索結果が来たとき（autoDistrictが変わったとき）にドロップダウンを自動選択
   useEffect(() => {
     setDistrictFilter(autoDistrict ?? "");
     setPage(0);
   }, [autoDistrict]);
 
-  function handleFilterChange(f: Filter) {
+  function handleFilterChange(f: FilterValue) {
     setFilter(f);
     setPage(0);
   }
@@ -54,7 +66,6 @@ export function TransactionTable({ records, isPdfExporting = false, autoDistrict
     setPage(0);
   }
 
-  // records から重複なし・五十音順の地区名リストを生成
   const districtOptions = useMemo(() => {
     const names = Array.from(
       new Set(records.map((r) => r.districtName).filter((d): d is string => !!d))
@@ -72,8 +83,6 @@ export function TransactionTable({ records, isPdfExporting = false, autoDistrict
   }, [records, filter, districtFilter]);
 
   const totalPages = Math.ceil(sortedFiltered.length / pageSize);
-
-  // PDF出力中は常に1ページ目（選択件数）を強制表示
   const effectivePage = isPdfExporting ? 0 : page;
 
   const displayed = useMemo(
@@ -81,14 +90,19 @@ export function TransactionTable({ records, isPdfExporting = false, autoDistrict
     [sortedFiltered, effectivePage, pageSize]
   );
 
+  const fromIndex = sortedFiltered.length === 0 ? 0 : effectivePage * pageSize + 1;
+  const toIndex = Math.min((effectivePage + 1) * pageSize, sortedFiltered.length);
+
   return (
     <Card>
       <CardHeader className="pb-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <CardTitle className="text-base">
-            取引事例一覧
+            {t("title")}
             <span className="ml-2 text-sm font-normal text-slate-500">
-              （{sortedFiltered.length === 0 ? 0 : effectivePage * pageSize + 1}〜{Math.min((effectivePage + 1) * pageSize, sortedFiltered.length)} 件表示 / 全 {sortedFiltered.length} 件）
+              {sortedFiltered.length === 0
+                ? t("showingZero", { total: sortedFiltered.length })
+                : t("showing", { from: fromIndex, to: toIndex, total: sortedFiltered.length })}
             </span>
           </CardTitle>
 
@@ -101,7 +115,7 @@ export function TransactionTable({ records, isPdfExporting = false, autoDistrict
                 className="text-xs px-2 py-1 rounded border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 focus:outline-none focus:ring-1 focus:ring-blue-400"
               >
                 {PAGE_SIZE_OPTIONS.map((n) => (
-                  <option key={n} value={n}>{n}件表示</option>
+                  <option key={n} value={n}>{t("perPage", { n })}</option>
                 ))}
               </select>
 
@@ -111,7 +125,7 @@ export function TransactionTable({ records, isPdfExporting = false, autoDistrict
                 onChange={(e) => handleDistrictChange(e.target.value)}
                 className="text-xs px-2 py-1 rounded border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 focus:outline-none focus:ring-1 focus:ring-blue-400"
               >
-                <option value="">すべての地区</option>
+                <option value="">{t("allDistricts")}</option>
                 {districtOptions.map((d) => (
                   <option key={d} value={d}>{d}</option>
                 ))}
@@ -119,17 +133,17 @@ export function TransactionTable({ records, isPdfExporting = false, autoDistrict
 
               {/* 種別フィルター */}
               <div className="flex flex-wrap gap-1">
-                {TYPE_FILTERS.map((t) => (
+                {TYPE_FILTER_VALUES.map((tf) => (
                   <button
-                    key={t}
-                    onClick={() => handleFilterChange(t)}
+                    key={tf}
+                    onClick={() => handleFilterChange(tf)}
                     className={`text-xs px-2 py-1 rounded-full border transition-colors ${
-                      filter === t
+                      filter === tf
                         ? "bg-blue-600 text-white border-blue-600"
                         : "text-slate-600 border-slate-200 hover:bg-slate-100"
                     }`}
                   >
-                    {t}
+                    {t(TYPE_FILTER_KEYS[tf] as Parameters<typeof t>[0])}
                   </button>
                 ))}
               </div>
@@ -143,22 +157,22 @@ export function TransactionTable({ records, isPdfExporting = false, autoDistrict
           <Table>
             <TableHeader>
               <TableRow className="bg-slate-50 hover:bg-slate-50">
-                <TableHead className="text-xs w-28">種別</TableHead>
-                <TableHead className="text-xs w-24">地区名</TableHead>
-                <TableHead className="text-xs text-right w-28">取引価格</TableHead>
-                <TableHead className="text-xs text-right w-20">面積(㎡)</TableHead>
-                <TableHead className="text-xs text-right w-28">㎡単価</TableHead>
-                <TableHead className="text-xs w-20">築年</TableHead>
-                <TableHead className="text-xs w-16">構造</TableHead>
-                <TableHead className="text-xs w-32">都市計画</TableHead>
-                <TableHead className="text-xs w-28">取引時期</TableHead>
+                <TableHead className="text-xs w-28">{t("colType")}</TableHead>
+                <TableHead className="text-xs w-24">{t("colDistrict")}</TableHead>
+                <TableHead className="text-xs text-right w-28">{t("colPrice")}</TableHead>
+                <TableHead className="text-xs text-right w-20">{t("colArea")}</TableHead>
+                <TableHead className="text-xs text-right w-28">{t("colUnitPrice")}</TableHead>
+                <TableHead className="text-xs w-20">{t("colBuildYear")}</TableHead>
+                <TableHead className="text-xs w-16">{t("colStructure")}</TableHead>
+                <TableHead className="text-xs w-32">{t("colCityPlan")}</TableHead>
+                <TableHead className="text-xs w-28">{t("colPeriod")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {displayed.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={COLUMN_COUNT} className="text-center text-slate-400 py-8">
-                    該当するデータがありません
+                    {t("noData")}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -183,7 +197,7 @@ export function TransactionTable({ records, isPdfExporting = false, autoDistrict
                       {r.unitPrice ? formatUnitPrice(r.unitPrice).replace("円/㎡", "") : "—"}
                     </TableCell>
                     <TableCell className="tabular-nums text-slate-600">
-                      {r.buildingYear ? `${r.buildingYear}年` : "—"}
+                      {r.buildingYear ? t("buildYear", { year: r.buildingYear }) : "—"}
                     </TableCell>
                     <TableCell className="text-slate-600">{r.structure ?? "—"}</TableCell>
                     <TableCell className="text-slate-600 text-xs">
@@ -207,17 +221,17 @@ export function TransactionTable({ records, isPdfExporting = false, autoDistrict
               disabled={page === 0}
               className="text-xs px-3 py-1.5 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
-              ← 前へ
+              {t("prev")}
             </button>
             <span className="text-xs text-slate-500">
-              {page + 1} / {totalPages} ページ
+              {t("page", { current: page + 1, total: totalPages })}
             </span>
             <button
               onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
               disabled={page === totalPages - 1}
               className="text-xs px-3 py-1.5 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
-              次へ →
+              {t("next")}
             </button>
           </div>
         )}

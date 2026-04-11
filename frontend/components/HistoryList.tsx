@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useTranslations, useLocale } from "next-intl";
 import { subscribeHistory, type SearchHistoryItem } from "@/lib/history";
 
 interface Props {
@@ -10,12 +11,13 @@ interface Props {
 }
 
 export function HistoryList({ uid, onReplay }: Props) {
+  const t = useTranslations("HistoryList");
+  const locale = useLocale();
   const [items, setItems] = useState<SearchHistoryItem[]>([]);
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Portal は SSR では使えないのでクライアントマウント後にのみ有効にする
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -30,33 +32,27 @@ export function HistoryList({ uid, onReplay }: Props) {
     setOpen(false);
   }
 
-  // オーバーレイ + パネルを document.body 直下にPortalで描画
-  // → Leaflet の stacking context から完全に独立し、確実に最前面へ
   const portal =
     mounted && open
       ? createPortal(
           <>
-            {/* パネル外クリック用オーバーレイ */}
             <div
               className="fixed inset-0 z-[9998]"
               onClick={() => setOpen(false)}
               aria-hidden="true"
             />
 
-            {/* ポップアップパネル
-                FAB上端: bottom-6(24px) + h-14(56px) = 80px
-                パネル: bottom-[88px] で8pxギャップを確保し上方向に展開 */}
             <div
               ref={panelRef}
               className="fixed bottom-[88px] right-6 z-[9999] w-72 rounded-xl border border-slate-200 bg-white shadow-2xl flex flex-col max-h-[60vh]"
             >
               {/* ヘッダー（固定） */}
               <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between shrink-0">
-                <h2 className="text-sm font-semibold text-slate-700">検索履歴</h2>
+                <h2 className="text-sm font-semibold text-slate-700">{t("title")}</h2>
                 <button
                   onClick={() => setOpen(false)}
                   className="text-slate-400 hover:text-slate-600 text-lg leading-none"
-                  aria-label="閉じる"
+                  aria-label={t("close")}
                 >
                   ×
                 </button>
@@ -65,13 +61,14 @@ export function HistoryList({ uid, onReplay }: Props) {
               {/* リスト（スクロール） */}
               {items.length === 0 ? (
                 <div className="px-4 py-8 text-center text-xs text-slate-400">
-                  検索履歴はまだありません
+                  {t("empty")}
                 </div>
               ) : (
                 <ul className="divide-y divide-slate-100 overflow-y-auto">
                   {items.map((item) => {
+                    const dateLocale = locale === "en" ? "en-US" : "ja-JP";
                     const date = item.searchedAt?.toDate
-                      ? item.searchedAt.toDate().toLocaleDateString("ja-JP", {
+                      ? item.searchedAt.toDate().toLocaleDateString(dateLocale, {
                           month: "short",
                           day: "numeric",
                           hour: "2-digit",
@@ -80,8 +77,8 @@ export function HistoryList({ uid, onReplay }: Props) {
                       : "";
                     const yearsLabel =
                       item.years.length === 1
-                        ? `${item.years[0]}年`
-                        : `${item.years[0]}〜${item.years[item.years.length - 1]}年`;
+                        ? t("yearsSingle", { year: item.years[0] })
+                        : t("yearsRange", { from: item.years[0], to: item.years[item.years.length - 1] });
 
                     return (
                       <li key={item.id}>
@@ -93,7 +90,7 @@ export function HistoryList({ uid, onReplay }: Props) {
                             {item.prefecture} {item.municipality}
                           </div>
                           <div className="text-xs text-slate-500 mt-0.5">
-                            {yearsLabel} · {item.totalCount}件
+                            {yearsLabel} · {t("transactions", { count: item.totalCount })}
                           </div>
                           <div className="text-xs text-slate-400 mt-0.5">{date}</div>
                         </button>
@@ -110,10 +107,9 @@ export function HistoryList({ uid, onReplay }: Props) {
 
   return (
     <>
-      {/* フローティングアクションボタン（Portal不要、通常のfixedで十分） */}
       <button
         onClick={() => setOpen((v) => !v)}
-        title="検索履歴"
+        title={t("title")}
         aria-expanded={open}
         className="fixed bottom-6 right-6 z-[9999] w-14 h-14 rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 active:scale-95 transition-all flex items-center justify-center"
       >
