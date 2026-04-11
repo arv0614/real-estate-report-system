@@ -11,10 +11,13 @@ import createNextIntlPlugin from "next-intl/plugin";
 //   - PostHog analytics:               us.i.posthog.com, us-assets.i.posthog.com
 //   - 国土地理院地図タイル:             cyberjapandata.gsi.go.jp
 //   - 国土地理院住所検索API:            msearch.gsi.go.jp, mreversegeocoder.gsi.go.jp
-//   - Cloud Run バックエンド:           *.run.app
+//   - Cloud Run バックエンド (asia-northeast1): *.a.run.app (e.g. xxx-an.a.run.app)
 //   - Lemon Squeezy 決済:              app.lemonsqueezy.com, assets.lemonsqueezy.com
 //   - GTM + GA4:                       www.googletagmanager.com, www.google-analytics.com
 //   - Next.js (inline styles/scripts): unsafe-inline, unsafe-eval
+//   - ローカル開発バックエンド:         http://localhost:8080 (dev only)
+const isDev = process.env.NODE_ENV === "development";
+const devConnectSrc = isDev ? " http://localhost:8080 http://localhost:3001" : "";
 const CSP = [
   "default-src 'self'",
   // Next.js・FirebaseSDK・PostHog・Google API・GTM・GA4
@@ -26,7 +29,8 @@ const CSP = [
   // フォント
   "font-src 'self' https://fonts.gstatic.com https://assets.lemonsqueezy.com",
   // API・WebSocket通信 + GA4データ収集
-  "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://firebasestorage.googleapis.com https://storage.googleapis.com https://us.i.posthog.com https://us-assets.i.posthog.com https://*.run.app https://msearch.gsi.go.jp https://mreversegeocoder.gsi.go.jp https://*.firebaseapp.com https://app.lemonsqueezy.com https://api.lemonsqueezy.com https://www.googletagmanager.com https://www.google-analytics.com https://region1.google-analytics.com",
+  // NOTE: Cloud Run URLs (asia-northeast1) follow the pattern *.a.run.app — NOT *.run.app
+  `connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://firebasestorage.googleapis.com https://storage.googleapis.com https://us.i.posthog.com https://us-assets.i.posthog.com https://*.a.run.app https://*.run.app https://msearch.gsi.go.jp https://mreversegeocoder.gsi.go.jp https://*.firebaseapp.com https://app.lemonsqueezy.com https://api.lemonsqueezy.com https://www.googletagmanager.com https://www.google-analytics.com https://region1.google-analytics.com${devConnectSrc}`,
   // Google OAuth ポップアップ + Firebase Auth hidden iframe + Lemon Squeezy チェックアウト + GTM noscript iframe
   "frame-src 'self' https://accounts.google.com https://*.firebaseapp.com https://app.lemonsqueezy.com https://www.googletagmanager.com",
   // Service Worker

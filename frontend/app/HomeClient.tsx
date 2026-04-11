@@ -833,7 +833,7 @@ function HomePageContent() {
           {TOKYO_23_WARDS.map((a) => (
             <Link
               key={a.citySlug}
-              href={`/reports/${a.prefSlug}/${a.citySlug}`}
+              href={`${locale === "en" ? "/en" : ""}/reports/${a.prefSlug}/${a.citySlug}`}
               className="inline-flex items-center text-xs bg-slate-50 border border-slate-200 text-slate-600 rounded-md px-2.5 py-1 hover:border-blue-300 hover:text-blue-600 transition-colors"
             >
               {locale === "en" ? a.cityEn : a.city}

@@ -20,11 +20,14 @@ const allowedOrigins = config.cors.allowedOrigins;
 if (allowedOrigins.length === 0 && config.nodeEnv === "production") {
   console.warn("[Security] ALLOWED_ORIGINS が未設定です。本番環境では必ず設定してください。");
 }
+// ローカル開発用オリジンは常に追加（本番環境でも無害。localhost は外部からアクセス不可）
+const devOrigins = ["http://localhost:3000", "http://localhost:3001", "http://localhost:8080"];
+const effectiveOrigins = allowedOrigins.length > 0 ? [...allowedOrigins, ...devOrigins] : [];
 app.use(
   "*",
   cors({
-    // ALLOWED_ORIGINS が設定されていれば許可リストを使用、未設定時は全許可（開発用のみ）
-    origin: allowedOrigins.length > 0 ? allowedOrigins : "*",
+    // ALLOWED_ORIGINS が設定されていれば許可リスト（localhost含む）を使用、未設定時は全許可（開発用のみ）
+    origin: effectiveOrigins.length > 0 ? effectiveOrigins : "*",
     allowMethods: ["GET", "POST", "OPTIONS"],
   })
 );

@@ -113,14 +113,21 @@ export async function generateLifestyleImage(
   return res.json();
 }
 
-/** 円を「1,234万円」表記に変換。ゼロは「—」 */
-export function formatPrice(yen: number): string {
+/** 円を「1,234万円」(ja) または「¥1.2M」(en) 表記に変換。ゼロは「—」 */
+export function formatPrice(yen: number, locale = "ja"): string {
   if (yen === 0) return "—";
+  if (locale === "en") {
+    const millions = yen / 1_000_000;
+    return `¥${millions >= 100 ? Math.round(millions) : millions.toFixed(1)}M`;
+  }
   const man = Math.round(yen / 10000);
   return `${man.toLocaleString()}万円`;
 }
 
-/** 円/㎡を「NN万円/㎡」表記に変換 */
-export function formatUnitPrice(yenPerSqm: number): string {
+/** 円/㎡を「NN万円/㎡」(ja) または「¥X.XXM/㎡」(en) 表記に変換 */
+export function formatUnitPrice(yenPerSqm: number, locale = "ja"): string {
+  if (locale === "en") {
+    return `¥${(yenPerSqm / 1_000_000).toFixed(2)}M/㎡`;
+  }
   return `${Math.round(yenPerSqm / 10000).toLocaleString()}万円/㎡`;
 }

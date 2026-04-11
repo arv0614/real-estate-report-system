@@ -1,4 +1,4 @@
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatPrice, formatUnitPrice } from "@/lib/api";
 import type { HazardInfo, TransactionSummary } from "@/types/api";
@@ -22,6 +22,7 @@ function floodValueColor(hasRisk: boolean, rank: number | null) {
 
 export function SummaryCards({ summary, hazard }: Props) {
   const t = useTranslations("SummaryCards");
+  const locale = useLocale();
 
   const statsCards = [
     {
@@ -32,20 +33,20 @@ export function SummaryCards({ summary, hazard }: Props) {
     },
     {
       title: t("avgPrice"),
-      value: formatPrice(summary.avgTradePrice),
-      sub: t("median", { price: formatPrice(summary.medianTradePrice) }),
+      value: formatPrice(summary.avgTradePrice, locale),
+      sub: t("median", { price: formatPrice(summary.medianTradePrice, locale) }),
       icon: "💴",
     },
     {
       title: t("avgUnitPrice"),
-      value: summary.avgUnitPrice ? formatUnitPrice(summary.avgUnitPrice) : "—",
+      value: summary.avgUnitPrice ? formatUnitPrice(summary.avgUnitPrice, locale) : "—",
       sub: t("avgUnitPriceSub"),
       icon: "📐",
     },
     {
       title: t("priceRange"),
-      value: t("priceTo", { min: formatPrice(summary.minTradePrice) }),
-      sub: t("priceMax", { max: formatPrice(summary.maxTradePrice) }),
+      value: t("priceTo", { min: formatPrice(summary.minTradePrice, locale) }),
+      sub: t("priceMax", { max: formatPrice(summary.maxTradePrice, locale) }),
       icon: "📈",
     },
   ];

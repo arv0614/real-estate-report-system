@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import {
   Table,
   TableBody,
@@ -46,6 +46,7 @@ function periodSortKey(period: string): number {
 
 export function TransactionTable({ records, isPdfExporting = false, autoDistrict }: Props) {
   const t = useTranslations("TransactionTable");
+  const locale = useLocale();
   const [filter, setFilter] = useState<FilterValue>("すべて");
   const [districtFilter, setDistrictFilter] = useState("");
   const [page, setPage] = useState(0);
@@ -188,13 +189,13 @@ export function TransactionTable({ records, isPdfExporting = false, autoDistrict
                     </TableCell>
                     <TableCell className="text-slate-600">{r.districtName || "—"}</TableCell>
                     <TableCell className="text-right font-medium tabular-nums">
-                      {formatPrice(r.tradePrice)}
+                      {formatPrice(r.tradePrice, locale)}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
                       {r.area?.toLocaleString() ?? "—"}
                     </TableCell>
                     <TableCell className="text-right tabular-nums text-slate-600">
-                      {r.unitPrice ? formatUnitPrice(r.unitPrice).replace("円/㎡", "") : "—"}
+                      {r.unitPrice ? formatUnitPrice(r.unitPrice, locale).replace("/㎡", "") : "—"}
                     </TableCell>
                     <TableCell className="tabular-nums text-slate-600">
                       {r.buildingYear ? t("buildYear", { year: r.buildingYear }) : "—"}
