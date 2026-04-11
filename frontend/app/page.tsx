@@ -6,7 +6,7 @@ import HomeClient from "./HomeClient";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-  "https://realestate-frontend-2hctlfcy6a-an.a.run.app";
+  "https://mekiki-research.com";
 
 type Props = {
   searchParams: Promise<{ address?: string; score?: string; price?: string; flood?: string }>;

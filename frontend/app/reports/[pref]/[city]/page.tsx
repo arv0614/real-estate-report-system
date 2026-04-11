@@ -37,7 +37,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const SITE_URL =
     process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-    "https://realestate-frontend-2hctlfcy6a-an.a.run.app";
+    "https://mekiki-research.com";
 
   return {
     title,
@@ -90,7 +90,7 @@ export default async function AreaReportPage({ params }: PageProps) {
 
   const SITE_URL =
     process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-    "https://realestate-frontend-2hctlfcy6a-an.a.run.app";
+    "https://mekiki-research.com";
 
   const data = await fetchAreaData(area.lat, area.lng);
   const records = data?.data?.data ?? [];

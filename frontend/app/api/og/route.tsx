@@ -5,7 +5,7 @@ export const runtime = "edge";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-  "https://realestate-frontend-2hctlfcy6a-an.a.run.app";
+  "https://mekiki-research.com";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
