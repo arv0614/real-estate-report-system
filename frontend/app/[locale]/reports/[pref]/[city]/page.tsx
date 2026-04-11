@@ -213,9 +213,9 @@ export default async function LocaleAreaReportPage({ params }: PageProps) {
                 city: cityLabel,
                 count: summary.totalCount.toLocaleString(),
               })}
-              {t("overviewAvgPrice", { price: formatPrice(summary.avgTradePrice) })}
+              {t("overviewAvgPrice", { price: formatPrice(summary.avgTradePrice, locale) })}
               {summary.avgUnitPrice
-                ? t("overviewUnitPrice", { unitPrice: formatUnitPrice(summary.avgUnitPrice) })
+                ? t("overviewUnitPrice", { unitPrice: formatUnitPrice(summary.avgUnitPrice, locale) })
                 : ""}
               {t("overviewSuffix")}
               {" "}

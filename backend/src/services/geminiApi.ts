@@ -31,6 +31,13 @@ export interface AreaReportInput {
 }
 
 function buildPrompt(input: AreaReportInput): string {
+  if (input.locale === "en") {
+    return buildPromptEn(input);
+  }
+  return buildPromptJa(input);
+}
+
+function buildPromptJa(input: AreaReportInput): string {
   const {
     lat, lng, prefecture, municipality,
     years, totalCount, avgTradePrice, avgUnitPrice, minTradePrice, maxTradePrice,
@@ -143,10 +150,122 @@ ${prefecture}${municipality}や近隣エリアで最近話題になっている�
 
 ---
 
-${input.locale === "en"
-  ? "Please write this entire report in English. Use professional but accessible language for a general audience considering property purchase in Japan."
-  : "※レポートは日本語で作成し、専門用語には必要に応じて簡単な説明を加えてください。"
-}`;
+※レポートは日本語で作成し、専門用語には必要に応じて簡単な説明を加えてください。`;
+}
+
+function buildPromptEn(input: AreaReportInput): string {
+  const {
+    lat, lng, prefecture, municipality,
+    years, totalCount, avgTradePrice, avgUnitPrice, minTradePrice, maxTradePrice,
+    hazard, environment,
+  } = input;
+
+  const yearLabel = years.length === 1
+    ? `${years[0]}`
+    : `${years[0]}–${years[years.length - 1]}`;
+
+  const floodLabel = hazard.flood.hasRisk
+    ? `Flood risk present (max inundation depth: ${hazard.flood.maxDepthLabel})`
+    : "No flood risk";
+
+  const landslideLabel = hazard.landslide.hasRisk
+    ? `Within landslide warning zone (${hazard.landslide.phenomena.join(", ")})`
+    : "No landslide risk";
+
+  const env = environment;
+  const zoningStr = env.zoning.useArea
+    ? `${env.zoning.useArea} (coverage ratio: ${env.zoning.coverageRatio ?? "unknown"} / floor area ratio: ${env.zoning.floorAreaRatio ?? "unknown"})`
+    : "Unknown";
+
+  const stationStr = env.station.name
+    ? `${env.station.name} Station (${env.station.operator ?? ""}${env.station.dailyPassengers ? `, ${env.station.dailyPassengers.toLocaleString()} daily passengers` : ""})`
+    : "Unknown";
+
+  const toM = (yen: number) => `¥${(yen / 1_000_000).toFixed(1)}M`;
+  const toMSqm = (yen: number) => `¥${(yen / 1_000_000).toFixed(2)}M/㎡`;
+
+  return `You are an experienced Japanese real estate appraiser and senior property agent with over 20 years of expertise in the Japanese property market. Your role is to provide professional, insightful analysis that goes beyond raw numbers — capturing the character, history, demographics, and future potential of an area so buyers can make truly informed decisions.
+
+Please write a comprehensive area analysis report in Markdown format for a client considering purchasing property in this location. Write in professional yet accessible English for a general audience, including non-Japanese readers unfamiliar with the local market. Support every claim with data and professional judgment.
+
+---
+
+**Area Information**
+- Location: ${municipality}, ${prefecture} (City code: ${input.cityCode})
+- Coordinates: ${lat}°N, ${lng}°E
+- Zoning: ${zoningStr}
+- School district: Elementary=${env.schools.elementary ?? "Unknown"} / Junior High=${env.schools.juniorHigh ?? "Unknown"}
+- Medical facilities within ~1.2km: ${env.medical.count} facilities
+- Nearest station: ${stationStr}
+
+**Transaction Data (${yearLabel}, ${totalCount} records)**
+- Average transaction price: ${toM(avgTradePrice)}
+- Average unit price per ㎡: ${avgUnitPrice ? toMSqm(avgUnitPrice) : "No data"}
+- Price range: ${toM(minTradePrice)} – ${toM(maxTradePrice)}
+
+**Hazard Information**
+- Flood risk: ${floodLabel}
+- Landslide risk: ${landslideLabel}
+
+---
+
+Write the following **10 sections in this exact order and with these exact headings**:
+
+## 1. Area Overview
+
+Provide a 3–4 sentence executive summary of the property market and living environment, drawing on transaction data and area characteristics.
+
+## 2. Family & Lifestyle Score
+
+Rate the area ★1–★5 and list 3 specific bullet points supporting the score.
+
+## 3. History & Geography
+
+Describe the origin of the area's name, its historical background (former samurai estates, farmland, reclaimed land, etc.), topographical features (upland/lowland, river proximity), and how these relate to soil quality and flood risk.
+
+## 4. Development & Redevelopment Trends
+
+Describe nearby large commercial facilities, new rail/station plans, and urban development initiatives by local government. If information is limited, note "Refer to the municipality's urban planning documents for details."
+
+## 5. Available Subsidies & Incentives
+
+List housing purchase, renovation, and child-rearing subsidies available in ${municipality}, ${prefecture}. Cover both national programs (mortgage tax deduction, ZEH subsidy, etc.) and local government schemes.
+
+## 6. Recent News & Developments
+
+List 3–5 bullet points covering recent news, redevelopment progress, community events, or government policy changes that prospective buyers should know about.
+
+## 7. Future Outlook
+
+Describe the 10–20 year outlook covering urban structural change, transport infrastructure, nearby development, and property market trends. Include both optimistic and pessimistic scenarios.
+
+## 8. Population Forecast
+
+Based on general demographic trends (e.g., IPSS projections), forecast population dynamics for ${municipality} (growing / stable / declining) and analyze the impact on housing demand and asset values.
+
+## 9. Real Living Experience — Pros & Cons
+
+Provide honest, resident-perspective information that you only discover by living there. Cover specific drawbacks and benefits, including:
+- Morning/evening commute congestion and conditions (use passenger volume data)
+- Noise, vibration, and air quality near major roads or rail lines
+- Inconveniences from hills, level crossings, or one-way streets
+- Retail availability gaps (late-night, specialist shops, etc.)
+- Environmental concerns: odors, industrial facilities, cemeteries, etc.
+- Climate: summer heat, winter cold, wind exposure
+- Other "only locals know" daily frustrations and genuine highlights
+
+## 10. Property Professional's Perspective
+
+As an experienced appraiser and agent, provide your expert opinion for buyers considering this area. Include all of the following:
+- **Asset value vs. neighboring areas**: Compare ¥/㎡ pricing with adjacent stations/districts and identify value gaps
+- **Exit strategy (rental & resale)**: Expected rental yield, demand profile, and market liquidity on resale
+- **Rational risk mitigation**: For hazard-flagged areas, explain specific insurance, construction, or purchase conditions to manage risk
+- **Market timing**: Interest rate environment, price trends, and inventory levels to support a buy/wait decision
+- **Ideal buyer profile**: Describe the lifestyle and circumstances for which this area is an ideal fit
+
+---
+
+Write the entire report in English. Use clear, professional language appropriate for a general English-speaking audience interested in Japanese real estate.`;
 }
 
 /**

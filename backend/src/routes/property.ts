@@ -87,9 +87,19 @@ app.get("/transactions", async (c) => {
       ]);
 
       // AIレポート: キャッシュにあればそのまま使用、なければ生成してキャッシュを更新
-      let aiReport = cached.aiReport;
+      // 言語ミスマッチ検出: locale=en なのに日本語レポートがキャッシュされている場合は再生成
+      // ヒューリスティック: 先頭80文字内の日本語文字数が10以上なら日本語レポートと判断
+      const countJaCharsInPrefix = (text: string) =>
+        (text.slice(0, 80).match(/[\u3040-\u9FAF]/g) ?? []).length;
+      const isLangMismatch = cached.aiReport
+        ? (locale === "en" && countJaCharsInPrefix(cached.aiReport) >= 10)
+          || (locale === "ja" && countJaCharsInPrefix(cached.aiReport) === 0)
+        : false;
+
+      let aiReport = isLangMismatch ? undefined : cached.aiReport;
       if (!aiReport) {
-        console.log(`[Gemini] キャッシュにaiReportなし。新規生成します (${lat}, ${lng})`);
+        const reason = isLangMismatch ? "言語ミスマッチ（再生成）" : "aiReportなし";
+        console.log(`[Gemini] ${reason}。新規生成します (${lat}, ${lng}, locale=${locale})`);
         const records = (cachedApiData.data ?? []) as TransactionRecord[];
         const summary = calcSummary(records);
         const reportInput: AreaReportInput = {

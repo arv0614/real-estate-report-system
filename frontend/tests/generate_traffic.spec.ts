@@ -15,7 +15,7 @@ import { test, expect, type Page, type BrowserContext } from "@playwright/test";
 // ──────────────────────────────────────────────
 const BASE_URL =
   process.env.TEST_BASE_URL ||
-  "https://realestate-frontend-2hctlfcy6a-an.a.run.app";
+  "https://mekiki-research.com";
 
 /** ダミーメールアドレス（cleanup_dummy_data.ts で削除する識別子） */
 const DUMMY_EMAIL = "dummy_test_playwright@example.com";
