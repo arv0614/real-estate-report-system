@@ -48,7 +48,7 @@ export function ShareActions({ prefecture, municipality, lat, lng, avgUnitPrice,
 
   const base =
     process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
-    (typeof window !== "undefined" ? window.location.origin : "https://realestate-frontend-2hctlfcy6a-an.a.run.app");
+    (typeof window !== "undefined" ? window.location.origin : "https://mekiki-research.com");
 
   /** プラットフォーム別に ref パラメータを変えた共有URLを生成 */
   function buildShareUrl(platform: Platform): string {

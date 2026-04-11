@@ -4,7 +4,7 @@ import { IS_FREE_UNLIMITED_CAMPAIGN } from "@/lib/userPlan";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-  "https://realestate-frontend-2hctlfcy6a-an.a.run.app";
+  "https://mekiki-research.com";
 
 export const metadata: Metadata = {
   title: "サービス紹介・料金プラン",

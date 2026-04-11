@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-  "https://realestate-frontend-2hctlfcy6a-an.a.run.app";
+  "https://mekiki-research.com";
 
 const SITE_NAME = "物件目利きリサーチ";
 const DEFAULT_DESCRIPTION =
