@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { trackEvent } from "@/lib/posthog";
+import { getApiBase } from "@/lib/api";
 
 interface Props {
   open: boolean;
@@ -13,9 +14,6 @@ interface Props {
   /** ログイン中ユーザーのメール（input の初期値） */
   userEmail?: string | null;
 }
-
-const API_BASE =
-  (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "") || "";
 
 export function WaitlistModal({ open, onClose, plan, uid, userEmail }: Props) {
   const [email, setEmail] = useState(userEmail ?? "");
@@ -37,7 +35,7 @@ export function WaitlistModal({ open, onClose, plan, uid, userEmail }: Props) {
     setError(null);
 
     try {
-      const res = await fetch(`${API_BASE}/api/waitlist`, {
+      const res = await fetch(`${getApiBase()}/api/waitlist`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

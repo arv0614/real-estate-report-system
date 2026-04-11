@@ -63,12 +63,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 // ── データ取得 ────────────────────────────────────────────────────────
+// NOTE: サーバーコンポーネントでは相対パス（/api/...）を使わない。
+// Next.js は相対パスを現在のリクエスト URL で解決するため、
+// /en/reports/... ページだと /en/api/... になってしまう。
 async function fetchAreaData(
   lat: number,
   lng: number
 ): Promise<TransactionApiResponse | null> {
-  const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
-  const API_BASE = RAW_API_URL.replace(/\/$/, "") || "";
+  const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
+  if (!API_BASE) {
+    // 絶対 URL が未設定の場合はスキップ（相対パスによる /en/api/... 混入を防ぐ）
+    return null;
+  }
   const url = `${API_BASE}/api/property/transactions?lat=${lat}&lng=${lng}&zoom=15`;
 
   try {
