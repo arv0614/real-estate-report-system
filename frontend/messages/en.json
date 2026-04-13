@@ -7,7 +7,8 @@
     "loginButton": "Sign in with Google",
     "logoutButton": "Sign out",
     "guestBadge": "Guest",
-    "langSwitch": "日本語"
+    "langSwitch": "日本語",
+    "upgradeBtn": "Upgrade to Pro"
   },
   "Progress": {
     "connecting": "Connecting to MLIT API...",
@@ -102,7 +103,7 @@
     "freePrice": "¥0",
     "proPlan": "Pro",
     "proSub": "Paid plan",
-    "proPrice": "Coming soon",
+    "proPrice": "¥980/month",
     "proRecommended": "Best",
     "featureSearchCount": "Daily search limit",
     "featurePriceSummary": "Price summary",
@@ -134,7 +135,11 @@
     "waitlistSubmit": "Register",
     "waitlistDone": "Registered! We'll be in touch when we launch.",
     "waitlistError": "Please enter a valid email address.",
-    "waitlistSaveError": "Registration failed. Please try again later."
+    "waitlistSaveError": "Registration failed. Please try again later.",
+    "ctaUpgradeTitle": "Upgrade to Pro",
+    "ctaUpgradeBody": "Unlock unlimited searches, PDF export, lifestyle image generation, and all features.",
+    "ctaUpgradeBtn": "Upgrade to Pro →",
+    "checkoutLoading": "Processing..."
   },
   "ReportPage": {
     "backLink": "← Back to Home",
