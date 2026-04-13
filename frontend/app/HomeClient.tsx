@@ -23,7 +23,7 @@ import { dataLayerPush } from "@/lib/analytics";
 import { fetchTransactions, calcSummary } from "@/lib/api";
 import { TOKYO_23_WARDS } from "@/lib/areas";
 import { trackLimitReached } from "@/lib/posthog";
-import { gtagEvent } from "@/lib/gtag";
+import { gtagEvent, gtagPurchase } from "@/lib/gtag";
 import { exportToPdf, DEFAULT_PDF_OPTIONS } from "@/lib/exportPdf";
 import type { PdfExportOptions } from "@/lib/exportPdf";
 import { getLifestyleCache, saveLifestyleCache } from "@/lib/lifestyleCache";
@@ -42,7 +42,6 @@ import { EnvironmentInfoCard } from "@/components/EnvironmentInfo";
 import { AiReport } from "@/components/AiReport";
 import { ShareActions } from "@/components/ShareActions";
 import { PlanComparisonModal } from "@/components/PlanComparisonModal";
-import { WaitlistModal } from "@/components/WaitlistModal";
 import nextDynamic from "next/dynamic";
 
 // レポート内地図（読み取り専用・SSR無効）
@@ -89,8 +88,6 @@ function HomePageContent() {
   const [lifestyleImageLoading, setLifestyleImageLoading] = useState(false);
   const [searchCoords, setSearchCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [planModalOpen, setPlanModalOpen] = useState(false);
-  const [waitlistModalOpen, setWaitlistModalOpen] = useState(false);
-  const [waitlistPlan, setWaitlistPlan] = useState<"guest" | "free">("guest");
   const [searchCountToday, setSearchCountToday] = useState(0);
 
   // PDF出力セクション選択
@@ -132,6 +129,24 @@ function HomePageContent() {
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [settingsOpen]);
+
+  // 決済成功リダイレクト検知 → GA4 purchase イベント（セッション内重複防止）
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("payment") !== "success") return;
+
+    const DEDUP_KEY = "ga4_purchase_fired";
+    if (!sessionStorage.getItem(DEDUP_KEY)) {
+      sessionStorage.setItem(DEDUP_KEY, "1");
+      gtagPurchase(`ls_${Date.now()}`, 980, "JPY");
+    }
+
+    // URL から ?payment=success を除去してリロード時の重複を防ぐ
+    params.delete("payment");
+    const qs = params.toString();
+    const cleanUrl = `${window.location.pathname}${qs ? `?${qs}` : ""}${window.location.hash}`;
+    window.history.replaceState({}, "", cleanUrl);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // iOS Safari の bfcache 復元時（戻るボタン）に PDF 出力状態を強制リセット
   // window.open(blobUrl) で現タブがナビゲートされた場合でも、戻り後は必ずクリーンな状態に戻す
@@ -212,8 +227,9 @@ function HomePageContent() {
         if (!checkGuestSearchAllowed()) {
           trackLimitReached({ plan: "guest" });
           dataLayerPush({ event: "limit_reached", user_plan: "guest", search_count_today: GUEST_DAILY_LIMIT });
-          setWaitlistPlan("guest");
-          setWaitlistModalOpen(true);
+          gtagEvent({ action: "reach_limit", category: "conversion_funnel", label: "guest" });
+          gtagEvent({ action: "view_plan_modal", category: "conversion_funnel", label: "limit_modal" });
+          setPlanModalOpen(true);
           return;
         }
         recordGuestSearch();
@@ -224,8 +240,9 @@ function HomePageContent() {
         if (!IS_FREE_UNLIMITED_CAMPAIGN && !allowed) {
           trackLimitReached({ plan: "free", uid: user.uid });
           dataLayerPush({ event: "limit_reached", user_plan: "free", search_count_today: FREE_DAILY_LIMIT });
-          setWaitlistPlan("free");
-          setWaitlistModalOpen(true);
+          gtagEvent({ action: "reach_limit", category: "conversion_funnel", label: "free" });
+          gtagEvent({ action: "view_plan_modal", category: "conversion_funnel", label: "limit_modal" });
+          setPlanModalOpen(true);
           return;
         }
         todayCount = usedCount;
@@ -253,6 +270,10 @@ function HomePageContent() {
       setResult(data);
       setSearchCountToday(todayCount);
       dataLayerPush({ event: "generate_report", user_plan: userPlanDL, search_count_today: todayCount });
+      const locationName = data.data.data[0]
+        ? `${data.data.data[0].prefecture}${data.data.data[0].municipality}`
+        : "";
+      gtagEvent({ action: "generate_report", category: "engagement", label: locationName });
 
       // Firestore に検索履歴を保存（ログイン中のみ）
       if (user) {
@@ -346,7 +367,7 @@ function HomePageContent() {
 
   async function handleDownloadPdf() {
     if (plan !== "pro") {
-      gtagEvent({ action: "view_plan_modal", category: "conversion_funnel" });
+      gtagEvent({ action: "view_plan_modal", category: "conversion_funnel", label: "pdf" });
       setPlanModalOpen(true);
       return;
     }
@@ -464,7 +485,7 @@ function HomePageContent() {
           {/* ゲスト・未ログイン時はベータ情報ボタン */}
           {!user && (
             <button
-              onClick={() => { gtagEvent({ action: "view_plan_modal", category: "conversion_funnel" }); setPlanModalOpen(true); }}
+              onClick={() => { gtagEvent({ action: "view_plan_modal", category: "conversion_funnel", label: "header" }); setPlanModalOpen(true); }}
               className="hidden sm:inline-flex text-xs px-3 py-1.5 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
             >
               {t("Header.betaLink")}
@@ -831,15 +852,6 @@ function HomePageContent() {
         uid={user?.uid ?? null}
         userEmail={user?.email ?? null}
         searchCountToday={searchCountToday}
-      />
-
-      {/* ウェイティングリストモーダル（上限到達時） */}
-      <WaitlistModal
-        open={waitlistModalOpen}
-        onClose={() => setWaitlistModalOpen(false)}
-        plan={waitlistPlan}
-        uid={user?.uid ?? null}
-        userEmail={user?.email ?? null}
       />
 
       {/* 主要エリアから探すリンク集（SEO内部リンク） */}
