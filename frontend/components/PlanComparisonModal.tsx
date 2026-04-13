@@ -4,8 +4,7 @@ import React from "react";
 import { useTranslations } from "next-intl";
 import { signInWithPopup } from "firebase/auth";
 import { getApiBase } from "@/lib/api";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
-import { auth, googleProvider, db } from "@/lib/firebase";
+import { auth, googleProvider } from "@/lib/firebase";
 import { FREE_DAILY_LIMIT, GUEST_DAILY_LIMIT, IS_FREE_UNLIMITED_CAMPAIGN } from "@/lib/userPlan";
 import { gtagEvent } from "@/lib/gtag";
 import { dataLayerPush } from "@/lib/analytics";
@@ -19,12 +18,6 @@ interface Props {
   userEmail?: string | null;
   searchCountToday?: number;
 }
-
-// ─────────────────────────────────────────────────────────────
-// 🚦 決済有効フラグ
-//    Lemon Squeezy の設定完了後に `true` へ変更するだけで決済導線が有効になる
-// ─────────────────────────────────────────────────────────────
-const IS_PAYMENT_ENABLED = true;
 
 function Cell({ value, highlight }: { value: string; highlight?: boolean }) {
   const isX = value.startsWith("✕");
@@ -49,11 +42,6 @@ function Cell({ value, highlight }: { value: string; highlight?: boolean }) {
 export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail, searchCountToday = 0 }: Props) {
   const t = useTranslations("PlanModal");
   const [checkoutLoading, setCheckoutLoading] = React.useState(false);
-  const [waitlistOpen, setWaitlistOpen] = React.useState(false);
-  const [waitlistEmail, setWaitlistEmail] = React.useState(userEmail ?? "");
-  const [waitlistLoading, setWaitlistLoading] = React.useState(false);
-  const [waitlistDone, setWaitlistDone] = React.useState(false);
-  const [waitlistError, setWaitlistError] = React.useState("");
 
   if (!open) return null;
 
@@ -83,39 +71,9 @@ export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail
     }
   }
 
-  async function handleWaitlistSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const email = waitlistEmail.trim();
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setWaitlistError(t("waitlistError"));
-      return;
-    }
-    setWaitlistLoading(true);
-    setWaitlistError("");
-    try {
-      const docId = email.replace(/[^a-zA-Z0-9]/g, "_");
-      await setDoc(doc(db, "waitlist", docId), {
-        email,
-        uid: uid ?? null,
-        registeredAt: serverTimestamp(),
-        source: "plan_modal",
-      }, { merge: true });
-      setWaitlistDone(true);
-    } catch (err) {
-      console.error("[Waitlist] save error:", err);
-      setWaitlistError(t("waitlistSaveError"));
-    } finally {
-      setWaitlistLoading(false);
-    }
-  }
-
   async function handleUpgrade() {
-    gtagEvent({ action: "click_checkout", category: "conversion_funnel", label: "Pro" });
+    gtagEvent({ action: "begin_checkout", category: "conversion_funnel", label: "Pro" });
     dataLayerPush({ event: "begin_checkout", user_plan: currentPlan ?? "guest", search_count_today: searchCountToday });
-    if (!IS_PAYMENT_ENABLED) {
-      setWaitlistOpen(true);
-      return;
-    }
     if (!uid) return;
     setCheckoutLoading(true);
     try {
@@ -244,32 +202,21 @@ export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail
 
           {/* Pro アップグレードCTA（フリープランユーザー向け） */}
           {currentPlan === "free" && (
-            IS_PAYMENT_ENABLED ? (
-              <div className="rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-4">
-                <p className="text-sm font-semibold text-amber-800 mb-1">
-                  {t("ctaUpgradeTitle")}
-                </p>
-                <p className="text-sm text-amber-700 mb-3">
-                  {t("ctaUpgradeBody")}
-                </p>
-                <button
-                  onClick={handleUpgrade}
-                  disabled={checkoutLoading}
-                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-sm hover:from-amber-600 hover:to-orange-600 transition-all shadow-md disabled:opacity-60"
-                >
-                  {checkoutLoading ? t("checkoutLoading") : t("ctaUpgradeBtn")}
-                </button>
-              </div>
-            ) : (
-              <div className="rounded-xl border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-4">
-                <p className="text-sm font-semibold text-blue-800 mb-1">
-                  {t("ctaBetaTitle")}
-                </p>
-                <p className="text-sm text-blue-700">
-                  {t("ctaBetaBody")}
-                </p>
-              </div>
-            )
+            <div className="rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-4">
+              <p className="text-sm font-semibold text-amber-800 mb-1">
+                {t("ctaUpgradeTitle")}
+              </p>
+              <p className="text-sm text-amber-700 mb-3">
+                {t("ctaUpgradeBody")}
+              </p>
+              <button
+                onClick={handleUpgrade}
+                disabled={checkoutLoading}
+                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-sm hover:from-amber-600 hover:to-orange-600 transition-all shadow-md disabled:opacity-60"
+              >
+                {checkoutLoading ? t("checkoutLoading") : t("ctaUpgradeBtn")}
+              </button>
+            </div>
           )}
 
           {/* プロユーザー */}
@@ -279,35 +226,6 @@ export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail
             </div>
           )}
 
-          {/* ウェイトリスト登録フォーム */}
-          {waitlistOpen && !waitlistDone && (
-            <div className="rounded-xl border border-purple-200 bg-purple-50 px-4 py-4">
-              <p className="text-sm font-semibold text-purple-800 mb-1">{t("waitlistTitle")}</p>
-              <p className="text-xs text-purple-700 mb-3">{t("waitlistDesc")}</p>
-              <form onSubmit={handleWaitlistSubmit} className="flex gap-2">
-                <input
-                  type="email"
-                  value={waitlistEmail}
-                  onChange={(e) => setWaitlistEmail(e.target.value)}
-                  placeholder={t("waitlistPlaceholder")}
-                  className="flex-1 text-sm border border-purple-300 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-purple-400"
-                />
-                <button
-                  type="submit"
-                  disabled={waitlistLoading}
-                  className="shrink-0 px-4 py-1.5 rounded-lg bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700 transition-colors"
-                >
-                  {waitlistLoading ? "..." : t("waitlistSubmit")}
-                </button>
-              </form>
-              {waitlistError && <p className="text-xs text-red-600 mt-1">{waitlistError}</p>}
-            </div>
-          )}
-          {waitlistDone && (
-            <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 text-center">
-              {t("waitlistDone")}
-            </div>
-          )}
         </div>
       </div>
     </div>

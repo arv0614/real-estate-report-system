@@ -6,9 +6,10 @@
 > B2B（不動産営業の提案書作成）から B2C（住宅購入検討者の自己調査）まで幅広く対応。
 
 🔗 **本番 URL**: https://mekiki-research.com
+🚀 **ステータス**: 商用リリース済み（Lemon Squeezy 決済稼働中・GA4 ファネル計測導入済み）
 
-> **💳 Lemon Squeezy による Pro プランの決済が稼働中です（¥980/月）**
-> Free プランでは基本機能を無料でご利用いただけます。Pro にアップグレードすると検索無制限・PDF 出力・暮らしイメージ生成などすべての機能が利用可能になります。
+> **💳 Pro プラン（¥980/月）の決済が本番稼働中です**
+> Free プランでは基本機能を無料でご利用いただけます。検索上限（ゲスト: 1回/日、Free: 3回/日）に達した際は直接プランモーダルに誘導し、Lemon Squeezy でシームレスにアップグレードできます。Pro プランでは検索無制限・PDF 出力・暮らしイメージ生成などすべての機能が利用可能です。
 
 ---
 
@@ -124,6 +125,26 @@ Google アカウントでログイン後、AI レポート内の **「✨ 暮ら
 - `dom-to-image-more` + `jsPDF` による高品質 PDF 生成（地図・グラフ・画像含む）
 - 非表示セクションは画面表示に影響なし（`pdf-hide` CSS クラス制御）
 
+### Pro プラン（¥980/月）— 商用リリース済み
+- **検索無制限**: 日次制限なし（ゲスト: 1回/日、Free: 3回/日 の制限を撤廃）
+- **PDF レポート出力**: 顧客提案書・社内報告書として即座にエクスポート
+- **暮らしのイメージ画像生成**: AI による自動エリアビジュアライゼーション
+- **Lemon Squeezy 連携**: Firebase ID Token 認証 + HMAC-SHA256 Webhook 署名検証により安全な決済フローを実装
+- 検索上限到達時は `WaitlistModal` ではなく `PlanComparisonModal` に直接誘導し、決済への最短導線を実現
+
+### GA4 コンバージョンファネル計測（導入済み）
+`frontend/lib/gtag.ts` + GTM を組み合わせ、以下のファネルイベントをすべて計測しています。
+
+| イベント名 | 発火タイミング | 主なパラメータ |
+|---|---|---|
+| `generate_report` | 検索APIが成功し結果が表示された瞬間 | `event_label`: 都道府県＋市区町村名 |
+| `reach_limit` | 日次検索上限に達してプランモーダルが開く直前 | `event_label`: "guest" / "free" |
+| `view_plan_modal` | 料金モーダルが表示される直前 | `event_label`: "header" / "limit_modal" / "pdf" |
+| `begin_checkout` | 決済ボタンクリック → Lemon Squeezy API 呼び出し前 | `event_label`: "Pro" |
+| `purchase` | `?payment=success` リダイレクト検知時（初回のみ） | `value`: 980, `currency`: "JPY" |
+
+> `purchase` イベントは `sessionStorage` による同一セッション内重複防止 + URL から `?payment=success` を即座に除去することでリロード時の二重計測を防いでいます。
+
 ---
 
 ## 💎 料金プランと利用制限
@@ -183,6 +204,10 @@ Google アカウントでログイン後、AI レポート内の **「✨ 暮ら
 [PostHog]
   └── アクセス解析・イベントトラッキング（Webhook 署名検証済み）
 
+[GA4 + GTM]
+  └── コンバージョンファネル計測（generate_report / reach_limit / view_plan_modal / begin_checkout / purchase）
+      purchase イベント: sessionStorage 重複防止 + URL クリーンアップで二重計測を防止
+
 [Terraform]
   └── Cloud Run / Artifact Registry / GCS / IAM の IaC 管理
 ```
@@ -227,8 +252,9 @@ Google アカウントでログイン後、AI レポート内の **「✨ 暮ら
 | Firebase Authentication | ユーザー認証（Google OAuth 2.0） |
 | Firebase Firestore | ユーザープラン・検索履歴の永続化 |
 | Firebase Storage | AI 生成画像の永続化 |
-| Lemon Squeezy | サブスクリプション決済・Webhook（稼働中） |
+| Lemon Squeezy | サブスクリプション決済・Webhook（本番稼働中） |
 | PostHog | アクセス解析・イベントトラッキング |
+| Google Analytics 4 (GA4) + GTM | コンバージョンファネル計測（generate_report / reach_limit / begin_checkout / purchase） |
 | Terraform | GCP リソースの IaC 管理（Cloud Run / GCS / Artifact Registry / IAM） |
 
 ### 外部 API
@@ -468,8 +494,8 @@ npx playwright test tests/production_e2e.spec.ts --reporter=list
 | **シナリオB** フッターリンク | 利用規約リンク → `/terms` 遷移 | ✅ PASS |
 | **シナリオB** フッターリンク | プライバシーポリシーリンク → `/privacy` 遷移 | ✅ PASS |
 | **シナリオC** ゲスト検索 | 1回目の検索で結果が表示されること（最大120秒） | ✅ PASS |
-| **シナリオC** ゲスト上限 | 2回目の検索で WaitlistModal が表示されること | ✅ PASS |
-| **シナリオC** WaitlistModal | UI 要素（メール入力・登録ボタン・キャンセルボタン）が揃っていること | ✅ PASS |
+| **シナリオC** ゲスト上限 | 2回目の検索でプランモーダル（PlanComparisonModal）が表示されること | ✅ PASS |
+| **シナリオC** PlanComparisonModal | プラン比較テーブル・アップグレード CTA が揃っていること | ✅ PASS |
 | **メタデータ** OGP | トップページの `og:title` が設定されていること | ✅ PASS |
 | **メタデータ** `/terms` | `<title>` が「利用規約 \| 物件目利きリサーチ」形式であること | ✅ PASS |
 | **メタデータ** `/privacy` | `<title>` が「プライバシーポリシー \| 物件目利きリサーチ」形式であること | ✅ PASS |
@@ -690,7 +716,7 @@ done
 
 **Lemon Squeezy による Pro プラン（¥980/月）は本番稼働中です。**
 
-- フロントエンド: `IS_PAYMENT_ENABLED = true`（`components/PlanComparisonModal.tsx`）
+- フロントエンド: `PlanComparisonModal.tsx` — 決済フローに一本化済み（ウェイトリストフォーム廃止）
 - バックエンド: `POST /api/lemonsqueezy/create-checkout`・`POST /api/lemonsqueezy/webhook` 稼働中
 - SDK: `@lemonsqueezy/lemonsqueezy.js` v4
 
@@ -783,14 +809,14 @@ real-estate-report-system/
 │   │   └── layout.tsx
 │   ├── components/
 │   │   ├── AiReport.tsx              # AI レポートアコーディオン + 暮らしイメージ生成 UI
-│   │   ├── PlanComparisonModal.tsx   # 料金プラン比較 / Lemon Squeezy チェックアウト（IS_PAYMENT_ENABLED フラグ管理）
+│   │   ├── PlanComparisonModal.tsx   # 料金プラン比較 / Lemon Squeezy チェックアウト（決済導線一本化・ウェイトリスト廃止済み）
 │   │   ├── PriceTrendChart.tsx       # 価格推移グラフ (Recharts)
 │   │   ├── TransactionTable.tsx      # 取引事例テーブル
 │   │   ├── SummaryCards.tsx          # 価格サマリー + ハザードカード
 │   │   ├── EnvironmentInfo.tsx       # 生活環境情報カード
 │   │   ├── SearchForm.tsx            # 検索フォーム + Leaflet 地図
 │   │   ├── HistoryList.tsx           # 検索履歴一覧（フローティング）
-│   │   └── WaitlistModal.tsx         # ゲスト上限到達時のウェイトリスト登録モーダル
+│   │   └── WaitlistModal.tsx         # 旧ウェイトリスト登録モーダル（廃止・未使用）
 │   ├── messages/
 │   │   ├── ja.json                   # 日本語翻訳リソース（全ページ・全コンポーネント対応）
 │   │   └── en.json                   # 英語翻訳リソース
@@ -798,6 +824,8 @@ real-estate-report-system/
 │   │   ├── api.ts                    # バックエンド API クライアント（getApiBase() 絶対パス・locale 対応）
 │   │   ├── areas.ts                  # エリアマスターデータ（SEO・sitemap・ページ生成に使用）
 │   │   ├── firebase.ts               # Firebase 初期化
+│   │   ├── gtag.ts                   # GA4 イベント送信ユーティリティ（gtagEvent / gtagPurchase）
+│   │   ├── analytics.ts              # GTM dataLayer ユーティリティ（dataLayerPush）
 │   │   ├── history.ts                # Firestore 履歴 CRUD + Storage 画像保存
 │   │   ├── userPlan.ts               # プラン判定・ゲスト利用制限管理
 │   │   ├── geocode.ts                # GSI ジオコーディング
