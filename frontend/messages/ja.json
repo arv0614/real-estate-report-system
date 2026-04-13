@@ -7,7 +7,8 @@
     "loginButton": "Googleでログイン",
     "logoutButton": "ログアウト",
     "guestBadge": "Guest",
-    "langSwitch": "EN"
+    "langSwitch": "EN",
+    "upgradeBtn": "Pro にアップグレード"
   },
   "Progress": {
     "connecting": "国土交通省APIへ接続中...",
@@ -102,7 +103,7 @@
     "freePrice": "¥0",
     "proPlan": "プロ",
     "proSub": "有料プラン",
-    "proPrice": "近日公開",
+    "proPrice": "¥980/月",
     "proRecommended": "おすすめ",
     "featureSearchCount": "1日の検索回数",
     "featurePriceSummary": "取引価格サマリー",
@@ -134,7 +135,11 @@
     "waitlistSubmit": "登録する",
     "waitlistDone": "登録しました！リリース時にご連絡します。",
     "waitlistError": "有効なメールアドレスを入力してください。",
-    "waitlistSaveError": "登録に失敗しました。しばらく後にもう一度お試しください。"
+    "waitlistSaveError": "登録に失敗しました。しばらく後にもう一度お試しください。",
+    "ctaUpgradeTitle": "Pro プランにアップグレード",
+    "ctaUpgradeBody": "検索無制限・PDF出力・暮らしイメージ生成など、すべての機能をご利用いただけます。",
+    "ctaUpgradeBtn": "Pro にアップグレード →",
+    "checkoutLoading": "処理中..."
   },
   "ReportPage": {
     "backLink": "← トップへ戻る",

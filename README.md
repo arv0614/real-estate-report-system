@@ -7,8 +7,8 @@
 
 🔗 **本番 URL**: https://mekiki-research.com
 
-> **🎉 オープンベータ版 公開中**
-> Stripe 審査中のため、現在はすべてのアカウントで全機能（AI レポート全10項目・暮らしイメージ生成を含む）を**完全無料**でご利用いただけます。
+> **💳 Lemon Squeezy による Pro プランの決済が稼働中です（¥980/月）**
+> Free プランでは基本機能を無料でご利用いただけます。Pro にアップグレードすると検索無制限・PDF 出力・暮らしイメージ生成などすべての機能が利用可能になります。
 
 ---
 
@@ -26,7 +26,7 @@
 10. [ローカル開発環境のセットアップ](#-ローカル開発環境のセットアップ)
 11. [Cloud Run へのデプロイ](#-cloud-run-へのデプロイ)
 12. [Artifact Registry コスト最適化](#-artifact-registry-コスト最適化)
-13. [Stripe 決済の本番稼働手順](#-stripe-決済の本番稼働手順)
+13. [Lemon Squeezy 決済の運用手順](#-lemon-squeezy-決済の運用手順)
 14. [ディレクトリ構成](#-ディレクトリ構成)
 15. [注意事項](#-注意事項)
 16. [ライセンス](#-ライセンス)
@@ -49,18 +49,18 @@
 **10項目にわたる Gemini 2.5 Flash のエリア分析**をアコーディオンで展開。
 セクションをクリックして必要な情報だけ開けます。
 
-| # | セクション | ベータ期間中 |
-|---|---|:---:|
-| 1 | エリア総評 | ✅ 無料 |
-| 2 | 子育て・生活環境スコア | ✅ 無料 |
-| 3 | 歴史・地形の特徴 | ✅ 無料 |
-| 4 | 開発・再開発動向 | ✅ 無料（通常 Pro） |
-| 5 | 活用できる補助金・助成金 | ✅ 無料（通常 Pro） |
-| 6 | 直近のニュース・トピックス | ✅ 無料（通常 Pro） |
-| 7 | エリアの将来予想 | ✅ 無料（通常 Pro） |
-| 8 | 人口の増減予想 | ✅ 無料（通常 Pro） |
-| 9 | リアルな住環境と注意点 | ✅ 無料（通常 Pro） |
-| 10 | 不動産プロの視点：物件の魅力とおすすめポイント | ✅ 無料（通常 Pro） |
+| # | セクション | Free | Pro |
+|---|---|:---:|:---:|
+| 1 | エリア総評 | ✅ | ✅ |
+| 2 | 子育て・生活環境スコア | ✅ | ✅ |
+| 3 | 歴史・地形の特徴 | ✅ | ✅ |
+| 4 | 開発・再開発動向 | ✅ | ✅ |
+| 5 | 活用できる補助金・助成金 | ✅ | ✅ |
+| 6 | 直近のニュース・トピックス | ✅ | ✅ |
+| 7 | エリアの将来予想 | ✅ | ✅ |
+| 8 | 人口の増減予想 | ✅ | ✅ |
+| 9 | リアルな住環境と注意点 | ✅ | ✅ |
+| 10 | 不動産プロの視点：物件の魅力とおすすめポイント | ✅ | ✅ |
 
 ### Step 4 — 暮らしのイメージ画像を生成
 Google アカウントでログイン後、AI レポート内の **「✨ 暮らしイメージを生成」** ボタンをクリック。
@@ -128,17 +128,14 @@ Google アカウントでログイン後、AI レポート内の **「✨ 暮ら
 
 ## 💎 料金プランと利用制限
 
-> **現在はオープンベータ期間中のため、ログインユーザーは Pro 相当の全機能を無料でご利用いただけます。**
-
-| 機能 | ゲスト（未ログイン） | Free / Beta | Pro（準備中） |
+| 機能 | ゲスト（未ログイン） | Free（無料） | Pro（¥980/月） |
 |---|:---:|:---:|:---:|
-| エリア調査 | 1回/日 | 無制限（ベータ） | 無制限 |
+| エリア調査 | 1回/日 | 3回/日 | **無制限** |
 | 取引価格サマリー・グラフ | ✅ | ✅ | ✅ |
 | ハザード情報 | ✅ | ✅ | ✅ |
-| AI レポート（セクション1〜3） | ❌ | ✅ | ✅ |
-| AI レポート（セクション4〜10） | ❌ | ✅（ベータ） | ✅ |
-| 暮らしのイメージ画像生成 | ❌ | ✅（ベータ） | ✅ |
-| PDF エクスポート | ❌ | ❌ | ✅ |
+| AI レポート（全10項目） | ✅ | ✅ | ✅ |
+| 暮らしのイメージ画像生成 | ❌ | ✅ | ✅ |
+| PDF エクスポート | ❌ | ❌ | **✅** |
 | 検索履歴の保存 | ❌ | ✅ | ✅ |
 
 利用制限の判定は localStorage（ゲスト）と Firestore（ログイン済み）で管理しています。
@@ -173,10 +170,10 @@ Google アカウントでログイン後、AI レポート内の **「✨ 暮ら
   ├── generateViaImagen4()          → Imagen 4 Fast（Primary）
   └── generateViaGeminiImage()      → Gemini 2.5 Flash Image（Fallback）
 
-  │  POST /api/stripe/create-checkout-session（Firebase ID Token 認証必須）
+  │  POST /api/lemonsqueezy/create-checkout（Firebase ID Token 認証必須）
   ▼
-[Stripe Checkout] ※現在はベータ版のため無効化中
-  └── Webhook → /api/stripe/webhook → Firestore users/{uid}.plan = "pro"
+[Lemon Squeezy Checkout] ※稼働中（¥980/月）
+  └── Webhook → /api/lemonsqueezy/webhook → Firestore users/{uid}.plan = "pro" / "free"
 
 [Firebase]
   ├── Authentication — Google OAuth 2.0
@@ -230,7 +227,7 @@ Google アカウントでログイン後、AI レポート内の **「✨ 暮ら
 | Firebase Authentication | ユーザー認証（Google OAuth 2.0） |
 | Firebase Firestore | ユーザープラン・検索履歴の永続化 |
 | Firebase Storage | AI 生成画像の永続化 |
-| Stripe | サブスクリプション決済・Webhook（※ベータ期間中は無効化） |
+| Lemon Squeezy | サブスクリプション決済・Webhook（稼働中） |
 | PostHog | アクセス解析・イベントトラッキング |
 | Terraform | GCP リソースの IaC 管理（Cloud Run / GCS / Artifact Registry / IAM） |
 
@@ -358,8 +355,8 @@ const effectiveOrigins = allowedOrigins.length > 0 ? [...allowedOrigins, ...devO
 
 | 対策 | 実装内容 |
 |---|---|
-| **Stripe Checkout の認証強化** | Firebase ID Token をヘッダー（`Authorization: Bearer <token>`）で受け取り、サーバー側で `admin.auth().verifyIdToken()` を使って検証。検証済み UID のみ Checkout Session を作成可能 |
-| **Stripe Webhook 署名検証** | `stripe.webhooks.constructEvent()` による署名検証を実装。改ざんされたイベントでプランが書き換えられることを防止 |
+| **Lemon Squeezy Checkout の認証強化** | Firebase ID Token をヘッダー（`Authorization: Bearer <token>`）で受け取り、サーバー側で `admin.auth().verifyIdToken()` を使って検証。検証済み UID のみチェックアウトセッションを作成可能 |
+| **Lemon Squeezy Webhook 署名検証** | `HMAC-SHA256` + `crypto.timingSafeEqual()` による署名検証を実装。`x-signature` ヘッダーが不一致の場合は `400` を返却。改ざんされたイベントでプランが書き換えられることを防止 |
 | **Firebase Authentication** | Google OAuth 2.0 のみ対応。パスワードを自社で管理しないセキュアな認証基盤 |
 
 ### Firestore Security Rules（デプロイ済み）
@@ -395,7 +392,7 @@ allow delete : 禁止
 
 ### PCI DSS / カード情報の非保持
 
-決済はすべて **Stripe Checkout** にリダイレクトして行います。カード番号・有効期限・CVC などの決済情報は自社サーバー・データベースでは一切処理・保持しない設計（PCI DSS SAQ A 相当）。
+決済はすべて **Lemon Squeezy Checkout** にリダイレクトして行います。カード番号・有効期限・CVC などの決済情報は自社サーバー・データベースでは一切処理・保持しない設計（PCI DSS SAQ A 相当）。
 
 ### XSS・インジェクション対策
 
@@ -519,16 +516,21 @@ MLIT_API_BASE_URL=https://www.reinfolib.mlit.go.jp/ex-api/external
 # Gemini / Imagen API
 GEMINI_API_KEY=your-gemini-api-key
 
+# Firebase
+FIREBASE_PROJECT_ID=your-firebase-project-id
+
 # フロントエンドが参照するバックエンド URL（Cloud Run デプロイ後に取得）
 NEXT_PUBLIC_API_URL=https://your-backend-url.run.app
 
 # 本番サイト URL（sitemap.xml / OGP に使用）
 NEXT_PUBLIC_SITE_URL=https://mekiki-research.com
 
-# Stripe（※ベータ期間中は使用しないが設定は必要）
-STRIPE_SECRET_KEY=sk_test_XXX
-STRIPE_PRICE_ID=price_XXX
-STRIPE_WEBHOOK_SECRET=whsec_XXX
+# Lemon Squeezy 決済
+LEMONSQUEEZY_API_KEY=your-ls-api-key
+LEMONSQUEEZY_STORE_ID=your-store-id
+LEMONSQUEEZY_VARIANT_ID=your-variant-id
+LEMONSQUEEZY_WEBHOOK_SECRET=your-webhook-secret
+LEMONSQUEEZY_SUCCESS_URL=https://mekiki-research.com/?payment=success
 
 # PostHog
 POSTHOG_WEBHOOK_SECRET=your-webhook-secret
@@ -578,31 +580,46 @@ npx firebase-tools@latest deploy --only firestore:rules --project your-project-i
 
 ## 🚀 Cloud Run へのデプロイ
 
-### バックエンド（Cloud Build 経由）
-
-ローカル環境に Docker が不要。`gcloud builds submit` で Cloud 上でビルドします。
+### バックエンド
 
 ```bash
-source .env
-IMAGE="asia-northeast1-docker.pkg.dev/${GCP_PROJECT_ID}/realestate-api/backend:latest"
-
-# Cloud Build でビルド＆プッシュ
-gcloud builds submit ./backend --tag "${IMAGE}" --project="${GCP_PROJECT_ID}"
-
-# Cloud Run にデプロイ（env-vars-file 使用で URL 等の特殊文字を安全に渡す）
-cat > /tmp/backend_env.yaml <<YAML
-GCP_PROJECT_ID: "${GCP_PROJECT_ID}"
-GCS_CACHE_BUCKET: "${GCS_CACHE_BUCKET}"
-GEMINI_API_KEY: "${GEMINI_API_KEY}"
-ALLOWED_ORIGINS: "${ALLOWED_ORIGINS}"
-YAML
-
-gcloud run deploy realestate-api \
-  --image "${IMAGE}" \
-  --region asia-northeast1 \
-  --project="${GCP_PROJECT_ID}" \
-  --env-vars-file /tmp/backend_env.yaml
+bash scripts/deploy.sh
 ```
+
+`deploy.sh` は `.env` を読み込み、Docker ビルド → Artifact Registry プッシュ → Cloud Run デプロイまで一括で行います。
+
+> **⚠️ 環境変数の更新だけ行いたい場合**
+>
+> `--set-env-vars` は **指定した変数だけに置き換え（他は消える）** ため危険です。
+> 代わりに `--env-vars-file` を使ってください。`PORT` は Cloud Run 予約変数のため除外が必要です。
+>
+> ```bash
+> source .env
+> cat > /tmp/backend_env.yaml <<YAML
+> GCP_PROJECT_ID: "${GCP_PROJECT_ID}"
+> GCP_REGION: "${GCP_REGION}"
+> GCS_CACHE_BUCKET: "${GCS_CACHE_BUCKET}"
+> BQ_DATASET: "${BQ_DATASET}"
+> BQ_TABLE: "${BQ_TABLE}"
+> NODE_ENV: "${NODE_ENV}"
+> CACHE_TTL_DAYS: "${CACHE_TTL_DAYS}"
+> MLIT_API_KEY: "${MLIT_API_KEY}"
+> MLIT_API_BASE_URL: "${MLIT_API_BASE_URL}"
+> GEMINI_API_KEY: "${GEMINI_API_KEY}"
+> FIREBASE_PROJECT_ID: "${FIREBASE_PROJECT_ID}"
+> POSTHOG_WEBHOOK_SECRET: "${POSTHOG_WEBHOOK_SECRET}"
+> ALLOWED_ORIGINS: "${ALLOWED_ORIGINS}"
+> LEMONSQUEEZY_API_KEY: "${LEMONSQUEEZY_API_KEY}"
+> LEMONSQUEEZY_STORE_ID: "${LEMONSQUEEZY_STORE_ID}"
+> LEMONSQUEEZY_VARIANT_ID: "${LEMONSQUEEZY_VARIANT_ID}"
+> LEMONSQUEEZY_WEBHOOK_SECRET: "${LEMONSQUEEZY_WEBHOOK_SECRET}"
+> LEMONSQUEEZY_SUCCESS_URL: "${LEMONSQUEEZY_SUCCESS_URL}"
+> YAML
+>
+> gcloud run services update realestate-api \
+>   --region asia-northeast1 \
+>   --env-vars-file /tmp/backend_env.yaml
+> ```
 
 ### フロントエンド
 
@@ -667,65 +684,65 @@ done
 
 ---
 
-## 💳 Stripe 決済の本番稼働手順
+## 💳 Lemon Squeezy 決済の運用手順
 
 ### 現在の状態
 
-Stripe の本番審査を経て、決済導線は**ベータ期間中は無効化**しています。
-フロントエンドの以下 **1行** を変更するだけで本番稼働に切り替えられます。
+**Lemon Squeezy による Pro プラン（¥980/月）は本番稼働中です。**
 
-```typescript
-// frontend/components/PlanComparisonModal.tsx
-const IS_STRIPE_APPROVED = false  // → true に変更
+- フロントエンド: `IS_PAYMENT_ENABLED = true`（`components/PlanComparisonModal.tsx`）
+- バックエンド: `POST /api/lemonsqueezy/create-checkout`・`POST /api/lemonsqueezy/webhook` 稼働中
+- SDK: `@lemonsqueezy/lemonsqueezy.js` v4
+
+### 決済フロー
+
+```
+[Free ユーザー]
+  → ヘッダー「Pro にアップグレード」ボタン または プランモーダルの CTA ボタンをクリック
+  → バックエンド POST /api/lemonsqueezy/create-checkout （Firebase ID Token 認証）
+  → Lemon Squeezy Checkout ページにリダイレクト
+  → 決済完了
+  → Lemon Squeezy が Webhook を送信
+  → バックエンド POST /api/lemonsqueezy/webhook
+    - HMAC-SHA256 署名検証（x-signature ヘッダー）
+    - subscription_created / subscription_updated → Firestore users/{uid}.plan = "pro"
+    - subscription_expired / subscription_cancelled → Firestore users/{uid}.plan = "free"
+  → ユーザーのヘッダーバッジが Free → Pro に変わり、全機能が解放される
 ```
 
-### 審査通過後の本番切り替え手順
+### Lemon Squeezy ダッシュボードの設定
 
-#### Step 1 — Stripe ダッシュボードで本番用リソースを準備
+Webhook は以下の URL・イベントで登録してください。
 
-1. [Stripe Dashboard](https://dashboard.stripe.com) でテストモード → **本番モード** に切り替え
-2. **製品カタログ** で Proプランの商品・価格を作成 → `price_live_XXX` を控える
-3. **Webhooks** でエンドポイントを登録:
-   - URL: `https://<backend-cloud-run-url>/api/stripe/webhook`
-   - イベント: `checkout.session.completed` / `customer.subscription.deleted`
-   - 表示された `whsec_live_XXX` を控える
+| 項目 | 値 |
+|---|---|
+| Webhook URL | `https://realestate-api-2hctlfcy6a-an.a.run.app/api/lemonsqueezy/webhook` |
+| Signing Secret | `.env` の `LEMONSQUEEZY_WEBHOOK_SECRET` と一致させる |
+| イベント | `subscription_created`, `subscription_updated`, `subscription_expired`, `subscription_cancelled` |
 
-#### Step 2 — Cloud Run の環境変数を本番キーに更新
+### キーの更新手順
+
+API キーや Variant ID を変更する場合は `--update-env-vars` で個別更新してください。
 
 ```bash
-cat > /tmp/stripe_env.yaml <<YAML
-STRIPE_SECRET_KEY: "sk_live_XXX"
-STRIPE_PRICE_ID: "price_live_XXX"
-STRIPE_WEBHOOK_SECRET: "whsec_live_XXX"
-YAML
-
 gcloud run services update realestate-api \
   --region asia-northeast1 \
-  --project $GCP_PROJECT_ID \
-  --env-vars-file /tmp/stripe_env.yaml
+  --update-env-vars="LEMONSQUEEZY_API_KEY=新しいキー,LEMONSQUEEZY_WEBHOOK_SECRET=新しいSecret"
 ```
-
-#### Step 3 — フロントエンドのフラグを変更してデプロイ
-
-```bash
-# IS_STRIPE_APPROVED = false → true に変更後
-bash scripts/deploy_frontend.sh
-```
-
-#### Step 4 — 本番テスト
-
-本番カードで少額決済を実施し、Firestore の `users/{uid}.plan` が `"pro"` になることを確認してください。
 
 ### ローカルでの Webhook テスト（開発時）
 
-```bash
-stripe login
-stripe listen --forward-to http://localhost:8080/api/stripe/webhook
-# → 表示された whsec_... を .env の STRIPE_WEBHOOK_SECRET に設定
+[Lemon Squeezy CLI](https://docs.lemonsqueezy.com/guides/developer-guide/webhooks) または curl でシミュレーションできます。
 
-# 別ターミナルでテストイベントを送信
-stripe trigger checkout.session.completed \
-  --add checkout_session:client_reference_id=YOUR_FIREBASE_UID
+```bash
+# 署名を生成してローカルのバックエンドに送信するサンプル
+PAYLOAD='{"meta":{"event_name":"subscription_created","custom_data":{"uid":"YOUR_FIREBASE_UID"}},"data":{"id":"sub_xxx","attributes":{"status":"active","customer_id":123}}}'
+SECRET="your-webhook-secret"
+SIG=$(echo -n "$PAYLOAD" | openssl dgst -sha256 -hmac "$SECRET" | awk '{print $2}')
+curl -X POST http://localhost:8080/api/lemonsqueezy/webhook \
+  -H "Content-Type: application/json" \
+  -H "x-signature: $SIG" \
+  -d "$PAYLOAD"
 ```
 
 ---
@@ -740,7 +757,7 @@ real-estate-report-system/
 │       ├── config.ts                 # 環境変数設定
 │       ├── routes/
 │       │   ├── property.ts           # /api/property/* ルート定義
-│       │   ├── stripe.ts             # Stripe Checkout / Webhook（ID Token 認証付き）
+│       │   ├── lemonsqueezy.ts       # Lemon Squeezy Checkout / Webhook（ID Token 認証 + HMAC-SHA256 署名検証）
 │       │   ├── posthog.ts            # PostHog Webhook（署名検証付き）
 │       │   └── waitlist.ts           # ウェイトリスト登録
 │       ├── services/
@@ -766,7 +783,7 @@ real-estate-report-system/
 │   │   └── layout.tsx
 │   ├── components/
 │   │   ├── AiReport.tsx              # AI レポートアコーディオン + 暮らしイメージ生成 UI
-│   │   ├── PlanComparisonModal.tsx   # ベータ案内 / 料金プラン比較（IS_STRIPE_APPROVED フラグ管理）
+│   │   ├── PlanComparisonModal.tsx   # 料金プラン比較 / Lemon Squeezy チェックアウト（IS_PAYMENT_ENABLED フラグ管理）
 │   │   ├── PriceTrendChart.tsx       # 価格推移グラフ (Recharts)
 │   │   ├── TransactionTable.tsx      # 取引事例テーブル
 │   │   ├── SummaryCards.tsx          # 価格サマリー + ハザードカード

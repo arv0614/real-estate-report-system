@@ -24,7 +24,7 @@ interface Props {
 // 🚦 決済有効フラグ
 //    Lemon Squeezy の設定完了後に `true` へ変更するだけで決済導線が有効になる
 // ─────────────────────────────────────────────────────────────
-const IS_PAYMENT_ENABLED = false;
+const IS_PAYMENT_ENABLED = true;
 
 function Cell({ value, highlight }: { value: string; highlight?: boolean }) {
   const isX = value.startsWith("✕");
@@ -242,16 +242,34 @@ export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail
             </div>
           )}
 
-          {/* オープンベータ告知（フリープランユーザー向け） */}
+          {/* Pro アップグレードCTA（フリープランユーザー向け） */}
           {currentPlan === "free" && (
-            <div className="rounded-xl border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-4">
-              <p className="text-sm font-semibold text-blue-800 mb-1">
-                {t("ctaBetaTitle")}
-              </p>
-              <p className="text-sm text-blue-700">
-                {t("ctaBetaBody")}
-              </p>
-            </div>
+            IS_PAYMENT_ENABLED ? (
+              <div className="rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-4">
+                <p className="text-sm font-semibold text-amber-800 mb-1">
+                  {t("ctaUpgradeTitle")}
+                </p>
+                <p className="text-sm text-amber-700 mb-3">
+                  {t("ctaUpgradeBody")}
+                </p>
+                <button
+                  onClick={handleUpgrade}
+                  disabled={checkoutLoading}
+                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-sm hover:from-amber-600 hover:to-orange-600 transition-all shadow-md disabled:opacity-60"
+                >
+                  {checkoutLoading ? t("checkoutLoading") : t("ctaUpgradeBtn")}
+                </button>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-4">
+                <p className="text-sm font-semibold text-blue-800 mb-1">
+                  {t("ctaBetaTitle")}
+                </p>
+                <p className="text-sm text-blue-700">
+                  {t("ctaBetaBody")}
+                </p>
+              </div>
+            )
           )}
 
           {/* プロユーザー */}

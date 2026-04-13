@@ -452,12 +452,24 @@ function HomePageContent() {
           >
             {t("Header.aboutLink")}
           </Link>
-          <button
-            onClick={() => { gtagEvent({ action: "view_plan_modal", category: "conversion_funnel" }); setPlanModalOpen(true); }}
-            className="hidden sm:inline-flex text-xs px-3 py-1.5 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
-          >
-            {t("Header.betaLink")}
-          </button>
+          {/* Free ユーザー向けアップグレードボタン */}
+          {!planLoading && plan === "free" && (
+            <button
+              onClick={() => { gtagEvent({ action: "view_plan_modal", category: "conversion_funnel", label: "header_upgrade" }); setPlanModalOpen(true); }}
+              className="hidden sm:inline-flex text-xs px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold hover:from-amber-600 hover:to-orange-600 transition-colors shadow-sm"
+            >
+              {t("Header.upgradeBtn")}
+            </button>
+          )}
+          {/* ゲスト・未ログイン時はベータ情報ボタン */}
+          {!user && (
+            <button
+              onClick={() => { gtagEvent({ action: "view_plan_modal", category: "conversion_funnel" }); setPlanModalOpen(true); }}
+              className="hidden sm:inline-flex text-xs px-3 py-1.5 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
+            >
+              {t("Header.betaLink")}
+            </button>
+          )}
 
           {/* 言語切り替え */}
           <button
