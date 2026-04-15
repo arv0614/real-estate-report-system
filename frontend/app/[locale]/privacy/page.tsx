@@ -13,7 +13,8 @@ const LAST_UPDATED_JA = "2026年4月1日";
 const LAST_UPDATED_EN = "April 1, 2026";
 const OPERATOR_NAME = "木下 開 (Kai Kinoshita)";
 const OPERATOR_EMAIL = "realestate.report.support@gmail.com";
-const OPERATOR_ADDRESS = "東京都葛飾区東新小岩7-13-20, Tokyo, Japan";
+const OPERATOR_ADDRESS_JA = "〒160-0022 東京都新宿区新宿 1-36-2 新宿第七葉山ビル 3F";
+const OPERATOR_ADDRESS_EN = "3F Shinjuku Dai-nana Hayama Bldg., 1-36-2 Shinjuku, Shinjuku-ku, Tokyo 160-0022, Japan";
 
 type PageProps = { params: Promise<{ locale: string }> };
 
@@ -291,7 +292,7 @@ export default async function LocalePrivacyPage({ params }: PageProps) {
             <dl className="space-y-1.5">
               {[
                 { label: t("contactOperator"), value: OPERATOR_NAME },
-                { label: t("contactAddress"), value: OPERATOR_ADDRESS },
+                { label: t("contactAddress"), value: isEn ? OPERATOR_ADDRESS_EN : OPERATOR_ADDRESS_JA },
                 { label: t("contactEmail"), value: OPERATOR_EMAIL },
               ].map(({ label, value }) => (
                 <div key={label} className="flex gap-3">

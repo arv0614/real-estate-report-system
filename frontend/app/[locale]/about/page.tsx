@@ -14,7 +14,8 @@ const SITE_URL =
 
 // Operator constants (locale-independent)
 const OPERATOR_NAME = "木下 開 (Kai Kinoshita)";
-const OPERATOR_ADDRESS = "東京都葛飾区東新小岩7-13-20, Tokyo, Japan";
+const OPERATOR_ADDRESS_JA = "〒160-0022 東京都新宿区新宿 1-36-2 新宿第七葉山ビル 3F";
+const OPERATOR_ADDRESS_EN = "3F Shinjuku Dai-nana Hayama Bldg., 1-36-2 Shinjuku, Shinjuku-ku, Tokyo 160-0022, Japan";
 const OPERATOR_PHONE = "070-8397-8965 (weekdays 10:00–18:00 JST)";
 const OPERATOR_EMAIL = "realestate.report.support@gmail.com";
 const SERVICE_NAME_JA = "物件目利きリサーチ";
@@ -105,7 +106,7 @@ export default async function LocaleAboutPage({ params }: PageProps) {
   const LEGAL_ROWS = [
     { label: t("legalRow0label"), value: OPERATOR_NAME },
     { label: t("legalRow1label"), value: OPERATOR_NAME },
-    { label: t("legalRow2label"), value: OPERATOR_ADDRESS },
+    { label: t("legalRow2label"), value: isEn ? OPERATOR_ADDRESS_EN : OPERATOR_ADDRESS_JA },
     { label: t("legalRow3label"), value: OPERATOR_PHONE },
     { label: t("legalRow4label"), value: OPERATOR_EMAIL },
     { label: t("legalRow5label"), value: isEn ? `${SERVICE_NAME_EN} (β)` : `${SERVICE_NAME_JA}（β版）` },
