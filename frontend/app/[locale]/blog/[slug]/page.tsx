@@ -9,7 +9,7 @@ const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
   "https://mekiki-research.com";
 
-type Props = { params: Promise<{ slug: string }> };
+type Props = { params: Promise<{ locale: string; slug: string }> };
 
 export async function generateStaticParams() {
   return getAllPostMeta().map((post) => ({ slug: post.slug }));
@@ -45,9 +45,14 @@ function formatDate(iso: string) {
 }
 
 export default async function BlogPostPage({ params }: Props) {
-  const { slug } = await params;
+  const { locale, slug } = await params;
   const post = getPostBySlug(slug);
   if (!post) notFound();
+
+  const isEn = locale === "en";
+  const homeHref = isEn ? "/en" : "/";
+  const blogHref = isEn ? "/en/blog" : "/blog";
+  const serviceName = isEn ? "Mekiki Research" : "物件目利きリサーチ";
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -79,22 +84,22 @@ export default async function BlogPostPage({ params }: Props) {
       {/* Header */}
       <header className="bg-white border-b border-slate-200 shadow-sm">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center gap-3">
-          <Link href="/" className="flex items-center gap-2 group">
+          <Link href={homeHref} className="flex items-center gap-2 group">
             <img
               src="/logo_mekiki_research.png"
               alt=""
               className="h-8 w-8 object-contain shrink-0"
             />
             <span className="text-base font-bold text-slate-800 group-hover:text-slate-600 transition-colors">
-              物件目利きリサーチ
+              {serviceName}
             </span>
           </Link>
           <span className="text-slate-300">/</span>
           <Link
-            href="/blog"
+            href={blogHref}
             className="text-sm text-slate-500 hover:text-slate-700 transition-colors"
           >
-            ブログ
+            {isEn ? "Blog" : "ブログ"}
           </Link>
         </div>
       </header>
@@ -147,42 +152,52 @@ export default async function BlogPostPage({ params }: Props) {
         {/* CTA */}
         <div className="mt-12 bg-blue-50 border border-blue-100 rounded-xl px-6 py-6 text-center">
           <p className="font-bold text-slate-800 mb-1">
-            物件目利きリサーチを無料で試してみましょう
+            {isEn
+              ? "Try Mekiki Research for free"
+              : "物件目利きリサーチを無料で試してみましょう"}
           </p>
           <p className="text-sm text-slate-600 mb-4">
-            住所を入力するだけで、相場・ハザードリスク・AIレポートが30秒で確認できます
+            {isEn
+              ? "Enter any address in Japan — get price data, hazard risk, and an AI area report in 30 seconds."
+              : "住所を入力するだけで、相場・ハザードリスク・AIレポートが30秒で確認できます"}
           </p>
           <Link
-            href="/"
+            href={homeHref}
             className="inline-block bg-blue-600 text-white font-semibold text-sm px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-colors"
           >
-            無料で調査する →
+            {isEn ? "Start for free →" : "無料で調査する →"}
           </Link>
         </div>
 
         {/* Back link */}
         <div className="mt-8">
           <Link
-            href="/blog"
+            href={blogHref}
             className="text-sm text-slate-400 hover:text-slate-600 transition-colors"
           >
-            ← ブログ一覧に戻る
+            {isEn ? "← Back to Blog" : "← ブログ一覧に戻る"}
           </Link>
         </div>
       </main>
 
       <footer className="mt-12 border-t border-slate-200 bg-white py-8">
         <div className="max-w-3xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
-          <span>© 2026 物件目利きリサーチ</span>
+          <span>© 2026 {serviceName}</span>
           <nav className="flex flex-wrap justify-center gap-4">
-            <Link href="/" className="hover:text-slate-600 transition-colors">
-              トップ
+            <Link href={homeHref} className="hover:text-slate-600 transition-colors">
+              {isEn ? "Top" : "トップ"}
             </Link>
-            <Link href="/terms" className="hover:text-slate-600 transition-colors">
-              利用規約
+            <Link
+              href={isEn ? "/en/terms" : "/terms"}
+              className="hover:text-slate-600 transition-colors"
+            >
+              {isEn ? "Terms" : "利用規約"}
             </Link>
-            <Link href="/privacy" className="hover:text-slate-600 transition-colors">
-              プライバシーポリシー
+            <Link
+              href={isEn ? "/en/privacy" : "/privacy"}
+              className="hover:text-slate-600 transition-colors"
+            >
+              {isEn ? "Privacy" : "プライバシーポリシー"}
             </Link>
           </nav>
         </div>
