@@ -1,0 +1,80 @@
+{
+  "meta": {
+    "service": "物件目利きリサーチ (Mekiki Research)",
+    "url": "https://mekiki-research.com",
+    "generated": "2026-04-15",
+    "note": "各ツイートは280文字以内（日本語）または280文字以内（英語）に設定済み。投稿前にURLのクリック計測用UTMパラメータを付与すること推奨。"
+  },
+  "tweets": [
+    {
+      "id": 1,
+      "type": "正式リリース告知",
+      "target": "一般・マイホーム購入検討者",
+      "lang": "ja",
+      "text": "🏠 【正式リリース】物件目利きリサーチをリリースしました！\n\n住所を入力するだけで\n✅ 国交省の実取引価格データ\n✅ 洪水・土砂崩れのハザードリスク\n✅ 学区・駅・病院などの生活環境\n✅ AIによる10項目エリアレポート\n\nが30秒でわかります。\n\nマイホーム購入前に、ぜひ一度チェックを👇\nhttps://mekiki-research.com\n\n#マイホーム探し #不動産 #PropTech"
+    },
+    {
+      "id": 2,
+      "type": "機能チラ見せ — PDF出力",
+      "target": "不動産エージェント・投資家",
+      "lang": "ja",
+      "text": "不動産の商談、資料作りに何時間かけてますか？\n\n物件目利きリサーチなら、住所を入れるだけで\n📄 取引価格推移グラフ\n🌊 ハザードリスク判定\n🏫 学区・生活環境情報\n🤖 AIエリアレポート全10項目\n\nをPDF1枚にまとめられます。Proプラン¥980/月。\n\nhttps://mekiki-research.com\n\n#不動産投資 #不動産営業 #PropTech"
+    },
+    {
+      "id": 3,
+      "type": "あるある共感系 — 失敗談",
+      "target": "マイホーム購入検討者",
+      "lang": "ja",
+      "text": "マイホーム購入後に気づく「しまった」あるある\n\n😱 ハザードマップを確認してなかった\n😱 周辺の成約価格を知らずに買った\n😱 学区を調べたら希望の小学校じゃなかった\n\n契約前に5分だけ確認しておけば…\n\n住所を入れるだけで全部わかります👇\nhttps://mekiki-research.com\n\n#マイホーム探し #住宅購入 #失敗しない家探し"
+    },
+    {
+      "id": 4,
+      "type": "投資家向け訴求",
+      "target": "不動産投資家",
+      "lang": "ja",
+      "text": "【投資家向け】気になるエリアの相場、5秒でわかります。\n\n📊 過去5年分の取引価格推移\n📍 ㎡単価・平均・中央値を自動集計\n🏗️ 再開発・都市計画情報もAIが解説\n\n国土交通省の公式データをもとに、感覚じゃなくデータで判断。\n\n無料プランで今すぐ試す👇\nhttps://mekiki-research.com\n\n#不動産投資 #資産形成 #データドリブン"
+    },
+    {
+      "id": 5,
+      "type": "ハザードリスク訴求",
+      "target": "マイホーム購入検討者・ファミリー",
+      "lang": "ja",
+      "text": "「この土地、大雨の時は大丈夫？」\n\nハザードマップを一つひとつ調べるのは大変ですよね。\n\n物件目利きリサーチなら住所を入れるだけで\n🌊 洪水浸水深ランク\n⛰️ 土砂災害警戒区域の有無\n\nを即座に判定。家族を守る情報が1分でわかります。\n\nhttps://mekiki-research.com\n\n#ハザードマップ #マイホーム探し #防災"
+    },
+    {
+      "id": 6,
+      "type": "無料プラン訴求",
+      "target": "新規ユーザー獲得",
+      "lang": "ja",
+      "text": "不動産調査、お金かけなくていいんです。\n\n物件目利きリサーチの無料プランでできること👇\n\n✅ 取引価格サマリー（無料）\n✅ ハザード情報（無料）\n✅ 生活環境情報（無料）\n✅ AIエリアレポート全10項目（無料）\n\nGoogleアカウントで今すぐスタート。\nhttps://mekiki-research.com\n\n#不動産 #マイホーム探し #お得情報"
+    },
+    {
+      "id": 7,
+      "type": "AI機能チラ見せ",
+      "target": "テック系・不動産興味層",
+      "lang": "ja",
+      "text": "Gemini 2.5 Flashが不動産プロとして動く。\n\n物件目利きリサーチのAIレポートが書くこと：\n1️⃣ エリア総評\n2️⃣ 子育て・生活環境スコア\n3️⃣ 再開発・都市計画動向\n4️⃣ 補助金・助成金情報\n5️⃣ 不動産プロ視点の物件評価\n…全10項目を自動生成\n\n国交省データ×AI、試してみる👇\nhttps://mekiki-research.com\n\n#AI #PropTech #不動産テック"
+    },
+    {
+      "id": 8,
+      "type": "英語版 — Global launch announcement",
+      "target": "English speakers / expats in Japan",
+      "lang": "en",
+      "text": "🏠 Mekiki Research is now live!\n\nAnalyze any property in Japan in 30 seconds:\n✅ Official MLIT transaction price data\n✅ Flood & landslide hazard assessment\n✅ Schools, hospitals & nearest stations\n✅ AI-generated 10-section area report\n\nFree plan available. Pro plan ¥980/month.\n\nhttps://mekiki-research.com\n\n#JapanRealEstate #PropTech #TokyoProperty"
+    },
+    {
+      "id": 9,
+      "type": "比較・差別化訴求",
+      "target": "不動産サイト利用中ユーザー",
+      "lang": "ja",
+      "text": "SUUMOやHomesには載っていない情報があります。\n\n「その物件の周辺の過去5年の成約価格推移」\n「過去に類似物件が実際にいくらで売れたか」\n「AIが見立てた、エリアの将来性」\n\n国土交通省の公式データ×AIで、プロが使うレベルの調査が個人でできる時代に。\n\nhttps://mekiki-research.com\n\n#不動産 #マイホーム探し #不動産投資"
+    },
+    {
+      "id": 10,
+      "type": "Proプラン訴求 — ROI訴求",
+      "target": "不動産投資家・エージェント",
+      "lang": "ja",
+      "text": "物件1件あたりの調査コストを考えたことありますか？\n\n調査会社に頼むと数万円〜\n自分で調べると数時間〜\n\n物件目利きリサーチ Pro なら\n¥980/月で調査し放題\n📄 PDF出力で提案書もすぐ作れる\n\n「月1件でも調査件数が増えれば元が取れる」\n\n今すぐ試す（無料プランあり）👇\nhttps://mekiki-research.com\n\n#不動産投資 #不動産営業 #業務効率化"
+    }
+  ]
+}
