@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { AREAS } from "@/lib/areas";
+import { getAllPostMeta } from "@/lib/blog";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
@@ -36,15 +37,28 @@ const STATIC_PAGES: MetadataRoute.Sitemap = [
     changeFrequency: "yearly",
     priority: 0.2,
   },
+  {
+    url: `${SITE_URL}/blog`,
+    lastModified: new Date(),
+    changeFrequency: "weekly",
+    priority: 0.8,
+  },
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const dynamicPages: MetadataRoute.Sitemap = AREAS.map((area) => ({
+  const areaPages: MetadataRoute.Sitemap = AREAS.map((area) => ({
     url: `${SITE_URL}/reports/${area.prefSlug}/${area.citySlug}`,
     lastModified: new Date(),
     changeFrequency: "weekly" as const,
     priority: 0.7,
   }));
 
-  return [...STATIC_PAGES, ...dynamicPages];
+  const blogPosts: MetadataRoute.Sitemap = getAllPostMeta().map((post) => ({
+    url: `${SITE_URL}/blog/${post.slug}`,
+    lastModified: post.publishedAt ? new Date(post.publishedAt) : new Date(),
+    changeFrequency: "monthly" as const,
+    priority: 0.7,
+  }));
+
+  return [...STATIC_PAGES, ...areaPages, ...blogPosts];
 }
