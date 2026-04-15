@@ -1,9 +1,9 @@
 {
   "Header": {
     "title": "物件目利きリサーチ",
-    "subtitle": "国交省データ × プロの目利き — β版",
+    "subtitle": "国交省の実取引データ × AI分析で、物件リスクを丸裸に。",
     "aboutLink": "サービスについて",
-    "betaLink": "ベータ版について",
+    "betaLink": "料金プランを見る",
     "loginButton": "Googleでログイン",
     "logoutButton": "ログアウト",
     "guestBadge": "Guest",
@@ -37,8 +37,8 @@
     "rateLimited": "アクセスが集中しています。しばらく待ってから再度お試しください。"
   },
   "Empty": {
-    "prompt": "住所または緯度・経度を入力して「調査開始」を押してください",
-    "description": "国土交通省の取引データをもとにエリアの精密調査を行います"
+    "prompt": "気になる物件の住所を入力して、プロ並みの調査を今すぐはじめましょう",
+    "description": "取引価格の推移・ハザードリスク・生活環境を30秒でレポート化。購入前の不安をデータで解消します。"
   },
   "Report": {
     "source": "出典: 国土交通省 不動産情報ライブラリ",
@@ -66,8 +66,8 @@
     "table": "取引事例一覧"
   },
   "Metadata": {
-    "homeTitle": "物件目利きリサーチ | 国交省データとプロの目利きによる不動産精密調査",
-    "homeDescription": "国土交通省「不動産情報ライブラリ」の公式データ × 不動産鑑定士・エージェントの知見を組み合わせ、物件の真の価値とリスクを目利きします。"
+    "homeTitle": "物件目利きリサーチ | 国交省データ×AI分析で相場とリスクを即調査",
+    "homeDescription": "マイホーム・投資物件を検討中の方必見。国土交通省の実取引データとAI分析で相場・ハザードリスク・生活環境を即座にレポート化。購入前の不安をデータで解消します。"
   },
   "SearchForm": {
     "mapLoading": "地図を読み込み中...",
@@ -92,8 +92,8 @@
     "lngError": "経度は 122〜154 の数値で入力してください（日本国内）"
   },
   "PlanModal": {
-    "modalTitle": "ベータ版について",
-    "modalSubtitle": "オープンベータ期間中 — 全機能を無料でご利用いただけます",
+    "modalTitle": "料金プランを選択",
+    "modalSubtitle": "Freeプランは永久無料。Proで本格調査を解放。",
     "closeBtn": "閉じる",
     "guestPlan": "ゲスト",
     "guestSub": "未ログイン",
@@ -104,7 +104,7 @@
     "proPlan": "プロ",
     "proSub": "有料プラン",
     "proPrice": "¥980/月",
-    "proRecommended": "おすすめ",
+    "proRecommended": "いちばん人気",
     "featureSearchCount": "1日の検索回数",
     "featurePriceSummary": "取引価格サマリー",
     "featureHazard": "ハザード情報",
@@ -115,19 +115,19 @@
     "featurePdf": "PDF出力",
     "featureHistory": "検索履歴の保存",
     "featureGuestLocked": "✕ ロック",
-    "featureBetaAll": "全項目（ベータ）",
+    "featureBetaAll": "全項目",
     "featureAll": "全項目",
     "featureUnlimited": "無制限",
     "featureCpUnlimited": "🎉 無制限（CP中）",
     "featureNone": "✕",
     "featureAvail": "○",
-    "ctaGuestTitle": "Googleアカウントで無料ログイン",
+    "ctaGuestTitle": "無料アカウントで今すぐスタート",
     "ctaGuestCpText": "🎉 キャンペーン中につき検索無制限！",
-    "ctaGuestCpSuffix": "エリア調査レポートの一部も無料で使えます。",
-    "ctaGuestNormalText": "1日{limit}回の検索とエリア調査レポートの一部が無料で使えます。",
-    "ctaGuestBtn": "無料ではじめる",
-    "ctaBetaTitle": "🎉 現在、オープンベータ期間中です",
-    "ctaBetaBody": "すべてのアカウントで、エリア調査レポート全10項目・暮らしイメージ生成を含む全機能を無料でご利用いただけます。ぜひフィードバックをお聞かせください！",
+    "ctaGuestCpSuffix": "物件リスク・周辺環境の全データが無料で確認できます。",
+    "ctaGuestNormalText": "1日{limit}回の調査と、エリアレポートの一部が完全無料で使えます。",
+    "ctaGuestBtn": "無料ではじめる →",
+    "ctaBetaTitle": "🎉 Freeプランは永久無料です",
+    "ctaBetaBody": "Googleアカウントでログインするだけで、1日3回の調査とエリアレポートを無料で利用できます。さらに本格的な調査にはProプランをご検討ください。",
     "ctaProActive": "✅ プロプランをご利用いただいています。すべての機能が使えます。",
     "waitlistTitle": "プロプランのウェイトリスト",
     "waitlistDesc": "プロプランのリリース時にお知らせします。メールアドレスをご登録ください。",
@@ -136,9 +136,9 @@
     "waitlistDone": "登録しました！リリース時にご連絡します。",
     "waitlistError": "有効なメールアドレスを入力してください。",
     "waitlistSaveError": "登録に失敗しました。しばらく後にもう一度お試しください。",
-    "ctaUpgradeTitle": "Pro プランにアップグレード",
-    "ctaUpgradeBody": "検索無制限・PDF出力・暮らしイメージ生成など、すべての機能をご利用いただけます。",
-    "ctaUpgradeBtn": "Pro にアップグレード →",
+    "ctaUpgradeTitle": "Proプランで調査力を最大化",
+    "ctaUpgradeBody": "検索回数の制限なし・商談用PDFレポート出力・AI暮らしイメージ生成。プロと同じ調査力を¥980/月で手に入れましょう。",
+    "ctaUpgradeBtn": "今すぐ Pro にアップグレード →",
     "checkoutLoading": "処理中..."
   },
   "ReportPage": {

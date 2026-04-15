@@ -1,9 +1,9 @@
 {
   "Header": {
     "title": "Mekiki Research",
-    "subtitle": "Gov Data × Expert Analysis — β",
+    "subtitle": "MLIT Property Data × AI Analysis — Know Before You Buy",
     "aboutLink": "About",
-    "betaLink": "About Beta",
+    "betaLink": "View Plans",
     "loginButton": "Sign in with Google",
     "logoutButton": "Sign out",
     "guestBadge": "Guest",
@@ -37,8 +37,8 @@
     "rateLimited": "Too many requests. Please wait a moment and try again."
   },
   "Empty": {
-    "prompt": "Enter an address or coordinates, then press \"Start Research\"",
-    "description": "We'll analyze the area using official property transaction data from Japan's MLIT."
+    "prompt": "Enter a property address and get a pro-grade analysis in seconds",
+    "description": "Price history, hazard risks & neighborhood data — all in one report. Make confident property decisions."
   },
   "Report": {
     "source": "Source: MLIT Property Information Library",
@@ -66,8 +66,8 @@
     "table": "Transaction List"
   },
   "Metadata": {
-    "homeTitle": "Mekiki Research | Property Analysis with Official Gov Data",
-    "homeDescription": "Combining Japan's MLIT official property transaction data with real estate professional insights to reveal the true value and risk of any property."
+    "homeTitle": "Mekiki Research | Japan Property Analysis — Price & Risk in Seconds",
+    "homeDescription": "Instantly analyze any property in Japan. Official MLIT transaction data + AI area reports: price trends, flood risk, school zones, and more. Built for home buyers, investors, and agents."
   },
   "SearchForm": {
     "mapLoading": "Loading map...",
@@ -92,8 +92,8 @@
     "lngError": "Longitude must be between 122 and 154 (Japan)"
   },
   "PlanModal": {
-    "modalTitle": "About Beta",
-    "modalSubtitle": "Open Beta — All features are free to use",
+    "modalTitle": "Choose Your Plan",
+    "modalSubtitle": "Free plan, forever. Unlock everything with Pro.",
     "closeBtn": "Close",
     "guestPlan": "Guest",
     "guestSub": "Not logged in",
@@ -104,7 +104,7 @@
     "proPlan": "Pro",
     "proSub": "Paid plan",
     "proPrice": "¥980/month",
-    "proRecommended": "Best",
+    "proRecommended": "Most Popular",
     "featureSearchCount": "Daily search limit",
     "featurePriceSummary": "Price summary",
     "featureHazard": "Hazard info",
@@ -115,19 +115,19 @@
     "featurePdf": "PDF export",
     "featureHistory": "Search history",
     "featureGuestLocked": "✕ Locked",
-    "featureBetaAll": "All (Beta)",
+    "featureBetaAll": "All",
     "featureAll": "All",
     "featureUnlimited": "Unlimited",
     "featureCpUnlimited": "🎉 Unlimited (promo)",
     "featureNone": "✕",
     "featureAvail": "○",
-    "ctaGuestTitle": "Sign in with Google for free",
+    "ctaGuestTitle": "Start for free with Google",
     "ctaGuestCpText": "🎉 Unlimited searches during the campaign!",
-    "ctaGuestCpSuffix": "Plus access to area analysis reports.",
-    "ctaGuestNormalText": "{limit} searches per day plus area reports — all free.",
-    "ctaGuestBtn": "Get started free",
-    "ctaBetaTitle": "🎉 Open Beta is now live",
-    "ctaBetaBody": "All accounts get full access — area reports, lifestyle images, and every feature — for free. We'd love your feedback!",
+    "ctaGuestCpSuffix": "Full hazard & neighborhood data — all free.",
+    "ctaGuestNormalText": "{limit} research reports per day, plus area analysis — completely free.",
+    "ctaGuestBtn": "Get started free →",
+    "ctaBetaTitle": "🎉 Free plan is available forever",
+    "ctaBetaBody": "Sign in with Google to get 3 research reports per day and area analysis for free. Upgrade to Pro for unlimited power.",
     "ctaProActive": "✅ You're on the Pro plan. All features are unlocked.",
     "waitlistTitle": "Pro Plan Waitlist",
     "waitlistDesc": "We'll notify you when the Pro plan launches. Enter your email below.",
@@ -136,9 +136,9 @@
     "waitlistDone": "Registered! We'll be in touch when we launch.",
     "waitlistError": "Please enter a valid email address.",
     "waitlistSaveError": "Registration failed. Please try again later.",
-    "ctaUpgradeTitle": "Upgrade to Pro",
-    "ctaUpgradeBody": "Unlock unlimited searches, PDF export, lifestyle image generation, and all features.",
-    "ctaUpgradeBtn": "Upgrade to Pro →",
+    "ctaUpgradeTitle": "Upgrade to Pro — Unlock Full Power",
+    "ctaUpgradeBody": "Unlimited research, PDF reports for clients, AI lifestyle images — all for ¥980/month. Same tools the pros use.",
+    "ctaUpgradeBtn": "Upgrade to Pro Now →",
     "checkoutLoading": "Processing..."
   },
   "ReportPage": {
