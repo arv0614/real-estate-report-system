@@ -11,7 +11,7 @@ const LAST_UPDATED = "2026年4月1日";
 const SERVICE_NAME = "物件目利きリサーチ";
 const OPERATOR_NAME = "木下 開";
 const OPERATOR_EMAIL = "realestate.report.support@gmail.com";
-const OPERATOR_ADDRESS = "東京都葛飾区東新小岩7-13-20";
+const OPERATOR_ADDRESS = "〒160-0022 東京都新宿区新宿 1-36-2 新宿第七葉山ビル 3F";
 
 export default function TermsPage() {
   return (

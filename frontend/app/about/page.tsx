@@ -309,7 +309,7 @@ export default function AboutPage() {
           {[
             { label: "販売事業者名", value: "木下 開" },
             { label: "代表者名", value: "木下 開" },
-            { label: "所在地", value: "東京都葛飾区東新小岩7-13-20" },
+            { label: "所在地", value: "〒160-0022 東京都新宿区新宿 1-36-2 新宿第七葉山ビル 3F" },
             { label: "電話番号", value: "070-8397-8965（受付時間: 平日 10:00〜18:00）" },
             { label: "メールアドレス", value: "realestate.report.support@gmail.com" },
             { label: "サービス名称", value: "物件目利きリサーチ（β版）" },
