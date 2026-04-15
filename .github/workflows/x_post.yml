@@ -2,8 +2,8 @@ name: X Auto Post
 
 on:
   # 毎週 月・水・金 JST 08:00 (UTC 23:00 前日)
-  schedule:
-    - cron: "0 23 * * 0,2,4"
+  # schedule:
+  #   - cron: "0 23 * * 0,2,4"
   # 手動実行
   workflow_dispatch:
 
