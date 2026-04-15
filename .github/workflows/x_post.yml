@@ -1,0 +1,35 @@
+name: X Auto Post
+
+on:
+  # 毎週 月・水・金 JST 08:00 (UTC 23:00 前日)
+  schedule:
+    - cron: "0 23 * * 0,2,4"
+  # 手動実行
+  workflow_dispatch:
+
+jobs:
+  post:
+    name: Post to X
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Post tweet
+        env:
+          X_API_KEY: ${{ secrets.X_API_KEY }}
+          X_API_SECRET: ${{ secrets.X_API_SECRET }}
+          X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
+          X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
+        run: node scripts/post_to_x.js
