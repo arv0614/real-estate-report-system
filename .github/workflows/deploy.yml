@@ -1,4 +1,4 @@
-name: Deploy Frontend to Cloud Run
+name: Deploy Frontend to Cloud Run  # triggered after SA/Secrets setup
 
 on:
   push:
