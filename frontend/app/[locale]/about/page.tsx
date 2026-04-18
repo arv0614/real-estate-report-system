@@ -119,8 +119,8 @@ export default async function LocaleAboutPage({ params }: PageProps) {
     {
       label: t("legalRow7label"),
       value: isEn
-        ? "Guest: Free / Free plan: Free (Google account required) / Pro plan: ¥980/month (incl. tax) — coming soon"
-        : "Guestプラン: 無料 / Freeプラン: 無料（Googleアカウント登録必須）/ Proプラン: 月額980円（税込）※近日公開予定",
+        ? "Guest: Free / Free plan: Free (Google account required) / Pro plan: ¥980/month (incl. tax)"
+        : "Guestプラン: 無料 / Freeプラン: 無料（Googleアカウント登録必須）/ Proプラン: 月額980円（税込）",
     },
     {
       label: t("legalRow8label"),
@@ -298,9 +298,9 @@ export default async function LocaleAboutPage({ params }: PageProps) {
                   </li>
                 ))}
               </ul>
-              <a href="#pricing" className="block text-center py-2.5 rounded-xl font-semibold text-sm transition-colors bg-amber-500 text-white cursor-not-allowed opacity-70">
+              <Link href={homeHref} className="block text-center py-2.5 rounded-xl font-semibold text-sm transition-colors bg-amber-500 text-white hover:bg-amber-600">
                 {t("plan2cta")}
-              </a>
+              </Link>
             </div>
           </div>
           <p className="text-center text-xs text-slate-400 mt-8">{t("pricingNote")}</p>

@@ -121,9 +121,9 @@ const PLANS = [
       { text: "検索履歴の保存", ok: true },
       { text: "PDF出力（フルカスタム）", ok: true },
     ],
-    cta: "近日公開予定",
-    ctaHref: "#pricing",
-    ctaStyle: "bg-amber-500 text-white hover:bg-amber-600 cursor-not-allowed opacity-70",
+    cta: "Proプランにアップグレード",
+    ctaHref: "/",
+    ctaStyle: "bg-amber-500 text-white hover:bg-amber-600",
   },
 ];
 
@@ -295,7 +295,7 @@ export default function AboutPage() {
             ))}
           </div>
           <p className="text-center text-xs text-slate-400 mt-8">
-            ※ 料金は予告なく変更する場合があります。Proプランは近日公開予定です。
+            ※ 料金は予告なく変更する場合があります。
           </p>
         </div>
       </section>
@@ -316,7 +316,7 @@ export default function AboutPage() {
             { label: "サービスの内容", value: "国土交通省「不動産情報ライブラリ」データ及び不動産プロフェッショナルの知見を活用した不動産エリア精密調査SaaSサービス" },
             {
               label: "販売価格",
-              value: "Guestプラン: 無料 / Freeプラン: 無料（Googleアカウント登録必須）/ Proプラン: 月額980円（税込）※Proプランは近日公開予定",
+              value: "Guestプラン: 無料 / Freeプラン: 無料（Googleアカウント登録必須）/ Proプラン: 月額980円（税込）",
             },
             { label: "お支払方法", value: "クレジットカード決済（Stripe）。Visa / Mastercard / JCB / American Express 対応予定" },
             { label: "お支払時期", value: "Proプランへのアップグレード時に課金が発生し、以降は毎月同日に自動更新されます" },
