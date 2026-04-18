@@ -10,9 +10,11 @@ const SITE_URL =
 function gradeColor(grade: string): string {
   if (grade === "A+") return "#34d399";
   if (grade === "A")  return "#6ee7b7";
-  if (grade === "B")  return "#fbbf24";
-  if (grade === "C")  return "#f97316";
-  return "#f87171"; // D
+  if (grade === "B+") return "#2dd4bf";
+  if (grade === "B")  return "#60a5fa";
+  if (grade === "C")  return "#fbbf24";
+  if (grade === "D")  return "#f97316";
+  return "#94a3b8"; // — (insufficient)
 }
 
 function modeLabel(mode: string): string {

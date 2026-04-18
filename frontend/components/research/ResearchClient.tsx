@@ -130,8 +130,8 @@ export function ResearchClient({ isEn }: Props) {
             );
             return (
               <ShareResearch
-                grade={s.grade}
-                score={s.overall}
+                grade={s.total.status === "ok" ? s.total.grade : "—"}
+                score={s.total.status === "ok" ? s.total.score : 0}
                 address={result.input.address}
                 isEn={isEn}
               />
