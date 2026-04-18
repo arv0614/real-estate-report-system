@@ -115,7 +115,7 @@ function buildRiskNote(cls: string | null, elev: number | null): string {
   if (elev !== null) {
     if (elev < 2)  return `標高 ${elev}m — 非常に低地で浸水・液状化リスクに要注意。`;
     if (elev < 5)  return `標高 ${elev}m — 低地。洪水・液状化リスクを確認してください。`;
-    if (elev < 20) return `標高 ${elev}m — 平坦地。ハザードマップで詳細確認推奨。`;
+    if (elev < 20) return `標高 ${elev}m — 平坦地。洪水ハザード情報を外部リンクでご確認ください。`;
     return `標高 ${elev}m — 比較的高い地点。地形上の浸水リスクは低いと推定されます。`;
   }
   return "地形情報を取得できませんでした。";
