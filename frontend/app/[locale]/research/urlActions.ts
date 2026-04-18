@@ -1,6 +1,8 @@
 "use server";
 
 import * as cheerio from "cheerio";
+import { detectSiteId, siteLabel } from "@/lib/parsers/supportedSites";
+import type { SupportedSiteId } from "@/lib/parsers/supportedSites";
 
 export interface ParsedPropertyData {
   address?: string;
@@ -10,7 +12,7 @@ export interface ParsedPropertyData {
 }
 
 export type ParseUrlResult =
-  | { ok: true; data: ParsedPropertyData; title: string }
+  | { ok: true; data: ParsedPropertyData; siteId: SupportedSiteId | null; siteLabel: string }
   | { ok: false; error: string };
 
 const FALLBACK_ERROR =
@@ -123,7 +125,8 @@ export async function parsePropertyUrl(url: string): Promise<ParseUrlResult> {
       return { ok: false, error: FALLBACK_ERROR };
     }
 
-    return { ok: true, data, title: title.slice(0, 80) };
+    const id = detectSiteId(url);
+    return { ok: true, data, siteId: id, siteLabel: siteLabel(id) };
   } catch {
     return { ok: false, error: FALLBACK_ERROR };
   }
