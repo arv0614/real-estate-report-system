@@ -6,6 +6,7 @@ import type { PropertyInput, AnalyzeResult } from "@/types/research";
 import { PropertyForm } from "./PropertyForm";
 import { SimilarChart } from "./SimilarChart";
 import { ScoreCard } from "./ScoreCard";
+import { SeismicCard } from "./SeismicCard";
 import { useAuth } from "@/lib/useAuth";
 import { saveResearchSession } from "@/lib/researchHistory";
 
@@ -106,6 +107,9 @@ export function ResearchClient({ isEn }: Props) {
           {result.similar.length >= 3 && (
             <SimilarChart result={result} isEn={isEn} />
           )}
+
+          {/* Seismic & terrain — Task 2-1 */}
+          <SeismicCard result={result} isEn={isEn} />
 
           {result.similar.length === 0 && result.totalFetched > 0 && (
             <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-800">
