@@ -1,4 +1,6 @@
 import type { HazardInfo } from "@/types/api";
+import type { SeismicData, TerrainData } from "@/lib/research/seismicApi";
+import type { PopulationData } from "@/lib/research/populationApi";
 
 export type PropertyMode = "home" | "investment";
 
@@ -24,6 +26,13 @@ export type AnalyzeResult =
       input: PropertyInput;
       similar: SimilarTx[];
       hazard: HazardInfo | null;
+      cityCode: string | null;
+      // Phase 2
+      seismic: SeismicData | null;
+      terrain: TerrainData | null;
+      population: PopulationData | null;
       totalFetched: number;
     }
   | { ok: false; error: string };
+
+export type { SeismicData, TerrainData, PopulationData };

@@ -83,8 +83,18 @@ export function ScoreCard({ result, isEn }: Props) {
   const prices = similar.map((t) => t.price);
 
   const score: PropertyScore = useMemo(
-    () => calcPropertyScore(input.price, prices, hazard, input.mode),
-    [input.price, input.mode, prices, hazard]
+    () =>
+      calcPropertyScore(
+        input.price,
+        prices,
+        hazard,
+        input.mode,
+        result.seismic,
+        result.terrain,
+        result.population
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [input.price, input.mode, JSON.stringify(prices), hazard, result.seismic, result.terrain, result.population]
   );
 
   const isInvestment = input.mode === "investment";
@@ -97,7 +107,6 @@ export function ScoreCard({ result, isEn }: Props) {
     market:       isEn ? "Market Price"            : "相場",
     disaster:     isEn ? "Disaster Risk"           : "災害リスク",
     future:       isEn ? "Future Outlook"          : "将来性",
-    futureNote:   isEn ? "(Provisional)"           : "（暫定値）",
     dataNote:     isEn
                     ? `Based on ${score.dataCount} similar transactions`
                     : `類似物件${score.dataCount}件のデータに基づく`,
@@ -106,22 +115,22 @@ export function ScoreCard({ result, isEn }: Props) {
 
   const subScores = [
     {
-      label:    t.market,
-      score:    score.market,
-      note:     score.marketNote,
-      color:    scoreBarColor(score.market),
+      label: t.market,
+      score: score.market,
+      note:  score.marketNote,
+      color: scoreBarColor(score.market),
     },
     {
-      label:    t.disaster,
-      score:    score.disaster,
-      note:     hazardLabel(score.disaster, isEn),
-      color:    scoreBarColor(score.disaster),
+      label: t.disaster,
+      score: score.disaster,
+      note:  score.disasterNote || hazardLabel(score.disaster, isEn),
+      color: scoreBarColor(score.disaster),
     },
     {
-      label:    `${t.future} ${t.futureNote}`,
-      score:    score.future,
-      note:     isEn ? "Station / zoning (coming soon)" : "駅・用途地域（近日更新）",
-      color:    scoreBarColor(score.future),
+      label: `${t.future}`,
+      score: score.future,
+      note:  score.futureNote,
+      color: scoreBarColor(score.future),
     },
   ];
 
