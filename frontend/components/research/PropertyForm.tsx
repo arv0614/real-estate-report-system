@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import type { PropertyInput, PropertyMode } from "@/types/research";
+import { UrlInput } from "./UrlInput";
+import type { ParsedPropertyData } from "@/app/[locale]/research/urlActions";
 
 interface Props {
   onSubmit: (input: PropertyInput) => void;
@@ -17,6 +19,13 @@ export function PropertyForm({ onSubmit, loading, isEn }: Props) {
   const [area, setArea] = useState("");
   const [builtYear, setBuiltYear] = useState("");
   const [mode, setMode] = useState<PropertyMode>("home");
+
+  const handleParsed = (data: ParsedPropertyData) => {
+    if (data.address)   setAddress(data.address);
+    if (data.price)     setPrice(String(data.price));
+    if (data.area)      setArea(String(data.area));
+    if (data.builtYear) setBuiltYear(String(data.builtYear));
+  };
 
   const t = {
     modeHome:     isEn ? "Home Purchase" : "自宅購入",
@@ -47,6 +56,9 @@ export function PropertyForm({ onSubmit, loading, isEn }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      {/* URL auto-fill */}
+      <UrlInput onParsed={handleParsed} isEn={isEn} />
+
       {/* Mode selector */}
       <div className="flex gap-2">
         {(["home", "investment"] as const).map((m) => (
