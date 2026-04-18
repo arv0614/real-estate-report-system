@@ -1,6 +1,12 @@
 "use client";
 
+import { ExternalLink } from "lucide-react";
 import type { AnalyzeResult } from "@/types/research";
+import {
+  buildHazardMapUrl,
+  buildJShisUrl,
+  buildGsiLandformUrl,
+} from "@/lib/links/externalMaps";
 
 interface Props {
   result: Extract<AnalyzeResult, { ok: true }>;
@@ -22,9 +28,13 @@ const TERRAIN_COLORS: Record<string, { badge: string }> = {
 };
 
 export function SeismicCard({ result, isEn }: Props) {
-  const { seismic, terrain } = result;
+  const { seismic, terrain, coords } = result;
 
   if (!seismic && !terrain) return null;
+
+  const hazardUrl  = buildHazardMapUrl(coords.lat, coords.lng);
+  const jshisUrl   = buildJShisUrl(coords.lat, coords.lng);
+  const gsiLandUrl = buildGsiLandformUrl(coords.lat, coords.lng);
 
   const t = {
     title:        isEn ? "Seismic & Terrain Risk" : "地震・地形リスク",
@@ -34,7 +44,11 @@ export function SeismicCard({ result, isEn }: Props) {
     noTerrain:    isEn ? "Data unavailable" : "データ取得できませんでした",
     elevation:    isEn ? "Elevation" : "標高",
     terrainClass: isEn ? "Terrain type" : "地形分類",
-    riskAlert:    isEn ? "Attention required" : "注意が必要なエリアです",
+    riskAlert:    isEn ? "Elevated risk factors found in this area" : "このエリアはリスク指標が高い水準を示しています",
+    links:        isEn ? "Check on external maps" : "外部マップで詳細を確認",
+    hazardLink:   isEn ? "Hazard map (MLIT)" : "ハザードマップ（国交省）",
+    jshisLink:    isEn ? "J-SHIS earthquake map" : "地震ハザードステーション（J-SHIS）",
+    gsiLink:      isEn ? "GSI landform map" : "地理院地図（地形分類）",
     source:       isEn ? "Source" : "出典",
   };
 
@@ -62,7 +76,6 @@ export function SeismicCard({ result, isEn }: Props) {
         <p className="text-xs font-semibold text-slate-500 mb-3">{t.seismicTitle}</p>
         {seismic ? (
           <div className="flex items-center gap-4">
-            {/* Large probability display */}
             <div className={`text-3xl font-black ${seismicColors!.text} tabular-nums min-w-[4.5rem]`}>
               {seismic.probPct}
               <span className="text-lg font-bold">%</span>
@@ -73,7 +86,6 @@ export function SeismicCard({ result, isEn }: Props) {
                   {seismic.riskLabel}
                 </span>
               </div>
-              {/* Gauge bar */}
               <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
                 <div
                   className={`h-full rounded-full transition-all ${seismicColors!.bar}`}
@@ -94,12 +106,11 @@ export function SeismicCard({ result, isEn }: Props) {
 
       <div className="border-t border-slate-100" />
 
-      {/* Terrain / Elevation section */}
+      {/* Terrain section */}
       <div>
         <p className="text-xs font-semibold text-slate-500 mb-3">{t.terrainTitle}</p>
         {terrain ? (
           <div className="space-y-3">
-            {/* Elevation + terrain class row */}
             <div className="flex flex-wrap gap-3">
               {terrain.elevation !== null && (
                 <div className="flex items-center gap-1.5 text-sm">
@@ -113,20 +124,42 @@ export function SeismicCard({ result, isEn }: Props) {
               {terrain.terrainClass && (
                 <div className="flex items-center gap-1.5 text-sm">
                   <span className="text-slate-500 text-xs">{t.terrainClass}:</span>
-                  <span
-                    className={`text-xs font-semibold px-2 py-0.5 rounded-full ${terrainColors!.badge}`}
-                  >
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${terrainColors!.badge}`}>
                     {terrain.terrainClass}
                   </span>
                 </div>
               )}
             </div>
-            {/* Risk note */}
             <p className="text-sm text-slate-700 leading-relaxed">{terrain.riskNote}</p>
           </div>
         ) : (
           <p className="text-sm text-slate-400">{t.noTerrain}</p>
         )}
+      </div>
+
+      <div className="border-t border-slate-100" />
+
+      {/* External links */}
+      <div>
+        <p className="text-xs font-semibold text-slate-500 mb-2">{t.links}</p>
+        <div className="flex flex-col gap-1.5">
+          {[
+            { label: t.hazardLink,  href: hazardUrl  },
+            { label: t.jshisLink,   href: jshisUrl   },
+            { label: t.gsiLink,     href: gsiLandUrl },
+          ].map(({ label, href }) => (
+            <a
+              key={href}
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 hover:underline"
+            >
+              <ExternalLink className="w-3 h-3 flex-shrink-0" />
+              {label}
+            </a>
+          ))}
+        </div>
       </div>
 
       <p className="text-xs text-slate-400">
