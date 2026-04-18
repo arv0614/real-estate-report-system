@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { analyzeProperty } from "@/app/[locale]/research/actions";
 import type { PropertyInput, AnalyzeResult } from "@/types/research";
 import { PropertyForm } from "./PropertyForm";
+import { SimilarChart } from "./SimilarChart";
 import { useAuth } from "@/lib/useAuth";
 import { saveResearchSession } from "@/lib/researchHistory";
 
@@ -98,7 +99,11 @@ export function ResearchClient({ isEn }: Props) {
           </div>
 
           {/* Placeholder: Score card will be inserted here in Task 1-3 */}
-          {/* Placeholder: Chart will be inserted here in Task 1-2 */}
+
+          {/* Box plot chart (Task 1-2) */}
+          {result.similar.length >= 3 && (
+            <SimilarChart result={result} isEn={isEn} />
+          )}
 
           {result.similar.length === 0 && result.totalFetched > 0 && (
             <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-800">
