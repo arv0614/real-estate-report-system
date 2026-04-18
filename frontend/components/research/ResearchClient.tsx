@@ -7,6 +7,7 @@ import { PropertyForm } from "./PropertyForm";
 import { SimilarChart } from "./SimilarChart";
 import { ScoreCard } from "./ScoreCard";
 import { SeismicCard } from "./SeismicCard";
+import { PopulationChart } from "./PopulationChart";
 import { useAuth } from "@/lib/useAuth";
 import { saveResearchSession } from "@/lib/researchHistory";
 
@@ -110,6 +111,9 @@ export function ResearchClient({ isEn }: Props) {
 
           {/* Seismic & terrain — Task 2-1 */}
           <SeismicCard result={result} isEn={isEn} />
+
+          {/* Population trend — Task 2-2 */}
+          <PopulationChart result={result} isEn={isEn} />
 
           {result.similar.length === 0 && result.totalFetched > 0 && (
             <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-800">
