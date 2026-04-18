@@ -3,48 +3,53 @@
 import { geocodeAddress } from "@/lib/geocode";
 import { fetchSeismicData, fetchTerrainData } from "@/lib/research/seismicApi";
 import { fetchPopulationTrend } from "@/lib/research/populationApi";
+import { PropertyInputSchema } from "@/lib/schemas/propertyInput";
 import type { TransactionRecord } from "@/types/api";
 import type { PropertyInput, AnalyzeResult, SimilarTx } from "@/types/research";
 
 export async function analyzeProperty(input: PropertyInput): Promise<AnalyzeResult> {
   const currentYear = new Date().getFullYear();
 
-  if (!input.address.trim())
-    return { ok: false, error: "住所を入力してください" };
-  if (!(input.price > 0))
-    return { ok: false, error: "価格を入力してください" };
-  if (!(input.area > 0))
-    return { ok: false, error: "専有面積を入力してください" };
-  if (!(input.builtYear >= 1950 && input.builtYear <= currentYear))
-    return { ok: false, error: `築年を正しく入力してください（1950〜${currentYear}）` };
+  // ── Validate with zod ──────────────────────────────────────────────────────
+  const parsed = PropertyInputSchema.safeParse(input);
+  if (!parsed.success) {
+    const msg = parsed.error.issues[0]?.message ?? "入力内容を確認してください";
+    return { ok: false, error: msg };
+  }
+  const valid = parsed.data;
 
-  // ── Step 1: Geocode (sequential — coords needed for everything) ──────────
-  const coords = await geocodeAddress(input.address);
-  if (!coords) {
-    return {
-      ok: false,
-      error: "住所が見つかりませんでした。都道府県から始まる詳しい住所を入力してください。",
-    };
+  // ── Step 1: Resolve coordinates ────────────────────────────────────────────
+  let coords: { lat: number; lng: number };
+
+  if (valid.coordOverride) {
+    // User dragged map marker — skip geocoding
+    coords = valid.coordOverride;
+  } else {
+    const geocoded = await geocodeAddress(valid.address);
+    if (!geocoded) {
+      return {
+        ok: false,
+        error: "住所が見つかりませんでした。都道府県から始まる詳しい住所を入力してください。",
+      };
+    }
+    coords = geocoded;
   }
 
   const apiBase = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
 
-  // ── Step 2: Parallel fetch (MLIT transactions + J-SHIS + GSI) ───────────
+  // ── Step 2: Parallel fetch (MLIT + J-SHIS + GSI) ──────────────────────────
   const [mlitResult, seismicResult, terrainResult] = await Promise.allSettled([
-    // MLIT backend
     apiBase
       ? fetch(
           `${apiBase}/api/property/transactions?lat=${coords.lat}&lng=${coords.lng}&zoom=14&locale=ja`,
           { cache: "no-store", signal: AbortSignal.timeout(20000) }
         ).then((r) => (r.ok ? r.json() : null))
       : Promise.resolve(null),
-    // J-SHIS seismic
     fetchSeismicData(coords.lat, coords.lng),
-    // GSI terrain + elevation
     fetchTerrainData(coords.lat, coords.lng),
   ]);
 
-  // ── Process MLIT response ─────────────────────────────────────────────────
+  // ── Process MLIT ───────────────────────────────────────────────────────────
   let hazard = null;
   let similar: SimilarTx[] = [];
   let totalFetched = 0;
@@ -57,11 +62,11 @@ export async function analyzeProperty(input: PropertyInput): Promise<AnalyzeResu
     const records: TransactionRecord[] = data.data?.data ?? [];
     totalFetched = records.length;
 
-    const inputAge = currentYear - input.builtYear;
+    const inputAge = currentYear - valid.builtYear;
     similar = records
       .filter((r) => {
         if (!r.area || r.tradePrice <= 0) return false;
-        const areaOk = Math.abs(r.area - input.area) / input.area <= 0.2;
+        const areaOk = Math.abs(r.area - valid.area) / valid.area <= 0.2;
         const rAge = r.buildingYear ? currentYear - r.buildingYear : null;
         const yearOk = rAge !== null && Math.abs(rAge - inputAge) <= 5;
         return areaOk && yearOk;
@@ -70,7 +75,7 @@ export async function analyzeProperty(input: PropertyInput): Promise<AnalyzeResu
         (r): SimilarTx => ({
           price: Math.round(r.tradePrice / 10000),
           area: r.area!,
-          year: r.buildingYear ?? input.builtYear,
+          year: r.buildingYear ?? valid.builtYear,
           period: r.period ?? "",
         })
       );
@@ -79,7 +84,7 @@ export async function analyzeProperty(input: PropertyInput): Promise<AnalyzeResu
   const seismic = seismicResult.status === "fulfilled" ? seismicResult.value : null;
   const terrain = terrainResult.status === "fulfilled" ? terrainResult.value : null;
 
-  // ── Step 3: e-Stat population (needs cityCode from step 2) ───────────────
+  // ── Step 3: e-Stat (sequential — needs cityCode) ───────────────────────────
   const estatKey = process.env.ESTAT_API_KEY ?? "";
   const population =
     cityCode && estatKey ? await fetchPopulationTrend(cityCode, estatKey) : null;
@@ -87,7 +92,9 @@ export async function analyzeProperty(input: PropertyInput): Promise<AnalyzeResu
   return {
     ok: true,
     coords,
-    input,
+    coordOverrideUsed: !!valid.coordOverride,
+    originalCoords: valid.coordOverride ? null : coords,
+    input: valid,
     similar,
     hazard,
     cityCode,

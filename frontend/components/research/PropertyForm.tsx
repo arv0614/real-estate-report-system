@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { PropertyInput, PropertyMode } from "@/types/research";
 import { UrlInput } from "./UrlInput";
 import type { ParsedPropertyData } from "@/app/[locale]/research/urlActions";
+import { PropertyInputSchema } from "@/lib/schemas/propertyInput";
 
 interface Props {
   onSubmit: (input: PropertyInput) => void;
@@ -13,46 +14,69 @@ interface Props {
 
 const currentYear = new Date().getFullYear();
 
+interface FieldErrors {
+  address?: string;
+  price?: string;
+  area?: string;
+  builtYear?: string;
+}
+
 export function PropertyForm({ onSubmit, loading, isEn }: Props) {
-  const [address, setAddress] = useState("");
-  const [price, setPrice] = useState("");
-  const [area, setArea] = useState("");
+  const [address,   setAddress]   = useState("");
+  const [price,     setPrice]     = useState("");
+  const [area,      setArea]      = useState("");
   const [builtYear, setBuiltYear] = useState("");
-  const [mode, setMode] = useState<PropertyMode>("home");
+  const [mode,      setMode]      = useState<PropertyMode>("home");
+  const [errors,    setErrors]    = useState<FieldErrors>({});
+
+  const t = {
+    modeHome:     isEn ? "Home Purchase"     : "自宅購入",
+    modeInvest:   isEn ? "Investment"        : "投資物件",
+    addressLabel: isEn ? "Address"           : "住所",
+    addressPh:    isEn ? "e.g. 1-19-11 Jinnan, Shibuya-ku, Tokyo" : "例: 東京都渋谷区神南1-19-11",
+    priceLabel:   isEn ? "Price (¥10k)"      : "価格（万円）",
+    areaLabel:    isEn ? "Floor area (㎡)"   : "専有面積（㎡）",
+    yearLabel:    isEn ? "Year built"        : "建築年",
+    yearPh:       isEn ? "e.g. 2000"         : "例: 2000",
+    submit:       isEn ? "Analyze"           : "調査する",
+    analyzing:    isEn ? "Analyzing…"        : "分析中…",
+  };
 
   const handleParsed = (data: ParsedPropertyData) => {
     if (data.address)   setAddress(data.address);
     if (data.price)     setPrice(String(data.price));
     if (data.area)      setArea(String(data.area));
     if (data.builtYear) setBuiltYear(String(data.builtYear));
-  };
-
-  const t = {
-    modeHome:     isEn ? "Home Purchase" : "自宅購入",
-    modeInvest:   isEn ? "Investment"    : "投資物件",
-    addressLabel: isEn ? "Address"       : "住所",
-    addressPh:    isEn ? "e.g. 1-19-11 Jinnan, Shibuya-ku, Tokyo" : "例: 東京都渋谷区神南1-19-11",
-    priceLabel:   isEn ? "Price (¥10k)"  : "価格（万円）",
-    areaLabel:    isEn ? "Floor area (㎡)" : "専有面積（㎡）",
-    yearLabel:    isEn ? "Year built"    : "建築年",
-    yearPh:       isEn ? "e.g. 2000"     : "例: 2000",
-    submit:       isEn ? "Analyze"       : "調査する",
-    analyzing:    isEn ? "Analyzing…"    : "分析中…",
+    setErrors({});
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({
-      address: address.trim(),
-      price: Number(price),
-      area: Number(area),
-      builtYear: Number(builtYear),
-      mode,
+    setErrors({});
+
+    const result = PropertyInputSchema.safeParse({
+      address, price, area, builtYear, mode,
     });
+
+    if (!result.success) {
+      const fieldErrors: FieldErrors = {};
+      for (const err of result.error.issues) {
+        const field = err.path[0] as keyof FieldErrors;
+        if (!fieldErrors[field]) fieldErrors[field] = err.message;
+      }
+      setErrors(fieldErrors);
+      return;
+    }
+
+    onSubmit(result.data);
   };
 
-  const inputCls =
-    "w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition";
+  const inputCls = (hasError?: boolean) =>
+    `w-full rounded-lg border px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
+      hasError
+        ? "border-red-400 bg-red-50"
+        : "border-slate-300 bg-white"
+    }`;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
@@ -89,9 +113,12 @@ export function PropertyForm({ onSubmit, loading, isEn }: Props) {
           value={address}
           onChange={(e) => setAddress(e.target.value)}
           placeholder={t.addressPh}
-          className={inputCls}
+          className={inputCls(!!errors.address)}
           required
         />
+        {errors.address && (
+          <p className="text-xs text-red-600 mt-1">{errors.address}</p>
+        )}
       </div>
 
       {/* Price + Area */}
@@ -102,13 +129,18 @@ export function PropertyForm({ onSubmit, loading, isEn }: Props) {
           </label>
           <input
             type="number"
+            inputMode="decimal"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
             placeholder="5000"
             min={1}
-            className={inputCls}
+            step="any"
+            className={inputCls(!!errors.price)}
             required
           />
+          {errors.price && (
+            <p className="text-xs text-red-600 mt-1">{errors.price}</p>
+          )}
         </div>
         <div>
           <label className="block text-xs font-semibold text-slate-600 mb-1.5">
@@ -116,14 +148,18 @@ export function PropertyForm({ onSubmit, loading, isEn }: Props) {
           </label>
           <input
             type="number"
+            inputMode="decimal"
             value={area}
             onChange={(e) => setArea(e.target.value)}
             placeholder="70"
-            min={1}
-            step="0.1"
-            className={inputCls}
+            min={0.01}
+            step="any"
+            className={inputCls(!!errors.area)}
             required
           />
+          {errors.area && (
+            <p className="text-xs text-red-600 mt-1">{errors.area}</p>
+          )}
         </div>
       </div>
 
@@ -134,14 +170,19 @@ export function PropertyForm({ onSubmit, loading, isEn }: Props) {
         </label>
         <input
           type="number"
+          inputMode="decimal"
           value={builtYear}
           onChange={(e) => setBuiltYear(e.target.value)}
           placeholder={t.yearPh}
-          min={1950}
+          min={1900}
           max={currentYear}
-          className={inputCls}
+          step="1"
+          className={inputCls(!!errors.builtYear)}
           required
         />
+        {errors.builtYear && (
+          <p className="text-xs text-red-600 mt-1">{errors.builtYear}</p>
+        )}
       </div>
 
       <button

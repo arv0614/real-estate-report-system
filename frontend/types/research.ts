@@ -10,6 +10,7 @@ export interface PropertyInput {
   area: number;      // ㎡
   builtYear: number; // 建築年 e.g. 2000
   mode: PropertyMode;
+  coordOverride?: { lat: number; lng: number };
 }
 
 export interface SimilarTx {
@@ -23,11 +24,12 @@ export type AnalyzeResult =
   | {
       ok: true;
       coords: { lat: number; lng: number };
+      coordOverrideUsed: boolean;
+      originalCoords: { lat: number; lng: number } | null;
       input: PropertyInput;
       similar: SimilarTx[];
       hazard: HazardInfo | null;
       cityCode: string | null;
-      // Phase 2
       seismic: SeismicData | null;
       terrain: TerrainData | null;
       population: PopulationData | null;
