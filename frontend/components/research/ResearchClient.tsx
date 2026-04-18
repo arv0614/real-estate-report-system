@@ -5,6 +5,7 @@ import { analyzeProperty } from "@/app/[locale]/research/actions";
 import type { PropertyInput, AnalyzeResult } from "@/types/research";
 import { PropertyForm } from "./PropertyForm";
 import { SimilarChart } from "./SimilarChart";
+import { ScoreCard } from "./ScoreCard";
 import { useAuth } from "@/lib/useAuth";
 import { saveResearchSession } from "@/lib/researchHistory";
 
@@ -98,9 +99,10 @@ export function ResearchClient({ isEn }: Props) {
             </div>
           </div>
 
-          {/* Placeholder: Score card will be inserted here in Task 1-3 */}
+          {/* Score card — Task 1-3 */}
+          <ScoreCard result={result} isEn={isEn} />
 
-          {/* Box plot chart (Task 1-2) */}
+          {/* Box plot chart — Task 1-2 */}
           {result.similar.length >= 3 && (
             <SimilarChart result={result} isEn={isEn} />
           )}
