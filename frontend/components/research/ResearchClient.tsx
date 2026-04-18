@@ -8,6 +8,8 @@ import { SimilarChart } from "./SimilarChart";
 import { ScoreCard } from "./ScoreCard";
 import { SeismicCard } from "./SeismicCard";
 import { PopulationChart } from "./PopulationChart";
+import { ShareResearch } from "./ShareResearch";
+import { calcPropertyScore } from "@/lib/scoring";
 import { useAuth } from "@/lib/useAuth";
 import { saveResearchSession } from "@/lib/researchHistory";
 
@@ -114,6 +116,27 @@ export function ResearchClient({ isEn }: Props) {
 
           {/* Population trend — Task 2-2 */}
           <PopulationChart result={result} isEn={isEn} />
+
+          {/* Share buttons */}
+          {(() => {
+            const s = calcPropertyScore(
+              result.input.price,
+              result.similar.map((t) => t.price),
+              result.hazard,
+              result.input.mode,
+              result.seismic,
+              result.terrain,
+              result.population
+            );
+            return (
+              <ShareResearch
+                grade={s.grade}
+                score={s.overall}
+                address={result.input.address}
+                isEn={isEn}
+              />
+            );
+          })()}
 
           {result.similar.length === 0 && result.totalFetched > 0 && (
             <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-800">
