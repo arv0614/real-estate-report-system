@@ -15,7 +15,8 @@ export interface AreaSummaryResult {
   population: PopulationData | null;
   cityCode: string | null;
   cityName: string | null;
-  allPrices: number[];          // 万円, all transactions in tile
+  allPrices: number[];          // 万円, all transactions in tile (unfiltered)
+  allTransactions: TransactionRecord[]; // raw records for client-side type filtering
   totalFetched: number;
 }
 
@@ -42,6 +43,7 @@ export async function analyzeArea(lat: number, lng: number): Promise<AreaResult>
   let hazard: HazardInfo | null = null;
   let cityCode: string | null = null;
   let allPrices: number[] = [];
+  let allTransactions: TransactionRecord[] = [];
   let totalFetched = 0;
 
   if (mlitResult.status === "fulfilled" && mlitResult.value) {
@@ -50,6 +52,7 @@ export async function analyzeArea(lat: number, lng: number): Promise<AreaResult>
     cityCode = data.data?.cityCode ?? null;
     const records: TransactionRecord[] = data.data?.data ?? [];
     totalFetched = records.length;
+    allTransactions = records;
     allPrices = records
       .filter((r) => r.tradePrice > 0)
       .map((r) => Math.round(r.tradePrice / 10000));
@@ -72,6 +75,7 @@ export async function analyzeArea(lat: number, lng: number): Promise<AreaResult>
     cityCode,
     cityName: population?.cityName ?? null,
     allPrices,
+    allTransactions,
     totalFetched,
   };
 }

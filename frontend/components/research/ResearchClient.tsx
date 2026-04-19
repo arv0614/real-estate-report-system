@@ -4,7 +4,7 @@ import { useState, useTransition, useRef, useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { analyzeProperty } from "@/app/[locale]/research/actions";
-import type { PropertyInput, AnalyzeResult } from "@/types/research";
+import type { PropertyInput, AnalyzeResult, PropertyType } from "@/types/research";
 import { PropertyForm } from "./PropertyForm";
 import { SimilarChart } from "./SimilarChart";
 import { ScoreCard } from "./ScoreCard";
@@ -141,10 +141,12 @@ type Tab = "map" | "form";
 interface ExplorePanel {
   isEn: boolean;
   locale: string;
+  propertyType: PropertyType;
+  onPropertyTypeChange: (t: PropertyType) => void;
   onSwitchToForm: (lat: number, lng: number) => void;
 }
 
-function MapExplorePanel({ isEn, locale, onSwitchToForm }: ExplorePanel) {
+function MapExplorePanel({ isEn, locale, propertyType, onPropertyTypeChange, onSwitchToForm }: ExplorePanel) {
   const router = useRouter();
   const DEFAULT_CENTER = { lat: 35.6812, lng: 139.7671 };
   const [center, setCenter] = useState(DEFAULT_CENTER);
@@ -190,11 +192,34 @@ function MapExplorePanel({ isEn, locale, onSwitchToForm }: ExplorePanel) {
   };
 
   const handleAreaInfo = () => {
-    router.push(`/${locale}/research/area?lat=${center.lat}&lng=${center.lng}`);
+    router.push(`/${locale}/research/area?lat=${center.lat}&lng=${center.lng}&type=${propertyType}`);
+  };
+
+  const typeLbl = {
+    mansion: isEn ? "🏢 Apartment" : "🏢 マンション",
+    house:   isEn ? "🏠 House"    : "🏠 戸建",
   };
 
   return (
     <div className="space-y-3">
+      {/* Mode + type selector row */}
+      <div className="flex gap-2">
+        {(["mansion", "house"] as const).map((pt) => (
+          <button
+            key={pt}
+            type="button"
+            onClick={() => onPropertyTypeChange(pt)}
+            className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors border-2 ${
+              propertyType === pt
+                ? "border-teal-600 bg-teal-600 text-white"
+                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+            }`}
+          >
+            {typeLbl[pt]}
+          </button>
+        ))}
+      </div>
+
       {/* Search bar */}
       <div className="flex gap-2">
         <div className="flex-1 relative">
@@ -270,12 +295,13 @@ interface Props {
 }
 
 export function ResearchClient({ isEn, locale }: Props) {
-  const [tab,         setTab]         = useState<Tab>("map");
-  const [result,      setResult]      = useState<AnalyzeResult | null>(null);
-  const [isPending,   startTransition] = useTransition();
-  const [dragCoords,  setDragCoords]  = useState<{ lat: number; lng: number } | null>(null);
-  const [reanalyzing, setReanalyzing] = useState(false);
+  const [tab,           setTab]         = useState<Tab>("map");
+  const [result,        setResult]      = useState<AnalyzeResult | null>(null);
+  const [isPending,     startTransition] = useTransition();
+  const [dragCoords,    setDragCoords]  = useState<{ lat: number; lng: number } | null>(null);
+  const [reanalyzing,   setReanalyzing] = useState(false);
   const [prefillCoords, setPrefillCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [propertyType,  setPropertyType] = useState<PropertyType>("mansion");
   const lastInputRef = useRef<PropertyInput | null>(null);
   const mapRef       = useRef<HTMLDivElement | null>(null);
   const { user } = useAuth();
@@ -296,6 +322,7 @@ export function ResearchClient({ isEn, locale }: Props) {
           area: input.area ?? 0,
           builtYear: input.builtYear ?? new Date().getFullYear(),
           mode: input.mode,
+          propertyType: input.propertyType,
         }).catch(() => {});
       }
     });
@@ -379,6 +406,8 @@ export function ResearchClient({ isEn, locale }: Props) {
         <MapExplorePanel
           isEn={isEn}
           locale={locale}
+          propertyType={propertyType}
+          onPropertyTypeChange={setPropertyType}
           onSwitchToForm={handleSwitchToForm}
         />
       )}
@@ -392,6 +421,8 @@ export function ResearchClient({ isEn, locale }: Props) {
               loading={isPending}
               isEn={isEn}
               prefillCoords={prefillCoords}
+              propertyType={propertyType}
+              onPropertyTypeChange={setPropertyType}
             />
           </div>
 
@@ -525,6 +556,7 @@ export function ResearchClient({ isEn, locale }: Props) {
                     address={result.input.address}
                     isEn={isEn}
                     autoFilled={result.autoFilledFields.length > 0}
+                    propertyType={result.input.propertyType}
                   />
                 );
               })()}

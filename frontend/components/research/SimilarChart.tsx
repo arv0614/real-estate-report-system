@@ -183,8 +183,11 @@ export function SimilarChart({ result, isEn }: Props) {
   const prices = similar.map((t) => t.price);
   const stats = calcBoxStats(prices);
 
+  const propertyType = input.propertyType ?? "mansion";
   const t = {
-    title:      isEn ? "Market Price Comparison" : "相場比較（類似物件）",
+    title:      propertyType === "house"
+      ? (isEn ? "Market Price Comparison (Houses)" : "周辺の戸建取引事例")
+      : (isEn ? "Market Price Comparison (Apartments)" : "周辺のマンション取引事例"),
     subtitle:   isEn ? "Area ±20% / Age ±5 yrs" : "面積±20% / 築年±5年でフィルタ",
     count:      isEn ? `${similar.length} transactions` : `${similar.length}件の類似取引`,
     noData:     isEn ? "Not enough data for a box plot (need 3+)" : "箱ひげ図を描くのに十分なデータがありません（3件以上必要）",

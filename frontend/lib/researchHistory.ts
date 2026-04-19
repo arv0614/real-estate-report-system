@@ -9,6 +9,7 @@ export interface ResearchSessionData {
   area: number;
   builtYear: number;
   mode: "home" | "investment";
+  propertyType?: "house" | "mansion"; // optional — absent in sessions saved before U9
 }
 
 export async function saveResearchSession(

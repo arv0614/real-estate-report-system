@@ -1,5 +1,10 @@
 import type { TransactionRecord } from "@/types/api";
-import type { SimilarTx } from "@/types/research";
+import type { SimilarTx, PropertyType } from "@/types/research";
+
+const TYPE_FILTER: Record<PropertyType, string> = {
+  mansion: "中古マンション等",
+  house:   "宅地(土地と建物)",
+};
 
 export type SearchRange = "strict" | "city" | "wide";
 
@@ -22,11 +27,14 @@ function filterRecords(
   inputAge: number,
   inputArea: number,
   currentYear: number,
-  filter: StageFilter
+  filter: StageFilter,
+  propertyType: PropertyType
 ): SimilarTx[] {
+  const requiredType = TYPE_FILTER[propertyType];
   return records
     .filter((r) => {
       if (!r.area || r.tradePrice <= 0) return false;
+      if (r.type !== requiredType) return false;
 
       // Location filter
       if (filter.districtName && r.districtName !== filter.districtName) return false;
@@ -63,7 +71,8 @@ export function stagedSimilarSearch(
   inputArea: number,
   currentYear: number,
   districtName: string | null,
-  municipalityCode: string | null
+  municipalityCode: string | null,
+  propertyType: PropertyType = "mansion"
 ): StagedSearchResult {
   const stages: StageFilter[] = [
     {
@@ -90,7 +99,7 @@ export function stagedSimilarSearch(
     if (stage.range === "strict" && !districtName) continue;
     if (stage.range === "city" && !municipalityCode) continue;
 
-    const results = filterRecords(records, inputAge, inputArea, currentYear, stage);
+    const results = filterRecords(records, inputAge, inputArea, currentYear, stage, propertyType);
     if (results.length >= 5) {
       return {
         similar: results,
@@ -105,7 +114,7 @@ export function stagedSimilarSearch(
     range: "wide",
     ageTolerance: 10,
     areaTolerance: 0.3,
-  });
+  }, propertyType);
 
   return {
     similar: fallback,

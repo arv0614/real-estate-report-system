@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useCallback } from "react";
+import { useState, useTransition, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { analyzeArea } from "@/app/[locale]/research/area/areaActions";
@@ -8,6 +8,12 @@ import type { AreaResult, AreaSummaryResult } from "@/app/[locale]/research/area
 import { PopulationChart } from "./PopulationChart";
 import { buildHazardMapUrl, buildJShisUrl, buildGsiLandformUrl } from "@/lib/links/externalMaps";
 import { ExternalLink } from "lucide-react";
+import type { PropertyType } from "@/types/research";
+
+const TYPE_FILTER: Record<PropertyType, string> = {
+  mansion: "中古マンション等",
+  house:   "宅地(土地と建物)",
+};
 
 const ResearchMap = dynamic(
   () => import("./ResearchMap").then((m) => m.ResearchMap),
@@ -167,19 +173,21 @@ function DisasterSummary({
 interface Props {
   initialLat: number | null;
   initialLng: number | null;
+  initialType?: PropertyType | null;
   isEn: boolean;
   locale: string;
 }
 
-export function AreaClient({ initialLat, initialLng, isEn, locale }: Props) {
+export function AreaClient({ initialLat, initialLng, initialType, isEn, locale }: Props) {
   const router = useRouter();
   const [coords, setCoords]   = useState<{ lat: number; lng: number } | null>(
     initialLat !== null && initialLng !== null
       ? { lat: initialLat, lng: initialLng }
       : null
   );
-  const [result,  setResult]  = useState<AreaResult | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [result,       setResult]      = useState<AreaResult | null>(null);
+  const [isPending,    startTransition] = useTransition();
+  const [propertyType, setPropertyType] = useState<PropertyType>(initialType ?? "mansion");
 
   const runAnalysis = useCallback((lat: number, lng: number) => {
     setCoords({ lat, lng });
@@ -201,11 +209,18 @@ export function AreaClient({ initialLat, initialLng, isEn, locale }: Props) {
   }, [runAnalysis]);
 
   const handleAddPropertyDetails = useCallback(() => {
-    const params = coords
-      ? `?lat=${coords.lat}&lng=${coords.lng}`
-      : "";
-    router.push(`/${locale}/research${params}`);
-  }, [coords, locale, router]);
+    const base = coords ? `?lat=${coords.lat}&lng=${coords.lng}&type=${propertyType}` : "";
+    router.push(`/${locale}/research${base}`);
+  }, [coords, locale, propertyType, router]);
+
+  // Client-side price filtering by propertyType (9-8)
+  const filteredPrices = useMemo(() => {
+    if (!result || !result.ok) return [];
+    const requiredType = TYPE_FILTER[propertyType];
+    return result.allTransactions
+      .filter((r) => r.type === requiredType && r.tradePrice > 0)
+      .map((r) => Math.round(r.tradePrice / 10000));
+  }, [result, propertyType]);
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-10">
@@ -265,7 +280,25 @@ export function AreaClient({ initialLat, initialLng, isEn, locale }: Props) {
             </div>
           )}
 
-          <PriceHistogram prices={result.allPrices} isEn={isEn} />
+          {/* Property type tab switcher (9-8) */}
+          <div className="flex gap-2">
+            {(["mansion", "house"] as const).map((pt) => (
+              <button
+                key={pt}
+                type="button"
+                onClick={() => setPropertyType(pt)}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors border-2 ${
+                  propertyType === pt
+                    ? "border-teal-600 bg-teal-600 text-white"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                }`}
+              >
+                {pt === "mansion" ? (isEn ? "🏢 Apartment" : "🏢 マンション") : (isEn ? "🏠 House" : "🏠 戸建")}
+              </button>
+            ))}
+          </div>
+
+          <PriceHistogram prices={filteredPrices} isEn={isEn} />
           <DisasterSummary result={result} isEn={isEn} />
 
           {/* Population wrapped to accept AreaSummaryResult */}
@@ -276,7 +309,7 @@ export function AreaClient({ initialLat, initialLng, isEn, locale }: Props) {
                 coords: result.coords,
                 coordOverrideUsed: false,
                 originalCoords: null,
-                input: { address: "", price: 0, area: 0, builtYear: 2000, mode: "home" },
+                input: { address: "", price: 0, area: 0, builtYear: 2000, mode: "home", propertyType: "mansion" },
                 similar: [],
                 searchRange: null,
                 searchRangeLabel: null,

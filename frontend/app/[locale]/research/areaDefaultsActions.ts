@@ -1,6 +1,7 @@
 "use server";
 
 import type { TransactionRecord } from "@/types/api";
+import type { PropertyType } from "@/types/research";
 
 export interface AreaDefaults {
   priceMedian: number | null;    // 万円
@@ -16,7 +17,16 @@ function median(arr: number[]): number | null {
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
-export async function fetchAreaDefaults(lat: number, lng: number): Promise<AreaDefaults> {
+const TYPE_FILTER: Record<PropertyType, string> = {
+  mansion: "中古マンション等",
+  house:   "宅地(土地と建物)",
+};
+
+export async function fetchAreaDefaults(
+  lat: number,
+  lng: number,
+  propertyType: PropertyType = "mansion"
+): Promise<AreaDefaults> {
   const empty: AreaDefaults = { priceMedian: null, areaMedian: null, builtYearMedian: null, sampleSize: 0 };
 
   if (!isFinite(lat) || !isFinite(lng)) return empty;
@@ -31,7 +41,10 @@ export async function fetchAreaDefaults(lat: number, lng: number): Promise<AreaD
     );
     if (!res.ok) return empty;
     const data = await res.json();
-    const records: TransactionRecord[] = data?.data?.data ?? [];
+    const allRecords: TransactionRecord[] = data?.data?.data ?? [];
+
+    const requiredType = TYPE_FILTER[propertyType];
+    const records = allRecords.filter((r) => r.type === requiredType);
 
     const prices     = records.filter((r) => r.tradePrice > 0).map((r) => Math.round(r.tradePrice / 10000));
     const areas      = records.filter((r) => (r.area ?? 0) > 0).map((r) => r.area!);

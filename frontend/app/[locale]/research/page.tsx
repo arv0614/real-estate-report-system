@@ -19,6 +19,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   const area       = typeof sp.area       === "string" ? sp.area       : null;
   const score      = typeof sp.score      === "string" ? sp.score      : null;
   const mode       = typeof sp.mode       === "string" ? sp.mode       : "home";
+  const type       = typeof sp.type       === "string" ? sp.type       : "mansion";
   const autoFilled = sp.autoFilled === "true";
 
   const defaultTitle = isEn ? "Property Research (β)" : "物件リサーチ（β）";
@@ -27,7 +28,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
     : "住所・価格・専有面積を入力するだけで、相場比較・リスク・将来性スコアを30秒で表示します。";
 
   const ogImageUrl = grade
-    ? `${SITE_URL}/api/research-og?grade=${encodeURIComponent(grade)}${area ? `&area=${encodeURIComponent(area)}` : ""}${score ? `&score=${encodeURIComponent(score)}` : ""}&mode=${mode}${autoFilled ? "&autoFilled=true" : ""}`
+    ? `${SITE_URL}/api/research-og?grade=${encodeURIComponent(grade)}${area ? `&area=${encodeURIComponent(area)}` : ""}${score ? `&score=${encodeURIComponent(score)}` : ""}&mode=${mode}&type=${type}${autoFilled ? "&autoFilled=true" : ""}`
     : `${SITE_URL}/api/og?address=${encodeURIComponent(isEn ? "Property Analysis" : "物件リサーチ")}`;
 
   const title = grade && area

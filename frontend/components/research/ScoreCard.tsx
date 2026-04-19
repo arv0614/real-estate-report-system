@@ -270,6 +270,10 @@ export function ScoreCard({ result, isEn, onScrollToMap }: Props) {
     setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
 
   const isInvestment = input.mode === "investment";
+  const propertyType = input.propertyType ?? "mansion";
+  const typeLbl = propertyType === "house"
+    ? (isEn ? "🏠 House" : "🏠 戸建")
+    : (isEn ? "🏢 Apartment" : "🏢 マンション");
 
   // How many more records are needed for market sub
   const marketNeeded = Math.max(0, 5 - similar.length);
@@ -326,7 +330,7 @@ export function ScoreCard({ result, isEn, onScrollToMap }: Props) {
         )}
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
             <span className="text-base font-bold text-slate-900">{t.title}</span>
             <span
               className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
@@ -336,6 +340,9 @@ export function ScoreCard({ result, isEn, onScrollToMap }: Props) {
               }`}
             >
               {t.modeLabel}
+            </span>
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-teal-100 text-teal-700">
+              {typeLbl}
             </span>
           </div>
 
