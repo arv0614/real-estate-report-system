@@ -5,9 +5,8 @@ import type { PropertyScore } from "../types";
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
 const mockHazard = {
-  flood: { maxDepthRank: 0, depthLabel: "区域外", hasRisk: false },
-  landslide: { hasRisk: false, zones: [] },
-  tsunami: { hasRisk: false },
+  flood: { maxDepthRank: 0, maxDepthLabel: "区域外", hasRisk: false },
+  landslide: { hasRisk: false, phenomena: [] },
 };
 
 const mockSeismic = {

@@ -4,8 +4,9 @@ import { geocodeAddress } from "@/lib/geocode";
 import { fetchSeismicData, fetchTerrainData } from "@/lib/research/seismicApi";
 import { fetchPopulationTrend } from "@/lib/research/populationApi";
 import { PropertyInputSchema } from "@/lib/schemas/propertyInput";
+import { stagedSimilarSearch } from "@/lib/research/similarSearch";
 import type { TransactionRecord } from "@/types/api";
-import type { PropertyInput, AnalyzeResult, SimilarTx } from "@/types/research";
+import type { PropertyInput, AnalyzeResult, SimilarTx, SearchRange } from "@/types/research";
 
 export async function analyzeProperty(input: PropertyInput): Promise<AnalyzeResult> {
   const currentYear = new Date().getFullYear();
@@ -22,7 +23,6 @@ export async function analyzeProperty(input: PropertyInput): Promise<AnalyzeResu
   let coords: { lat: number; lng: number };
 
   if (valid.coordOverride) {
-    // User dragged map marker — skip geocoding
     coords = valid.coordOverride;
   } else {
     const geocoded = await geocodeAddress(valid.address);
@@ -54,6 +54,8 @@ export async function analyzeProperty(input: PropertyInput): Promise<AnalyzeResu
   let similar: SimilarTx[] = [];
   let totalFetched = 0;
   let cityCode: string | null = null;
+  let searchRange: SearchRange | null = null;
+  let searchRangeLabel: string | null = null;
 
   if (mlitResult.status === "fulfilled" && mlitResult.value) {
     const data = mlitResult.value;
@@ -63,22 +65,21 @@ export async function analyzeProperty(input: PropertyInput): Promise<AnalyzeResu
     totalFetched = records.length;
 
     const inputAge = currentYear - valid.builtYear;
-    similar = records
-      .filter((r) => {
-        if (!r.area || r.tradePrice <= 0) return false;
-        const areaOk = Math.abs(r.area - valid.area) / valid.area <= 0.2;
-        const rAge = r.buildingYear ? currentYear - r.buildingYear : null;
-        const yearOk = rAge !== null && Math.abs(rAge - inputAge) <= 5;
-        return areaOk && yearOk;
-      })
-      .map(
-        (r): SimilarTx => ({
-          price: Math.round(r.tradePrice / 10000),
-          area: r.area!,
-          year: r.buildingYear ?? valid.builtYear,
-          period: r.period ?? "",
-        })
-      );
+    const firstRecord = records[0];
+    const districtName: string | null = firstRecord?.districtName ?? null;
+    const municipalityCode: string | null = data.data?.cityCode ?? firstRecord?.municipalityCode ?? null;
+
+    const staged = stagedSimilarSearch(
+      records,
+      inputAge,
+      valid.area,
+      currentYear,
+      districtName,
+      municipalityCode
+    );
+    similar = staged.similar;
+    searchRange = staged.searchRange;
+    searchRangeLabel = staged.searchRangeLabel;
   }
 
   const seismic = seismicResult.status === "fulfilled" ? seismicResult.value : null;
@@ -96,6 +97,8 @@ export async function analyzeProperty(input: PropertyInput): Promise<AnalyzeResu
     originalCoords: valid.coordOverride ? null : coords,
     input: valid,
     similar,
+    searchRange,
+    searchRangeLabel,
     hazard,
     cityCode,
     seismic,
