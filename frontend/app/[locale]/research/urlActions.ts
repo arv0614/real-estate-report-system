@@ -3,12 +3,14 @@
 import * as cheerio from "cheerio";
 import { detectSiteId, siteLabel } from "@/lib/parsers/supportedSites";
 import type { SupportedSiteId } from "@/lib/parsers/supportedSites";
+import type { PropertyType } from "@/types/research";
 
 export interface ParsedPropertyData {
   address?: string;
   price?: number;   // 万円
   area?: number;    // ㎡
   builtYear?: number;
+  propertyType?: PropertyType;
   /** Coordinates from geolocation (LocationInput) — skip re-geocoding */
   coordOverride?: { lat: number; lng: number };
 }
@@ -59,6 +61,15 @@ function extractAddress(text: string): string | undefined {
     /([東京都|北海道|(?:大阪|京都|神奈川|埼玉|千葉|愛知|静岡|兵庫|福岡|広島|宮城|新潟|茨城|栃木|群馬|岐阜|三重|滋賀|奈良|和歌山|鳥取|島根|岡山|山口|徳島|香川|愛媛|高知|佐賀|長崎|熊本|大分|宮崎|鹿児島|沖縄|青森|岩手|秋田|山形|福島|山梨|長野|富山|石川|福井)府?県?|北海道|東京都][^\s、。「」【】]{2,40})/
   );
   return m?.[1];
+}
+
+function extractPropertyType(url: string, text: string): PropertyType | undefined {
+  const combined = `${url} ${text}`.toLowerCase();
+  // mansion signals
+  if (/\/ms_|\/mansion\/|中古マンション|マンション/.test(combined)) return "mansion";
+  // house signals
+  if (/\/ikkodate\/|\/kodate\/|一戸建|戸建/.test(combined)) return "house";
+  return undefined;
 }
 
 export async function parsePropertyUrl(url: string): Promise<ParseUrlResult> {
@@ -119,6 +130,7 @@ export async function parsePropertyUrl(url: string): Promise<ParseUrlResult> {
       area: extractArea(combined),
       builtYear: extractBuiltYear(combined),
       address: extractAddress(combined),
+      propertyType: extractPropertyType(url, combined),
     };
 
     // Require at least one field extracted to consider it a success

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { AlertTriangle } from "lucide-react";
-import type { PropertyInput, PropertyMode } from "@/types/research";
+import type { PropertyInput, PropertyMode, PropertyType } from "@/types/research";
 import { UrlInput } from "./UrlInput";
 import { LocationInput } from "./LocationInput";
 import type { ParsedPropertyData } from "@/app/[locale]/research/urlActions";
@@ -15,6 +15,9 @@ interface Props {
   loading: boolean;
   isEn: boolean;
   prefillCoords?: { lat: number; lng: number } | null;
+  prefillPropertyType?: PropertyType | null;
+  propertyType: PropertyType;
+  onPropertyTypeChange: (t: PropertyType) => void;
 }
 
 const currentYear = new Date().getFullYear();
@@ -49,7 +52,15 @@ async function geocodeAddressClient(query: string): Promise<{ lat: number; lng: 
   }
 }
 
-export function PropertyForm({ onSubmit, loading, isEn, prefillCoords }: Props) {
+export function PropertyForm({
+  onSubmit,
+  loading,
+  isEn,
+  prefillCoords,
+  prefillPropertyType,
+  propertyType,
+  onPropertyTypeChange,
+}: Props) {
   const [address,   setAddress]   = useState("");
   const [price,     setPrice]     = useState("");
   const [area,      setArea]      = useState("");
@@ -68,6 +79,12 @@ export function PropertyForm({ onSubmit, loading, isEn, prefillCoords }: Props) 
   const debounceRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastKeyRef   = useRef<string | null>(null);
   const fetchingRef  = useRef(false);
+
+  // Sync prefillPropertyType when map tab pushes a type
+  useEffect(() => {
+    if (prefillPropertyType) onPropertyTypeChange(prefillPropertyType);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefillPropertyType]);
 
   // Apply medians to empty fields, mark them as auto-filled
   const applyDefaults = useCallback((defaults: AreaDefaults) => {
@@ -95,8 +112,8 @@ export function PropertyForm({ onSubmit, loading, isEn, prefillCoords }: Props) 
     });
   }, []);
 
-  const fetchDefaultsIfNeeded = useCallback(async (lat: number, lng: number) => {
-    const key = `${lat.toFixed(4)},${lng.toFixed(4)}`;
+  const fetchDefaultsIfNeeded = useCallback(async (lat: number, lng: number, pt: PropertyType) => {
+    const key = `${lat.toFixed(4)},${lng.toFixed(4)},${pt}`;
     if (lastKeyRef.current === key) return;
     lastKeyRef.current = key;
 
@@ -107,7 +124,7 @@ export function PropertyForm({ onSubmit, loading, isEn, prefillCoords }: Props) 
     if (fetchingRef.current) return;
     fetchingRef.current = true;
     try {
-      const defaults = await fetchAreaDefaults(lat, lng);
+      const defaults = await fetchAreaDefaults(lat, lng, pt);
       cacheRef.current.set(key, defaults);
       applyDefaults(defaults);
     } catch {
@@ -121,10 +138,19 @@ export function PropertyForm({ onSubmit, loading, isEn, prefillCoords }: Props) 
   useEffect(() => {
     if (prefillCoords) {
       setCoordsForDefaults(prefillCoords);
-      fetchDefaultsIfNeeded(prefillCoords.lat, prefillCoords.lng);
+      fetchDefaultsIfNeeded(prefillCoords.lat, prefillCoords.lng, propertyType);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prefillCoords?.lat, prefillCoords?.lng]);
+
+  // Re-run defaults when propertyType changes and we already have coords
+  useEffect(() => {
+    if (coordsForDefaults) {
+      lastKeyRef.current = null; // force re-fetch for new type
+      fetchDefaultsIfNeeded(coordsForDefaults.lat, coordsForDefaults.lng, propertyType);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [propertyType]);
 
   // Address blur: geocode then fetch defaults (debounced, min 5 chars)
   const handleAddressBlur = useCallback(() => {
@@ -134,10 +160,10 @@ export function PropertyForm({ onSubmit, loading, isEn, prefillCoords }: Props) 
       const coords = await geocodeAddressClient(address);
       if (coords) {
         setCoordsForDefaults(coords);
-        fetchDefaultsIfNeeded(coords.lat, coords.lng);
+        fetchDefaultsIfNeeded(coords.lat, coords.lng, propertyType);
       }
     }, 600);
-  }, [address, fetchDefaultsIfNeeded]);
+  }, [address, propertyType, fetchDefaultsIfNeeded]);
 
   // Handle data from UrlInput or LocationInput
   const handleParsed = useCallback((data: ParsedPropertyData) => {
@@ -145,12 +171,13 @@ export function PropertyForm({ onSubmit, loading, isEn, prefillCoords }: Props) 
     if (data.price)     setPrice(String(data.price));
     if (data.area)      setArea(String(data.area));
     if (data.builtYear) setBuiltYear(String(data.builtYear));
+    if (data.propertyType) onPropertyTypeChange(data.propertyType);
     setErrors({});
 
     // If LocationInput passes coords, use them for defaults
     if (data.coordOverride) {
       setCoordsForDefaults(data.coordOverride);
-      fetchDefaultsIfNeeded(data.coordOverride.lat, data.coordOverride.lng);
+      fetchDefaultsIfNeeded(data.coordOverride.lat, data.coordOverride.lng, data.propertyType ?? propertyType);
     } else if (data.address) {
       // Geocode the parsed address after a short delay
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -158,18 +185,18 @@ export function PropertyForm({ onSubmit, loading, isEn, prefillCoords }: Props) 
         const coords = await geocodeAddressClient(data.address!);
         if (coords) {
           setCoordsForDefaults(coords);
-          fetchDefaultsIfNeeded(coords.lat, coords.lng);
+          fetchDefaultsIfNeeded(coords.lat, coords.lng, data.propertyType ?? propertyType);
         }
       }, 600);
     }
-  }, [fetchDefaultsIfNeeded]);
+  }, [propertyType, onPropertyTypeChange, fetchDefaultsIfNeeded]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
 
     const result = PropertyInputSchema.safeParse({
-      address, price, area, builtYear, mode,
+      address, price, area, builtYear, mode, propertyType,
     });
 
     if (!result.success) {
@@ -197,15 +224,18 @@ export function PropertyForm({ onSubmit, loading, isEn, prefillCoords }: Props) 
   const t = {
     modeHome:     isEn ? "Home Purchase"     : "自宅購入",
     modeInvest:   isEn ? "Investment"        : "投資物件",
+    typeHouse:    isEn ? "🏠 House"          : "🏠 戸建",
+    typeMansion:  isEn ? "🏢 Apartment"      : "🏢 マンション",
     addressLabel: isEn ? "Address"           : "住所",
     addressPh:    isEn ? "e.g. 1-19-11 Jinnan, Shibuya-ku, Tokyo" : "例: 東京都渋谷区神南1-19-11",
     priceLabel:   isEn ? "Price (¥10k)"      : "価格（万円）",
-    areaLabel:    isEn ? "Floor area (㎡)"   : "専有面積（㎡）",
+    areaLabel:    propertyType === "house"
+      ? (isEn ? "Total floor area (㎡)" : "延床面積（㎡）")
+      : (isEn ? "Floor area (㎡)" : "専有面積（㎡）"),
     yearLabel:    isEn ? "Year built"        : "建築年",
     yearPh:       isEn ? "e.g. 2000"         : "例: 2000",
     submit:       isEn ? "Analyze"           : "調査する",
     analyzing:    isEn ? "Analyzing…"        : "分析中…",
-    autoNote:     isEn ? "Filled with area median" : "エリア中央値で自動入力されました",
     autoHint:     isEn
       ? "⚠️ This is an area median, not your property's actual value. Please enter the real value."
       : "⚠️ エリア中央値で自動入力されました。あなたの検討物件の実際の値を入力してください。",
@@ -264,6 +294,24 @@ export function PropertyForm({ onSubmit, loading, isEn, prefillCoords }: Props) 
             }`}
           >
             {m === "home" ? t.modeHome : t.modeInvest}
+          </button>
+        ))}
+      </div>
+
+      {/* Property type selector (9-2) */}
+      <div className="flex gap-2">
+        {(["mansion", "house"] as const).map((pt) => (
+          <button
+            key={pt}
+            type="button"
+            onClick={() => onPropertyTypeChange(pt)}
+            className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors border-2 ${
+              propertyType === pt
+                ? "border-teal-600 bg-teal-600 text-white"
+                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+            }`}
+          >
+            {pt === "mansion" ? t.typeMansion : t.typeHouse}
           </button>
         ))}
       </div>

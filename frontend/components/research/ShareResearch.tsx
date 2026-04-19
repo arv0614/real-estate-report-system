@@ -8,24 +8,30 @@ interface Props {
   address: string;
   isEn: boolean;
   autoFilled?: boolean;
+  propertyType?: "house" | "mansion";
 }
 
 const SITE_URL =
   (typeof process !== "undefined" && process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "")) ||
   "https://mekiki-research.com";
 
-export function ShareResearch({ grade, score, address, isEn, autoFilled }: Props) {
+export function ShareResearch({ grade, score, address, isEn, autoFilled, propertyType }: Props) {
   const [copied, setCopied] = useState(false);
 
   // Derive a short area label (city + ward level) from the address
   const areaLabel = address.replace(/[0-9０-９\-ー―－]+/g, "").trim().slice(0, 20) || address.slice(0, 20);
 
+  const typeSuffix = propertyType === "house"
+    ? (isEn ? " [House]" : "（戸建）")
+    : (isEn ? " [Apartment]" : "（マンション）");
+
   const shareText = isEn
-    ? `Property analysis complete! Grade: ${grade} (${score}pts) — ${areaLabel}`
-    : `物件リサーチ結果: ${areaLabel} → 評価 ${grade}（${score}点）`;
+    ? `Property analysis complete! Grade: ${grade} (${score}pts) — ${areaLabel}${typeSuffix}`
+    : `物件リサーチ結果: ${areaLabel}${typeSuffix} → 評価 ${grade}（${score}点）`;
 
   const autoFilledParam = autoFilled ? "&autoFilled=true" : "";
-  const shareUrl = `${SITE_URL}${isEn ? "/en" : ""}/research?grade=${encodeURIComponent(grade)}&score=${score}&area=${encodeURIComponent(areaLabel)}&mode=home${autoFilledParam}`;
+  const typeParam = propertyType ? `&type=${propertyType}` : "";
+  const shareUrl = `${SITE_URL}${isEn ? "/en" : ""}/research?grade=${encodeURIComponent(grade)}&score=${score}&area=${encodeURIComponent(areaLabel)}&mode=home${autoFilledParam}${typeParam}`;
 
   const xUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
   const lineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(`${shareText}\n${shareUrl}`)}`;

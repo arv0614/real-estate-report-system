@@ -30,16 +30,19 @@ export default async function AreaPage({ params, searchParams }: PageProps) {
   const sp = searchParams ? await searchParams : {};
   const isEn = locale === "en";
 
-  const latStr = typeof sp.lat === "string" ? sp.lat : null;
-  const lngStr = typeof sp.lng === "string" ? sp.lng : null;
+  const latStr  = typeof sp.lat  === "string" ? sp.lat  : null;
+  const lngStr  = typeof sp.lng  === "string" ? sp.lng  : null;
+  const typeStr = typeof sp.type === "string" ? sp.type : null;
   const lat = latStr ? parseFloat(latStr) : null;
   const lng = lngStr ? parseFloat(lngStr) : null;
+  const initialType = typeStr === "house" ? "house" : typeStr === "mansion" ? "mansion" : null;
 
   return (
     <main className="min-h-screen bg-slate-50">
       <AreaClient
         initialLat={lat && isFinite(lat) ? lat : null}
         initialLng={lng && isFinite(lng) ? lng : null}
+        initialType={initialType}
         isEn={isEn}
         locale={locale}
       />

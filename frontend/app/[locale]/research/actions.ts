@@ -50,9 +50,11 @@ export async function analyzeProperty(input: PropertyInput): Promise<AnalyzeResu
   let area      = valid.area;
   let builtYear = valid.builtYear;
 
+  const propertyType = valid.propertyType ?? "mansion";
+
   // Server-side fallback for still-missing fields
   if (price === undefined || area === undefined || builtYear === undefined) {
-    const defaults = await fetchAreaDefaults(coords.lat, coords.lng);
+    const defaults = await fetchAreaDefaults(coords.lat, coords.lng, propertyType);
     if (defaults.sampleSize >= 5) {
       if (price === undefined && defaults.priceMedian !== null) {
         price = defaults.priceMedian;
@@ -110,7 +112,8 @@ export async function analyzeProperty(input: PropertyInput): Promise<AnalyzeResu
         area,
         currentYear,
         districtName,
-        municipalityCode
+        municipalityCode,
+        propertyType
       );
       similar = staged.similar;
       searchRange = staged.searchRange;

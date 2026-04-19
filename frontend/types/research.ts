@@ -4,6 +4,7 @@ import type { PopulationData } from "@/lib/research/populationApi";
 import type { SearchRange } from "@/lib/research/similarSearch";
 
 export type PropertyMode = "home" | "investment";
+export type PropertyType = "house" | "mansion";
 
 export interface PropertyInput {
   address: string;
@@ -11,6 +12,7 @@ export interface PropertyInput {
   area?: number;      // ㎡  — optional; auto-filled if omitted
   builtYear?: number; // 建築年 — optional; auto-filled if omitted
   mode: PropertyMode;
+  propertyType: PropertyType;
   coordOverride?: { lat: number; lng: number };
   autoFilled?: {
     price?: boolean;

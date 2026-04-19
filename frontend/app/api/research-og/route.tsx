@@ -17,9 +17,10 @@ function gradeColor(grade: string): string {
   return "#94a3b8"; // — (insufficient)
 }
 
-function modeLabel(mode: string): string {
-  if (mode === "investment") return "投資物件";
-  return "自宅購入";
+function modeLabel(mode: string, type: string): string {
+  const typePart = type === "house" ? "🏠 戸建" : "🏢 マンション";
+  const modePart = mode === "investment" ? "投資物件" : "自宅購入";
+  return `${typePart}・${modePart}`;
 }
 
 export async function GET(req: NextRequest) {
@@ -29,10 +30,11 @@ export async function GET(req: NextRequest) {
   const area       = searchParams.get("area")       ?? "物件";
   const score      = searchParams.get("score")      ?? "";
   const mode       = searchParams.get("mode")       ?? "home";
+  const type       = searchParams.get("type")       ?? "mansion";
   const autoFilled = searchParams.get("autoFilled") === "true";
 
   const color   = gradeColor(grade);
-  const modeLbl = modeLabel(mode);
+  const modeLbl = modeLabel(mode, type);
 
   return new ImageResponse(
     (
