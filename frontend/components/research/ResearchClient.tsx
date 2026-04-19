@@ -217,34 +217,32 @@ function SelectScreen({ isEn, locale, onSelectA, onSelectB }: SelectScreenProps)
   ] as const;
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-3">
-        {cards.map((card) => (
-          <button
-            key={card.key}
-            type="button"
-            onClick={card.onClick}
-            disabled={card.loading}
-            className="flex items-center gap-4 w-full text-left rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:border-blue-300 hover:shadow-md transition-all duration-200 disabled:opacity-60 disabled:cursor-wait group"
-          >
-            <span className="text-3xl flex-shrink-0 w-10 flex items-center justify-center">
-              {card.loading
-                ? <Loader2 className="w-7 h-7 text-blue-500 animate-spin" />
-                : card.icon}
-            </span>
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-slate-900 text-sm group-hover:text-blue-700 transition-colors">
-                {card.title}
-              </p>
-              <p className="text-xs text-slate-500 mt-0.5">{card.desc}</p>
-            </div>
-            <ChevronLeft className="w-4 h-4 text-slate-300 rotate-180 flex-shrink-0 group-hover:text-blue-400 transition-colors" />
-          </button>
-        ))}
-      </div>
+    <div className="space-y-3">
+      {cards.map((card) => (
+        <button
+          key={card.key}
+          type="button"
+          onClick={card.onClick}
+          disabled={card.loading}
+          className="flex items-center gap-4 w-full text-left rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm hover:border-blue-400 hover:shadow-md active:scale-[0.99] transition-all duration-150 disabled:opacity-60 disabled:cursor-wait group"
+        >
+          <span className="text-2xl flex-shrink-0 w-9 flex items-center justify-center">
+            {card.loading
+              ? <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
+              : card.icon}
+          </span>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-slate-900 text-base leading-snug group-hover:text-blue-700 transition-colors">
+              {card.title}
+            </p>
+            <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">{card.desc}</p>
+          </div>
+          <ChevronLeft className="w-4 h-4 text-slate-300 rotate-180 flex-shrink-0 group-hover:text-blue-400 transition-colors" />
+        </button>
+      ))}
 
       {geoError && (
-        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
           {geoError}
         </p>
       )}
@@ -385,10 +383,10 @@ function BackButton({ onClick, isEn }: { onClick: () => void; isEn: boolean }) {
     <button
       type="button"
       onClick={onClick}
-      className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 transition-colors mb-4"
+      className="inline-flex items-center gap-1 text-xs font-medium text-slate-400 hover:text-slate-600 transition-colors mb-5"
     >
-      <ChevronLeft className="w-4 h-4" />
-      {isEn ? "Back to menu" : "選び直す"}
+      <ChevronLeft className="w-3.5 h-3.5" />
+      {isEn ? "Back" : "← 選び直す"}
     </button>
   );
 }
@@ -469,7 +467,10 @@ export function ResearchClient({
   }, []);
 
   const handleScrollToMap = useCallback(() => {
-    mapRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setDetailOpen(true);
+    setTimeout(() => {
+      mapRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 320); // wait for CSS expand transition
   }, []);
 
   const handleSwitchToForm = useCallback((lat: number, lng: number) => {
@@ -600,10 +601,10 @@ export function ResearchClient({
               type="button"
               onClick={() => setDetailOpen((o) => !o)}
               aria-expanded={detailOpen}
-              className="w-full flex items-center justify-between px-5 py-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+              className="w-full flex items-center justify-between px-5 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wide hover:bg-slate-50 transition-colors"
             >
               <span>{isEn ? "Detailed breakdown" : "詳細データ"}</span>
-              <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${detailOpen ? "rotate-180" : ""}`} />
+              <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${detailOpen ? "rotate-180" : ""}`} />
             </button>
 
             <div
