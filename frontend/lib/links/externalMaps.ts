@@ -1,3 +1,11 @@
+export function buildGoogleMapsUrl(lat: number, lng: number): string {
+  return `https://www.google.com/maps?q=${lat},${lng}&z=17`;
+}
+
+export function buildStreetViewUrl(lat: number, lng: number): string {
+  return `https://www.google.com/maps?q=&layer=c&cbll=${lat},${lng}`;
+}
+
 export function buildHazardMapUrl(lat: number, lng: number): string {
   return `https://disaportal.gsi.go.jp/maps/index.html?ll=${lat},${lng}&z=16&base=pale&vs=c1j0l0u0t0h0z0`;
 }
