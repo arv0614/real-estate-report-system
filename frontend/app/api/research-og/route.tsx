@@ -25,12 +25,13 @@ function modeLabel(mode: string): string {
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
 
-  const grade  = searchParams.get("grade") ?? "B";
-  const area   = searchParams.get("area")  ?? "物件";
-  const score  = searchParams.get("score") ?? "";
-  const mode   = searchParams.get("mode")  ?? "home";
+  const grade      = searchParams.get("grade")      ?? "B";
+  const area       = searchParams.get("area")       ?? "物件";
+  const score      = searchParams.get("score")      ?? "";
+  const mode       = searchParams.get("mode")       ?? "home";
+  const autoFilled = searchParams.get("autoFilled") === "true";
 
-  const color  = gradeColor(grade);
+  const color   = gradeColor(grade);
   const modeLbl = modeLabel(mode);
 
   return new ImageResponse(
@@ -92,6 +93,24 @@ export async function GET(req: NextRequest) {
             </div>
           </div>
         </div>
+
+        {/* Auto-filled badge (U8) */}
+        {autoFilled && (
+          <div style={{
+            display: "flex",
+            position: "absolute",
+            top: "20px",
+            right: "20px",
+            background: "rgba(100,100,100,0.8)",
+            color: "white",
+            fontSize: "12px",
+            padding: "6px 12px",
+            borderRadius: "10px",
+            fontWeight: 600,
+          }}>
+            ※参考値を含む
+          </div>
+        )}
 
         {/* Footer */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 56px 32px" }}>

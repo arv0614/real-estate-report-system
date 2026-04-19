@@ -9,6 +9,8 @@ export interface ParsedPropertyData {
   price?: number;   // 万円
   area?: number;    // ㎡
   builtYear?: number;
+  /** Coordinates from geolocation (LocationInput) — skip re-geocoding */
+  coordOverride?: { lat: number; lng: number };
 }
 
 export type ParseUrlResult =

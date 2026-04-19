@@ -7,11 +7,16 @@ export type PropertyMode = "home" | "investment";
 
 export interface PropertyInput {
   address: string;
-  price: number;     // 万円
-  area: number;      // ㎡
-  builtYear: number; // 建築年 e.g. 2000
+  price?: number;     // 万円 — optional; auto-filled if omitted
+  area?: number;      // ㎡  — optional; auto-filled if omitted
+  builtYear?: number; // 建築年 — optional; auto-filled if omitted
   mode: PropertyMode;
   coordOverride?: { lat: number; lng: number };
+  autoFilled?: {
+    price?: boolean;
+    area?: boolean;
+    builtYear?: boolean;
+  };
 }
 
 export interface SimilarTx {
@@ -37,6 +42,7 @@ export type AnalyzeResult =
       terrain: TerrainData | null;
       population: PopulationData | null;
       totalFetched: number;
+      autoFilledFields: string[]; // fields whose values were derived from area medians
     }
   | { ok: false; error: string };
 

@@ -7,13 +7,14 @@ interface Props {
   score: number;
   address: string;
   isEn: boolean;
+  autoFilled?: boolean;
 }
 
 const SITE_URL =
   (typeof process !== "undefined" && process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "")) ||
   "https://mekiki-research.com";
 
-export function ShareResearch({ grade, score, address, isEn }: Props) {
+export function ShareResearch({ grade, score, address, isEn, autoFilled }: Props) {
   const [copied, setCopied] = useState(false);
 
   // Derive a short area label (city + ward level) from the address
@@ -23,7 +24,8 @@ export function ShareResearch({ grade, score, address, isEn }: Props) {
     ? `Property analysis complete! Grade: ${grade} (${score}pts) — ${areaLabel}`
     : `物件リサーチ結果: ${areaLabel} → 評価 ${grade}（${score}点）`;
 
-  const shareUrl = `${SITE_URL}${isEn ? "/en" : ""}/research`;
+  const autoFilledParam = autoFilled ? "&autoFilled=true" : "";
+  const shareUrl = `${SITE_URL}${isEn ? "/en" : ""}/research?grade=${encodeURIComponent(grade)}&score=${score}&area=${encodeURIComponent(areaLabel)}&mode=home${autoFilledParam}`;
 
   const xUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
   const lineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(`${shareText}\n${shareUrl}`)}`;

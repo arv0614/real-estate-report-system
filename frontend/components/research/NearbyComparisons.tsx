@@ -89,6 +89,7 @@ interface Props {
 export function NearbyComparisons({ result, isEn }: Props) {
   const { similar, input } = result;
   if (similar.length < 3) return null;
+  if (!input.price || !input.area) return null;
 
   const points = pickComparisons(similar, input.price, input.area);
   if (points.length === 0) return null;
