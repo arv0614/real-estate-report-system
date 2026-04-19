@@ -1,10 +1,29 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { ChevronDown, ExternalLink } from "lucide-react";
+import { useMemo, useState, useEffect, useRef } from "react";
+import { ChevronDown, ExternalLink, MapPin, BarChart2 } from "lucide-react";
 import { calcPropertyScore, gradeColor, gradeBg } from "@/lib/scoring";
 import type { PropertyScore, ScoreGrade, SubScore } from "@/lib/scoring";
 import type { AnalyzeResult } from "@/types/research";
+
+// ── Count-up hook ─────────────────────────────────────────────────────────────
+function useCountUp(target: number, duration = 900): number {
+  const [current, setCurrent] = useState(0);
+  useEffect(() => {
+    let elapsed = 0;
+    const interval = 16;
+    const timer = setInterval(() => {
+      elapsed += interval;
+      const progress = Math.min(elapsed / duration, 1);
+      // ease-out cubic
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setCurrent(Math.round(eased * target));
+      if (progress >= 1) clearInterval(timer);
+    }, interval);
+    return () => clearInterval(timer);
+  }, [target, duration]);
+  return current;
+}
 
 // ── Sub-score bar ─────────────────────────────────────────────────────────────
 function ScoreBar({ score, color }: { score: number; color: string }) {
@@ -35,6 +54,7 @@ function GradeRing({
   overall: number;
   mode: string;
 }) {
+  const displayScore = useCountUp(overall);
   const isInvestment = mode === "investment";
   const accent = isInvestment
     ? "from-amber-500 to-orange-500"
@@ -46,10 +66,10 @@ function GradeRing({
       className={`relative flex items-center justify-center w-28 h-28 rounded-full bg-gradient-to-br ${accent} shadow-xl ${shadow} flex-shrink-0`}
     >
       <div className="flex flex-col items-center leading-none">
-        <span className="text-4xl font-black text-white tracking-tight">
+        <span className="text-4xl font-black text-white tracking-tight animate-grade-bounce">
           {grade}
         </span>
-        <span className="text-white/70 text-xs mt-1">{overall}/100</span>
+        <span className="text-white/70 text-xs mt-1">{displayScore}/100</span>
       </div>
     </div>
   );
@@ -65,11 +85,7 @@ function InsufficientRing() {
 }
 
 // ── Grade description ─────────────────────────────────────────────────────────
-function gradeDescription(
-  grade: ScoreGrade,
-  mode: string,
-  isEn: boolean
-): string {
+function gradeDescription(grade: ScoreGrade, mode: string, isEn: boolean): string {
   const isHome = mode === "home";
   if (isEn) {
     switch (grade) {
@@ -126,18 +142,25 @@ function SubScoreRow({
   sub,
   isExpanded,
   onToggle,
+  insufficientMeta,
 }: {
   label: string;
   sub: SubScore;
   isExpanded: boolean;
   onToggle: () => void;
+  insufficientMeta?: React.ReactNode;
 }) {
   if (sub.status === "insufficient") {
     return (
       <div>
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-xs font-semibold text-slate-600">{label}</span>
-          <span className="text-xs text-slate-400">— データ不足: {sub.reason}</span>
+        <div className="flex items-start justify-between mb-1 gap-2">
+          <span className="text-xs font-semibold text-slate-600 flex-shrink-0">{label}</span>
+          <div className="text-right">
+            <span className="text-xs text-slate-400">— データ不足: {sub.reason}</span>
+            {insufficientMeta && (
+              <div className="mt-0.5">{insufficientMeta}</div>
+            )}
+          </div>
         </div>
         <div className="w-full h-2 bg-slate-100 rounded-full" />
       </div>
@@ -168,14 +191,55 @@ function SubScoreRow({
   );
 }
 
+// ── Insufficient CTAs ─────────────────────────────────────────────────────────
+function InsufficientCTAs({
+  isEn,
+  onScrollToMap,
+}: {
+  isEn: boolean;
+  onScrollToMap?: () => void;
+}) {
+  return (
+    <div className="mt-4 rounded-lg bg-amber-50 border border-amber-200 p-3 space-y-2">
+      <p className="text-xs text-amber-800 font-medium">
+        {isEn
+          ? "Not enough data to calculate an overall grade. Try these options:"
+          : "総合判定に必要なデータが不足しています。以下を試してみてください："}
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {onScrollToMap && (
+          <button
+            type="button"
+            onClick={onScrollToMap}
+            className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-white border border-amber-300 text-amber-700 hover:bg-amber-100 transition-colors"
+          >
+            <MapPin className="w-3 h-3" />
+            {isEn ? "Explore nearby on map" : "近隣を地図で探す"}
+          </button>
+        )}
+        <button
+          type="button"
+          disabled
+          className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-white border border-slate-200 text-slate-400 cursor-not-allowed"
+          title={isEn ? "Coming soon" : "近日公開予定"}
+        >
+          <BarChart2 className="w-3 h-3" />
+          {isEn ? "Show city-level reference" : "市区町村レベルの参考値を表示"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 interface Props {
   result: Extract<AnalyzeResult, { ok: true }>;
   isEn: boolean;
+  onScrollToMap?: () => void;
 }
 
-export function ScoreCard({ result, isEn }: Props) {
-  const { input, similar, hazard } = result;
+export function ScoreCard({ result, isEn, onScrollToMap }: Props) {
+  const { input, similar, hazard, searchRange, searchRangeLabel } = result;
   const prices = similar.map((t) => t.price);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
@@ -207,6 +271,9 @@ export function ScoreCard({ result, isEn }: Props) {
 
   const isInvestment = input.mode === "investment";
 
+  // How many more records are needed for market sub
+  const marketNeeded = Math.max(0, 5 - similar.length);
+
   const t = {
     title:     isEn ? "Overall Verdict"       : "総合判定",
     modeLabel: isInvestment
@@ -223,7 +290,18 @@ export function ScoreCard({ result, isEn }: Props) {
   };
 
   const subRows = [
-    { key: "market",   label: t.market,   sub: score.market },
+    {
+      key: "market",
+      label: t.market,
+      sub: score.market,
+      meta: score.market.status === "insufficient" && marketNeeded > 0
+        ? (
+          <span className="text-xs text-amber-600 font-medium">
+            {isEn ? `${marketNeeded} more needed` : `あと${marketNeeded}件必要`}
+          </span>
+        )
+        : undefined,
+    },
     { key: "disaster", label: t.disaster,  sub: score.disaster },
     { key: "future",   label: t.future,    sub: score.future },
   ];
@@ -279,21 +357,40 @@ export function ScoreCard({ result, isEn }: Props) {
           <p className="text-xs text-slate-400 mt-2">
             {score.dataCount >= 5 ? t.dataNote : t.noData}
           </p>
+
+          {/* Search range badge (U1) */}
+          {searchRange && searchRangeLabel && (
+            <span className={`inline-block text-xs mt-1 px-2 py-0.5 rounded-full ${
+              searchRange === "strict"
+                ? "bg-emerald-50 text-emerald-700"
+                : searchRange === "city"
+                ? "bg-blue-50 text-blue-700"
+                : "bg-amber-50 text-amber-700"
+            }`}>
+              {isEn ? `Search scope: ${searchRange}` : `比較範囲: ${searchRangeLabel}`}
+            </span>
+          )}
         </div>
       </div>
 
       {/* Sub-scores */}
       <div className="mt-5 space-y-4">
-        {subRows.map(({ key, label, sub }) => (
+        {subRows.map(({ key, label, sub, meta }) => (
           <SubScoreRow
             key={key}
             label={label}
             sub={sub}
             isExpanded={!!expanded[key]}
             onToggle={() => toggle(key)}
+            insufficientMeta={meta}
           />
         ))}
       </div>
+
+      {/* Insufficient CTAs (U2) */}
+      {score.total.status === "insufficient" && (
+        <InsufficientCTAs isEn={isEn} onScrollToMap={onScrollToMap} />
+      )}
     </div>
   );
 }

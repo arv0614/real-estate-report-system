@@ -10,6 +10,7 @@ interface Props {
   onSubmit: (input: PropertyInput) => void;
   loading: boolean;
   isEn: boolean;
+  prefillCoords?: { lat: number; lng: number } | null;
 }
 
 const currentYear = new Date().getFullYear();
@@ -21,7 +22,7 @@ interface FieldErrors {
   builtYear?: string;
 }
 
-export function PropertyForm({ onSubmit, loading, isEn }: Props) {
+export function PropertyForm({ onSubmit, loading, isEn, prefillCoords }: Props) {
   const [address,   setAddress]   = useState("");
   const [price,     setPrice]     = useState("");
   const [area,      setArea]      = useState("");
@@ -68,7 +69,10 @@ export function PropertyForm({ onSubmit, loading, isEn }: Props) {
       return;
     }
 
-    onSubmit(result.data);
+    onSubmit({
+      ...result.data,
+      ...(prefillCoords ? { coordOverride: prefillCoords } : {}),
+    });
   };
 
   const inputCls = (hasError?: boolean) =>
@@ -80,6 +84,16 @@ export function PropertyForm({ onSubmit, loading, isEn }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      {/* Prefill coords notice */}
+      {prefillCoords && (
+        <div className="rounded-lg bg-blue-50 border border-blue-200 px-3 py-2 text-xs text-blue-700 flex items-center gap-2">
+          <span className="text-blue-500">📍</span>
+          {isEn
+            ? `Location pre-set from map: ${prefillCoords.lat.toFixed(5)}, ${prefillCoords.lng.toFixed(5)}`
+            : `地図で選択した地点を使用: ${prefillCoords.lat.toFixed(5)}, ${prefillCoords.lng.toFixed(5)}`}
+        </div>
+      )}
+
       {/* URL auto-fill */}
       <UrlInput onParsed={handleParsed} isEn={isEn} />
 

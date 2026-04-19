@@ -1,0 +1,186 @@
+{
+  "version": 4,
+  "terraform_version": "1.14.8",
+  "serial": 18,
+  "lineage": "93850548-bf14-0e83-868d-c04f4f3d01e3",
+  "outputs": {},
+  "resources": [
+    {
+      "mode": "managed",
+      "type": "posthog_dashboard",
+      "name": "viral_metrics",
+      "provider": "provider[\"registry.terraform.io/posthog/posthog\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "deleted": false,
+            "description": "SNSシェアボタンのクリック数・プラットフォーム別分析。share_button_clicked イベントを可視化。",
+            "id": 1409576,
+            "name": "バイラル・集客メトリクス",
+            "pinned": true,
+            "project_id": "361030",
+            "tags": [
+              "acquisition",
+              "share",
+              "viral"
+            ]
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "posthog_hog_function",
+      "name": "survey_to_waitlist",
+      "provider": "provider[\"registry.terraform.io/posthog/posthog\"]",
+      "instances": [
+        {
+          "status": "tainted",
+          "schema_version": 0,
+          "attributes": {
+            "description": "limit_reached survey 送信時にメールアドレスをバックエンド waitlist API へ転送",
+            "enabled": true,
+            "execution_order": null,
+            "filters_json": "{\"events\":[{\"id\":\"survey sent\",\"name\":\"survey sent\",\"type\":\"events\"}]}",
+            "hog": "let email := event.properties['$survey_response_1']\nif (empty(email)) {\n    return\n}\nlet res := fetch(inputs.webhook_url, {\n    'method': 'POST',\n    'headers': {\n        'Content-Type': 'application/json',\n        'X-Webhook-Secret': inputs.webhook_secret\n    },\n    'body': {\n        'email': email,\n        'survey_id': event.properties['$survey_id'],\n        'survey_name': event.properties['$survey_name'],\n        'distinct_id': event.distinct_id\n    }\n})\nif (res.status \u003e= 400) {\n    throw Error(concat('Webhook error: ', toString(res.status)))\n}",
+            "icon_url": null,
+            "id": "019d39bc-3c3a-0000-17ed-55854a4928be",
+            "inputs_json": null,
+            "mappings_json": null,
+            "masking_json": null,
+            "name": "Survey Response → Waitlist Webhook",
+            "project_id": "361030",
+            "sensitive_inputs_json": "{}",
+            "template_id": null,
+            "type": "destination"
+          },
+          "sensitive_attributes": [
+            [
+              {
+                "type": "get_attr",
+                "value": "sensitive_inputs_json"
+              }
+            ]
+          ],
+          "identity_schema_version": 0
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "posthog_insight",
+      "name": "share_by_platform_pie",
+      "provider": "provider[\"registry.terraform.io/posthog/posthog\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "create_in_folder": null,
+            "dashboard_ids": [
+              1409576
+            ],
+            "deleted": false,
+            "derived_name": null,
+            "description": "直近30日のシェアボタンクリック数をプラットフォーム別に集計",
+            "id": 7618956,
+            "name": "プラットフォーム別シェアクリック数（構成比）",
+            "project_id": "361030",
+            "query_json": "{\"kind\":\"InsightVizNode\",\"source\":{\"breakdownFilter\":{\"breakdown\":\"platform\",\"breakdown_type\":\"event\"},\"dateRange\":{\"date_from\":\"-30d\"},\"interval\":\"month\",\"kind\":\"TrendsQuery\",\"series\":[{\"event\":\"share_button_clicked\",\"kind\":\"EventsNode\",\"math\":\"total\",\"name\":\"シェアボタンクリック\"}],\"trendsFilter\":{\"display\":\"ActionsPie\"}}}",
+            "tags": null
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "dependencies": [
+            "posthog_dashboard.viral_metrics"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "posthog_insight",
+      "name": "share_by_platform_trend",
+      "provider": "provider[\"registry.terraform.io/posthog/posthog\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "create_in_folder": null,
+            "dashboard_ids": [
+              1409576
+            ],
+            "deleted": false,
+            "derived_name": null,
+            "description": "X / LINE / URLコピー / ネイティブ別の share_button_clicked イベント数の日次推移",
+            "id": 7618940,
+            "name": "プラットフォーム別シェアクリック数（推移）",
+            "project_id": "361030",
+            "query_json": "{\"kind\":\"InsightVizNode\",\"source\":{\"breakdownFilter\":{\"breakdown\":\"platform\",\"breakdown_type\":\"event\"},\"dateRange\":{\"date_from\":\"-30d\"},\"interval\":\"day\",\"kind\":\"TrendsQuery\",\"series\":[{\"event\":\"share_button_clicked\",\"kind\":\"EventsNode\",\"math\":\"total\",\"name\":\"シェアボタンクリック\"}]}}",
+            "tags": null
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "dependencies": [
+            "posthog_dashboard.viral_metrics"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "posthog_insight",
+      "name": "share_by_prefecture",
+      "provider": "provider[\"registry.terraform.io/posthog/posthog\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "create_in_folder": null,
+            "dashboard_ids": [
+              1409576
+            ],
+            "deleted": false,
+            "derived_name": null,
+            "description": "どのエリアの診断結果が最もシェアされているか",
+            "id": 7618955,
+            "name": "都道府県別シェア数ランキング",
+            "project_id": "361030",
+            "query_json": "{\"kind\":\"InsightVizNode\",\"source\":{\"breakdownFilter\":{\"breakdown\":\"prefecture\",\"breakdown_type\":\"event\"},\"dateRange\":{\"date_from\":\"-30d\"},\"interval\":\"month\",\"kind\":\"TrendsQuery\",\"series\":[{\"event\":\"share_button_clicked\",\"kind\":\"EventsNode\",\"math\":\"total\",\"name\":\"シェアボタンクリック\"}],\"trendsFilter\":{\"display\":\"ActionsBarValue\"}}}",
+            "tags": null
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "dependencies": [
+            "posthog_dashboard.viral_metrics"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "terraform_data",
+      "name": "survey_limit_reached",
+      "provider": "provider[\"terraform.io/builtin/terraform\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "id": "301fc4fb-5e96-fe7d-becc-f3effe064c1d",
+            "input": null,
+            "output": null,
+            "triggers_replace": {
+              "value": "c5a2d0252877a89895f1232abde1373d5431963c35e89d891d31df20776eb532",
+              "type": "string"
+            }
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0
+        }
+      ]
+    }
+  ],
+  "check_results": null
+}

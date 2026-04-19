@@ -56,7 +56,7 @@ export default async function ResearchPage({ params }: PageProps) {
   const isEn = locale === "en";
   return (
     <main className="min-h-screen bg-slate-50">
-      <ResearchClient isEn={isEn} />
+      <ResearchClient isEn={isEn} locale={locale} />
     </main>
   );
 }

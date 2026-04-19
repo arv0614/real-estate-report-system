@@ -1,6 +1,7 @@
 import type { HazardInfo } from "@/types/api";
 import type { SeismicData, TerrainData } from "@/lib/research/seismicApi";
 import type { PopulationData } from "@/lib/research/populationApi";
+import type { SearchRange } from "@/lib/research/similarSearch";
 
 export type PropertyMode = "home" | "investment";
 
@@ -28,6 +29,8 @@ export type AnalyzeResult =
       originalCoords: { lat: number; lng: number } | null;
       input: PropertyInput;
       similar: SimilarTx[];
+      searchRange: SearchRange | null;
+      searchRangeLabel: string | null;
       hazard: HazardInfo | null;
       cityCode: string | null;
       seismic: SeismicData | null;
@@ -37,4 +40,4 @@ export type AnalyzeResult =
     }
   | { ok: false; error: string };
 
-export type { SeismicData, TerrainData, PopulationData };
+export type { SeismicData, TerrainData, PopulationData, SearchRange };
