@@ -16,7 +16,9 @@ import { calcPropertyScore } from "@/lib/scoring";
 import { haversineMeters, formatDistance } from "@/lib/geo/haversine";
 import { useAuth } from "@/lib/useAuth";
 import { saveResearchSession } from "@/lib/researchHistory";
-import { MapPin, Navigation, Search, AlertTriangle, ChevronLeft, Loader2 } from "lucide-react";
+import { MapPin, Navigation, Search, AlertTriangle, ChevronLeft, Loader2, ChevronDown } from "lucide-react";
+import { TopReasons } from "./TopReasons";
+import { ExternalMaps } from "./ExternalMaps";
 
 const ResearchMap = dynamic(
   () => import("./ResearchMap").then((m) => m.ResearchMap),
@@ -416,6 +418,7 @@ export function ResearchClient({
   const [propertyType,  setPropertyType] = useState<PropertyType>(initialPropertyType);
   const lastInputRef = useRef<PropertyInput | null>(null);
   const mapRef       = useRef<HTMLDivElement | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
   const { user } = useAuth();
 
   const handleSubmit = useCallback((input: PropertyInput) => {
@@ -557,141 +560,177 @@ export function ResearchClient({
       {/* ── RESULT ── */}
       {topMode === "result" && result && result.ok && !isPending && (
         <div className="space-y-4">
-          {/* Geocode confirmation banner */}
-          <div className="rounded-xl bg-green-50 border border-green-200 p-4 text-sm text-green-800 flex items-start gap-3">
-            <svg className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-            <div>
-              <div className="font-semibold mb-0.5">
-                {isEn ? "Address confirmed" : "住所を確認しました"}
-              </div>
-              <div className="text-green-700">
-                {result.coordOverrideUsed
-                  ? isEn
-                    ? `Map-selected point: ${result.coords.lat.toFixed(6)}, ${result.coords.lng.toFixed(6)}`
-                    : `地図上で指定した地点: ${result.coords.lat.toFixed(6)}, ${result.coords.lng.toFixed(6)}`
-                  : `${isEn ? "Coordinates" : "座標"}: ${result.coords.lat.toFixed(6)}, ${result.coords.lng.toFixed(6)}`
-                }
-              </div>
-              {result.totalFetched > 0 && (
-                <div className="text-green-700 mt-0.5">
-                  {isEn
-                    ? `${result.totalFetched} nearby transactions found (${result.similar.length} similar)`
-                    : `周辺取引${result.totalFetched}件取得（類似物件${result.similar.length}件）`}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Map with draggable marker */}
-          <div ref={mapRef} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <ResearchMap
-              mode="pin"
-              lat={result.coords.lat}
-              lng={result.coords.lng}
-              onChange={handleMapDrag}
-            />
-
-            {dragCoords && (
-              <div className="animate-fade-in px-4 py-3 bg-blue-50 border-t border-blue-200 flex items-center justify-between gap-3">
-                <div className="text-xs text-blue-700">
-                  <span className="font-semibold">
-                    {isEn ? "Marker moved" : "マーカーを移動しました"}
-                  </span>
-                  {" "}
-                  {(() => {
-                    const dist = haversineMeters(
-                      result.coords.lat, result.coords.lng,
-                      dragCoords.lat,    dragCoords.lng
-                    );
-                    return isEn
-                      ? `(${formatDistance(dist)} from original address)`
-                      : `（元住所から${formatDistance(dist)}）`;
-                  })()}
-                </div>
-                <div className="flex gap-2 flex-shrink-0">
-                  <button
-                    type="button"
-                    onClick={handleResetDrag}
-                    className="text-xs text-slate-500 hover:text-slate-700 underline"
-                  >
-                    {isEn ? "Reset" : "元に戻す"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleReanalyze}
-                    disabled={reanalyzing}
-                    className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors"
-                  >
-                    {reanalyzing
-                      ? (isEn ? "Analyzing…" : "分析中…")
-                      : (isEn ? "Re-analyze at this point" : "この地点で再調査する")}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Auto-fill warning */}
+          {/* Auto-fill badge */}
           {result.autoFilledFields.length > 0 && (
-            <AutoFillWarning
-              result={result}
-              isEn={isEn}
-              onReenter={() => setTopMode("property-form")}
-            />
+            <div className="flex items-center gap-2 rounded-lg bg-yellow-50 border border-yellow-200 px-3 py-2">
+              <AlertTriangle className="w-3.5 h-3.5 text-yellow-500 flex-shrink-0" />
+              <p className="text-xs text-yellow-800 flex-1">
+                {isEn
+                  ? "Some values are area medians (not your property's actual data)."
+                  : "一部の情報はエリア中央値で算出しています。"}
+              </p>
+              <button
+                type="button"
+                onClick={() => setTopMode("property-form")}
+                className="text-xs font-semibold text-yellow-700 underline hover:text-yellow-900 whitespace-nowrap flex-shrink-0"
+              >
+                {isEn ? "Fix →" : "修正 →"}
+              </button>
+            </div>
           )}
 
-          {/* Score card */}
+          {/* Score card — always visible */}
           <ScoreCard result={result} isEn={isEn} onScrollToMap={handleScrollToMap} />
 
-          {/* Nearby comparison points */}
-          <NearbyComparisons result={result} isEn={isEn} />
+          {/* Top reasons — always visible */}
+          <TopReasons
+            inputPrice={result.input.price ?? 0}
+            similarPrices={result.similar.map((t) => t.price)}
+            seismic={result.seismic}
+            population={result.population}
+            isEn={isEn}
+          />
 
-          {/* Box plot chart */}
-          {result.similar.length >= 3 && (
-            <SimilarChart result={result} isEn={isEn} />
-          )}
+          {/* External maps — always visible */}
+          <ExternalMaps lat={result.coords.lat} lng={result.coords.lng} isEn={isEn} />
 
-          {/* Seismic & terrain */}
-          <SeismicCard result={result} isEn={isEn} />
+          {/* DetailedBreakdown — collapsible */}
+          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setDetailOpen((o) => !o)}
+              aria-expanded={detailOpen}
+              className="w-full flex items-center justify-between px-5 py-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              <span>{isEn ? "Detailed breakdown" : "詳細データ"}</span>
+              <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${detailOpen ? "rotate-180" : ""}`} />
+            </button>
 
-          {/* Population trend */}
-          <PopulationChart result={result} isEn={isEn} />
+            <div
+              className={`grid transition-all duration-300 ease-in-out ${detailOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
+            >
+              <div className="overflow-hidden">
+                <div className="border-t border-slate-200 space-y-4 p-5">
+                  {/* Geocode banner */}
+                  <div className="rounded-xl bg-green-50 border border-green-200 p-3 text-xs text-green-800 flex items-start gap-2">
+                    <svg className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <div>
+                      <div className="font-semibold mb-0.5">
+                        {isEn ? "Address confirmed" : "住所を確認しました"}
+                      </div>
+                      <div>
+                        {result.coordOverrideUsed
+                          ? isEn
+                            ? `Map point: ${result.coords.lat.toFixed(5)}, ${result.coords.lng.toFixed(5)}`
+                            : `地図指定: ${result.coords.lat.toFixed(5)}, ${result.coords.lng.toFixed(5)}`
+                          : `${isEn ? "Coords" : "座標"}: ${result.coords.lat.toFixed(5)}, ${result.coords.lng.toFixed(5)}`
+                        }
+                      </div>
+                      {result.totalFetched > 0 && (
+                        <div className="mt-0.5">
+                          {isEn
+                            ? `${result.totalFetched} transactions found (${result.similar.length} similar)`
+                            : `周辺取引${result.totalFetched}件（類似${result.similar.length}件）`}
+                        </div>
+                      )}
+                    </div>
+                  </div>
 
-          {/* Share buttons */}
-          {(() => {
-            const s = calcPropertyScore(
-              result.input.price ?? 0,
-              result.similar.map((t) => t.price),
-              result.hazard,
-              result.input.mode,
-              result.seismic,
-              result.terrain,
-              result.population
-            );
-            return (
-              <ShareResearch
-                grade={s.total.status === "ok" ? s.total.grade : "—"}
-                score={s.total.status === "ok" ? s.total.score : 0}
-                address={result.input.address}
-                isEn={isEn}
-                autoFilled={result.autoFilledFields.length > 0}
-                propertyType={result.input.propertyType}
-              />
-            );
-          })()}
+                  {/* Map with draggable marker */}
+                  <div ref={mapRef} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                    <ResearchMap
+                      mode="pin"
+                      lat={result.coords.lat}
+                      lng={result.coords.lng}
+                      onChange={handleMapDrag}
+                    />
+                    {dragCoords && (
+                      <div className="animate-fade-in px-4 py-3 bg-blue-50 border-t border-blue-200 flex items-center justify-between gap-3">
+                        <div className="text-xs text-blue-700">
+                          <span className="font-semibold">
+                            {isEn ? "Marker moved" : "マーカーを移動しました"}
+                          </span>
+                          {" "}
+                          {(() => {
+                            const dist = haversineMeters(
+                              result.coords.lat, result.coords.lng,
+                              dragCoords.lat,    dragCoords.lng
+                            );
+                            return isEn
+                              ? `(${formatDistance(dist)} from original)`
+                              : `（元住所から${formatDistance(dist)}）`;
+                          })()}
+                        </div>
+                        <div className="flex gap-2 flex-shrink-0">
+                          <button type="button" onClick={handleResetDrag} className="text-xs text-slate-500 hover:text-slate-700 underline">
+                            {isEn ? "Reset" : "元に戻す"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleReanalyze}
+                            disabled={reanalyzing}
+                            className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                          >
+                            {reanalyzing
+                              ? (isEn ? "Analyzing…" : "分析中…")
+                              : (isEn ? "Re-analyze here" : "この地点で再調査")}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
-          {result.similar.length === 0 && result.totalFetched > 0 && (
-            <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-800">
-              {isEn
-                ? "No similar transactions matched even with widened filters. Try adjusting the input values."
-                : "条件を広げても類似物件が見つかりませんでした。入力値を調整してみてください。"}
+                  {/* Nearby comparison points */}
+                  <NearbyComparisons result={result} isEn={isEn} />
+
+                  {/* Box plot chart */}
+                  {result.similar.length >= 3 && (
+                    <SimilarChart result={result} isEn={isEn} />
+                  )}
+
+                  {/* Seismic & terrain */}
+                  <SeismicCard result={result} isEn={isEn} />
+
+                  {/* Population trend */}
+                  <PopulationChart result={result} isEn={isEn} />
+
+                  {result.similar.length === 0 && result.totalFetched > 0 && (
+                    <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-800">
+                      {isEn
+                        ? "No similar transactions matched even with widened filters."
+                        : "条件を広げても類似物件が見つかりませんでした。"}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-          )}
+          </div>
 
-          {/* New search CTA */}
-          <div className="pt-4 border-t border-slate-200">
+          {/* ActionBar */}
+          <div className="space-y-3 pt-2">
+            {(() => {
+              const s = calcPropertyScore(
+                result.input.price ?? 0,
+                result.similar.map((t) => t.price),
+                result.hazard,
+                result.input.mode,
+                result.seismic,
+                result.terrain,
+                result.population
+              );
+              return (
+                <ShareResearch
+                  grade={s.total.status === "ok" ? s.total.grade : "—"}
+                  score={s.total.status === "ok" ? s.total.score : 0}
+                  address={result.input.address}
+                  isEn={isEn}
+                  autoFilled={result.autoFilledFields.length > 0}
+                  propertyType={result.input.propertyType}
+                />
+              );
+            })()}
             <button
               type="button"
               onClick={handleNewSearch}
