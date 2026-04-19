@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { MapPin, ChevronDown, Check, AlertCircle, Loader2 } from "lucide-react";
+import { MapPin, Check, AlertCircle, Loader2 } from "lucide-react";
 import type { ParsedPropertyData } from "@/app/[locale]/research/urlActions";
 
-// Prefecture code lookup (JIS prefecture codes 01-47)
 const PREF_MAP: Record<string, string> = {
   "01":"北海道","02":"青森県","03":"岩手県","04":"宮城県","05":"秋田県",
   "06":"山形県","07":"福島県","08":"茨城県","09":"栃木県","10":"群馬県",
@@ -42,10 +41,9 @@ interface Props {
 }
 
 export function LocationInput({ onParsed, isEn }: Props) {
-  const [open,   setOpen]   = useState(false);
-  const [status, setStatus] = useState<Status>("idle");
+  const [status,  setStatus]  = useState<Status>("idle");
   const [preview, setPreview] = useState<{ address: string; lat: number; lng: number } | null>(null);
-  const [errMsg, setErrMsg] = useState<string | null>(null);
+  const [errMsg,  setErrMsg]  = useState<string | null>(null);
 
   const isHttps =
     typeof window === "undefined" ||
@@ -53,20 +51,17 @@ export function LocationInput({ onParsed, isEn }: Props) {
     window.location.hostname === "localhost";
 
   const t = {
-    toggle:  isEn ? "Auto-fill from current location (optional)" : "現在地から自動入力（任意）",
-    desc:    isEn
-      ? "Get your current location to auto-fill the address. Price, area, and year will still need to be entered."
-      : "現在地を取得すると、住所が自動入力されます。価格・面積・建築年は手動または自動補完で設定してください。",
-    getBtn:  isEn ? "📍 Get current location" : "📍 現在地を取得",
-    loading: isEn ? "Getting location…" : "現在地を取得中…",
-    apply:   isEn ? "Apply to form" : "この内容で入力",
-    discard: isEn ? "Discard" : "破棄",
+    title:     isEn ? "Auto-fill from current location" : "現在地から自動入力",
+    getBtn:    isEn ? "📍 Get current location" : "📍 現在地を取得",
+    loading:   isEn ? "Getting location…" : "現在地を取得中…",
+    apply:     isEn ? "Apply to form" : "この内容で入力",
+    discard:   isEn ? "Discard" : "破棄",
     httpsWarn: isEn ? "Location requires HTTPS" : "位置情報の取得にはHTTPS接続が必要です",
-    gotAddr: isEn ? "Address obtained from location" : "住所のみ取得できました",
-    errDenied:   isEn ? "Location permission denied. Please enter your address manually." : "ブラウザの位置情報が許可されていません。設定を確認するか、住所を手動で入力してください。",
-    errTimeout:  isEn ? "Could not get location (timeout)." : "位置情報を取得できませんでした（タイムアウト）。",
-    errGeneric:  isEn ? "Failed to get current location." : "現在地を取得できませんでした。",
-    errNoAddr:   isEn ? "Could not convert location to an address." : "座標から住所を取得できませんでした。",
+    gotAddr:   isEn ? "Address obtained from location" : "住所のみ取得できました",
+    errDenied: isEn ? "Location permission denied. Please enter your address manually." : "ブラウザの位置情報が許可されていません。設定を確認するか、住所を手動で入力してください。",
+    errTimeout:isEn ? "Could not get location (timeout)." : "位置情報を取得できませんでした（タイムアウト）。",
+    errGeneric:isEn ? "Failed to get current location." : "現在地を取得できませんでした。",
+    errNoAddr: isEn ? "Could not convert location to an address." : "座標から住所を取得できませんでした。",
   };
 
   const handleGetLocation = () => {
@@ -79,11 +74,7 @@ export function LocationInput({ onParsed, isEn }: Props) {
       async (pos) => {
         const { latitude: lat, longitude: lng } = pos.coords;
         const address = await reverseGeocodeToAddress(lat, lng);
-        if (!address) {
-          setStatus("error");
-          setErrMsg(t.errNoAddr);
-          return;
-        }
+        if (!address) { setStatus("error"); setErrMsg(t.errNoAddr); return; }
         setPreview({ address, lat, lng });
         setStatus("preview");
       },
@@ -100,98 +91,58 @@ export function LocationInput({ onParsed, isEn }: Props) {
 
   const handleApply = () => {
     if (!preview) return;
-    onParsed({
-      address: preview.address,
-      coordOverride: { lat: preview.lat, lng: preview.lng },
-    });
+    onParsed({ address: preview.address, coordOverride: { lat: preview.lat, lng: preview.lng } });
     setPreview(null);
     setStatus("idle");
-    setOpen(false);
-  };
-
-  const handleDiscard = () => {
-    setPreview(null);
-    setStatus("idle");
-    setErrMsg(null);
   };
 
   return (
-    <div className="border border-slate-200 rounded-xl overflow-hidden">
-      {/* Toggle header */}
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 transition-colors"
-      >
-        <span className="flex items-center gap-2">
-          <MapPin className="w-4 h-4 text-slate-400" />
-          {t.toggle}
-        </span>
-        <ChevronDown
-          className={`w-4 h-4 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`}
-        />
-      </button>
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+        <MapPin className="w-3.5 h-3.5" />
+        {t.title}
+      </div>
 
-      {/* Collapsible body */}
-      {open && (
-        <div className="px-4 pb-4 pt-1 space-y-3 border-t border-slate-100">
-          <p className="text-xs text-slate-400">{t.desc}</p>
+      {status !== "preview" && (
+        <button
+          type="button"
+          onClick={handleGetLocation}
+          disabled={status === "loading" || !isHttps}
+          title={!isHttps ? t.httpsWarn : undefined}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-sm font-medium hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {status === "loading"
+            ? <Loader2 className="w-4 h-4 animate-spin" />
+            : <MapPin className="w-4 h-4 text-slate-400" />}
+          {status === "loading" ? t.loading : t.getBtn}
+        </button>
+      )}
 
-          {/* Get location button */}
-          {status !== "preview" && (
-            <button
-              type="button"
-              onClick={handleGetLocation}
-              disabled={status === "loading" || !isHttps}
-              title={!isHttps ? t.httpsWarn : undefined}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 text-white text-sm font-medium hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {status === "loading" ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <MapPin className="w-4 h-4" />
-              )}
-              {status === "loading" ? t.loading : t.getBtn}
+      {status === "error" && errMsg && (
+        <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2.5">
+          <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-amber-700">{errMsg}</p>
+        </div>
+      )}
+
+      {status === "preview" && preview && (
+        <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 space-y-2">
+          <p className="text-xs text-blue-600 font-semibold">{t.gotAddr}</p>
+          <div className="flex items-center gap-2 text-xs">
+            <Check className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+            <span className="text-slate-500 w-16 flex-shrink-0">{isEn ? "Address" : "住所"}</span>
+            <span className="font-medium text-slate-800">{preview.address}</span>
+          </div>
+          <div className="flex gap-2 pt-1">
+            <button type="button" onClick={handleApply}
+              className="flex-1 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors">
+              {t.apply}
             </button>
-          )}
-
-          {/* Error */}
-          {status === "error" && errMsg && (
-            <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2.5">
-              <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-              <p className="text-xs text-amber-700">{errMsg}</p>
-            </div>
-          )}
-
-          {/* Preview */}
-          {status === "preview" && preview && (
-            <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 space-y-2">
-              <p className="text-xs text-blue-600 font-semibold">{t.gotAddr}</p>
-              <div className="flex items-center gap-2 text-xs">
-                <Check className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
-                <span className="text-slate-500 w-16 flex-shrink-0">
-                  {isEn ? "Address" : "住所"}
-                </span>
-                <span className="font-medium text-slate-800">{preview.address}</span>
-              </div>
-              <div className="flex gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={handleApply}
-                  className="flex-1 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors"
-                >
-                  {t.apply}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDiscard}
-                  className="px-4 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-600 text-xs font-medium hover:bg-slate-50 transition-colors"
-                >
-                  {t.discard}
-                </button>
-              </div>
-            </div>
-          )}
+            <button type="button" onClick={() => { setPreview(null); setStatus("idle"); }}
+              className="px-4 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-600 text-xs font-medium hover:bg-slate-50 transition-colors">
+              {t.discard}
+            </button>
+          </div>
         </div>
       )}
     </div>
