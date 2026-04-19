@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ResearchClient } from "@/components/research/ResearchClient";
+import type { PropertyType } from "@/types/research";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
@@ -53,12 +54,31 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   };
 }
 
-export default async function ResearchPage({ params }: PageProps) {
+export default async function ResearchPage({ params, searchParams }: PageProps) {
   const { locale } = await params;
+  const sp = searchParams ? await searchParams : {};
   const isEn = locale === "en";
+
+  const latStr = typeof sp.lat === "string" ? sp.lat : null;
+  const lngStr = typeof sp.lng === "string" ? sp.lng : null;
+  const typeStr = typeof sp.type === "string" ? sp.type : null;
+
+  const lat = latStr ? parseFloat(latStr) : NaN;
+  const lng = lngStr ? parseFloat(lngStr) : NaN;
+  const hasCoords = !isNaN(lat) && !isNaN(lng);
+
+  const initialPropertyType: PropertyType =
+    typeStr === "house" ? "house" : "mansion";
+
   return (
     <main className="min-h-screen bg-slate-50">
-      <ResearchClient isEn={isEn} locale={locale} />
+      <ResearchClient
+        isEn={isEn}
+        locale={locale}
+        initialTopMode={hasCoords ? "property-form" : "select"}
+        initialPrefillCoords={hasCoords ? { lat, lng } : null}
+        initialPropertyType={initialPropertyType}
+      />
     </main>
   );
 }
