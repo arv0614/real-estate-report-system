@@ -259,7 +259,7 @@ interface ExplorePanel {
   onSwitchToForm: (lat: number, lng: number) => void;
 }
 
-function MapExplorePanel({ isEn, locale, propertyType, onPropertyTypeChange, onSwitchToForm }: ExplorePanel) {
+function MapExplorePanel({ isEn, locale, propertyType, onSwitchToForm }: Omit<ExplorePanel, "onPropertyTypeChange">) {
   const router = useRouter();
   const DEFAULT_CENTER = { lat: 35.6812, lng: 139.7671 };
   const [center, setCenter] = useState(DEFAULT_CENTER);
@@ -307,31 +307,8 @@ function MapExplorePanel({ isEn, locale, propertyType, onPropertyTypeChange, onS
     router.push(`/${locale}/research/area?lat=${center.lat}&lng=${center.lng}&type=${propertyType}`);
   };
 
-  const typeLbl = {
-    mansion: isEn ? "🏢 Apartment" : "🏢 マンション",
-    house:   isEn ? "🏠 House"    : "🏠 戸建",
-  };
-
   return (
     <div className="space-y-3">
-      {/* Type selector */}
-      <div className="flex gap-2">
-        {(["mansion", "house"] as const).map((pt) => (
-          <button
-            key={pt}
-            type="button"
-            onClick={() => onPropertyTypeChange(pt)}
-            className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors border-2 ${
-              propertyType === pt
-                ? "border-teal-600 bg-teal-600 text-white"
-                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
-            }`}
-          >
-            {typeLbl[pt]}
-          </button>
-        ))}
-      </div>
-
       {/* Search bar */}
       <div className="flex gap-2">
         <div className="flex-1 relative">
@@ -359,10 +336,10 @@ function MapExplorePanel({ isEn, locale, propertyType, onPropertyTypeChange, onS
         </button>
       </div>
 
-      {/* Map */}
+      {/* Map — taller */}
       <div
         className="rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
-        style={{ "--research-map-h": "320px" } as React.CSSProperties}
+        style={{ "--research-map-h": "420px" } as React.CSSProperties}
       >
         <ResearchMap
           mode="explore"
@@ -572,7 +549,6 @@ export function ResearchClient({
             isEn={isEn}
             locale={locale}
             propertyType={propertyType}
-            onPropertyTypeChange={setPropertyType}
             onSwitchToForm={handleSwitchToForm}
           />
         </>
