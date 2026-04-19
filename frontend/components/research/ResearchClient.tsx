@@ -16,12 +16,15 @@ import { calcPropertyScore } from "@/lib/scoring";
 import { haversineMeters, formatDistance } from "@/lib/geo/haversine";
 import { useAuth } from "@/lib/useAuth";
 import { saveResearchSession } from "@/lib/researchHistory";
-import { MapPin, Navigation, Search, AlertTriangle } from "lucide-react";
+import { MapPin, Navigation, Search, AlertTriangle, ChevronLeft, Loader2 } from "lucide-react";
 
 const ResearchMap = dynamic(
   () => import("./ResearchMap").then((m) => m.ResearchMap),
   { ssr: false }
 );
+
+// ── TopMode state machine ─────────────────────────────────────────────────────
+export type TopMode = "select" | "property-form" | "map-explore" | "result";
 
 // ── Staged loading messages ───────────────────────────────────────────────────
 const LOADING_MSGS_JA = [
@@ -67,7 +70,7 @@ function StagedLoader({ isEn }: { isEn: boolean }) {
   );
 }
 
-// ── Auto-fill warning card (U8) ───────────────────────────────────────────────
+// ── Auto-fill warning badge ───────────────────────────────────────────────────
 function AutoFillWarning({
   result,
   isEn,
@@ -134,8 +137,118 @@ function AutoFillWarning({
   );
 }
 
-// ── Tab types ─────────────────────────────────────────────────────────────────
-type Tab = "map" | "form";
+// ── Select screen ─────────────────────────────────────────────────────────────
+interface SelectScreenProps {
+  isEn: boolean;
+  locale: string;
+  onSelectA: () => void;
+  onSelectB: () => void;
+}
+
+function SelectScreen({ isEn, locale, onSelectA, onSelectB }: SelectScreenProps) {
+  const router = useRouter();
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [geoError, setGeoError] = useState<string | null>(null);
+
+  const handleGeoCard = () => {
+    const isHttps =
+      typeof window === "undefined" ||
+      window.location.protocol === "https:" ||
+      window.location.hostname === "localhost";
+
+    if (!isHttps) {
+      setGeoError(isEn ? "Location requires HTTPS" : "位置情報の取得にはHTTPS接続が必要です");
+      return;
+    }
+    if (!navigator.geolocation) {
+      setGeoError(isEn ? "Geolocation not supported" : "位置情報がサポートされていません");
+      return;
+    }
+
+    setGeoLoading(true);
+    setGeoError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        router.push(`/${locale}/research/area?lat=${lat}&lng=${lng}`);
+      },
+      (err) => {
+        setGeoLoading(false);
+        if (err.code === GeolocationPositionError.PERMISSION_DENIED) {
+          setGeoError(isEn
+            ? "Location permission denied. Please check browser settings."
+            : "ブラウザの位置情報が許可されていません。設定を確認してください。");
+        } else {
+          setGeoError(isEn ? "Could not get current location." : "現在地を取得できませんでした。");
+        }
+      },
+      { timeout: 10_000 }
+    );
+  };
+
+  const cards = [
+    {
+      key: "a",
+      icon: "🏠",
+      title: isEn ? "Analyze a property" : "物件を判定する",
+      desc:  isEn ? "Compare price, risk & future outlook" : "価格・リスク・将来性を分析",
+      onClick: onSelectA,
+      loading: false,
+    },
+    {
+      key: "b",
+      icon: "🗺️",
+      title: isEn ? "Explore an area" : "エリアを探す",
+      desc:  isEn ? "Browse market trends on the map" : "地図でエリアの特性を確認",
+      onClick: onSelectB,
+      loading: false,
+    },
+    {
+      key: "c",
+      icon: geoLoading ? null : "📍",
+      title: isEn ? "Where I am now" : "今いる場所を調べる",
+      desc:  isEn ? "View area info for your current location" : "現在地のエリア情報を表示",
+      onClick: handleGeoCard,
+      loading: geoLoading,
+    },
+  ] as const;
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 gap-3">
+        {cards.map((card) => (
+          <button
+            key={card.key}
+            type="button"
+            onClick={card.onClick}
+            disabled={card.loading}
+            className="flex items-center gap-4 w-full text-left rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:border-blue-300 hover:shadow-md transition-all duration-200 disabled:opacity-60 disabled:cursor-wait group"
+          >
+            <span className="text-3xl flex-shrink-0 w-10 flex items-center justify-center">
+              {card.loading
+                ? <Loader2 className="w-7 h-7 text-blue-500 animate-spin" />
+                : card.icon}
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-slate-900 text-sm group-hover:text-blue-700 transition-colors">
+                {card.title}
+              </p>
+              <p className="text-xs text-slate-500 mt-0.5">{card.desc}</p>
+            </div>
+            <ChevronLeft className="w-4 h-4 text-slate-300 rotate-180 flex-shrink-0 group-hover:text-blue-400 transition-colors" />
+          </button>
+        ))}
+      </div>
+
+      {geoError && (
+        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+          {geoError}
+        </p>
+      )}
+    </div>
+  );
+}
 
 // ── Map-first explore panel ───────────────────────────────────────────────────
 interface ExplorePanel {
@@ -155,7 +268,6 @@ function MapExplorePanel({ isEn, locale, propertyType, onPropertyTypeChange, onS
   const [geoLoading, setGeoLoading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Debounced address geocode via GSI
   const handleSearchChange = (val: string) => {
     setSearchVal(val);
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -202,7 +314,7 @@ function MapExplorePanel({ isEn, locale, propertyType, onPropertyTypeChange, onS
 
   return (
     <div className="space-y-3">
-      {/* Mode + type selector row */}
+      {/* Type selector */}
       <div className="flex gap-2">
         {(["mansion", "house"] as const).map((pt) => (
           <button
@@ -247,7 +359,7 @@ function MapExplorePanel({ isEn, locale, propertyType, onPropertyTypeChange, onS
         </button>
       </div>
 
-      {/* Map with reticle */}
+      {/* Map */}
       <div
         className="rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
         style={{ "--research-map-h": "320px" } as React.CSSProperties}
@@ -288,20 +400,43 @@ function MapExplorePanel({ isEn, locale, propertyType, onPropertyTypeChange, onS
   );
 }
 
+// ── Back button ───────────────────────────────────────────────────────────────
+function BackButton({ onClick, isEn }: { onClick: () => void; isEn: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 transition-colors mb-4"
+    >
+      <ChevronLeft className="w-4 h-4" />
+      {isEn ? "Back to menu" : "選び直す"}
+    </button>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 interface Props {
   isEn: boolean;
   locale: string;
+  initialTopMode?: TopMode;
+  initialPrefillCoords?: { lat: number; lng: number } | null;
+  initialPropertyType?: PropertyType;
 }
 
-export function ResearchClient({ isEn, locale }: Props) {
-  const [tab,           setTab]         = useState<Tab>("map");
-  const [result,        setResult]      = useState<AnalyzeResult | null>(null);
+export function ResearchClient({
+  isEn,
+  locale,
+  initialTopMode = "select",
+  initialPrefillCoords = null,
+  initialPropertyType = "mansion",
+}: Props) {
+  const [topMode,       setTopMode]      = useState<TopMode>(initialTopMode);
+  const [result,        setResult]       = useState<AnalyzeResult | null>(null);
   const [isPending,     startTransition] = useTransition();
-  const [dragCoords,    setDragCoords]  = useState<{ lat: number; lng: number } | null>(null);
-  const [reanalyzing,   setReanalyzing] = useState(false);
-  const [prefillCoords, setPrefillCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [propertyType,  setPropertyType] = useState<PropertyType>("mansion");
+  const [dragCoords,    setDragCoords]   = useState<{ lat: number; lng: number } | null>(null);
+  const [reanalyzing,   setReanalyzing]  = useState(false);
+  const [prefillCoords, setPrefillCoords] = useState<{ lat: number; lng: number } | null>(initialPrefillCoords);
+  const [propertyType,  setPropertyType] = useState<PropertyType>(initialPropertyType);
   const lastInputRef = useRef<PropertyInput | null>(null);
   const mapRef       = useRef<HTMLDivElement | null>(null);
   const { user } = useAuth();
@@ -312,18 +447,20 @@ export function ResearchClient({ isEn, locale }: Props) {
     startTransition(async () => {
       const res = await analyzeProperty(input);
       setResult(res);
-
-      if (res.ok && user) {
-        saveResearchSession(user.uid, {
-          address: input.address,
-          lat: res.coords.lat,
-          lng: res.coords.lng,
-          price: input.price ?? 0,
-          area: input.area ?? 0,
-          builtYear: input.builtYear ?? new Date().getFullYear(),
-          mode: input.mode,
-          propertyType: input.propertyType,
-        }).catch(() => {});
+      if (res.ok) {
+        setTopMode("result");
+        if (user) {
+          saveResearchSession(user.uid, {
+            address: input.address,
+            lat: res.coords.lat,
+            lng: res.coords.lng,
+            price: input.price ?? 0,
+            area: input.area ?? 0,
+            builtYear: input.builtYear ?? new Date().getFullYear(),
+            mode: input.mode,
+            propertyType: input.propertyType,
+          }).catch(() => {});
+        }
       }
     });
   }, [user]);
@@ -355,16 +492,25 @@ export function ResearchClient({ isEn, locale }: Props) {
     mapRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, []);
 
-  // When user picks a location from the map-explore tab
   const handleSwitchToForm = useCallback((lat: number, lng: number) => {
     setPrefillCoords({ lat, lng });
-    setTab("form");
+    setTopMode("property-form");
   }, []);
 
-  const tabs: { id: Tab; label: string }[] = [
-    { id: "map",  label: isEn ? "Explore map" : "地図で探す" },
-    { id: "form", label: isEn ? "Analyze property" : "物件情報で判定" },
-  ];
+  const handleBackToSelect = useCallback(() => {
+    setTopMode("select");
+    setResult(null);
+    setPrefillCoords(null);
+    setDragCoords(null);
+  }, []);
+
+  const handleNewSearch = useCallback(() => {
+    setTopMode("select");
+    setResult(null);
+    setPrefillCoords(null);
+    setDragCoords(null);
+    lastInputRef.current = null;
+  }, []);
 
   return (
     <div
@@ -383,38 +529,20 @@ export function ResearchClient({ isEn, locale }: Props) {
         </p>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 p-1 bg-slate-100 rounded-xl mb-6">
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setTab(t.id)}
-            className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${
-              tab === t.id
-                ? "bg-white text-slate-900 shadow-sm"
-                : "text-slate-500 hover:text-slate-700"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Tab: Map-first explore (U3) */}
-      {tab === "map" && (
-        <MapExplorePanel
+      {/* ── SELECT ── */}
+      {topMode === "select" && (
+        <SelectScreen
           isEn={isEn}
           locale={locale}
-          propertyType={propertyType}
-          onPropertyTypeChange={setPropertyType}
-          onSwitchToForm={handleSwitchToForm}
+          onSelectA={() => setTopMode("property-form")}
+          onSelectB={() => setTopMode("map-explore")}
         />
       )}
 
-      {/* Tab: Property form + results */}
-      {tab === "form" && (
+      {/* ── PROPERTY-FORM ── */}
+      {topMode === "property-form" && (
         <>
+          <BackButton onClick={handleBackToSelect} isEn={isEn} />
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
             <PropertyForm
               onSubmit={handleSubmit}
@@ -426,151 +554,177 @@ export function ResearchClient({ isEn, locale }: Props) {
             />
           </div>
 
-          {/* Loading (U6: staged) */}
           {isPending && <StagedLoader isEn={isEn} />}
 
-          {/* Error */}
           {result && !result.ok && !isPending && (
             <div className="mt-8 rounded-xl bg-red-50 border border-red-200 p-4 text-sm text-red-700">
               {result.error}
             </div>
           )}
+        </>
+      )}
 
-          {/* Success */}
-          {result && result.ok && !isPending && (
-            <div className="mt-8 space-y-4">
-              {/* Geocode confirmation banner */}
-              <div className="rounded-xl bg-green-50 border border-green-200 p-4 text-sm text-green-800 flex items-start gap-3">
-                <svg className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-                <div>
-                  <div className="font-semibold mb-0.5">
-                    {isEn ? "Address confirmed" : "住所を確認しました"}
-                  </div>
-                  <div className="text-green-700">
-                    {result.coordOverrideUsed
-                      ? isEn
-                        ? `Map-selected point: ${result.coords.lat.toFixed(6)}, ${result.coords.lng.toFixed(6)}`
-                        : `地図上で指定した地点: ${result.coords.lat.toFixed(6)}, ${result.coords.lng.toFixed(6)}`
-                      : `${isEn ? "Coordinates" : "座標"}: ${result.coords.lat.toFixed(6)}, ${result.coords.lng.toFixed(6)}`
-                    }
-                  </div>
-                  {result.totalFetched > 0 && (
-                    <div className="text-green-700 mt-0.5">
-                      {isEn
-                        ? `${result.totalFetched} nearby transactions found (${result.similar.length} similar)`
-                        : `周辺取引${result.totalFetched}件取得（類似物件${result.similar.length}件）`}
-                    </div>
-                  )}
-                </div>
+      {/* ── MAP-EXPLORE ── */}
+      {topMode === "map-explore" && (
+        <>
+          <BackButton onClick={handleBackToSelect} isEn={isEn} />
+          <MapExplorePanel
+            isEn={isEn}
+            locale={locale}
+            propertyType={propertyType}
+            onPropertyTypeChange={setPropertyType}
+            onSwitchToForm={handleSwitchToForm}
+          />
+        </>
+      )}
+
+      {/* ── RESULT ── */}
+      {topMode === "result" && result && result.ok && !isPending && (
+        <div className="space-y-4">
+          {/* Geocode confirmation banner */}
+          <div className="rounded-xl bg-green-50 border border-green-200 p-4 text-sm text-green-800 flex items-start gap-3">
+            <svg className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+            <div>
+              <div className="font-semibold mb-0.5">
+                {isEn ? "Address confirmed" : "住所を確認しました"}
               </div>
-
-              {/* Map with draggable marker */}
-              <div ref={mapRef} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                <ResearchMap
-                  mode="pin"
-                  lat={result.coords.lat}
-                  lng={result.coords.lng}
-                  onChange={handleMapDrag}
-                />
-
-                {/* Drag re-analyze prompt (U6: fade-in) */}
-                {dragCoords && (
-                  <div className="animate-fade-in px-4 py-3 bg-blue-50 border-t border-blue-200 flex items-center justify-between gap-3">
-                    <div className="text-xs text-blue-700">
-                      <span className="font-semibold">
-                        {isEn ? "Marker moved" : "マーカーを移動しました"}
-                      </span>
-                      {" "}
-                      {(() => {
-                        const dist = haversineMeters(
-                          result.coords.lat, result.coords.lng,
-                          dragCoords.lat,    dragCoords.lng
-                        );
-                        return isEn
-                          ? `(${formatDistance(dist)} from original address)`
-                          : `（元住所から${formatDistance(dist)}）`;
-                      })()}
-                    </div>
-                    <div className="flex gap-2 flex-shrink-0">
-                      <button
-                        type="button"
-                        onClick={handleResetDrag}
-                        className="text-xs text-slate-500 hover:text-slate-700 underline"
-                      >
-                        {isEn ? "Reset" : "元に戻す"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleReanalyze}
-                        disabled={reanalyzing}
-                        className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors"
-                      >
-                        {reanalyzing
-                          ? (isEn ? "Analyzing…" : "分析中…")
-                          : (isEn ? "Re-analyze at this point" : "この地点で再調査する")}
-                      </button>
-                    </div>
-                  </div>
-                )}
+              <div className="text-green-700">
+                {result.coordOverrideUsed
+                  ? isEn
+                    ? `Map-selected point: ${result.coords.lat.toFixed(6)}, ${result.coords.lng.toFixed(6)}`
+                    : `地図上で指定した地点: ${result.coords.lat.toFixed(6)}, ${result.coords.lng.toFixed(6)}`
+                  : `${isEn ? "Coordinates" : "座標"}: ${result.coords.lat.toFixed(6)}, ${result.coords.lng.toFixed(6)}`
+                }
               </div>
-
-              {/* Auto-fill warning card (U8) */}
-              {result.autoFilledFields.length > 0 && (
-                <AutoFillWarning result={result} isEn={isEn} onReenter={() => setTab("form")} />
-              )}
-
-              {/* Score card */}
-              <ScoreCard result={result} isEn={isEn} onScrollToMap={handleScrollToMap} />
-
-              {/* Nearby comparison points (U5) */}
-              <NearbyComparisons result={result} isEn={isEn} />
-
-              {/* Box plot chart */}
-              {result.similar.length >= 3 && (
-                <SimilarChart result={result} isEn={isEn} />
-              )}
-
-              {/* Seismic & terrain */}
-              <SeismicCard result={result} isEn={isEn} />
-
-              {/* Population trend */}
-              <PopulationChart result={result} isEn={isEn} />
-
-              {/* Share buttons */}
-              {(() => {
-                const s = calcPropertyScore(
-                  result.input.price ?? 0,
-                  result.similar.map((t) => t.price),
-                  result.hazard,
-                  result.input.mode,
-                  result.seismic,
-                  result.terrain,
-                  result.population
-                );
-                return (
-                  <ShareResearch
-                    grade={s.total.status === "ok" ? s.total.grade : "—"}
-                    score={s.total.status === "ok" ? s.total.score : 0}
-                    address={result.input.address}
-                    isEn={isEn}
-                    autoFilled={result.autoFilledFields.length > 0}
-                    propertyType={result.input.propertyType}
-                  />
-                );
-              })()}
-
-              {result.similar.length === 0 && result.totalFetched > 0 && (
-                <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-800">
+              {result.totalFetched > 0 && (
+                <div className="text-green-700 mt-0.5">
                   {isEn
-                    ? "No similar transactions matched even with widened filters. Try adjusting the input values."
-                    : "条件を広げても類似物件が見つかりませんでした。入力値を調整してみてください。"}
+                    ? `${result.totalFetched} nearby transactions found (${result.similar.length} similar)`
+                    : `周辺取引${result.totalFetched}件取得（類似物件${result.similar.length}件）`}
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Map with draggable marker */}
+          <div ref={mapRef} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <ResearchMap
+              mode="pin"
+              lat={result.coords.lat}
+              lng={result.coords.lng}
+              onChange={handleMapDrag}
+            />
+
+            {dragCoords && (
+              <div className="animate-fade-in px-4 py-3 bg-blue-50 border-t border-blue-200 flex items-center justify-between gap-3">
+                <div className="text-xs text-blue-700">
+                  <span className="font-semibold">
+                    {isEn ? "Marker moved" : "マーカーを移動しました"}
+                  </span>
+                  {" "}
+                  {(() => {
+                    const dist = haversineMeters(
+                      result.coords.lat, result.coords.lng,
+                      dragCoords.lat,    dragCoords.lng
+                    );
+                    return isEn
+                      ? `(${formatDistance(dist)} from original address)`
+                      : `（元住所から${formatDistance(dist)}）`;
+                  })()}
+                </div>
+                <div className="flex gap-2 flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleResetDrag}
+                    className="text-xs text-slate-500 hover:text-slate-700 underline"
+                  >
+                    {isEn ? "Reset" : "元に戻す"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleReanalyze}
+                    disabled={reanalyzing}
+                    className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                  >
+                    {reanalyzing
+                      ? (isEn ? "Analyzing…" : "分析中…")
+                      : (isEn ? "Re-analyze at this point" : "この地点で再調査する")}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Auto-fill warning */}
+          {result.autoFilledFields.length > 0 && (
+            <AutoFillWarning
+              result={result}
+              isEn={isEn}
+              onReenter={() => setTopMode("property-form")}
+            />
           )}
-        </>
+
+          {/* Score card */}
+          <ScoreCard result={result} isEn={isEn} onScrollToMap={handleScrollToMap} />
+
+          {/* Nearby comparison points */}
+          <NearbyComparisons result={result} isEn={isEn} />
+
+          {/* Box plot chart */}
+          {result.similar.length >= 3 && (
+            <SimilarChart result={result} isEn={isEn} />
+          )}
+
+          {/* Seismic & terrain */}
+          <SeismicCard result={result} isEn={isEn} />
+
+          {/* Population trend */}
+          <PopulationChart result={result} isEn={isEn} />
+
+          {/* Share buttons */}
+          {(() => {
+            const s = calcPropertyScore(
+              result.input.price ?? 0,
+              result.similar.map((t) => t.price),
+              result.hazard,
+              result.input.mode,
+              result.seismic,
+              result.terrain,
+              result.population
+            );
+            return (
+              <ShareResearch
+                grade={s.total.status === "ok" ? s.total.grade : "—"}
+                score={s.total.status === "ok" ? s.total.score : 0}
+                address={result.input.address}
+                isEn={isEn}
+                autoFilled={result.autoFilledFields.length > 0}
+                propertyType={result.input.propertyType}
+              />
+            );
+          })()}
+
+          {result.similar.length === 0 && result.totalFetched > 0 && (
+            <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-800">
+              {isEn
+                ? "No similar transactions matched even with widened filters. Try adjusting the input values."
+                : "条件を広げても類似物件が見つかりませんでした。入力値を調整してみてください。"}
+            </div>
+          )}
+
+          {/* New search CTA */}
+          <div className="pt-4 border-t border-slate-200">
+            <button
+              type="button"
+              onClick={handleNewSearch}
+              className="w-full py-3 rounded-xl border border-slate-200 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-colors"
+            >
+              {isEn ? "← Analyze another property" : "← 別の物件を調べる"}
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
