@@ -213,7 +213,7 @@ export function SimilarChart({ result, isEn }: Props) {
         <div className="space-y-4">
           {/* Chart area */}
           <div className="flex gap-4 items-start">
-            <BoxPlotSVG stats={stats} userPrice={input.price} isEn={isEn} />
+            <BoxPlotSVG stats={stats} userPrice={input.price ?? 0} isEn={isEn} />
 
             {/* Legend + distribution */}
             <div className="flex-1 space-y-4 py-5">
@@ -231,7 +231,7 @@ export function SimilarChart({ result, isEn }: Props) {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-green-600 font-bold">★</span>
-                  <span className="text-slate-600 text-xs">{t.yourPrice}: {input.price.toLocaleString()}{t.wan}</span>
+                  <span className="text-slate-600 text-xs">{t.yourPrice}: {(input.price ?? 0).toLocaleString()}{t.wan}</span>
                 </div>
               </div>
 

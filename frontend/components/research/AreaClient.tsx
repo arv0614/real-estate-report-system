@@ -286,6 +286,7 @@ export function AreaClient({ initialLat, initialLng, isEn, locale }: Props) {
                 terrain: result.terrain,
                 population: result.population,
                 totalFetched: result.totalFetched,
+                autoFilledFields: [],
               }}
               isEn={isEn}
             />

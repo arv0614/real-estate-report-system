@@ -16,7 +16,7 @@ import { calcPropertyScore } from "@/lib/scoring";
 import { haversineMeters, formatDistance } from "@/lib/geo/haversine";
 import { useAuth } from "@/lib/useAuth";
 import { saveResearchSession } from "@/lib/researchHistory";
-import { MapPin, Navigation, Search } from "lucide-react";
+import { MapPin, Navigation, Search, AlertTriangle } from "lucide-react";
 
 const ResearchMap = dynamic(
   () => import("./ResearchMap").then((m) => m.ResearchMap),
@@ -63,6 +63,73 @@ function StagedLoader({ isEn }: { isEn: boolean }) {
           />
         ))}
       </span>
+    </div>
+  );
+}
+
+// ── Auto-fill warning card (U8) ───────────────────────────────────────────────
+function AutoFillWarning({
+  result,
+  isEn,
+  onReenter,
+}: {
+  result: Extract<AnalyzeResult, { ok: true }>;
+  isEn: boolean;
+  onReenter: () => void;
+}) {
+  const fieldLabels: Record<string, string> = {
+    price:     isEn ? "Price"      : "価格",
+    area:      isEn ? "Floor area" : "専有面積",
+    builtYear: isEn ? "Year built" : "建築年",
+  };
+  const fieldValues: Record<string, string> = {
+    price:     `${result.input.price?.toLocaleString()}万円`,
+    area:      `${result.input.area}㎡`,
+    builtYear: `${result.input.builtYear}年`,
+  };
+
+  return (
+    <div className="rounded-2xl border-2 border-yellow-300 bg-yellow-50 p-5">
+      <div className="flex items-start gap-3 mb-3">
+        <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-bold text-yellow-900">
+            {isEn
+              ? "Note: Some values are area medians, not your property's actual data"
+              : "注意: 一部の情報はエリア中央値で算出しています"}
+          </p>
+          <p className="text-xs text-yellow-700 mt-1">
+            {isEn
+              ? "These are estimated from nearby transactions and may not reflect your property."
+              : "近隣の取引データから推計した参考値です。実際の物件とは異なる場合があります。"}
+          </p>
+        </div>
+      </div>
+
+      <ul className="mb-4 space-y-1">
+        {result.autoFilledFields.map((field) => (
+          <li key={field} className="text-xs text-yellow-800 flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-yellow-500 flex-shrink-0" />
+            <span className="font-medium">{fieldLabels[field] ?? field}:</span>
+            <span>{fieldValues[field] ?? "—"}</span>
+            <span className="text-yellow-600">（エリア中央値）</span>
+          </li>
+        ))}
+      </ul>
+
+      <p className="text-xs text-yellow-700 mb-3">
+        {isEn
+          ? "For an accurate assessment, please enter your property's actual values."
+          : "正確な判定のため、物件情報を入力してから再度調査してください。"}
+      </p>
+
+      <button
+        type="button"
+        onClick={onReenter}
+        className="text-sm font-semibold text-yellow-700 underline hover:text-yellow-800 transition-colors"
+      >
+        {isEn ? "Enter accurate values and re-analyze →" : "正確な情報で再調査する →"}
+      </button>
     </div>
   );
 }
@@ -225,9 +292,9 @@ export function ResearchClient({ isEn, locale }: Props) {
           address: input.address,
           lat: res.coords.lat,
           lng: res.coords.lng,
-          price: input.price,
-          area: input.area,
-          builtYear: input.builtYear,
+          price: input.price ?? 0,
+          area: input.area ?? 0,
+          builtYear: input.builtYear ?? new Date().getFullYear(),
           mode: input.mode,
         }).catch(() => {});
       }
@@ -418,6 +485,11 @@ export function ResearchClient({ isEn, locale }: Props) {
                 )}
               </div>
 
+              {/* Auto-fill warning card (U8) */}
+              {result.autoFilledFields.length > 0 && (
+                <AutoFillWarning result={result} isEn={isEn} onReenter={() => setTab("form")} />
+              )}
+
               {/* Score card */}
               <ScoreCard result={result} isEn={isEn} onScrollToMap={handleScrollToMap} />
 
@@ -438,7 +510,7 @@ export function ResearchClient({ isEn, locale }: Props) {
               {/* Share buttons */}
               {(() => {
                 const s = calcPropertyScore(
-                  result.input.price,
+                  result.input.price ?? 0,
                   result.similar.map((t) => t.price),
                   result.hazard,
                   result.input.mode,
@@ -452,6 +524,7 @@ export function ResearchClient({ isEn, locale }: Props) {
                     score={s.total.status === "ok" ? s.total.score : 0}
                     address={result.input.address}
                     isEn={isEn}
+                    autoFilled={result.autoFilledFields.length > 0}
                   />
                 );
               })()}

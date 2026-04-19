@@ -246,7 +246,7 @@ export function ScoreCard({ result, isEn, onScrollToMap }: Props) {
   const score: PropertyScore = useMemo(
     () =>
       calcPropertyScore(
-        input.price,
+        input.price ?? 0,
         prices,
         hazard,
         input.mode,
