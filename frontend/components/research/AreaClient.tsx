@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useCallback, useMemo } from "react";
+import { useState, useTransition, useCallback, useMemo, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { analyzeArea } from "@/app/[locale]/research/area/areaActions";
@@ -10,7 +10,7 @@ import {
   buildGoogleMapsUrl, buildStreetViewUrl,
   buildHazardMapUrl, buildJShisUrl, buildGsiLandformUrl,
 } from "@/lib/links/externalMaps";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, AlertTriangle } from "lucide-react";
 import type { PropertyType } from "@/types/research";
 
 const TYPE_FILTER: Record<PropertyType, string> = {
@@ -22,6 +22,53 @@ const ResearchMap = dynamic(
   () => import("./ResearchMap").then((m) => m.ResearchMap),
   { ssr: false }
 );
+
+// ── Skeleton blocks ───────────────────────────────────────────────────────────
+function SkeletonBlock({ className }: { className?: string }) {
+  return <div className={`bg-slate-200 rounded-xl animate-pulse ${className ?? ""}`} />;
+}
+
+const STEPS_JA = ["位置情報取得 ✓", "エリアデータ取得中…", "表示"];
+const STEPS_EN = ["Location ✓", "Fetching area data…", "Rendering"];
+
+function AreaSkeleton({ isEn, slow }: { isEn: boolean; slow: boolean }) {
+  const steps = isEn ? STEPS_EN : STEPS_JA;
+  return (
+    <div className="space-y-4">
+      {/* Step indicator */}
+      <div className="rounded-xl bg-white border border-slate-200 p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <span className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+          <span className="text-sm font-medium text-slate-700">{steps[1]}</span>
+        </div>
+        <div className="flex gap-2">
+          {steps.map((s, i) => (
+            <div key={i} className={`flex items-center gap-1.5 text-xs ${i === 1 ? "text-blue-600 font-semibold" : i < 1 ? "text-green-600" : "text-slate-300"}`}>
+              {i < 1 && <span>✓</span>}
+              {i === 1 && <span className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin inline-block" />}
+              {s}
+              {i < steps.length - 1 && <span className="text-slate-200 ml-1">›</span>}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Slow warning */}
+      {slow && (
+        <div className="flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2.5 text-xs text-amber-700">
+          <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+          {isEn ? "Taking longer than usual…" : "少し時間がかかっています…"}
+        </div>
+      )}
+
+      {/* Skeleton cards */}
+      <SkeletonBlock className="h-52" />
+      <SkeletonBlock className="h-40" />
+      <SkeletonBlock className="h-32" />
+      <SkeletonBlock className="h-32" />
+    </div>
+  );
+}
 
 // ── Price histogram ───────────────────────────────────────────────────────────
 function PriceHistogram({ prices, isEn }: { prices: number[]; isEn: boolean }) {
@@ -195,9 +242,20 @@ export function AreaClient({ initialLat, initialLng, initialType, isEn, locale }
   const [result,       setResult]      = useState<AreaResult | null>(null);
   const [isPending,    startTransition] = useTransition();
   const [propertyType, setPropertyType] = useState<PropertyType>(initialType ?? "mansion");
+  const [slowLoad,     setSlowLoad]     = useState(false);
+  const [timedOut,     setTimedOut]     = useState(false);
+
+  // Show "slow" warning after 10s, timeout error after 15s
+  useEffect(() => {
+    if (!isPending) { setSlowLoad(false); setTimedOut(false); return; }
+    const slowTimer    = setTimeout(() => setSlowLoad(true),  10_000);
+    const timeoutTimer = setTimeout(() => setTimedOut(true),  15_000);
+    return () => { clearTimeout(slowTimer); clearTimeout(timeoutTimer); };
+  }, [isPending]);
 
   const runAnalysis = useCallback((lat: number, lng: number) => {
     setCoords({ lat, lng });
+    setResult(null);
     startTransition(async () => {
       const res = await analyzeArea(lat, lng);
       setResult(res);
@@ -256,13 +314,17 @@ export function AreaClient({ initialLat, initialLng, initialType, isEn, locale }
         )}
       </div>
 
-      {/* Loading */}
-      {isPending && (
-        <div className="flex items-center gap-3 text-slate-500 bg-white rounded-xl border border-slate-200 p-4 mb-4">
-          <span className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin flex-shrink-0" />
-          <span className="text-sm">
-            {isEn ? "Fetching area data…" : "エリアデータを取得中…"}
-          </span>
+      {/* Loading skeleton */}
+      {isPending && !timedOut && <AreaSkeleton isEn={isEn} slow={slowLoad} />}
+
+      {/* Timeout error */}
+      {timedOut && (
+        <div className="rounded-xl bg-red-50 border border-red-200 p-4 text-sm text-red-700 mb-4 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5 text-red-500" />
+          <div>
+            <p className="font-semibold">{isEn ? "Request timed out" : "タイムアウトしました"}</p>
+            <p className="text-xs mt-1">{isEn ? "The server took too long to respond. Please try again." : "サーバーの応答に時間がかかりすぎています。再度お試しください。"}</p>
+          </div>
         </div>
       )}
 
