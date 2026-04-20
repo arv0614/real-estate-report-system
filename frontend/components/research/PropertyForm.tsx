@@ -93,10 +93,16 @@ export function PropertyForm({ onSubmit, loading, isEn, prefillCoords, propertyT
     });
   }, [applyDefaults]);
 
+  // Optimistic: apply fallback immediately, then try to upgrade to area median
+  const fetchDefaultsOptimistic = useCallback((lat: number, lng: number, pt: PropertyType) => {
+    applyFallbackDefaults(pt);
+    fetchDefaultsIfNeeded(lat, lng, pt);
+  }, [applyFallbackDefaults, fetchDefaultsIfNeeded]);
+
   useEffect(() => {
     if (prefillCoords) {
       setCoordsForDefaults(prefillCoords);
-      fetchDefaultsIfNeeded(prefillCoords.lat, prefillCoords.lng, propertyType);
+      fetchDefaultsOptimistic(prefillCoords.lat, prefillCoords.lng, propertyType);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prefillCoords?.lat, prefillCoords?.lng]);
@@ -113,9 +119,9 @@ export function PropertyForm({ onSubmit, loading, isEn, prefillCoords, propertyT
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       const coords = await geocodeAddressClient(address);
-      if (coords) { setCoordsForDefaults(coords); fetchDefaultsIfNeeded(coords.lat, coords.lng, propertyType); }
+      if (coords) { setCoordsForDefaults(coords); fetchDefaultsOptimistic(coords.lat, coords.lng, propertyType); }
     }, 600);
-  }, [address, propertyType, fetchDefaultsIfNeeded]);
+  }, [address, propertyType, fetchDefaultsOptimistic]);
 
   const handleParsed = useCallback((data: ParsedPropertyData) => {
     if (data.address)      setAddress(data.address);
@@ -126,15 +132,15 @@ export function PropertyForm({ onSubmit, loading, isEn, prefillCoords, propertyT
     setErrors({});
     if (data.coordOverride) {
       setCoordsForDefaults(data.coordOverride);
-      fetchDefaultsIfNeeded(data.coordOverride.lat, data.coordOverride.lng, data.propertyType ?? propertyType);
+      fetchDefaultsOptimistic(data.coordOverride.lat, data.coordOverride.lng, data.propertyType ?? propertyType);
     } else if (data.address) {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(async () => {
         const coords = await geocodeAddressClient(data.address!);
-        if (coords) { setCoordsForDefaults(coords); fetchDefaultsIfNeeded(coords.lat, coords.lng, data.propertyType ?? propertyType); }
+        if (coords) { setCoordsForDefaults(coords); fetchDefaultsOptimistic(coords.lat, coords.lng, data.propertyType ?? propertyType); }
       }, 600);
     }
-  }, [propertyType, onPropertyTypeChange, fetchDefaultsIfNeeded]);
+  }, [propertyType, onPropertyTypeChange, fetchDefaultsOptimistic]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -297,7 +303,15 @@ export function PropertyForm({ onSubmit, loading, isEn, prefillCoords, propertyT
       {hasFallback && (
         <div className="flex items-start gap-2 rounded-lg bg-orange-50 border border-orange-200 px-3 py-2.5 text-xs text-orange-800">
           <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-orange-500" />
-          <p className="leading-relaxed">{t.fallbackBanner}</p>
+          <div className="flex-1">
+            <p className="leading-relaxed">{t.fallbackBanner}</p>
+            {defaultsLoading && (
+              <p className="flex items-center gap-1 mt-1 text-orange-600">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                {isEn ? "Checking for local area data…" : "エリアデータを確認中…"}
+              </p>
+            )}
+          </div>
         </div>
       )}
 
