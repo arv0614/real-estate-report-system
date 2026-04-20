@@ -147,56 +147,81 @@ interface SelectScreenProps {
   onSelectB: () => void;
 }
 
+type GeoState = "idle" | "requesting" | "resolving" | "error";
+
 function SelectScreen({ isEn, locale, onSelectA, onSelectB }: SelectScreenProps) {
   const router = useRouter();
-  const [geoLoading, setGeoLoading] = useState(false);
+  const [geoState, setGeoState] = useState<GeoState>("idle");
   const [geoError, setGeoError] = useState<string | null>(null);
 
-  const handleGeoCard = () => {
+  const errMsg = {
+    denied:    isEn ? "Location permission denied. Check browser settings." : "位置情報の許可が必要です。ブラウザ設定を確認してください。",
+    unavail:   isEn ? "Location unavailable. Check network/GPS." : "位置情報を取得できませんでした。電波状況を確認してください。",
+    timeout:   isEn ? "Location timed out. Please try again." : "位置情報の取得がタイムアウトしました。再度お試しください。",
+    noSupport: isEn ? "Geolocation not supported." : "位置情報がサポートされていません。",
+    https:     isEn ? "Location requires HTTPS." : "位置情報の取得にはHTTPS接続が必要です。",
+    generic:   isEn ? "Could not get current location." : "現在地を取得できませんでした。",
+  };
+
+  const handleGeoCard = async () => {
+    if (geoState === "requesting" || geoState === "resolving") return;
+
     const isHttps =
       typeof window === "undefined" ||
       window.location.protocol === "https:" ||
       window.location.hostname === "localhost";
 
-    if (!isHttps) {
-      setGeoError(isEn ? "Location requires HTTPS" : "位置情報の取得にはHTTPS接続が必要です");
-      return;
-    }
-    if (!navigator.geolocation) {
-      setGeoError(isEn ? "Geolocation not supported" : "位置情報がサポートされていません");
-      return;
+    if (!isHttps) { setGeoError(errMsg.https); setGeoState("error"); return; }
+    if (!navigator.geolocation) { setGeoError(errMsg.noSupport); setGeoState("error"); return; }
+
+    // Permissions API — pre-check for denied state to avoid 8s wait
+    if ("permissions" in navigator) {
+      try {
+        const status = await navigator.permissions.query({ name: "geolocation" });
+        if (status.state === "denied") {
+          setGeoError(errMsg.denied);
+          setGeoState("error");
+          return;
+        }
+      } catch { /* unsupported — proceed */ }
     }
 
-    setGeoLoading(true);
+    setGeoState("requesting");
     setGeoError(null);
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
+        setGeoState("resolving");
         const { latitude: lat, longitude: lng } = pos.coords;
         router.push(`/${locale}/research/area?lat=${lat}&lng=${lng}`);
       },
       (err) => {
-        setGeoLoading(false);
-        if (err.code === GeolocationPositionError.PERMISSION_DENIED) {
-          setGeoError(isEn
-            ? "Location permission denied. Please check browser settings."
-            : "ブラウザの位置情報が許可されていません。設定を確認してください。");
-        } else {
-          setGeoError(isEn ? "Could not get current location." : "現在地を取得できませんでした。");
-        }
+        let msg = errMsg.generic;
+        if (err.code === GeolocationPositionError.PERMISSION_DENIED)   msg = errMsg.denied;
+        if (err.code === GeolocationPositionError.POSITION_UNAVAILABLE) msg = errMsg.unavail;
+        if (err.code === GeolocationPositionError.TIMEOUT)              msg = errMsg.timeout;
+        setGeoError(msg);
+        setGeoState("error");
       },
-      { timeout: 10_000 }
+      { timeout: 8_000, enableHighAccuracy: false, maximumAge: 60_000 }
     );
   };
 
-  const cards = [
+  const isGeoActive = geoState === "requesting" || geoState === "resolving";
+
+  const geoStatusText = (() => {
+    if (geoState === "requesting") return isEn ? "Getting location… (up to 8s)" : "位置情報を取得中…（最大8秒）";
+    if (geoState === "resolving")  return isEn ? "Location found. Loading area…" : "取得完了。エリア情報を読み込み中…";
+    return isEn ? "View area info for your current location" : "現在地のエリア情報を表示";
+  })();
+
+  const staticCards = [
     {
       key: "a",
       icon: "🏠",
       title: isEn ? "Analyze a property" : "物件を判定する",
       desc:  isEn ? "Compare price, risk & future outlook" : "価格・リスク・将来性を分析",
       onClick: onSelectA,
-      loading: false,
     },
     {
       key: "b",
@@ -204,46 +229,76 @@ function SelectScreen({ isEn, locale, onSelectA, onSelectB }: SelectScreenProps)
       title: isEn ? "Explore an area" : "エリアを探す",
       desc:  isEn ? "Browse market trends on the map" : "地図でエリアの特性を確認",
       onClick: onSelectB,
-      loading: false,
-    },
-    {
-      key: "c",
-      icon: geoLoading ? null : "📍",
-      title: isEn ? "Where I am now" : "今いる場所を調べる",
-      desc:  isEn ? "View area info for your current location" : "現在地のエリア情報を表示",
-      onClick: handleGeoCard,
-      loading: geoLoading,
     },
   ] as const;
 
   return (
     <div className="space-y-3">
-      {cards.map((card) => (
+      {/* Cards A & B */}
+      {staticCards.map((card) => (
         <button
           key={card.key}
           type="button"
           onClick={card.onClick}
-          disabled={card.loading}
-          className="flex items-center gap-4 w-full text-left rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm hover:border-blue-400 hover:shadow-md active:scale-[0.99] transition-all duration-150 disabled:opacity-60 disabled:cursor-wait group"
+          className="flex items-center gap-4 w-full text-left rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm hover:border-blue-400 hover:shadow-md active:scale-[0.99] transition-all duration-150 group"
         >
-          <span className="text-2xl flex-shrink-0 w-9 flex items-center justify-center">
-            {card.loading
-              ? <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
-              : card.icon}
-          </span>
+          <span className="text-2xl flex-shrink-0 w-9 flex items-center justify-center">{card.icon}</span>
           <div className="flex-1 min-w-0">
-            <p className="font-bold text-slate-900 text-base leading-snug group-hover:text-blue-700 transition-colors">
-              {card.title}
-            </p>
+            <p className="font-bold text-slate-900 text-base leading-snug group-hover:text-blue-700 transition-colors">{card.title}</p>
             <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">{card.desc}</p>
           </div>
           <ChevronLeft className="w-4 h-4 text-slate-300 rotate-180 flex-shrink-0 group-hover:text-blue-400 transition-colors" />
         </button>
       ))}
 
-      {geoError && (
-        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
-          {geoError}
+      {/* Card C — geo */}
+      <button
+        type="button"
+        onClick={handleGeoCard}
+        disabled={isGeoActive}
+        className={`flex items-center gap-4 w-full text-left rounded-2xl border px-5 py-4 shadow-sm active:scale-[0.99] transition-all duration-150 group ${
+          geoState === "error"
+            ? "border-amber-200 bg-amber-50"
+            : isGeoActive
+              ? "border-blue-200 bg-blue-50 cursor-wait opacity-80"
+              : "border-slate-200 bg-white hover:border-blue-400 hover:shadow-md"
+        }`}
+      >
+        <span className="text-2xl flex-shrink-0 w-9 flex items-center justify-center">
+          {isGeoActive
+            ? <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
+            : geoState === "error"
+              ? "✗"
+              : "📍"}
+        </span>
+        <div className="flex-1 min-w-0">
+          <p className={`font-bold text-base leading-snug transition-colors ${
+            geoState === "error" ? "text-amber-800" : isGeoActive ? "text-blue-700" : "text-slate-900 group-hover:text-blue-700"
+          }`}>
+            {isEn ? "Where I am now" : "今いる場所を調べる"}
+          </p>
+          <p className={`text-xs mt-0.5 leading-relaxed ${
+            geoState === "error" ? "text-amber-700" : isGeoActive ? "text-blue-600" : "text-slate-400"
+          }`}>
+            {geoState === "error" ? geoError : geoStatusText}
+          </p>
+        </div>
+        {!isGeoActive && geoState !== "error" && (
+          <ChevronLeft className="w-4 h-4 text-slate-300 rotate-180 flex-shrink-0 group-hover:text-blue-400 transition-colors" />
+        )}
+        {geoState === "error" && (
+          <span className="text-xs text-amber-600 font-medium flex-shrink-0">
+            {isEn ? "Retry" : "再試行"}
+          </span>
+        )}
+      </button>
+
+      {/* Alt route when geo fails */}
+      {geoState === "error" && (
+        <p className="text-xs text-slate-500 text-center">
+          {isEn
+            ? <>Or <button type="button" onClick={onSelectB} className="underline hover:text-slate-700">explore on the map</button> instead.</>
+            : <>または <button type="button" onClick={onSelectB} className="underline hover:text-slate-700">地図でエリアを探す</button> からお試しください。</>}
         </p>
       )}
     </div>
