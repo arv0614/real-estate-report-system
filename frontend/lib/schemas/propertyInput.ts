@@ -59,6 +59,14 @@ export const PropertyInputSchema = z.object({
       builtYear: z.boolean().optional(),
     })
     .optional(),
+
+  fallbackFilled: z
+    .object({
+      price:     z.boolean().optional(),
+      area:      z.boolean().optional(),
+      builtYear: z.boolean().optional(),
+    })
+    .optional(),
 });
 
 export type PropertyInputValidated = z.output<typeof PropertyInputSchema>;

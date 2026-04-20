@@ -389,6 +389,7 @@ export function AreaClient({ initialLat, initialLng, initialType, isEn, locale }
                 population: result.population,
                 totalFetched: result.totalFetched,
                 autoFilledFields: [],
+                fallbackFilledFields: [],
               }}
               isEn={isEn}
             />
