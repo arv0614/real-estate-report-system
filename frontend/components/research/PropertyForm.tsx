@@ -9,6 +9,7 @@ import type { ParsedPropertyData } from "@/app/[locale]/research/urlActions";
 import { PropertyInputSchema } from "@/lib/schemas/propertyInput";
 import { fetchAreaDefaults } from "@/app/[locale]/research/areaDefaultsActions";
 import type { AreaDefaults } from "@/app/[locale]/research/areaDefaultsActions";
+import { fetchDefaultsIfNeeded as _fetchDefaultsIfNeeded, makeDefaultsCacheKey, type DefaultsCacheState } from "@/lib/research/defaultsCache";
 
 interface Props {
   onSubmit: (input: PropertyInput) => void;
@@ -47,11 +48,11 @@ export function PropertyForm({ onSubmit, loading, isEn, prefillCoords, propertyT
   const [errors,    setErrors]    = useState<FieldErrors>({});
   const [autoFilled, setAutoFilled] = useState<AutoFilledState>({ price: false, area: false, builtYear: false });
   const [coordsForDefaults, setCoordsForDefaults] = useState<{ lat: number; lng: number } | null>(null);
+  const [defaultsLoading, setDefaultsLoading] = useState(false);
+  const [defaultsError, setDefaultsError] = useState<string | null>(null);
 
-  const cacheRef    = useRef(new Map<string, AreaDefaults>());
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastKeyRef  = useRef<string | null>(null);
-  const fetchingRef = useRef(false);
+  const cacheStateRef = useRef<DefaultsCacheState>({ cache: new Map(), lastKey: null, fetching: false });
+  const debounceRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const applyDefaults = useCallback((defaults: AreaDefaults) => {
     if (defaults.sampleSize < 5) return;
@@ -61,17 +62,12 @@ export function PropertyForm({ onSubmit, loading, isEn, prefillCoords, propertyT
   }, []);
 
   const fetchDefaultsIfNeeded = useCallback(async (lat: number, lng: number, pt: PropertyType) => {
-    const key = `${lat.toFixed(4)},${lng.toFixed(4)},${pt}`;
-    if (lastKeyRef.current === key) return;
-    lastKeyRef.current = key;
-    if (cacheRef.current.has(key)) { applyDefaults(cacheRef.current.get(key)!); return; }
-    if (fetchingRef.current) return;
-    fetchingRef.current = true;
-    try {
-      const defaults = await fetchAreaDefaults(lat, lng, pt);
-      cacheRef.current.set(key, defaults);
-      applyDefaults(defaults);
-    } catch { /* silent */ } finally { fetchingRef.current = false; }
+    await _fetchDefaultsIfNeeded(lat, lng, pt, cacheStateRef.current, {
+      applyDefaults,
+      setLoading: setDefaultsLoading,
+      setError: setDefaultsError,
+      fetchFn: fetchAreaDefaults,
+    });
   }, [applyDefaults]);
 
   useEffect(() => {
@@ -84,7 +80,6 @@ export function PropertyForm({ onSubmit, loading, isEn, prefillCoords, propertyT
 
   useEffect(() => {
     if (coordsForDefaults) {
-      lastKeyRef.current = null;
       fetchDefaultsIfNeeded(coordsForDefaults.lat, coordsForDefaults.lng, propertyType);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
