@@ -2,6 +2,7 @@
 
 import type { TransactionRecord } from "@/types/api";
 import type { PropertyType } from "@/types/research";
+import { perfLog } from "@/lib/debug/perfLog";
 
 export interface AreaDefaults {
   priceMedian: number | null;    // 万円
@@ -35,12 +36,14 @@ export async function fetchAreaDefaults(
   if (!apiBase) return empty;
 
   try {
+    const _t0 = Date.now();
     const res = await fetch(
       `${apiBase}/api/property/transactions?lat=${lat}&lng=${lng}&zoom=14&locale=ja`,
       { cache: "no-store", signal: AbortSignal.timeout(12000) }
     );
     if (!res.ok) return empty;
     const data = await res.json();
+    perfLog("fetchAreaDefaults API", Date.now() - _t0, { lat, lng, propertyType });
     const allRecords: TransactionRecord[] = data?.data?.data ?? [];
 
     const requiredType = TYPE_FILTER[propertyType];
