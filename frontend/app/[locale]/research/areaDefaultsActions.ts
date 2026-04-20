@@ -39,7 +39,7 @@ export async function fetchAreaDefaults(
     const _t0 = Date.now();
     const res = await fetch(
       `${apiBase}/api/property/transactions?lat=${lat}&lng=${lng}&zoom=14&locale=ja`,
-      { cache: "no-store", signal: AbortSignal.timeout(6000) }
+      { cache: "no-store", signal: AbortSignal.timeout(5000) }
     );
     if (!res.ok) return empty;
     const data = await res.json();
@@ -59,7 +59,10 @@ export async function fetchAreaDefaults(
       builtYearMedian: builtYears.length ? Math.round(median(builtYears)!) : null,
       sampleSize:      records.length,
     };
-  } catch {
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      perfLog("fetchAreaDefaults (timeout)", 5000, { lat, lng, propertyType });
+    }
     return empty;
   }
 }
