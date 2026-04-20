@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Loader2 } from "lucide-react";
 import type { PropertyInput, PropertyMode, PropertyType } from "@/types/research";
 import { UrlInput } from "./UrlInput";
 import { LocationInput } from "./LocationInput";
@@ -149,8 +149,11 @@ export function PropertyForm({ onSubmit, loading, isEn, prefillCoords, propertyT
     yearPh:      isEn ? "e.g. 2000"     : "例: 2000",
     submit:      isEn ? "Analyze"       : "判定する",
     analyzing:   isEn ? "Analyzing…"   : "分析中…",
-    autoHint:    isEn ? "Area median — enter actual value for accuracy" : "エリア中央値です。実際の値を入力すると精度が上がります",
-    optHint:     isEn ? "💡 Leave blank to auto-fill with area median" : "💡 空欄はエリア中央値で補完されます",
+    autoHint:      isEn ? "Area median — enter actual value for accuracy" : "エリア中央値です。実際の値を入力すると精度が上がります",
+    optHint:       isEn ? "💡 Leave blank to auto-fill with area median" : "💡 空欄はエリア中央値で補完されます",
+    loadingHint:   isEn ? "Fetching area median…" : "エリア中央値を取得中…",
+    errorHint:     isEn ? "Could not load area median. Enter manually." : "エリア中央値を取得できませんでした。手動で入力してください。",
+    noSampleHint:  isEn ? "No area data (insufficient samples)" : "エリアデータなし（サンプル不足）",
   };
 
   const inputCls = (hasErr?: boolean, isAuto?: boolean) => {
@@ -239,33 +242,51 @@ export function PropertyForm({ onSubmit, loading, isEn, prefillCoords, propertyT
         {errors.address && <p className="text-xs text-red-600 mt-1">{errors.address}</p>}
       </div>
 
+      {/* Defaults loading / error banner */}
+      {defaultsLoading && !hasAny && (
+        <div className="flex items-center gap-2 rounded-lg bg-blue-50 border border-blue-200 px-3 py-2 text-xs text-blue-700">
+          <Loader2 className="w-3.5 h-3.5 animate-spin flex-shrink-0" />
+          {t.loadingHint}
+        </div>
+      )}
+      {defaultsError && !hasAny && (
+        <div className="flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-700">
+          <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+          {t.errorHint}
+        </div>
+      )}
+
       {/* Price + Area */}
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-semibold text-slate-600 mb-1">
             {t.priceLabel}{autoFilled.price && <AutoBadge />}
+            {defaultsLoading && !price && <Loader2 className="inline w-3 h-3 ml-1 animate-spin text-blue-400" />}
           </label>
           <input type="number" inputMode="decimal" value={price}
             onChange={(e) => { setPrice(e.target.value); if (autoFilled.price) setAutoFilled((p) => ({ ...p, price: false })); }}
-            placeholder={hasAny ? "" : "5000"} min={1} step="any"
+            placeholder={defaultsLoading && !price ? t.loadingHint : hasAny ? "" : "5000"}
+            min={1} step="any"
             className={inputCls(!!errors.price, autoFilled.price)} />
           {autoFilled.price
             ? <p className="text-xs text-yellow-700 mt-0.5">{t.autoHint}</p>
             : errors.price ? <p className="text-xs text-red-600 mt-0.5">{errors.price}</p>
-            : !price && <p className="text-xs text-slate-400 mt-0.5">{t.optHint}</p>}
+            : !price && !defaultsLoading && <p className="text-xs text-slate-400 mt-0.5">{t.optHint}</p>}
         </div>
         <div>
           <label className="block text-xs font-semibold text-slate-600 mb-1">
             {t.areaLabel}{autoFilled.area && <AutoBadge />}
+            {defaultsLoading && !area && <Loader2 className="inline w-3 h-3 ml-1 animate-spin text-blue-400" />}
           </label>
           <input type="number" inputMode="decimal" value={area}
             onChange={(e) => { setArea(e.target.value); if (autoFilled.area) setAutoFilled((p) => ({ ...p, area: false })); }}
-            placeholder={hasAny ? "" : "70"} min={0.01} step="any"
+            placeholder={defaultsLoading && !area ? t.loadingHint : hasAny ? "" : "70"}
+            min={0.01} step="any"
             className={inputCls(!!errors.area, autoFilled.area)} />
           {autoFilled.area
             ? <p className="text-xs text-yellow-700 mt-0.5">{t.autoHint}</p>
             : errors.area ? <p className="text-xs text-red-600 mt-0.5">{errors.area}</p>
-            : !area && <p className="text-xs text-slate-400 mt-0.5">{t.optHint}</p>}
+            : !area && !defaultsLoading && <p className="text-xs text-slate-400 mt-0.5">{t.optHint}</p>}
         </div>
       </div>
 
@@ -273,15 +294,17 @@ export function PropertyForm({ onSubmit, loading, isEn, prefillCoords, propertyT
       <div>
         <label className="block text-xs font-semibold text-slate-600 mb-1">
           {t.yearLabel}{autoFilled.builtYear && <AutoBadge />}
+          {defaultsLoading && !builtYear && <Loader2 className="inline w-3 h-3 ml-1 animate-spin text-blue-400" />}
         </label>
         <input type="number" inputMode="decimal" value={builtYear}
           onChange={(e) => { setBuiltYear(e.target.value); if (autoFilled.builtYear) setAutoFilled((p) => ({ ...p, builtYear: false })); }}
-          placeholder={hasAny ? "" : t.yearPh} min={1900} max={currentYear} step="1"
+          placeholder={defaultsLoading && !builtYear ? t.loadingHint : hasAny ? "" : t.yearPh}
+          min={1900} max={currentYear} step="1"
           className={inputCls(!!errors.builtYear, autoFilled.builtYear)} />
         {autoFilled.builtYear
           ? <p className="text-xs text-yellow-700 mt-0.5">{t.autoHint}</p>
           : errors.builtYear ? <p className="text-xs text-red-600 mt-0.5">{errors.builtYear}</p>
-          : !builtYear && <p className="text-xs text-slate-400 mt-0.5">{t.optHint}</p>}
+          : !builtYear && !defaultsLoading && <p className="text-xs text-slate-400 mt-0.5">{t.optHint}</p>}
       </div>
 
       <button type="submit" disabled={loading}
