@@ -46,14 +46,24 @@ export async function fetchDefaultsIfNeeded(
 
   try {
     const t0 = typeof performance !== "undefined" ? performance.now() : Date.now();
-    const defaults = await callbacks.fetchFn(lat, lng, pt);
+    const clientTimeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("client-timeout")), 3000)
+    );
+    const defaults = await Promise.race([callbacks.fetchFn(lat, lng, pt), clientTimeout]);
     perfLog("fetchAreaDefaults (network)", (typeof performance !== "undefined" ? performance.now() : Date.now()) - t0, { key });
 
     state.cache.set(key, defaults);
     callbacks.applyDefaults(defaults);
     callbacks.setError(null);
   } catch (err) {
-    callbacks.setError(err instanceof Error ? err.message : "自動補完の取得に失敗しました");
+    const msg = err instanceof Error ? err.message : "自動補完の取得に失敗しました";
+    if (msg === "client-timeout") {
+      perfLog("fetchAreaDefaults (client-timeout)", 3000, { key });
+      // Fallback already applied optimistically — silently discard
+      callbacks.setError(null);
+    } else {
+      callbacks.setError(msg);
+    }
   } finally {
     state.fetching = false;
     callbacks.setLoading(false);
