@@ -9,6 +9,7 @@ import { fetchAreaDefaults } from "./areaDefaultsActions";
 import type { TransactionRecord } from "@/types/api";
 import type { PropertyInput, AnalyzeResult, SimilarTx, SearchRange } from "@/types/research";
 import { perfLog } from "@/lib/debug/perfLog";
+import { FALLBACK_DEFAULTS } from "@/lib/research/fallbackDefaults";
 
 export async function analyzeProperty(input: PropertyInput): Promise<AnalyzeResult> {
   const _t0 = Date.now();
@@ -41,12 +42,16 @@ export async function analyzeProperty(input: PropertyInput): Promise<AnalyzeResu
   }
 
   // ── Step 2: Resolve price / area / builtYear (server-side fallback) ────────
-  const autoFilledFields: string[] = [];
+  const autoFilledFields: string[]     = [];
+  const fallbackFilledFields: string[] = [];
 
-  // Collect what the client already auto-filled (trust the flags)
-  if (valid.autoFilled?.price)     autoFilledFields.push("price");
-  if (valid.autoFilled?.area)      autoFilledFields.push("area");
-  if (valid.autoFilled?.builtYear) autoFilledFields.push("builtYear");
+  // Collect what the client already filled (area median or national fallback)
+  if (valid.autoFilled?.price)      autoFilledFields.push("price");
+  if (valid.autoFilled?.area)       autoFilledFields.push("area");
+  if (valid.autoFilled?.builtYear)  autoFilledFields.push("builtYear");
+  if (valid.fallbackFilled?.price)     fallbackFilledFields.push("price");
+  if (valid.fallbackFilled?.area)      fallbackFilledFields.push("area");
+  if (valid.fallbackFilled?.builtYear) fallbackFilledFields.push("builtYear");
 
   let price     = valid.price;
   let area      = valid.area;
@@ -54,22 +59,29 @@ export async function analyzeProperty(input: PropertyInput): Promise<AnalyzeResu
 
   const propertyType = valid.propertyType ?? "mansion";
 
-  // Server-side fallback for still-missing fields
+  // Server-side fill for fields still missing after client auto-fill
   if (price === undefined || area === undefined || builtYear === undefined) {
     const defaults = await fetchAreaDefaults(coords.lat, coords.lng, propertyType);
-    if (defaults.sampleSize >= 5) {
-      if (price === undefined && defaults.priceMedian !== null) {
-        price = defaults.priceMedian;
-        if (!autoFilledFields.includes("price")) autoFilledFields.push("price");
-      }
-      if (area === undefined && defaults.areaMedian !== null) {
-        area = defaults.areaMedian;
-        if (!autoFilledFields.includes("area")) autoFilledFields.push("area");
-      }
-      if (builtYear === undefined && defaults.builtYearMedian !== null) {
-        builtYear = defaults.builtYearMedian;
-        if (!autoFilledFields.includes("builtYear")) autoFilledFields.push("builtYear");
-      }
+    const fb = FALLBACK_DEFAULTS[propertyType];
+    const hasSamples = defaults.sampleSize >= 5;
+
+    if (price === undefined) {
+      const val = hasSamples && defaults.priceMedian !== null ? defaults.priceMedian : fb.priceMedian!;
+      price = val;
+      if (hasSamples) { if (!autoFilledFields.includes("price"))     autoFilledFields.push("price");     }
+      else            { if (!fallbackFilledFields.includes("price"))  fallbackFilledFields.push("price"); }
+    }
+    if (area === undefined) {
+      const val = hasSamples && defaults.areaMedian !== null ? defaults.areaMedian : fb.areaMedian!;
+      area = val;
+      if (hasSamples) { if (!autoFilledFields.includes("area"))      autoFilledFields.push("area");      }
+      else            { if (!fallbackFilledFields.includes("area"))   fallbackFilledFields.push("area");  }
+    }
+    if (builtYear === undefined) {
+      const val = hasSamples && defaults.builtYearMedian !== null ? defaults.builtYearMedian : fb.builtYearMedian!;
+      builtYear = val;
+      if (hasSamples) { if (!autoFilledFields.includes("builtYear"))     autoFilledFields.push("builtYear");     }
+      else            { if (!fallbackFilledFields.includes("builtYear"))  fallbackFilledFields.push("builtYear"); }
     }
   }
 
@@ -153,5 +165,6 @@ export async function analyzeProperty(input: PropertyInput): Promise<AnalyzeResu
     population,
     totalFetched,
     autoFilledFields,
+    fallbackFilledFields,
   };
 }

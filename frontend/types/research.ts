@@ -19,6 +19,11 @@ export interface PropertyInput {
     area?: boolean;
     builtYear?: boolean;
   };
+  fallbackFilled?: {
+    price?: boolean;
+    area?: boolean;
+    builtYear?: boolean;
+  };
 }
 
 export interface SimilarTx {
@@ -44,7 +49,8 @@ export type AnalyzeResult =
       terrain: TerrainData | null;
       population: PopulationData | null;
       totalFetched: number;
-      autoFilledFields: string[]; // fields whose values were derived from area medians
+      autoFilledFields: string[];     // fields filled from local area medians
+      fallbackFilledFields: string[]; // fields filled from national reference (area data unavailable)
     }
   | { ok: false; error: string };
 

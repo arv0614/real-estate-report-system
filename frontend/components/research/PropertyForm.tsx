@@ -10,6 +10,7 @@ import { PropertyInputSchema } from "@/lib/schemas/propertyInput";
 import { fetchAreaDefaults } from "@/app/[locale]/research/areaDefaultsActions";
 import type { AreaDefaults } from "@/app/[locale]/research/areaDefaultsActions";
 import { fetchDefaultsIfNeeded as _fetchDefaultsIfNeeded, makeDefaultsCacheKey, type DefaultsCacheState } from "@/lib/research/defaultsCache";
+import { FALLBACK_DEFAULTS } from "@/lib/research/fallbackDefaults";
 
 interface Props {
   onSubmit: (input: PropertyInput) => void;
@@ -46,20 +47,42 @@ export function PropertyForm({ onSubmit, loading, isEn, prefillCoords, propertyT
   const [builtYear, setBuiltYear] = useState("");
   const [mode,      setMode]      = useState<PropertyMode>("home");
   const [errors,    setErrors]    = useState<FieldErrors>({});
-  const [autoFilled, setAutoFilled] = useState<AutoFilledState>({ price: false, area: false, builtYear: false });
+  const [autoFilled,    setAutoFilled]    = useState<AutoFilledState>({ price: false, area: false, builtYear: false });
+  const [fallbackFilled, setFallbackFilled] = useState<AutoFilledState>({ price: false, area: false, builtYear: false });
   const [coordsForDefaults, setCoordsForDefaults] = useState<{ lat: number; lng: number } | null>(null);
   const [defaultsLoading, setDefaultsLoading] = useState(false);
-  const [defaultsError, setDefaultsError] = useState<string | null>(null);
+  const [defaultsError,   setDefaultsError]   = useState<string | null>(null);
 
   const cacheStateRef = useRef<DefaultsCacheState>({ cache: new Map(), lastKey: null, fetching: false });
   const debounceRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const applyDefaults = useCallback((defaults: AreaDefaults) => {
-    if (defaults.sampleSize < 5) return;
-    setPrice((v) => { if (!v && defaults.priceMedian !== null) { setAutoFilled((p) => ({ ...p, price: true })); return String(defaults.priceMedian); } return v; });
-    setArea((v)  => { if (!v && defaults.areaMedian !== null)  { setAutoFilled((p) => ({ ...p, area: true }));  return String(defaults.areaMedian);  } return v; });
-    setBuiltYear((v) => { if (!v && defaults.builtYearMedian !== null) { setAutoFilled((p) => ({ ...p, builtYear: true })); return String(defaults.builtYearMedian); } return v; });
+  // Apply national fallback medians when area data is unavailable
+  const applyFallbackDefaults = useCallback((pt: PropertyType) => {
+    const fb = FALLBACK_DEFAULTS[pt];
+    setPrice((v)      => { if (!v) { setFallbackFilled((p) => ({ ...p, price: true }));     return String(fb.priceMedian);     } return v; });
+    setArea((v)       => { if (!v) { setFallbackFilled((p) => ({ ...p, area: true }));      return String(fb.areaMedian);      } return v; });
+    setBuiltYear((v)  => { if (!v) { setFallbackFilled((p) => ({ ...p, builtYear: true })); return String(fb.builtYearMedian); } return v; });
   }, []);
+
+  const applyDefaults = useCallback((defaults: AreaDefaults) => {
+    if (defaults.sampleSize >= 5) {
+      // Area median — clear any prior fallback marks for fields being overwritten
+      setPrice((v)     => { if (!v && defaults.priceMedian !== null)     { setAutoFilled((p) => ({ ...p, price: true }));     setFallbackFilled((p) => ({ ...p, price: false }));     return String(defaults.priceMedian);     } return v; });
+      setArea((v)      => { if (!v && defaults.areaMedian !== null)      { setAutoFilled((p) => ({ ...p, area: true }));      setFallbackFilled((p) => ({ ...p, area: false }));      return String(defaults.areaMedian);      } return v; });
+      setBuiltYear((v) => { if (!v && defaults.builtYearMedian !== null) { setAutoFilled((p) => ({ ...p, builtYear: true })); setFallbackFilled((p) => ({ ...p, builtYear: false })); return String(defaults.builtYearMedian); } return v; });
+    } else {
+      // No local data — use national reference
+      applyFallbackDefaults(propertyType);
+    }
+  }, [propertyType, applyFallbackDefaults]);
+
+  // Also apply fallback when fetch errors out
+  useEffect(() => {
+    if (defaultsError) {
+      applyFallbackDefaults(propertyType);
+      setDefaultsError(null); // suppress error banner — fallback handles it
+    }
+  }, [defaultsError, propertyType, applyFallbackDefaults]);
 
   const fetchDefaultsIfNeeded = useCallback(async (lat: number, lng: number, pt: PropertyType) => {
     await _fetchDefaultsIfNeeded(lat, lng, pt, cacheStateRef.current, {
@@ -130,7 +153,16 @@ export function PropertyForm({ onSubmit, loading, isEn, prefillCoords, propertyT
       ...result.data,
       ...(prefillCoords ? { coordOverride: prefillCoords } : {}),
       ...(coordsForDefaults && !prefillCoords ? { coordOverride: coordsForDefaults } : {}),
-      autoFilled: { price: autoFilled.price || undefined, area: autoFilled.area || undefined, builtYear: autoFilled.builtYear || undefined },
+      autoFilled: {
+        price:     autoFilled.price     || undefined,
+        area:      autoFilled.area      || undefined,
+        builtYear: autoFilled.builtYear || undefined,
+      },
+      fallbackFilled: {
+        price:     fallbackFilled.price     || undefined,
+        area:      fallbackFilled.area      || undefined,
+        builtYear: fallbackFilled.builtYear || undefined,
+      },
     });
   };
 
@@ -150,10 +182,13 @@ export function PropertyForm({ onSubmit, loading, isEn, prefillCoords, propertyT
     submit:      isEn ? "Analyze"       : "判定する",
     analyzing:   isEn ? "Analyzing…"   : "分析中…",
     autoHint:      isEn ? "Area median — enter actual value for accuracy" : "エリア中央値です。実際の値を入力すると精度が上がります",
+    fallbackHint:  isEn ? "National reference (no local data) — enter actual value for accuracy" : "全国参考値（エリアデータなし）。実際の値を入力すると精度が上がります",
+    fallbackBanner:isEn
+      ? "⚠️ No local area data — using national reference medians. Results will be less accurate than usual."
+      : "⚠️ このエリアの取引データが不足しています。全国参考値（中古マンション全国中央値相当）で分析します。実際の物件情報を入力すると精度が上がります。",
     optHint:       isEn ? "💡 Leave blank to auto-fill with area median" : "💡 空欄はエリア中央値で補完されます",
     loadingHint:   isEn ? "Fetching area median…" : "エリア中央値を取得中…",
     errorHint:     isEn ? "Could not load area median. Enter manually." : "エリア中央値を取得できませんでした。手動で入力してください。",
-    noSampleHint:  isEn ? "No area data (insufficient samples)" : "エリアデータなし（サンプル不足）",
   };
 
   const inputCls = (hasErr?: boolean, isAuto?: boolean) => {
@@ -165,11 +200,19 @@ export function PropertyForm({ onSubmit, loading, isEn, prefillCoords, propertyT
   const AutoBadge = () => (
     <span className="ml-1 inline-flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded-full bg-yellow-100 text-yellow-800 font-medium">
       <AlertTriangle className="w-2.5 h-2.5" />
-      {isEn ? "Auto" : "自動"}
+      {isEn ? "Area median" : "中央値"}
     </span>
   );
 
-  const hasAny = autoFilled.price || autoFilled.area || autoFilled.builtYear;
+  const FallbackBadge = () => (
+    <span className="ml-1 inline-flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-800 font-medium">
+      <AlertTriangle className="w-2.5 h-2.5" />
+      {isEn ? "National ref." : "全国参考値"}
+    </span>
+  );
+
+  const hasFallback = fallbackFilled.price || fallbackFilled.area || fallbackFilled.builtYear;
+  const hasAny = autoFilled.price || autoFilled.area || autoFilled.builtYear || hasFallback;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -242,17 +285,19 @@ export function PropertyForm({ onSubmit, loading, isEn, prefillCoords, propertyT
         {errors.address && <p className="text-xs text-red-600 mt-1">{errors.address}</p>}
       </div>
 
-      {/* Defaults loading / error banner */}
+      {/* Defaults loading banner */}
       {defaultsLoading && !hasAny && (
         <div className="flex items-center gap-2 rounded-lg bg-blue-50 border border-blue-200 px-3 py-2 text-xs text-blue-700">
           <Loader2 className="w-3.5 h-3.5 animate-spin flex-shrink-0" />
           {t.loadingHint}
         </div>
       )}
-      {defaultsError && !hasAny && (
-        <div className="flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-700">
-          <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-          {t.errorHint}
+
+      {/* Fallback banner — shown when local data is unavailable */}
+      {hasFallback && (
+        <div className="flex items-start gap-2 rounded-lg bg-orange-50 border border-orange-200 px-3 py-2.5 text-xs text-orange-800">
+          <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-orange-500" />
+          <p className="leading-relaxed">{t.fallbackBanner}</p>
         </div>
       )}
 
@@ -260,51 +305,63 @@ export function PropertyForm({ onSubmit, loading, isEn, prefillCoords, propertyT
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-semibold text-slate-600 mb-1">
-            {t.priceLabel}{autoFilled.price && <AutoBadge />}
+            {t.priceLabel}
+            {autoFilled.price    && <AutoBadge />}
+            {fallbackFilled.price && <FallbackBadge />}
             {defaultsLoading && !price && <Loader2 className="inline w-3 h-3 ml-1 animate-spin text-blue-400" />}
           </label>
           <input type="number" inputMode="decimal" value={price}
-            onChange={(e) => { setPrice(e.target.value); if (autoFilled.price) setAutoFilled((p) => ({ ...p, price: false })); }}
+            onChange={(e) => { setPrice(e.target.value); setAutoFilled((p) => ({ ...p, price: false })); setFallbackFilled((p) => ({ ...p, price: false })); }}
             placeholder={defaultsLoading && !price ? t.loadingHint : hasAny ? "" : "5000"}
             min={1} step="any"
-            className={inputCls(!!errors.price, autoFilled.price)} />
+            className={inputCls(!!errors.price, autoFilled.price || fallbackFilled.price)} />
           {autoFilled.price
             ? <p className="text-xs text-yellow-700 mt-0.5">{t.autoHint}</p>
-            : errors.price ? <p className="text-xs text-red-600 mt-0.5">{errors.price}</p>
-            : !price && !defaultsLoading && <p className="text-xs text-slate-400 mt-0.5">{t.optHint}</p>}
+            : fallbackFilled.price
+              ? <p className="text-xs text-orange-700 mt-0.5">{t.fallbackHint}</p>
+              : errors.price ? <p className="text-xs text-red-600 mt-0.5">{errors.price}</p>
+              : !price && !defaultsLoading && <p className="text-xs text-slate-400 mt-0.5">{t.optHint}</p>}
         </div>
         <div>
           <label className="block text-xs font-semibold text-slate-600 mb-1">
-            {t.areaLabel}{autoFilled.area && <AutoBadge />}
+            {t.areaLabel}
+            {autoFilled.area    && <AutoBadge />}
+            {fallbackFilled.area && <FallbackBadge />}
             {defaultsLoading && !area && <Loader2 className="inline w-3 h-3 ml-1 animate-spin text-blue-400" />}
           </label>
           <input type="number" inputMode="decimal" value={area}
-            onChange={(e) => { setArea(e.target.value); if (autoFilled.area) setAutoFilled((p) => ({ ...p, area: false })); }}
+            onChange={(e) => { setArea(e.target.value); setAutoFilled((p) => ({ ...p, area: false })); setFallbackFilled((p) => ({ ...p, area: false })); }}
             placeholder={defaultsLoading && !area ? t.loadingHint : hasAny ? "" : "70"}
             min={0.01} step="any"
-            className={inputCls(!!errors.area, autoFilled.area)} />
+            className={inputCls(!!errors.area, autoFilled.area || fallbackFilled.area)} />
           {autoFilled.area
             ? <p className="text-xs text-yellow-700 mt-0.5">{t.autoHint}</p>
-            : errors.area ? <p className="text-xs text-red-600 mt-0.5">{errors.area}</p>
-            : !area && !defaultsLoading && <p className="text-xs text-slate-400 mt-0.5">{t.optHint}</p>}
+            : fallbackFilled.area
+              ? <p className="text-xs text-orange-700 mt-0.5">{t.fallbackHint}</p>
+              : errors.area ? <p className="text-xs text-red-600 mt-0.5">{errors.area}</p>
+              : !area && !defaultsLoading && <p className="text-xs text-slate-400 mt-0.5">{t.optHint}</p>}
         </div>
       </div>
 
       {/* Built year */}
       <div>
         <label className="block text-xs font-semibold text-slate-600 mb-1">
-          {t.yearLabel}{autoFilled.builtYear && <AutoBadge />}
+          {t.yearLabel}
+          {autoFilled.builtYear    && <AutoBadge />}
+          {fallbackFilled.builtYear && <FallbackBadge />}
           {defaultsLoading && !builtYear && <Loader2 className="inline w-3 h-3 ml-1 animate-spin text-blue-400" />}
         </label>
         <input type="number" inputMode="decimal" value={builtYear}
-          onChange={(e) => { setBuiltYear(e.target.value); if (autoFilled.builtYear) setAutoFilled((p) => ({ ...p, builtYear: false })); }}
+          onChange={(e) => { setBuiltYear(e.target.value); setAutoFilled((p) => ({ ...p, builtYear: false })); setFallbackFilled((p) => ({ ...p, builtYear: false })); }}
           placeholder={defaultsLoading && !builtYear ? t.loadingHint : hasAny ? "" : t.yearPh}
           min={1900} max={currentYear} step="1"
-          className={inputCls(!!errors.builtYear, autoFilled.builtYear)} />
+          className={inputCls(!!errors.builtYear, autoFilled.builtYear || fallbackFilled.builtYear)} />
         {autoFilled.builtYear
           ? <p className="text-xs text-yellow-700 mt-0.5">{t.autoHint}</p>
-          : errors.builtYear ? <p className="text-xs text-red-600 mt-0.5">{errors.builtYear}</p>
-          : !builtYear && !defaultsLoading && <p className="text-xs text-slate-400 mt-0.5">{t.optHint}</p>}
+          : fallbackFilled.builtYear
+            ? <p className="text-xs text-orange-700 mt-0.5">{t.fallbackHint}</p>
+            : errors.builtYear ? <p className="text-xs text-red-600 mt-0.5">{errors.builtYear}</p>
+            : !builtYear && !defaultsLoading && <p className="text-xs text-slate-400 mt-0.5">{t.optHint}</p>}
       </div>
 
       <button type="submit" disabled={loading}
