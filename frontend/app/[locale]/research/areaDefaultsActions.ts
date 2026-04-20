@@ -39,7 +39,7 @@ export async function fetchAreaDefaults(
     const _t0 = Date.now();
     const res = await fetch(
       `${apiBase}/api/property/transactions?lat=${lat}&lng=${lng}&zoom=14&locale=ja`,
-      { cache: "no-store", signal: AbortSignal.timeout(12000) }
+      { cache: "no-store", signal: AbortSignal.timeout(6000) }
     );
     if (!res.ok) return empty;
     const data = await res.json();
