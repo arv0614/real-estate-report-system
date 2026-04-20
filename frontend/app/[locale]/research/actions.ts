@@ -8,8 +8,10 @@ import { stagedSimilarSearch } from "@/lib/research/similarSearch";
 import { fetchAreaDefaults } from "./areaDefaultsActions";
 import type { TransactionRecord } from "@/types/api";
 import type { PropertyInput, AnalyzeResult, SimilarTx, SearchRange } from "@/types/research";
+import { perfLog } from "@/lib/debug/perfLog";
 
 export async function analyzeProperty(input: PropertyInput): Promise<AnalyzeResult> {
+  const _t0 = Date.now();
   const currentYear = new Date().getFullYear();
 
   // ── Validate with zod ──────────────────────────────────────────────────────
@@ -129,6 +131,7 @@ export async function analyzeProperty(input: PropertyInput): Promise<AnalyzeResu
   const population =
     cityCode && estatKey ? await fetchPopulationTrend(cityCode, estatKey) : null;
 
+  perfLog("analyzeProperty total", Date.now() - _t0, { address: valid.address });
   return {
     ok: true,
     coords,

@@ -5,6 +5,7 @@ import { fetchPopulationTrend } from "@/lib/research/populationApi";
 import type { SeismicData, TerrainData } from "@/lib/research/seismicApi";
 import type { PopulationData } from "@/lib/research/populationApi";
 import type { HazardInfo, TransactionRecord } from "@/types/api";
+import { perfLog } from "@/lib/debug/perfLog";
 
 export interface AreaSummaryResult {
   ok: true;
@@ -23,6 +24,7 @@ export interface AreaSummaryResult {
 export type AreaResult = AreaSummaryResult | { ok: false; error: string };
 
 export async function analyzeArea(lat: number, lng: number): Promise<AreaResult> {
+  const _t0 = Date.now();
   if (!isFinite(lat) || !isFinite(lng)) {
     return { ok: false, error: "座標が無効です" };
   }
@@ -65,6 +67,7 @@ export async function analyzeArea(lat: number, lng: number): Promise<AreaResult>
   const population =
     cityCode && estatKey ? await fetchPopulationTrend(cityCode, estatKey) : null;
 
+  perfLog("analyzeArea total", Date.now() - _t0, { lat, lng, totalFetched });
   return {
     ok: true,
     coords: { lat, lng },
