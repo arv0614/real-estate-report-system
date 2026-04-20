@@ -19,6 +19,7 @@ import { saveResearchSession } from "@/lib/researchHistory";
 import { MapPin, Navigation, Search, AlertTriangle, ChevronLeft, Loader2, ChevronDown } from "lucide-react";
 import { TopReasons } from "./TopReasons";
 import { ExternalMaps } from "./ExternalMaps";
+import { SearchConditionCard } from "./SearchConditionCard";
 
 const ResearchMap = dynamic(
   () => import("./ResearchMap").then((m) => m.ResearchMap),
@@ -616,24 +617,12 @@ export function ResearchClient({
       {/* ── RESULT ── */}
       {topMode === "result" && result && result.ok && !isPending && (
         <div className="space-y-4">
-          {/* Auto-fill badge */}
-          {result.autoFilledFields.length > 0 && (
-            <div className="flex items-center gap-2 rounded-lg bg-yellow-50 border border-yellow-200 px-3 py-2">
-              <AlertTriangle className="w-3.5 h-3.5 text-yellow-500 flex-shrink-0" />
-              <p className="text-xs text-yellow-800 flex-1">
-                {isEn
-                  ? "Some values are area medians (not your property's actual data)."
-                  : "一部の情報はエリア中央値で算出しています。"}
-              </p>
-              <button
-                type="button"
-                onClick={() => setTopMode("property-form")}
-                className="text-xs font-semibold text-yellow-700 underline hover:text-yellow-900 whitespace-nowrap flex-shrink-0"
-              >
-                {isEn ? "Fix →" : "修正 →"}
-              </button>
-            </div>
-          )}
+          {/* Search condition card — topmost */}
+          <SearchConditionCard
+            result={result}
+            isEn={isEn}
+            onReenter={() => setTopMode("property-form")}
+          />
 
           {/* Score card — always visible */}
           <ScoreCard result={result} isEn={isEn} onScrollToMap={handleScrollToMap} />
