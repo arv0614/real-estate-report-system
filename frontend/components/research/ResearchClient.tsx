@@ -624,6 +624,32 @@ export function ResearchClient({
             onReenter={() => setTopMode("property-form")}
           />
 
+          {/* Fallback warning banner — shown when national reference values were used */}
+          {result.fallbackFilledFields.length > 0 && (
+            <div className="rounded-xl bg-orange-50 border-2 border-orange-200 p-4 flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-bold text-orange-900 mb-1">
+                  {isEn
+                    ? "Results based on national reference values"
+                    : "このエリアの取引データが不足しています"}
+                </p>
+                <p className="text-xs text-orange-800 leading-relaxed">
+                  {isEn
+                    ? "The local area has fewer than 5 transaction samples. Scores below use national median values as a fallback. For more accurate results, enter actual property details."
+                    : "近隣の取引事例が 5 件未満のため、全国中央値を使った参考スコアを表示しています。より正確な判定には、実際の物件情報を入力してください。"}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setTopMode("property-form")}
+                  className="mt-2 text-xs font-semibold text-orange-700 underline hover:text-orange-900 transition-colors"
+                >
+                  {isEn ? "Enter accurate values →" : "正確な情報を入力する →"}
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Score card — always visible */}
           <ScoreCard result={result} isEn={isEn} onScrollToMap={handleScrollToMap} />
 
