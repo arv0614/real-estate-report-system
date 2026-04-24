@@ -59,9 +59,10 @@ export default async function ResearchPage({ params, searchParams }: PageProps) 
   const sp = searchParams ? await searchParams : {};
   const isEn = locale === "en";
 
-  const latStr = typeof sp.lat === "string" ? sp.lat : null;
-  const lngStr = typeof sp.lng === "string" ? sp.lng : null;
-  const typeStr = typeof sp.type === "string" ? sp.type : null;
+  const latStr    = typeof sp.lat    === "string" ? sp.lat    : null;
+  const lngStr    = typeof sp.lng    === "string" ? sp.lng    : null;
+  const typeStr   = typeof sp.type   === "string" ? sp.type   : null;
+  const actionStr = typeof sp.action === "string" ? sp.action : null;
 
   const lat = latStr ? parseFloat(latStr) : NaN;
   const lng = lngStr ? parseFloat(lngStr) : NaN;
@@ -70,14 +71,16 @@ export default async function ResearchPage({ params, searchParams }: PageProps) 
   const initialPropertyType: PropertyType =
     typeStr === "house" ? "house" : "mansion";
 
+  const initialAction = actionStr === "area" && hasCoords ? "area" : null;
+
   return (
     <main className="min-h-screen bg-slate-50">
       <ResearchClient
         isEn={isEn}
         locale={locale}
-        initialTopMode={hasCoords ? "property-form" : "select"}
-        initialPrefillCoords={hasCoords ? { lat, lng } : null}
+        initialCenter={hasCoords ? { lat, lng } : null}
         initialPropertyType={initialPropertyType}
+        initialAction={initialAction as "area" | null}
       />
     </main>
   );

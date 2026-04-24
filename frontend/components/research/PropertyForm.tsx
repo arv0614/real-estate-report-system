@@ -19,6 +19,8 @@ interface Props {
   prefillCoords?: { lat: number; lng: number } | null;
   propertyType: PropertyType;
   onPropertyTypeChange: (t: PropertyType) => void;
+  showLocationInput?: boolean;
+  onCoordsResolved?: (lat: number, lng: number) => void;
 }
 
 const currentYear = new Date().getFullYear();
@@ -40,7 +42,7 @@ async function geocodeAddressClient(query: string): Promise<{ lat: number; lng: 
   } catch { return null; }
 }
 
-export function PropertyForm({ onSubmit, loading, isEn, prefillCoords, propertyType, onPropertyTypeChange }: Props) {
+export function PropertyForm({ onSubmit, loading, isEn, prefillCoords, propertyType, onPropertyTypeChange, showLocationInput = true, onCoordsResolved }: Props) {
   const [address,   setAddress]   = useState("");
   const [price,     setPrice]     = useState("");
   const [area,      setArea]      = useState("");
@@ -119,9 +121,13 @@ export function PropertyForm({ onSubmit, loading, isEn, prefillCoords, propertyT
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       const coords = await geocodeAddressClient(address);
-      if (coords) { setCoordsForDefaults(coords); fetchDefaultsOptimistic(coords.lat, coords.lng, propertyType); }
+      if (coords) {
+        setCoordsForDefaults(coords);
+        fetchDefaultsOptimistic(coords.lat, coords.lng, propertyType);
+        onCoordsResolved?.(coords.lat, coords.lng);
+      }
     }, 600);
-  }, [address, propertyType, fetchDefaultsOptimistic]);
+  }, [address, propertyType, fetchDefaultsOptimistic, onCoordsResolved]);
 
   const handleParsed = useCallback((data: ParsedPropertyData) => {
     if (data.address)      setAddress(data.address);
@@ -133,6 +139,7 @@ export function PropertyForm({ onSubmit, loading, isEn, prefillCoords, propertyT
     if (data.coordOverride) {
       setCoordsForDefaults(data.coordOverride);
       fetchDefaultsOptimistic(data.coordOverride.lat, data.coordOverride.lng, data.propertyType ?? propertyType);
+      onCoordsResolved?.(data.coordOverride.lat, data.coordOverride.lng);
     } else if (data.address) {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(async () => {
@@ -235,15 +242,19 @@ export function PropertyForm({ onSubmit, loading, isEn, prefillCoords, propertyT
       {/* URL auto-fill */}
       <UrlInput onParsed={handleParsed} isEn={isEn} />
 
-      {/* Divider: or */}
-      <div className="flex items-center gap-3">
-        <div className="flex-1 h-px bg-slate-200" />
-        <span className="text-xs text-slate-400">{t.orLabel}</span>
-        <div className="flex-1 h-px bg-slate-200" />
-      </div>
+      {showLocationInput && (
+        <>
+          {/* Divider: or */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-slate-200" />
+            <span className="text-xs text-slate-400">{t.orLabel}</span>
+            <div className="flex-1 h-px bg-slate-200" />
+          </div>
 
-      {/* Location auto-fill */}
-      <LocationInput onParsed={handleParsed} isEn={isEn} />
+          {/* Location auto-fill */}
+          <LocationInput onParsed={handleParsed} isEn={isEn} />
+        </>
+      )}
 
       {/* Divider: manual entry */}
       <div className="flex items-center gap-3">
