@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from "react";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import type { PropertyInput, PropertyMode, PropertyType } from "@/types/research";
 import { UrlInput } from "./UrlInput";
@@ -21,6 +21,12 @@ interface Props {
   onPropertyTypeChange: (t: PropertyType) => void;
   showLocationInput?: boolean;
   onCoordsResolved?: (lat: number, lng: number) => void;
+  onDetailsChange?: (hasDetails: boolean) => void;
+  showSubmitButton?: boolean;
+}
+
+export interface PropertyFormHandle {
+  submitForm: () => void;
 }
 
 const currentYear = new Date().getFullYear();
@@ -42,7 +48,21 @@ async function geocodeAddressClient(query: string): Promise<{ lat: number; lng: 
   } catch { return null; }
 }
 
-export function PropertyForm({ onSubmit, loading, isEn, prefillCoords, propertyType, onPropertyTypeChange, showLocationInput = true, onCoordsResolved }: Props) {
+export const PropertyForm = forwardRef<PropertyFormHandle, Props>(function PropertyForm(
+  {
+    onSubmit,
+    loading,
+    isEn,
+    prefillCoords,
+    propertyType,
+    onPropertyTypeChange,
+    showLocationInput = true,
+    onCoordsResolved,
+    onDetailsChange,
+    showSubmitButton = true,
+  }: Props,
+  ref
+) {
   const [address,   setAddress]   = useState("");
   const [price,     setPrice]     = useState("");
   const [area,      setArea]      = useState("");
@@ -58,6 +78,11 @@ export function PropertyForm({ onSubmit, loading, isEn, prefillCoords, propertyT
   const cacheStateRef = useRef<DefaultsCacheState>({ cache: new Map(), lastKey: null, fetching: false });
   const debounceRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Notify parent when meaningful details are entered
+  useEffect(() => {
+    onDetailsChange?.(!!price || !!area || !!builtYear || !!address);
+  }, [price, area, builtYear, address, onDetailsChange]);
+
   // Apply national fallback medians when area data is unavailable
   const applyFallbackDefaults = useCallback((pt: PropertyType) => {
     const fb = FALLBACK_DEFAULTS[pt];
@@ -68,21 +93,18 @@ export function PropertyForm({ onSubmit, loading, isEn, prefillCoords, propertyT
 
   const applyDefaults = useCallback((defaults: AreaDefaults) => {
     if (defaults.sampleSize >= 5) {
-      // Area median — clear any prior fallback marks for fields being overwritten
       setPrice((v)     => { if (!v && defaults.priceMedian !== null)     { setAutoFilled((p) => ({ ...p, price: true }));     setFallbackFilled((p) => ({ ...p, price: false }));     return String(defaults.priceMedian);     } return v; });
       setArea((v)      => { if (!v && defaults.areaMedian !== null)      { setAutoFilled((p) => ({ ...p, area: true }));      setFallbackFilled((p) => ({ ...p, area: false }));      return String(defaults.areaMedian);      } return v; });
       setBuiltYear((v) => { if (!v && defaults.builtYearMedian !== null) { setAutoFilled((p) => ({ ...p, builtYear: true })); setFallbackFilled((p) => ({ ...p, builtYear: false })); return String(defaults.builtYearMedian); } return v; });
     } else {
-      // No local data — use national reference
       applyFallbackDefaults(propertyType);
     }
   }, [propertyType, applyFallbackDefaults]);
 
-  // Also apply fallback when fetch errors out
   useEffect(() => {
     if (defaultsError) {
       applyFallbackDefaults(propertyType);
-      setDefaultsError(null); // suppress error banner — fallback handles it
+      setDefaultsError(null);
     }
   }, [defaultsError, propertyType, applyFallbackDefaults]);
 
@@ -95,7 +117,6 @@ export function PropertyForm({ onSubmit, loading, isEn, prefillCoords, propertyT
     });
   }, [applyDefaults]);
 
-  // Optimistic: apply fallback immediately, then try to upgrade to area median
   const fetchDefaultsOptimistic = useCallback((lat: number, lng: number, pt: PropertyType) => {
     applyFallbackDefaults(pt);
     fetchDefaultsIfNeeded(lat, lng, pt);
@@ -149,8 +170,7 @@ export function PropertyForm({ onSubmit, loading, isEn, prefillCoords, propertyT
     }
   }, [propertyType, onPropertyTypeChange, fetchDefaultsOptimistic]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const doSubmit = useCallback(() => {
     setErrors({});
     const result = PropertyInputSchema.safeParse({ address, price, area, builtYear, mode, propertyType });
     if (!result.success) {
@@ -177,6 +197,13 @@ export function PropertyForm({ onSubmit, loading, isEn, prefillCoords, propertyT
         builtYear: fallbackFilled.builtYear || undefined,
       },
     });
+  }, [address, price, area, builtYear, mode, propertyType, prefillCoords, coordsForDefaults, autoFilled, fallbackFilled, onSubmit]);
+
+  useImperativeHandle(ref, () => ({ submitForm: doSubmit }), [doSubmit]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    doSubmit();
   };
 
   const t = {
@@ -244,19 +271,15 @@ export function PropertyForm({ onSubmit, loading, isEn, prefillCoords, propertyT
 
       {showLocationInput && (
         <>
-          {/* Divider: or */}
           <div className="flex items-center gap-3">
             <div className="flex-1 h-px bg-slate-200" />
             <span className="text-xs text-slate-400">{t.orLabel}</span>
             <div className="flex-1 h-px bg-slate-200" />
           </div>
-
-          {/* Location auto-fill */}
           <LocationInput onParsed={handleParsed} isEn={isEn} />
         </>
       )}
 
-      {/* Divider: manual entry */}
       <div className="flex items-center gap-3">
         <div className="flex-1 h-px bg-slate-200" />
         <span className="text-xs text-slate-500 font-semibold">{t.manualLabel}</span>
@@ -310,7 +333,7 @@ export function PropertyForm({ onSubmit, loading, isEn, prefillCoords, propertyT
         </div>
       )}
 
-      {/* Fallback banner — shown when local data is unavailable */}
+      {/* Fallback banner */}
       {hasFallback && (
         <div className="flex items-start gap-2 rounded-lg bg-orange-50 border border-orange-200 px-3 py-2.5 text-xs text-orange-800">
           <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-orange-500" />
@@ -389,17 +412,19 @@ export function PropertyForm({ onSubmit, loading, isEn, prefillCoords, propertyT
             : !builtYear && !defaultsLoading && <p className="text-xs text-slate-400 mt-0.5">{t.optHint}</p>}
       </div>
 
-      <button type="submit" disabled={loading}
-        className={`w-full py-3 rounded-xl font-bold text-sm text-white transition-all shadow-sm disabled:opacity-60 ${
-          mode === "investment" ? "bg-amber-500 hover:bg-amber-600" : "bg-blue-600 hover:bg-blue-700"
-        }`}>
-        {loading ? (
-          <span className="flex items-center justify-center gap-2">
-            <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            {t.analyzing}
-          </span>
-        ) : t.submit}
-      </button>
+      {showSubmitButton && (
+        <button type="submit" disabled={loading}
+          className={`w-full py-3 rounded-xl font-bold text-sm text-white transition-all shadow-sm disabled:opacity-60 ${
+            mode === "investment" ? "bg-amber-500 hover:bg-amber-600" : "bg-blue-600 hover:bg-blue-700"
+          }`}>
+          {loading ? (
+            <span className="flex items-center justify-center gap-2">
+              <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              {t.analyzing}
+            </span>
+          ) : t.submit}
+        </button>
+      )}
     </form>
   );
-}
+});
