@@ -2,8 +2,9 @@
 
 import { useState, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
-import { Navigation, Search, MapPin, Loader2, AlertCircle } from "lucide-react";
+import { Navigation, Search, MapPin, Loader2, AlertCircle, BarChart3 } from "lucide-react";
 import { PropertyForm } from "./PropertyForm";
+import type { PropertyFormHandle } from "./PropertyForm";
 import type { PropertyInput, PropertyType } from "@/types/research";
 
 const ResearchMap = dynamic(
@@ -25,6 +26,17 @@ interface Props {
   initialCenter?: { lat: number; lng: number } | null;
 }
 
+async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `https://mreversegeocoder.gsi.go.jp/reverse-geocoder/LonLatToAddress?lat=${lat}&lon=${lng}`,
+      { signal: AbortSignal.timeout(3000) }
+    );
+    const data = await res.json();
+    return (data?.results?.lv01Nm as string | undefined) ?? null;
+  } catch { return null; }
+}
+
 export function UnifiedInputPanel({
   isEn,
   propertyType,
@@ -34,17 +46,18 @@ export function UnifiedInputPanel({
   isPending,
   initialCenter,
 }: Props) {
-  const [mapCenter,  setMapCenter]  = useState(initialCenter ?? DEFAULT_CENTER);
-  const [formCoords, setFormCoords] = useState<{ lat: number; lng: number } | null>(
-    initialCenter ?? null
-  );
-  const [searchVal,  setSearchVal]  = useState("");
-  const [searching,  setSearching]  = useState(false);
-  const [geoState,   setGeoState]   = useState<GeoState>("idle");
-  const [geoError,   setGeoError]   = useState<string | null>(null);
-  const debounceRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [mapCenter,         setMapCenter]         = useState(initialCenter ?? DEFAULT_CENTER);
+  const [formCoords,        setFormCoords]        = useState<{ lat: number; lng: number } | null>(initialCenter ?? null);
+  const [searchVal,         setSearchVal]         = useState("");
+  const [searching,         setSearching]         = useState(false);
+  const [geoState,          setGeoState]          = useState<GeoState>("idle");
+  const [geoError,          setGeoError]          = useState<string | null>(null);
+  const [resolvedAddress,   setResolvedAddress]   = useState<string | null>(null);
+  const [hasPropertyDetails, setHasPropertyDetails] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const formRef     = useRef<PropertyFormHandle | null>(null);
 
-  // ── Geolocation: updates map directly, no page navigation (U13-2) ────────────
+  // ── Geolocation ───────────────────────────────────────────────────────────────
   const handleGeolocate = useCallback(async () => {
     if (geoState === "requesting") return;
 
@@ -64,7 +77,6 @@ export function UnifiedInputPanel({
       return;
     }
 
-    // Permissions API pre-check to avoid 8s wait on denied
     if ("permissions" in navigator) {
       try {
         const perm = await navigator.permissions.query({ name: "geolocation" });
@@ -80,11 +92,13 @@ export function UnifiedInputPanel({
     setGeoError(null);
 
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
+      async (pos) => {
         const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setMapCenter(coords);
         setFormCoords(coords);
         setGeoState("idle");
+        const addr = await reverseGeocode(coords.lat, coords.lng);
+        setResolvedAddress(addr ?? `${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}`);
       },
       (err) => {
         let msg = isEn ? "Could not get current location." : "現在地を取得できませんでした。";
@@ -99,7 +113,7 @@ export function UnifiedInputPanel({
     );
   }, [geoState, isEn]);
 
-  // ── Address search (debounced, moves map) ────────────────────────────────────
+  // ── Address search (debounced) ────────────────────────────────────────────────
   const handleSearchChange = useCallback((val: string) => {
     setSearchVal(val);
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -116,6 +130,9 @@ export function UnifiedInputPanel({
           const coords = { lat, lng };
           setMapCenter(coords);
           setFormCoords(coords);
+          // Use API-returned title if available, otherwise use the typed value
+          const title = (json[0]?.properties?.title as string | undefined) ?? val;
+          setResolvedAddress(title);
         }
       } catch { /* ignore */ }
       finally { setSearching(false); }
@@ -125,9 +142,23 @@ export function UnifiedInputPanel({
   // When PropertyForm resolves an address, sync the map
   const handleCoordsResolved = useCallback((lat: number, lng: number) => {
     setMapCenter({ lat, lng });
+    setResolvedAddress(null); // show coords fallback
   }, []);
 
+  // Main CTA: dispatches to area or property analysis based on entered details
+  const handleMainCTA = useCallback(() => {
+    if (hasPropertyDetails) {
+      formRef.current?.submitForm();
+    } else {
+      onAreaAnalyze(mapCenter.lat, mapCenter.lng);
+    }
+  }, [hasPropertyDetails, mapCenter, onAreaAnalyze]);
+
   const isGeoActive = geoState === "requesting";
+
+  const previewItems = isEn
+    ? ["🌊 Hazard map (flood, landslide, tsunami)", "📊 Population trends & forecast", "🏘️ Nearby property price range"]
+    : ["🌊 ハザードマップ（洪水・土砂・津波）", "📊 人口推移・将来予測", "🏘️ 周辺物件の相場"];
 
   return (
     <div className="space-y-4">
@@ -191,7 +222,10 @@ export function UnifiedInputPanel({
           mode="explore"
           lat={mapCenter.lat}
           lng={mapCenter.lng}
-          onCenter={(lat, lng) => setMapCenter({ lat, lng })}
+          onCenter={(lat, lng) => {
+            setMapCenter({ lat, lng });
+            setResolvedAddress(null);
+          }}
         />
       </div>
 
@@ -199,26 +233,95 @@ export function UnifiedInputPanel({
         {isEn ? "Drag the map to select an area" : "地図をドラッグしてエリアを選択"}
       </p>
 
-      {/* ── Area info CTA (primary) ───────────────────────────────────────────── */}
+      {/* ── U15-1: Selected location display ─────────────────────────────────── */}
+      <div className="rounded-xl bg-slate-50 border border-slate-200 px-3 py-2.5 flex items-center gap-2">
+        <MapPin className="w-3.5 h-3.5 text-teal-600 flex-shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-semibold text-slate-500">
+            {isEn ? "Selected location" : "選択中のエリア"}
+          </p>
+          <p className="text-xs text-slate-700 truncate font-medium">
+            {resolvedAddress ?? `${mapCenter.lat.toFixed(5)}, ${mapCenter.lng.toFixed(5)}`}
+          </p>
+        </div>
+      </div>
+
+      {/* ── U15-2: Preview of what this analysis shows ───────────────────────── */}
+      <div className="rounded-xl bg-blue-50 border border-blue-100 px-4 py-3">
+        <p className="text-xs font-semibold text-blue-800 mb-2">
+          {isEn ? "This analysis includes:" : "このエリアでわかること"}
+        </p>
+        <ul className="space-y-1">
+          {previewItems.map((item) => (
+            <li key={item} className="text-xs text-blue-700 flex items-center gap-1.5">
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+        {hasPropertyDetails && (
+          <div className="mt-2 pt-2 border-t border-blue-200">
+            <p className="text-xs text-blue-800 font-medium">
+              {isEn ? "＋ Property details detected:" : "＋ 物件情報あり:"}
+            </p>
+            <ul className="space-y-0.5 mt-1">
+              {[
+                isEn ? "🎯 Comprehensive score (A–E)" : "🎯 総合判定スコア（A〜E）",
+                isEn ? "📉 Price comparison & transaction data" : "📉 価格比較・過去取引データ",
+              ].map((item) => (
+                <li key={item} className="text-xs text-blue-700">{item}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+
+      {/* ── U15-3: Single unified CTA ─────────────────────────────────────────── */}
       <button
         type="button"
-        onClick={() => onAreaAnalyze(mapCenter.lat, mapCenter.lng)}
+        onClick={handleMainCTA}
         disabled={isPending}
-        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-teal-600 text-white text-sm font-semibold hover:bg-teal-700 disabled:opacity-50 transition-colors active:scale-[0.99]"
+        className="w-full flex flex-col items-center justify-center gap-0.5 py-3.5 rounded-xl bg-teal-600 text-white font-semibold hover:bg-teal-700 disabled:opacity-50 transition-colors active:scale-[0.99]"
       >
-        <MapPin className="w-4 h-4" />
-        {isEn ? "View area info for this location" : "このエリアの情報を見る"}
+        <span className="flex items-center gap-2 text-sm font-bold">
+          {hasPropertyDetails
+            ? <BarChart3 className="w-4 h-4" />
+            : <MapPin className="w-4 h-4" />}
+          {hasPropertyDetails
+            ? (isEn ? "Analyze this property" : "この物件を分析する")
+            : (isEn ? "View area info" : "このエリアを調べる")}
+        </span>
+        <span className="text-xs opacity-80 font-normal">
+          {hasPropertyDetails
+            ? (isEn ? "Price comparison · risk · future outlook score" : "相場・リスク・将来性スコアを表示")
+            : (isEn ? "Hazard · population · nearby prices" : "ハザード・人口・周辺相場を確認")}
+        </span>
       </button>
+
+      {/* ── U15-4: Hint to add property details ──────────────────────────────── */}
+      {!hasPropertyDetails && (
+        <p className="text-xs text-slate-400 text-center -mt-1">
+          {isEn
+            ? "💡 Add property details below to get a full score (A–E)"
+            : "💡 下に物件情報を入力すると総合判定スコア（A〜E）も表示されます"}
+        </p>
+      )}
 
       {/* ── Property details (collapsible) ───────────────────────────────────── */}
       <details className="group">
         <summary className="flex items-center justify-between cursor-pointer list-none rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors select-none">
-          <span>{isEn ? "▷ Property details & full analysis (optional)" : "▷ 物件情報・詳細判定（任意）"}</span>
-          <span className="text-xs text-slate-400 font-normal group-open:hidden">{isEn ? "tap to expand" : "タップで展開"}</span>
+          <span>
+            {hasPropertyDetails
+              ? (isEn ? "▼ Property details (entered)" : "▼ 物件情報（入力済み）")
+              : (isEn ? "▷ Property details — optional" : "▷ 物件情報・詳細判定（任意）")}
+          </span>
+          <span className="text-xs text-slate-400 font-normal group-open:hidden">
+            {isEn ? "tap to expand" : "タップで展開"}
+          </span>
         </summary>
 
         <div className="mt-3 bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
           <PropertyForm
+            ref={formRef}
             onSubmit={onPropertySubmit}
             loading={isPending}
             isEn={isEn}
@@ -227,6 +330,8 @@ export function UnifiedInputPanel({
             onPropertyTypeChange={onPropertyTypeChange}
             showLocationInput={false}
             onCoordsResolved={handleCoordsResolved}
+            onDetailsChange={setHasPropertyDetails}
+            showSubmitButton={false}
           />
         </div>
       </details>
