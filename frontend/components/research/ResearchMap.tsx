@@ -5,6 +5,7 @@ import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility
 import "leaflet-defaulticon-compatibility";
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 import { useEffect, useRef } from "react";
+import { perfLog } from "@/lib/debug/perfLog";
 
 // ── MapController: smooth fly-to on coord change ──────────────────────────────
 function MapController({ lat, lng }: { lat: number; lng: number }) {
@@ -12,6 +13,10 @@ function MapController({ lat, lng }: { lat: number; lng: number }) {
   const first = useRef(true);
   useEffect(() => {
     if (first.current) { first.current = false; return; }
+    // Skip flyTo if map is already at the target (e.g. after user drag updates state)
+    const center = map.getCenter();
+    const eps = 0.000005;
+    if (Math.abs(center.lat - lat) < eps && Math.abs(center.lng - lng) < eps) return;
     map.flyTo([lat, lng], map.getZoom(), { duration: 0.4 });
   }, [lat, lng, map]);
   return null;
@@ -52,10 +57,15 @@ declare const L: { Marker: { prototype: { getLatLng: () => { lat: number; lng: n
 
 // ── MoveEndListener: fires onCenter when map is panned/zoomed ─────────────────
 function MoveEndListener({ onCenter }: { onCenter: (lat: number, lng: number) => void }) {
-  useMapEvents({
-    moveend(e) {
-      const c = e.target.getCenter();
+  const map = useMapEvents({
+    moveend() {
+      const c = map.getCenter();
+      perfLog("map.moveend", 0, { lat: c.lat, lng: c.lng });
       onCenter(Math.round(c.lat * 1e6) / 1e6, Math.round(c.lng * 1e6) / 1e6);
+    },
+    dragend() {
+      const c = map.getCenter();
+      perfLog("map.dragend", 0, { lat: c.lat, lng: c.lng });
     },
   });
   return null;
@@ -91,6 +101,7 @@ export function ResearchMap(props: Props | ExploreProps) {
         style={{ height: "var(--research-map-h, 280px)", width: "100%" }}
         className="rounded-xl border border-slate-200"
         scrollWheelZoom={false}
+        {...({ tap: false } as object)}
       >
         <TileLayer
           attribution='地図データ © <a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院</a>'
