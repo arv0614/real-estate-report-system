@@ -83,10 +83,11 @@ export const PropertyForm = forwardRef<PropertyFormHandle, Props>(function Prope
   const cacheStateRef = useRef<DefaultsCacheState>({ cache: new Map(), lastKey: null, fetching: false });
   const debounceRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Notify parent when meaningful details are entered
+  // Notify parent only when address is entered — auto-filled numerics alone
+  // don't indicate intent to analyze a specific property
   useEffect(() => {
-    onDetailsChange?.(!!price || !!area || !!builtYear || !!address);
-  }, [price, area, builtYear, address, onDetailsChange]);
+    onDetailsChange?.(address.trim().length > 0);
+  }, [address, onDetailsChange]);
 
   // Apply national fallback medians when area data is unavailable
   const applyFallbackDefaults = useCallback((pt: PropertyType) => {
