@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { Navigation, Search, MapPin, Loader2, AlertCircle, BarChart3 } from "lucide-react";
 import { PropertyForm } from "./PropertyForm";
 import type { PropertyFormHandle } from "./PropertyForm";
-import type { PropertyInput, PropertyType } from "@/types/research";
+import type { PropertyInput, PropertyMode, PropertyType } from "@/types/research";
 
 const ResearchMap = dynamic(
   () => import("./ResearchMap").then((m) => m.ResearchMap),
@@ -37,6 +37,19 @@ async function reverseGeocode(lat: number, lng: number): Promise<string | null> 
   } catch { return null; }
 }
 
+async function geocodeQuery(q: string): Promise<{ lat: number; lng: number; title: string } | null> {
+  try {
+    const res = await fetch(
+      `https://msearch.gsi.go.jp/address-search/AddressSearch?q=${encodeURIComponent(q)}`
+    );
+    const json = await res.json();
+    if (!json?.[0]?.geometry?.coordinates) return null;
+    const [lng, lat] = json[0].geometry.coordinates as [number, number];
+    const title = (json[0]?.properties?.title as string | undefined) ?? q;
+    return { lat, lng, title };
+  } catch { return null; }
+}
+
 export function UnifiedInputPanel({
   isEn,
   propertyType,
@@ -46,14 +59,15 @@ export function UnifiedInputPanel({
   isPending,
   initialCenter,
 }: Props) {
-  const [mapCenter,         setMapCenter]         = useState(initialCenter ?? DEFAULT_CENTER);
-  const [formCoords,        setFormCoords]        = useState<{ lat: number; lng: number } | null>(initialCenter ?? null);
-  const [searchVal,         setSearchVal]         = useState("");
-  const [searching,         setSearching]         = useState(false);
-  const [geoState,          setGeoState]          = useState<GeoState>("idle");
-  const [geoError,          setGeoError]          = useState<string | null>(null);
-  const [resolvedAddress,   setResolvedAddress]   = useState<string | null>(null);
+  const [mapCenter,          setMapCenter]          = useState(initialCenter ?? DEFAULT_CENTER);
+  const [formCoords,         setFormCoords]         = useState<{ lat: number; lng: number } | null>(initialCenter ?? null);
+  const [searchVal,          setSearchVal]          = useState("");
+  const [isGeocoding,        setIsGeocoding]        = useState(false);
+  const [geoState,           setGeoState]           = useState<GeoState>("idle");
+  const [geoError,           setGeoError]           = useState<string | null>(null);
+  const [resolvedAddress,    setResolvedAddress]    = useState<string | null>(null);
   const [hasPropertyDetails, setHasPropertyDetails] = useState(false);
+  const [mode,               setMode]               = useState<PropertyMode>("home");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const formRef     = useRef<PropertyFormHandle | null>(null);
 
@@ -113,36 +127,41 @@ export function UnifiedInputPanel({
     );
   }, [geoState, isEn]);
 
-  // ── Address search (debounced) ────────────────────────────────────────────────
+  // ── Address search (debounced 800ms, min 2 chars, Enter key) ─────────────────
+  const runGeocode = useCallback(async (q: string) => {
+    if (q.trim().length < 2) return;
+    setIsGeocoding(true);
+    try {
+      const result = await geocodeQuery(q);
+      if (result) {
+        setMapCenter({ lat: result.lat, lng: result.lng });
+        setFormCoords({ lat: result.lat, lng: result.lng });
+        setResolvedAddress(result.title);
+      }
+    } finally {
+      setIsGeocoding(false);
+    }
+  }, []);
+
   const handleSearchChange = useCallback((val: string) => {
     setSearchVal(val);
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (!val.trim()) return;
-    debounceRef.current = setTimeout(async () => {
-      setSearching(true);
-      try {
-        const res = await fetch(
-          `https://msearch.gsi.go.jp/address-search/AddressSearch?q=${encodeURIComponent(val)}`
-        );
-        const json = await res.json();
-        if (json?.[0]?.geometry?.coordinates) {
-          const [lng, lat] = json[0].geometry.coordinates as [number, number];
-          const coords = { lat, lng };
-          setMapCenter(coords);
-          setFormCoords(coords);
-          // Use API-returned title if available, otherwise use the typed value
-          const title = (json[0]?.properties?.title as string | undefined) ?? val;
-          setResolvedAddress(title);
-        }
-      } catch { /* ignore */ }
-      finally { setSearching(false); }
-    }, 700);
-  }, []);
+    if (val.trim().length < 2) return;
+    debounceRef.current = setTimeout(() => runGeocode(val), 800);
+  }, [runGeocode]);
+
+  const handleSearchKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      runGeocode(searchVal);
+    }
+  }, [searchVal, runGeocode]);
 
   // When PropertyForm resolves an address, sync the map
   const handleCoordsResolved = useCallback((lat: number, lng: number) => {
     setMapCenter({ lat, lng });
-    setResolvedAddress(null); // show coords fallback
+    setResolvedAddress(null);
   }, []);
 
   // Main CTA: dispatches to area or property analysis based on entered details
@@ -162,6 +181,49 @@ export function UnifiedInputPanel({
 
   return (
     <div className="space-y-4">
+
+      {/* ── U16-3: Property type selector — topmost ───────────────────────────── */}
+      <div>
+        <p className="text-sm font-semibold text-slate-700 mb-2">
+          {isEn ? "What are you researching?" : "何を調べますか?"}
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          {(["mansion", "house"] as const).map((pt) => (
+            <button
+              key={pt}
+              type="button"
+              onClick={() => onPropertyTypeChange(pt)}
+              className={`py-3 rounded-xl text-sm font-semibold transition-colors border-2 ${
+                propertyType === pt
+                  ? "border-teal-600 bg-teal-600 text-white"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+              }`}
+            >
+              {pt === "mansion" ? (isEn ? "🏢 Apartment" : "🏢 マンション") : (isEn ? "🏠 House" : "🏠 戸建")}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Mode selector ─────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 gap-2">
+        {(["home", "investment"] as const).map((m) => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => setMode(m)}
+            className={`py-2.5 rounded-xl text-sm font-semibold transition-colors border-2 ${
+              mode === m
+                ? m === "home"
+                  ? "border-blue-600 bg-blue-600 text-white"
+                  : "border-amber-500 bg-amber-500 text-white"
+                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+            }`}
+          >
+            {m === "home" ? (isEn ? "🏠 Home" : "🏠 自宅購入") : (isEn ? "💼 Investment" : "💼 投資物件")}
+          </button>
+        ))}
+      </div>
 
       {/* ── Action bar: geo + address search ─────────────────────────────────── */}
       <div className="flex gap-2">
@@ -192,10 +254,11 @@ export function UnifiedInputPanel({
             type="text"
             value={searchVal}
             onChange={(e) => handleSearchChange(e.target.value)}
+            onKeyDown={handleSearchKeyDown}
             placeholder={isEn ? "Search area or address…" : "エリアや住所で検索…"}
             className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
           />
-          {searching && (
+          {isGeocoding && (
             <span className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
           )}
         </div>
@@ -253,8 +316,8 @@ export function UnifiedInputPanel({
         </p>
         <ul className="space-y-1">
           {previewItems.map((item) => (
-            <li key={item} className="text-xs text-blue-700 flex items-center gap-1.5">
-              <span>{item}</span>
+            <li key={item} className="text-xs text-blue-700">
+              {item}
             </li>
           ))}
         </ul>
@@ -328,10 +391,13 @@ export function UnifiedInputPanel({
             prefillCoords={formCoords}
             propertyType={propertyType}
             onPropertyTypeChange={onPropertyTypeChange}
+            mode={mode}
+            onModeChange={setMode}
             showLocationInput={false}
             onCoordsResolved={handleCoordsResolved}
             onDetailsChange={setHasPropertyDetails}
             showSubmitButton={false}
+            showTypeSelectors={false}
           />
         </div>
       </details>

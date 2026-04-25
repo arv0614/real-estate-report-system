@@ -19,10 +19,13 @@ interface Props {
   prefillCoords?: { lat: number; lng: number } | null;
   propertyType: PropertyType;
   onPropertyTypeChange: (t: PropertyType) => void;
+  mode: PropertyMode;
+  onModeChange: (m: PropertyMode) => void;
   showLocationInput?: boolean;
   onCoordsResolved?: (lat: number, lng: number) => void;
   onDetailsChange?: (hasDetails: boolean) => void;
   showSubmitButton?: boolean;
+  showTypeSelectors?: boolean;
 }
 
 export interface PropertyFormHandle {
@@ -56,10 +59,13 @@ export const PropertyForm = forwardRef<PropertyFormHandle, Props>(function Prope
     prefillCoords,
     propertyType,
     onPropertyTypeChange,
+    mode,
+    onModeChange,
     showLocationInput = true,
     onCoordsResolved,
     onDetailsChange,
     showSubmitButton = true,
+    showTypeSelectors = true,
   }: Props,
   ref
 ) {
@@ -67,7 +73,6 @@ export const PropertyForm = forwardRef<PropertyFormHandle, Props>(function Prope
   const [price,     setPrice]     = useState("");
   const [area,      setArea]      = useState("");
   const [builtYear, setBuiltYear] = useState("");
-  const [mode,      setMode]      = useState<PropertyMode>("home");
   const [errors,    setErrors]    = useState<FieldErrors>({});
   const [autoFilled,    setAutoFilled]    = useState<AutoFilledState>({ price: false, area: false, builtYear: false });
   const [fallbackFilled, setFallbackFilled] = useState<AutoFilledState>({ price: false, area: false, builtYear: false });
@@ -172,6 +177,7 @@ export const PropertyForm = forwardRef<PropertyFormHandle, Props>(function Prope
 
   const doSubmit = useCallback(() => {
     setErrors({});
+    // mode and propertyType come from props (controlled by parent)
     const result = PropertyInputSchema.safeParse({ address, price, area, builtYear, mode, propertyType });
     if (!result.success) {
       const fieldErrors: FieldErrors = {};
@@ -286,33 +292,35 @@ export const PropertyForm = forwardRef<PropertyFormHandle, Props>(function Prope
         <div className="flex-1 h-px bg-slate-200" />
       </div>
 
-      {/* Mode + Type selectors */}
-      <div className="space-y-2">
-        <div className="grid grid-cols-2 gap-2">
-          {(["home", "investment"] as const).map((m) => (
-            <button key={m} type="button" onClick={() => setMode(m)}
-              className={`py-2 rounded-xl text-sm font-semibold transition-colors border-2 ${
-                mode === m
-                  ? m === "home" ? "border-blue-600 bg-blue-600 text-white" : "border-amber-500 bg-amber-500 text-white"
-                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
-              }`}>
-              {m === "home" ? t.modeHome : t.modeInvest}
-            </button>
-          ))}
+      {/* Mode + Type selectors — hidden when shown at panel level */}
+      {showTypeSelectors && (
+        <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            {(["home", "investment"] as const).map((m) => (
+              <button key={m} type="button" onClick={() => onModeChange(m)}
+                className={`py-2 rounded-xl text-sm font-semibold transition-colors border-2 ${
+                  mode === m
+                    ? m === "home" ? "border-blue-600 bg-blue-600 text-white" : "border-amber-500 bg-amber-500 text-white"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                }`}>
+                {m === "home" ? t.modeHome : t.modeInvest}
+              </button>
+            ))}
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {(["mansion", "house"] as const).map((pt) => (
+              <button key={pt} type="button" onClick={() => onPropertyTypeChange(pt)}
+                className={`py-2 rounded-xl text-sm font-semibold transition-colors border-2 ${
+                  propertyType === pt
+                    ? "border-teal-600 bg-teal-600 text-white"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                }`}>
+                {pt === "mansion" ? t.typeMansion : t.typeHouse}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          {(["mansion", "house"] as const).map((pt) => (
-            <button key={pt} type="button" onClick={() => onPropertyTypeChange(pt)}
-              className={`py-2 rounded-xl text-sm font-semibold transition-colors border-2 ${
-                propertyType === pt
-                  ? "border-teal-600 bg-teal-600 text-white"
-                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
-              }`}>
-              {pt === "mansion" ? t.typeMansion : t.typeHouse}
-            </button>
-          ))}
-        </div>
-      </div>
+      )}
 
       {/* Address */}
       <div>
@@ -415,7 +423,7 @@ export const PropertyForm = forwardRef<PropertyFormHandle, Props>(function Prope
       {showSubmitButton && (
         <button type="submit" disabled={loading}
           className={`w-full py-3 rounded-xl font-bold text-sm text-white transition-all shadow-sm disabled:opacity-60 ${
-            mode === "investment" ? "bg-amber-500 hover:bg-amber-600" : "bg-blue-600 hover:bg-blue-700"
+            mode === "investment" ? "bg-amber-500 hover:bg-amber-600 active:scale-[0.99]" : "bg-blue-600 hover:bg-blue-700 active:scale-[0.99]"
           }`}>
           {loading ? (
             <span className="flex items-center justify-center gap-2">
