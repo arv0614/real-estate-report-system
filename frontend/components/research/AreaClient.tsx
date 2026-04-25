@@ -6,11 +6,13 @@ import { useRouter } from "next/navigation";
 import { analyzeArea } from "@/app/[locale]/research/area/areaActions";
 import type { AreaResult, AreaSummaryResult } from "@/app/[locale]/research/area/areaActions";
 import { PopulationChart } from "./PopulationChart";
+import { AreaScoreCard } from "./AreaScoreCard";
+import { AreaTopReasons } from "./AreaTopReasons";
 import {
   buildGoogleMapsUrl, buildStreetViewUrl,
   buildHazardMapUrl, buildJShisUrl, buildGsiLandformUrl,
 } from "@/lib/links/externalMaps";
-import { ExternalLink, AlertTriangle } from "lucide-react";
+import { ExternalLink, AlertTriangle, ChevronDown } from "lucide-react";
 import type { PropertyType } from "@/types/research";
 
 const TYPE_FILTER: Record<PropertyType, string> = {
@@ -246,6 +248,7 @@ export function AreaClient({ initialLat, initialLng, initialType, isEn, locale, 
   const [propertyType, setPropertyType] = useState<PropertyType>(initialType ?? "mansion");
   const [slowLoad,     setSlowLoad]     = useState(false);
   const [timedOut,     setTimedOut]     = useState(false);
+  const [detailOpen,   setDetailOpen]   = useState(false);
 
   // Show "slow" warning after 10s, timeout error after 15s
   useEffect(() => {
@@ -403,32 +406,53 @@ export function AreaClient({ initialLat, initialLng, initialType, isEn, locale, 
             ))}
           </div>
 
-          <PriceHistogram prices={filteredPrices} isEn={isEn} />
-          <DisasterSummary result={result} isEn={isEn} />
+          {/* Area score card + top reasons */}
+          <AreaScoreCard result={result} isEn={isEn} txCount={filteredPrices.length} />
+          <AreaTopReasons result={result} isEn={isEn} txCount={filteredPrices.length} />
 
-          {result.population && (
-            <PopulationChart
-              result={{
-                ok: true,
-                coords: result.coords,
-                coordOverrideUsed: false,
-                originalCoords: null,
-                input: { address: "", price: 0, area: 0, builtYear: 2000, mode: "home", propertyType: "mansion" },
-                similar: [],
-                searchRange: null,
-                searchRangeLabel: null,
-                hazard: result.hazard,
-                cityCode: result.cityCode,
-                seismic: result.seismic,
-                terrain: result.terrain,
-                population: result.population,
-                totalFetched: result.totalFetched,
-                autoFilledFields: [],
-                fallbackFilledFields: [],
-              }}
-              isEn={isEn}
-            />
-          )}
+          {/* Collapsible detail: price histogram, disaster, population */}
+          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setDetailOpen((o) => !o)}
+              aria-expanded={detailOpen}
+              className="w-full flex items-center justify-between px-5 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wide hover:bg-slate-50 transition-colors"
+            >
+              <span>{isEn ? "Detailed data" : "詳細データ"}</span>
+              <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${detailOpen ? "rotate-180" : ""}`} />
+            </button>
+            <div className={`grid transition-all duration-300 ease-in-out ${detailOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+              <div className="overflow-hidden">
+                <div className="border-t border-slate-200 space-y-4 p-5">
+                  <PriceHistogram prices={filteredPrices} isEn={isEn} />
+                  <DisasterSummary result={result} isEn={isEn} />
+                  {result.population && (
+                    <PopulationChart
+                      result={{
+                        ok: true,
+                        coords: result.coords,
+                        coordOverrideUsed: false,
+                        originalCoords: null,
+                        input: { address: "", price: 0, area: 0, builtYear: 2000, mode: "home", propertyType: "mansion" },
+                        similar: [],
+                        searchRange: null,
+                        searchRangeLabel: null,
+                        hazard: result.hazard,
+                        cityCode: result.cityCode,
+                        seismic: result.seismic,
+                        terrain: result.terrain,
+                        population: result.population,
+                        totalFetched: result.totalFetched,
+                        autoFilledFields: [],
+                        fallbackFilledFields: [],
+                      }}
+                      isEn={isEn}
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* CTA to full research (embedded mode: open property form; standalone: navigate) */}
           {!embedded && (
