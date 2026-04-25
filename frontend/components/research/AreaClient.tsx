@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useCallback, useMemo, useEffect } from "react";
+import { useState, useTransition, useCallback, useMemo, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { analyzeArea } from "@/app/[locale]/research/area/areaActions";
@@ -230,9 +230,10 @@ interface Props {
   initialType?: PropertyType | null;
   isEn: boolean;
   locale: string;
+  embedded?: boolean; // when true, strips outer max-w wrapper (used inside ResearchClient)
 }
 
-export function AreaClient({ initialLat, initialLng, initialType, isEn, locale }: Props) {
+export function AreaClient({ initialLat, initialLng, initialType, isEn, locale, embedded }: Props) {
   const router = useRouter();
   const [coords, setCoords]   = useState<{ lat: number; lng: number } | null>(
     initialLat !== null && initialLng !== null
@@ -240,6 +241,7 @@ export function AreaClient({ initialLat, initialLng, initialType, isEn, locale }
       : null
   );
   const [result,       setResult]      = useState<AreaResult | null>(null);
+  const [runError,     setRunError]    = useState<string | null>(null);
   const [isPending,    startTransition] = useTransition();
   const [propertyType, setPropertyType] = useState<PropertyType>(initialType ?? "mansion");
   const [slowLoad,     setSlowLoad]     = useState(false);
@@ -254,20 +256,33 @@ export function AreaClient({ initialLat, initialLng, initialType, isEn, locale }
   }, [isPending]);
 
   const runAnalysis = useCallback((lat: number, lng: number) => {
+    console.log("[U18] runAnalysis start", { lat, lng });
     setCoords({ lat, lng });
     setResult(null);
+    setRunError(null);
     startTransition(async () => {
-      const res = await analyzeArea(lat, lng);
-      setResult(res);
+      try {
+        const res = await analyzeArea(lat, lng);
+        console.log("[U18] analyzeArea returned", { ok: res.ok });
+        setResult(res);
+      } catch (err) {
+        console.error("[U18] analyzeArea threw", err);
+        setRunError(err instanceof Error ? err.message : "エラーが発生しました");
+      }
     });
   }, []);
 
-  // Auto-run on initial coords
-  useState(() => {
+  // ── Auto-run on initial coords (useEffect — not useState — to avoid calling
+  //    startTransition during render, which React does not support) ─────────────
+  const hasAutoRun = useRef(false);
+  useEffect(() => {
+    if (hasAutoRun.current) return;
+    hasAutoRun.current = true;
     if (initialLat !== null && initialLng !== null) {
       runAnalysis(initialLat, initialLng);
     }
-  });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleMapClick = useCallback((lat: number, lng: number) => {
     runAnalysis(lat, lng);
@@ -287,39 +302,49 @@ export function AreaClient({ initialLat, initialLng, initialType, isEn, locale }
       .map((r) => Math.round(r.tradePrice / 10000));
   }, [result, propertyType]);
 
+  // Show skeleton whenever result is not yet available — covers the brief window
+  // between mount and useEffect firing, plus the actual pending state
+  const showSkeleton = (!result && !runError && !timedOut) || (isPending && !timedOut);
+
   return (
-    <div className="max-w-2xl mx-auto px-4 py-10">
-      <div className="mb-8">
-        <h1 className="text-2xl font-extrabold text-slate-900 mb-2">
-          {isEn ? "Area Summary" : "エリアサマリー"}
-        </h1>
-        <p className="text-sm text-slate-500">
-          {isEn
-            ? "Tap the map to explore market data and risk indicators for any area."
-            : "地図をタップしてエリアの相場・リスク情報を確認できます。"}
-        </p>
-      </div>
+    <div className={embedded ? "space-y-4" : "max-w-2xl mx-auto px-4 py-10"}>
 
-      {/* Map — tap to set location */}
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden mb-4">
-        <ResearchMap
-          lat={coords?.lat ?? 35.6812}
-          lng={coords?.lng ?? 139.7671}
-          onChange={handleMapClick}
-        />
-        {!coords && (
-          <div className="px-4 py-3 bg-blue-50 border-t border-blue-100 text-xs text-blue-700">
-            {isEn ? "Drag the marker or tap the map to select an area." : "マーカーをドラッグするかタップしてエリアを選択してください。"}
-          </div>
-        )}
-      </div>
+      {/* Standalone-only: page header */}
+      {!embedded && (
+        <div className="mb-8">
+          <h1 className="text-2xl font-extrabold text-slate-900 mb-2">
+            {isEn ? "Area Summary" : "エリアサマリー"}
+          </h1>
+          <p className="text-sm text-slate-500">
+            {isEn
+              ? "Tap the map to explore market data and risk indicators for any area."
+              : "地図をタップしてエリアの相場・リスク情報を確認できます。"}
+          </p>
+        </div>
+      )}
 
-      {/* Loading skeleton */}
-      {isPending && !timedOut && <AreaSkeleton isEn={isEn} slow={slowLoad} />}
+      {/* Standalone-only: map to tap/re-select location */}
+      {!embedded && (
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden mb-4">
+          <ResearchMap
+            lat={coords?.lat ?? 35.6812}
+            lng={coords?.lng ?? 139.7671}
+            onChange={handleMapClick}
+          />
+          {!coords && (
+            <div className="px-4 py-3 bg-blue-50 border-t border-blue-100 text-xs text-blue-700">
+              {isEn ? "Drag the marker or tap the map to select an area." : "マーカーをドラッグするかタップしてエリアを選択してください。"}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Loading skeleton — shown until result (or error) arrives */}
+      {showSkeleton && <AreaSkeleton isEn={isEn} slow={slowLoad} />}
 
       {/* Timeout error */}
       {timedOut && (
-        <div className="rounded-xl bg-red-50 border border-red-200 p-4 text-sm text-red-700 mb-4 flex items-start gap-3">
+        <div className="rounded-xl bg-red-50 border border-red-200 p-4 text-sm text-red-700 flex items-start gap-3">
           <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5 text-red-500" />
           <div>
             <p className="font-semibold">{isEn ? "Request timed out" : "タイムアウトしました"}</p>
@@ -328,9 +353,20 @@ export function AreaClient({ initialLat, initialLng, initialType, isEn, locale }
         </div>
       )}
 
-      {/* Error */}
+      {/* Network / unexpected error */}
+      {runError && (
+        <div className="rounded-xl bg-red-50 border border-red-200 p-4 text-sm text-red-700 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5 text-red-500" />
+          <div>
+            <p className="font-semibold">{isEn ? "Analysis failed" : "分析に失敗しました"}</p>
+            <p className="text-xs mt-1">{runError}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Server-returned error */}
       {result && !result.ok && !isPending && (
-        <div className="rounded-xl bg-red-50 border border-red-200 p-4 text-sm text-red-700 mb-4">
+        <div className="rounded-xl bg-red-50 border border-red-200 p-4 text-sm text-red-700">
           {result.error}
         </div>
       )}
@@ -349,7 +385,7 @@ export function AreaClient({ initialLat, initialLng, initialType, isEn, locale }
             </div>
           )}
 
-          {/* Property type tab switcher (9-8) */}
+          {/* Property type tab switcher */}
           <div className="flex gap-2">
             {(["mansion", "house"] as const).map((pt) => (
               <button
@@ -370,7 +406,6 @@ export function AreaClient({ initialLat, initialLng, initialType, isEn, locale }
           <PriceHistogram prices={filteredPrices} isEn={isEn} />
           <DisasterSummary result={result} isEn={isEn} />
 
-          {/* Population wrapped to accept AreaSummaryResult */}
           {result.population && (
             <PopulationChart
               result={{
@@ -395,26 +430,28 @@ export function AreaClient({ initialLat, initialLng, initialType, isEn, locale }
             />
           )}
 
-          {/* CTA to full research */}
-          <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5 flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-semibold text-blue-900 mb-1">
-                {isEn ? "Want a full property verdict?" : "物件情報を足して総合判定する"}
-              </p>
-              <p className="text-xs text-blue-700">
-                {isEn
-                  ? "Add price, area, and year built to calculate a full A–D grade."
-                  : "価格・面積・築年を入力するとA〜Dの総合グレードを算出できます。"}
-              </p>
+          {/* CTA to full research (embedded mode: open property form; standalone: navigate) */}
+          {!embedded && (
+            <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5 flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-blue-900 mb-1">
+                  {isEn ? "Want a full property verdict?" : "物件情報を足して総合判定する"}
+                </p>
+                <p className="text-xs text-blue-700">
+                  {isEn
+                    ? "Add price, area, and year built to calculate a full A–D grade."
+                    : "価格・面積・築年を入力するとA〜Dの総合グレードを算出できます。"}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleAddPropertyDetails}
+                className="flex-shrink-0 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
+              >
+                {isEn ? "Add property details →" : "物件情報を入力 →"}
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={handleAddPropertyDetails}
-              className="flex-shrink-0 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
-            >
-              {isEn ? "Add property details →" : "物件情報を入力 →"}
-            </button>
-          </div>
+          )}
         </div>
       )}
     </div>

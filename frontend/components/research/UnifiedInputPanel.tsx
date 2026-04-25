@@ -34,9 +34,11 @@ interface Props {
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
 function haptic(pattern: number | number[] = 10) {
-  if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-    navigator.vibrate(pattern);
-  }
+  try {
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+      navigator.vibrate(pattern);
+    }
+  } catch { /* ignore — vibrate not available or pattern invalid */ }
 }
 
 async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
@@ -262,6 +264,7 @@ export function UnifiedInputPanel({
 
   // Main CTA
   const handleMainCTA = useCallback(() => {
+    console.log("[U18] handleMainCTA", { hasPropertyDetails, lat: mapCenter.lat, lng: mapCenter.lng });
     haptic(10);
     if (hasPropertyDetails) {
       formRef.current?.submitForm();

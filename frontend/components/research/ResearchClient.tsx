@@ -14,6 +14,7 @@ import { haversineMeters, formatDistance } from "@/lib/geo/haversine";
 import { useAuth } from "@/lib/useAuth";
 import { saveResearchSession } from "@/lib/researchHistory";
 import { AlertTriangle, ChevronDown, Loader2 } from "lucide-react";
+import { perfLog } from "@/lib/debug/perfLog";
 import { TopReasons } from "./TopReasons";
 import { ExternalMaps } from "./ExternalMaps";
 import { SearchConditionCard } from "./SearchConditionCard";
@@ -135,6 +136,8 @@ export function ResearchClient({
   }, [user]);
 
   const handleAreaAnalyze = useCallback((lat: number, lng: number) => {
+    console.log("[U18] handleAreaAnalyze", { lat, lng });
+    perfLog("handleAreaAnalyze.start", 0, { lat, lng });
     setAreaCoords({ lat, lng });
     setResultKind("area");
     setViewMode("result");
@@ -223,6 +226,7 @@ export function ResearchClient({
             initialType={propertyType}
             isEn={isEn}
             locale={locale}
+            embedded={true}
           />
         </div>
       )}
