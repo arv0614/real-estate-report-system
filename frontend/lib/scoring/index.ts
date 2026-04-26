@@ -122,7 +122,7 @@ export function buildDisasterSubScore(
 
     evidence.push({
       label: "30年地震確率（震度6弱以上）",
-      value: `${seismic.probPct}%（${seismic.riskLabel}）`,
+      value: `${seismic.probPct}%`,
       sourceUrl: "https://www.j-shis.bosai.go.jp/",
     });
   }

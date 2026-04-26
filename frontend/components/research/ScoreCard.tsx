@@ -26,24 +26,6 @@ function useCountUp(target: number, duration = 900): number {
   return current;
 }
 
-// ── Score bar ─────────────────────────────────────────────────────────────────
-function ScoreBar({ score, color }: { score: number; color: string }) {
-  return (
-    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-      <div
-        className={`h-full rounded-full transition-all duration-700 ${color}`}
-        style={{ width: `${score}%` }}
-      />
-    </div>
-  );
-}
-
-function scoreBarColor(score: number): string {
-  if (score >= 80) return "bg-emerald-400";
-  if (score >= 60) return "bg-green-400";
-  if (score >= 45) return "bg-amber-400";
-  return "bg-red-400";
-}
 
 // ── Grade ring ────────────────────────────────────────────────────────────────
 function GradeRing({
@@ -335,43 +317,36 @@ function SubScoreRow({
   sub,
   explainer,
   insufficientMeta,
+  sourceCite,
 }: {
   label: string;
   sub: SubScore;
   explainer?: React.ReactNode;
   insufficientMeta?: React.ReactNode;
+  sourceCite?: string;
 }) {
   if (sub.status === "insufficient") {
     return (
-      <div>
-        <div className="flex items-start justify-between mb-1 gap-2">
-          <div className="flex items-center gap-1">
-            <span className="text-xs font-semibold text-slate-600 flex-shrink-0">{label}</span>
-            {explainer}
-          </div>
-          <div className="text-right">
-            <span className="text-xs text-slate-400">— データ不足: {sub.reason}</span>
-            {insufficientMeta && <div className="mt-0.5">{insufficientMeta}</div>}
-          </div>
+      <div className="flex items-start gap-2">
+        <span className="text-xs font-semibold text-slate-600 flex-shrink-0">{label}</span>
+        {sourceCite && <span className="text-xs text-slate-400">{sourceCite}</span>}
+        {explainer}
+        <div className="ml-auto text-right">
+          <span className="text-xs text-slate-400">データ不足: {sub.reason}</span>
+          {insufficientMeta && <div className="mt-0.5">{insufficientMeta}</div>}
         </div>
-        <div className="w-full h-2 bg-slate-100 rounded-full" />
       </div>
     );
   }
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-1">
-        <div className="flex items-center gap-1">
-          <span className="text-xs font-semibold text-slate-600">{label}</span>
-          {explainer}
-        </div>
-        <span className="text-xs font-bold text-slate-800 tabular-nums w-6 text-right">
-          {sub.value}
-        </span>
+      <div className="flex items-center gap-1 mb-1.5">
+        <span className="text-xs font-semibold text-slate-600">{label}</span>
+        {sourceCite && <span className="text-xs text-slate-400">{sourceCite}</span>}
+        {explainer}
       </div>
-      <ScoreBar score={sub.value} color={scoreBarColor(sub.value)} />
-      <ul className="mt-1.5 space-y-0.5 pl-0.5">
+      <ul className="space-y-0.5 pl-0.5">
         {sub.evidence.map((e) => (
           <li key={e.label} className="flex items-baseline gap-1.5 text-xs text-slate-600">
             <span className="text-slate-400 flex-shrink-0">•</span>
@@ -469,6 +444,7 @@ export function ScoreCard({ result, isEn, onScrollToMap }: Props) {
       key: "market",
       label: t.market,
       sub: score.market,
+      sourceCite: isEn ? "(MLIT)" : "（国交省）",
       explainer: (
         <ScoreExplainer
           title={isEn ? "How market price score is calculated" : "相場スコアの計算方法"}
@@ -491,6 +467,7 @@ export function ScoreCard({ result, isEn, onScrollToMap }: Props) {
       key: "disaster",
       label: t.disaster,
       sub: score.disaster,
+      sourceCite: isEn ? "(J-SHIS, GSI, MLIT)" : "（J-SHIS, 国土地理院, 国交省）",
       explainer: (
         <ScoreExplainer
           title={isEn ? "How disaster risk is calculated" : "災害リスクの計算方法"}
@@ -507,6 +484,7 @@ export function ScoreCard({ result, isEn, onScrollToMap }: Props) {
       key: "future",
       label: t.future,
       sub: score.future,
+      sourceCite: isEn ? "(e-Stat)" : "（e-Stat）",
       explainer: (
         <ScoreExplainer
           title={isEn ? "How population trend is calculated" : "人口動態の計算方法"}
@@ -596,13 +574,14 @@ export function ScoreCard({ result, isEn, onScrollToMap }: Props) {
 
       {/* Sub-scores */}
       <div className="mt-5 space-y-5">
-        {subRows.map(({ key, label, sub, explainer, meta }) => (
+        {subRows.map(({ key, label, sub, explainer, meta, sourceCite }) => (
           <SubScoreRow
             key={key}
             label={label}
             sub={sub}
             explainer={explainer}
             insufficientMeta={meta}
+            sourceCite={sourceCite}
           />
         ))}
       </div>
