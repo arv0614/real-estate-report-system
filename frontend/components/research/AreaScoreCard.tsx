@@ -72,17 +72,17 @@ function gradeDescription(isEn: boolean): string {
     : "公的データに基づく指標の集計結果です。最終的なご判断は、現地確認や専門家（宅地建物取引士等）への相談を併用してください。";
 }
 
-function gradeRange(grade: ScoreGrade, isEn: boolean): string {
-  const m: Record<ScoreGrade, [string, string, string]> = {
-    "A+": ["85+",   "all indicators good",   "全項目良好"],
-    "A":  ["75–84", "mostly favorable",       "概ね良好"],
-    "B+": ["65–74", "some items to check",    "一部要確認"],
-    "B":  ["55–64", "multiple items to check","複数項目要確認"],
-    "C":  ["45–54", "several caution items",  "注意項目多い"],
-    "D":  ["0–44",  "many items require review", "多くの項目で要確認"],
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function gradeRange(grade: ScoreGrade, _isEn: boolean): string {
+  const m: Record<ScoreGrade, string> = {
+    "A+": "85pt+",
+    "A":  "75-84pt",
+    "B+": "65-74pt",
+    "B":  "55-64pt",
+    "C":  "45-54pt",
+    "D":  "0-44pt",
   };
-  const [range, en, ja] = m[grade];
-  return isEn ? `${range} / ${en}` : `${range} / ${ja}`;
+  return m[grade];
 }
 
 // ── Score breakdown (U21-3) ───────────────────────────────────────────────────
@@ -129,8 +129,8 @@ function ScoreBreakdown({ score, isEn }: { score: AreaScore; isEn: boolean }) {
       </div>
       <p className="text-xs text-slate-500 mt-2">
         {isEn
-          ? `${score.total.score}/100 → Grade ${score.total.grade} (${gradeRange(score.total.grade, isEn)})`
-          : `${score.total.score}/100 → ${score.total.grade} 評価（${gradeRange(score.total.grade, isEn)}）`}
+          ? `Index ${score.total.grade} · ${score.total.score}/100 (${gradeRange(score.total.grade, isEn)})`
+          : `インデックス ${score.total.grade} · ${score.total.score}/100（${gradeRange(score.total.grade, isEn)}）`}
       </p>
     </div>
   );
@@ -359,7 +359,7 @@ export function AreaScoreCard({ result, isEn, txCount }: Props) {
       explainer: (
         <ScoreExplainer
           title={isEn ? "How disaster risk is calculated" : "災害リスクの計算方法"}
-          weight={isEn ? "50% of overall score" : "総合評価の 50%"}
+          weight={isEn ? "50% of overall score" : "指標の50%"}
           criteria={buildDisasterCriteria(result.seismic, result.terrain, result.hazard, isEn)}
           totalScore={score.disaster.status === "ok" ? score.disaster.value : 0}
           sourceNote={sourceNote}
@@ -377,7 +377,7 @@ export function AreaScoreCard({ result, isEn, txCount }: Props) {
       explainer: (
         <ScoreExplainer
           title={isEn ? "How population trend is calculated" : "人口動態の計算方法"}
-          weight={isEn ? "30% of overall score" : "総合評価の 30%"}
+          weight={isEn ? "30% of overall score" : "指標の30%"}
           criteria={buildFutureCriteria(result.population, isEn)}
           totalScore={score.future.status === "ok" ? score.future.value : 0}
           sourceNote={sourceNote}
@@ -393,7 +393,7 @@ export function AreaScoreCard({ result, isEn, txCount }: Props) {
       explainer: (
         <ScoreExplainer
           title={isEn ? "How market activity is calculated" : "市場活性度の計算方法"}
-          weight={isEn ? "20% of overall score" : "総合評価の 20%"}
+          weight={isEn ? "20% of overall score" : "指標の20%"}
           criteria={buildMarketActivityCriteria(txCount, isEn)}
           totalScore={score.marketActivity.status === "ok" ? score.marketActivity.value : 0}
           sourceNote={sourceNote}

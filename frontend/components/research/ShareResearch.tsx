@@ -27,7 +27,7 @@ export function ShareResearch({ grade, score, address, isEn, autoFilled, propert
 
   const shareText = isEn
     ? `Property analysis complete! Grade: ${grade} (${score}pts) — ${areaLabel}${typeSuffix}`
-    : `物件リサーチ結果: ${areaLabel}${typeSuffix} → 評価 ${grade}（${score}点）`;
+    : `物件リサーチ結果: ${areaLabel}${typeSuffix} → インデックス ${grade}（${score}点）`;
 
   const autoFilledParam = autoFilled ? "&autoFilled=true" : "";
   const typeParam = propertyType ? `&type=${propertyType}` : "";
