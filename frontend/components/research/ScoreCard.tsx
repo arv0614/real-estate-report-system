@@ -1,34 +1,17 @@
 "use client";
 
-import { useMemo, useState, useEffect, useCallback } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { ExternalLink, MapPin, BarChart2 } from "lucide-react";
-import { calcPropertyScore, gradeColor, gradeBg } from "@/lib/scoring";
+import { calcPropertyScore, gradeColor } from "@/lib/scoring";
 import type { PropertyScore, ScoreGrade, SubScore } from "@/lib/scoring";
 import type { AnalyzeResult } from "@/types/research";
 import { ScoreExplainer } from "./ScoreExplainer";
 import type { CriterionRow } from "./ScoreExplainer";
 
-// ── Count-up hook ─────────────────────────────────────────────────────────────
-function useCountUp(target: number, duration = 900): number {
-  const [current, setCurrent] = useState(0);
-  useEffect(() => {
-    let elapsed = 0;
-    const interval = 16;
-    const timer = setInterval(() => {
-      elapsed += interval;
-      const progress = Math.min(elapsed / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setCurrent(Math.round(eased * target));
-      if (progress >= 1) clearInterval(timer);
-    }, interval);
-    return () => clearInterval(timer);
-  }, [target, duration]);
-  return current;
-}
 
 
-// ── Grade ring ────────────────────────────────────────────────────────────────
-function GradeRing({
+// ── Small grade pill (U23-1) ──────────────────────────────────────────────────
+function GradePill({
   grade,
   overall,
   mode,
@@ -37,32 +20,14 @@ function GradeRing({
   overall: number;
   mode: string;
 }) {
-  const displayScore = useCountUp(overall);
   const isInvestment = mode === "investment";
-  const accent = isInvestment
-    ? "from-amber-500 to-orange-500"
-    : "from-blue-500 to-indigo-600";
-  const shadow = isInvestment ? "shadow-amber-200" : "shadow-blue-200";
-
   return (
-    <div
-      className={`relative flex items-center justify-center w-28 h-28 rounded-full bg-gradient-to-br ${accent} shadow-xl ${shadow} flex-shrink-0`}
-    >
-      <div className="flex flex-col items-center leading-none">
-        <span className="text-4xl font-black text-white tracking-tight animate-grade-bounce">
-          {grade}
-        </span>
-        <span className="text-white/70 text-xs mt-1">{displayScore}/100</span>
-      </div>
-    </div>
-  );
-}
-
-// ── Insufficient ring ─────────────────────────────────────────────────────────
-function InsufficientRing() {
-  return (
-    <div className="flex items-center justify-center w-28 h-28 rounded-full border-4 border-dashed border-slate-300 bg-slate-50 flex-shrink-0">
-      <span className="text-4xl font-black text-slate-400">—</span>
+    <div className="inline-flex items-center gap-2 bg-sky-50 border border-sky-200 rounded-lg px-3 py-1.5 flex-shrink-0">
+      <span className="text-xs font-medium text-sky-500">
+        {isInvestment ? "投資インデックス" : "購入インデックス"}
+      </span>
+      <span className="text-sm font-bold text-sky-700 font-mono">{grade}</span>
+      <span className="text-xs text-sky-500">{overall}pt</span>
     </div>
   );
 }
@@ -510,78 +475,50 @@ export function ScoreCard({ result, isEn, onScrollToMap }: Props) {
     },
   ];
 
-  const bgClass =
-    score.total.status === "ok"
-      ? gradeBg(score.total.grade)
-      : "bg-slate-50 border-slate-200";
-
   return (
-    <div className={`rounded-2xl border-2 p-6 shadow-sm ${bgClass}`}>
-      {/* Header row */}
-      <div className="flex items-start gap-5">
-        {score.total.status === "ok" ? (
-          <GradeRing
-            grade={score.total.grade}
-            overall={score.total.score}
-            mode={input.mode}
-          />
-        ) : (
-          <InsufficientRing />
-        )}
+    <div className="rounded-2xl border-2 bg-slate-50 border-slate-200 p-6 shadow-sm">
+      {/* Title row */}
+      <div className="flex items-center gap-2 mb-1 flex-wrap">
+        <span className="text-base font-bold text-slate-900">{t.title}</span>
+        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${isInvestment ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"}`}>
+          {t.modeLabel}
+        </span>
+        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-teal-100 text-teal-700">
+          {typeLbl}
+        </span>
+      </div>
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <span className="text-base font-bold text-slate-900">{t.title}</span>
-            <span
-              className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                isInvestment
-                  ? "bg-amber-100 text-amber-700"
-                  : "bg-blue-100 text-blue-700"
-              }`}
-            >
-              {t.modeLabel}
-            </span>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-teal-100 text-teal-700">
-              {typeLbl}
-            </span>
-          </div>
+      <p className="text-xs text-slate-500 mb-4 leading-relaxed">{gradeDescription(isEn)}</p>
 
-          {score.total.status === "ok" ? (
-            <>
-              <p className="text-sm text-slate-700 mb-2 leading-relaxed">
-                {gradeDescription(isEn)}
-              </p>
-              {score.total.note && (
-                <span className="inline-block text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
-                  {score.total.note}
-                </span>
-              )}
-            </>
-          ) : (
-            <p className="text-sm text-slate-500">{t.insufficient}</p>
-          )}
-
-          <p className="text-xs text-slate-400 mt-2">
-            {score.dataCount >= 5 ? t.dataNote : t.noData}
-          </p>
-
-          {/* Search range badge */}
-          {searchRange && searchRangeLabel && (
-            <span className={`inline-block text-xs mt-1 px-2 py-0.5 rounded-full ${
-              searchRange === "strict"
-                ? "bg-emerald-50 text-emerald-700"
-                : searchRange === "city"
-                ? "bg-blue-50 text-blue-700"
-                : "bg-amber-50 text-amber-700"
-            }`}>
-              {isEn ? `Search scope: ${searchRange}` : `比較範囲: ${searchRangeLabel}`}
+      {/* Composite index pill — secondary */}
+      {score.total.status === "ok" ? (
+        <div className="flex items-center gap-3 flex-wrap mb-2">
+          <GradePill grade={score.total.grade} overall={score.total.score} mode={input.mode} />
+          <span className="text-xs text-slate-400">{isEn ? "— reference only" : "— 参考値"}</span>
+          {score.total.note && (
+            <span className="inline-block text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+              {score.total.note}
             </span>
           )}
-
-          {/* Score breakdown table (U21-3) */}
           <PropertyScoreBreakdown score={score} isEn={isEn} />
         </div>
-      </div>
+      ) : (
+        <p className="text-sm text-slate-500 mb-2">{t.insufficient}</p>
+      )}
+
+      <p className="text-xs text-slate-400">
+        {score.dataCount >= 5 ? t.dataNote : t.noData}
+      </p>
+      {searchRange && searchRangeLabel && (
+        <span className={`inline-block text-xs mt-1 px-2 py-0.5 rounded-full ${
+          searchRange === "strict" ? "bg-emerald-50 text-emerald-700"
+          : searchRange === "city" ? "bg-blue-50 text-blue-700"
+          : "bg-amber-50 text-amber-700"
+        }`}>
+          {isEn ? `Search scope: ${searchRange}` : `比較範囲: ${searchRangeLabel}`}
+        </span>
+      )}
+
 
       {/* Sub-scores */}
       <div className="mt-5 space-y-5">
