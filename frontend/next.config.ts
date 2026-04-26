@@ -24,13 +24,13 @@ const CSP = [
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.gstatic.com https://us-assets.i.posthog.com https://assets.lemonsqueezy.com https://www.googletagmanager.com https://www.google-analytics.com",
   // Tailwind / CSS-in-JS
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://assets.lemonsqueezy.com",
-  // 画像: Firebase Storage / Google アカウント写真 / 国土地理院タイル / Lemon Squeezy / base64 / GTMピクセル
-  "img-src 'self' data: blob: https://lh3.googleusercontent.com https://firebasestorage.googleapis.com https://cyberjapandata.gsi.go.jp https://maps.gsi.go.jp https://assets.lemonsqueezy.com https://www.googletagmanager.com https://www.google-analytics.com",
+  // 画像: Firebase Storage / Google アカウント写真 / 国土地理院タイル / Lemon Squeezy / base64 / GTMピクセル / OSMタイル
+  "img-src 'self' data: blob: https://lh3.googleusercontent.com https://firebasestorage.googleapis.com https://cyberjapandata.gsi.go.jp https://maps.gsi.go.jp https://assets.lemonsqueezy.com https://www.googletagmanager.com https://www.google-analytics.com https://*.tile.openstreetmap.org",
   // フォント
   "font-src 'self' https://fonts.gstatic.com https://assets.lemonsqueezy.com",
-  // API・WebSocket通信 + GA4データ収集
+  // API・WebSocket通信 + GA4データ収集 + OSMタイル (MapLibre fetch)
   // NOTE: Cloud Run URLs (asia-northeast1) follow the pattern *.a.run.app — NOT *.run.app
-  `connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://firebasestorage.googleapis.com https://storage.googleapis.com https://us.i.posthog.com https://us-assets.i.posthog.com https://*.a.run.app https://*.run.app https://msearch.gsi.go.jp https://mreversegeocoder.gsi.go.jp https://*.firebaseapp.com https://app.lemonsqueezy.com https://api.lemonsqueezy.com https://www.googletagmanager.com https://www.google-analytics.com https://region1.google-analytics.com${devConnectSrc}`,
+  `connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://firebasestorage.googleapis.com https://storage.googleapis.com https://us.i.posthog.com https://us-assets.i.posthog.com https://*.a.run.app https://*.run.app https://msearch.gsi.go.jp https://mreversegeocoder.gsi.go.jp https://*.firebaseapp.com https://app.lemonsqueezy.com https://api.lemonsqueezy.com https://www.googletagmanager.com https://www.google-analytics.com https://region1.google-analytics.com https://*.tile.openstreetmap.org${devConnectSrc}`,
   // Google OAuth ポップアップ + Firebase Auth hidden iframe + Lemon Squeezy チェックアウト + GTM noscript iframe
   "frame-src 'self' https://accounts.google.com https://*.firebaseapp.com https://app.lemonsqueezy.com https://www.googletagmanager.com",
   // Service Worker
