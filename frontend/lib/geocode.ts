@@ -1,8 +1,9 @@
-/** GSI 住所検索API で住所→座標を取得 */
-export async function geocodeAddress(query: string): Promise<{ lat: number; lng: number } | null> {
+import { unstable_cache } from "next/cache";
+
+async function _geocodeAddress(query: string): Promise<{ lat: number; lng: number } | null> {
   const url = `https://msearch.gsi.go.jp/address-search/AddressSearch?q=${encodeURIComponent(query)}`;
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, { next: { revalidate: 31_536_000 } });
     if (!res.ok) return null;
     const data = await res.json();
     if (!Array.isArray(data) || data.length === 0) return null;
@@ -12,6 +13,13 @@ export async function geocodeAddress(query: string): Promise<{ lat: number; lng:
     return null;
   }
 }
+
+/** GSI 住所検索API で住所→座標を取得（サーバーサイドキャッシュ 1年） */
+export const geocodeAddress = unstable_cache(
+  _geocodeAddress,
+  ["geocode-address"],
+  { revalidate: 31_536_000, tags: ["geocode"] } // 1 year — addresses are stable
+);
 
 /** GSI リバースジオコーダ で座標→町丁目名を取得 */
 export async function reverseGeocodeDistrict(lat: number, lng: number): Promise<string | null> {

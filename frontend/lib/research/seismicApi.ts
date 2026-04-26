@@ -123,12 +123,17 @@ function buildRiskNote(cls: string | null, elev: number | null): string {
 
 // ── Public fetch functions ───────────────────────────────────────────────────
 
+import { unstable_cache } from "next/cache";
+
+/** Round to 4 decimal places (≈11 m precision) for cache key stability */
+const r4 = (v: number) => Math.round(v * 10000) / 10000;
+
 /**
  * J-SHIS: 30-year probability of 震度6弱 (seismic intensity ≥ 6-) at point.
  * API: https://www.j-shis.bosai.go.jp/map/api/pshm/Y2024/AVR/TTL_MTTL/meshinfo.geojson
  * Note: position parameter is {lng},{lat} (longitude first).
  */
-export async function fetchSeismicData(
+async function _fetchSeismicData(
   lat: number,
   lng: number
 ): Promise<SeismicData | null> {
@@ -163,12 +168,22 @@ export async function fetchSeismicData(
   }
 }
 
+// Cache keyed on rounded coords (4dp ≈ 11m precision)
+const _fetchSeismicDataCached = unstable_cache(
+  _fetchSeismicData,
+  ["seismic-data"],
+  { revalidate: 31_536_000, tags: ["seismic"] } // 1 year — J-SHIS updates annually
+);
+export function fetchSeismicData(lat: number, lng: number): Promise<SeismicData | null> {
+  return _fetchSeismicDataCached(r4(lat), r4(lng));
+}
+
 /**
  * GSI: Elevation (標高) + terrain classification (地形分類).
  * Elevation: cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php
  * Terrain: experimental_landformclassification1 tile (zoom 14)
  */
-export async function fetchTerrainData(
+async function _fetchTerrainData(
   lat: number,
   lng: number
 ): Promise<TerrainData | null> {
@@ -218,4 +233,13 @@ export async function fetchTerrainData(
   } catch {
     return null;
   }
+}
+
+const _fetchTerrainDataCached = unstable_cache(
+  _fetchTerrainData,
+  ["terrain-data"],
+  { revalidate: 31_536_000, tags: ["terrain"] } // 1 year — GSI terrain tiles rarely change
+);
+export function fetchTerrainData(lat: number, lng: number): Promise<TerrainData | null> {
+  return _fetchTerrainDataCached(r4(lat), r4(lng));
 }
