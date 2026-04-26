@@ -554,6 +554,30 @@ function HomePageContent() {
       <main className="max-w-5xl mx-auto px-4 py-8 space-y-6">
         <SearchForm onSearch={handleSearch} loading={loading} districtMarkers={districtMarkers} isLoggedIn={!!user} externalCoords={externalCoords} collapseMap={!!result} locale={locale} />
 
+        {!result && !loading && (
+          <div className="rounded-2xl border border-teal-200 bg-teal-50 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-teal-800">
+                {locale === "en"
+                  ? "🆕 Try the Indicator Summary UI (Beta)"
+                  : "🆕 指標サマリー UI を試す（β 版）"}
+              </p>
+              <p className="text-xs text-teal-700 mt-0.5 leading-relaxed">
+                {locale === "en"
+                  ? "See public data summaries for any area in 30 seconds — earthquake probability, flood risk, population trend, and market activity — even without entering property details."
+                  : "物件情報がなくてもエリアの公的データを 30 秒でサマリー化。地震確率・洪水ランク・人口動態・取引活発度などを可視化します。"}
+              </p>
+            </div>
+            <a
+              href={`${locale === "en" ? "/en" : ""}/research`}
+              className="flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-teal-600 text-white text-sm font-semibold hover:bg-teal-700 transition-colors shadow-sm whitespace-nowrap"
+            >
+              <span className="text-xs font-bold bg-white/20 px-1.5 py-0.5 rounded">β</span>
+              {locale === "en" ? "Open Beta →" : "β 版を開く →"}
+            </a>
+          </div>
+        )}
+
         {error && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 space-y-1">
             <p>⚠️ {error}</p>
