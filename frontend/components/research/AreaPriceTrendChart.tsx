@@ -154,7 +154,7 @@ export function AreaPriceTrendChart({ records, isEn }: Props) {
         )}
       </ResponsiveContainer>
       <p className="text-xs text-slate-400 text-center mt-1">
-        {isEn ? "※ Periods with ≥2 transactions only · MLIT real estate data" : "※ 各期2件以上のデータのみ表示 · 国交省不動産取引価格情報"}
+        {isEn ? "※ Periods with ≥2 transactions only · MLIT 不動産情報ライブラリ" : "※ 各期2件以上のデータのみ表示 · 国交省不動産情報ライブラリ"}
       </p>
     </div>
   );

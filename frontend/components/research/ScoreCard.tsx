@@ -393,7 +393,7 @@ export function ScoreCard({ result, isEn, onScrollToMap }: Props) {
 
   const sourceNote = isEn
     ? "Sources: MLIT real estate transaction data, J-SHIS (earthquake probability), GSI (terrain / elevation), e-Stat population statistics."
-    : "出典: 国交省不動産取引価格情報 / J-SHIS地震ハザード / 国土地理院（地形・標高）/ e-Stat人口推計";
+    : "出典: 国交省不動産情報ライブラリ / J-SHIS地震ハザード / 国土地理院（地形・標高）/ e-Stat国勢調査";
 
   // Weights depend on mode
   const mktWeight = isInvestment ? 50 : 35;

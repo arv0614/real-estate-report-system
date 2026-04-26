@@ -367,7 +367,7 @@ export function AreaScoreCard({ result, isEn, txCount }: Props) {
 
   const sourceNote = isEn
     ? "Sources: J-SHIS (earthquake probability), GSI (terrain / elevation), MLIT real estate transaction data, e-Stat population statistics."
-    : "出典: J-SHIS地震ハザードステーション / 国土地理院（地形・標高）/ 国交省不動産取引価格情報 / e-Stat人口推計";
+    : "出典: J-SHIS地震ハザードステーション / 国土地理院（地形・標高）/ 国交省不動産情報ライブラリ / e-Stat国勢調査";
 
   const t = {
     title:    isEn ? "Area Indicator Summary" : "エリア指標サマリー",
