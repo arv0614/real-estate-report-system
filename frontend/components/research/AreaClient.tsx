@@ -10,7 +10,7 @@ import { AreaScoreCard } from "./AreaScoreCard";
 import { AreaTopReasons } from "./AreaTopReasons";
 import { AreaPriceTrendChart } from "./AreaPriceTrendChart";
 import {
-  buildGoogleMapsUrl, buildStreetViewUrl,
+  buildGoogleMapsUrl,
   buildHazardMapUrl, buildJShisUrl, buildGsiLandformUrl,
 } from "@/lib/links/externalMaps";
 import { ExternalLink, AlertTriangle, ChevronDown, Loader2 } from "lucide-react";
@@ -102,7 +102,6 @@ function DisasterSummary({
   if (!seismic && !terrain && !hazard) return null;
 
   const gMapsUrl   = buildGoogleMapsUrl(coords.lat, coords.lng);
-  const svUrl      = buildStreetViewUrl(coords.lat, coords.lng);
   const hazardUrl  = buildHazardMapUrl(coords.lat, coords.lng);
   const jshisUrl   = buildJShisUrl(coords.lat, coords.lng);
   const gsiLandUrl = buildGsiLandformUrl(coords.lat, coords.lng);
@@ -148,7 +147,6 @@ function DisasterSummary({
       <div className="flex flex-wrap gap-2 pt-1">
         {[
           { url: gMapsUrl,   label: isEn ? "Google Maps" : "Google Maps" },
-          { url: svUrl,      label: isEn ? "Street View (where available)" : "ストリートビュー（対応地域のみ）" },
           { url: hazardUrl,  label: isEn ? "Hazard map" : "ハザードマップ" },
           { url: jshisUrl,   label: isEn ? "J-SHIS" : "J-SHIS地震ハザード" },
           { url: gsiLandUrl, label: isEn ? "GSI terrain" : "地形分類（GSI）" },
