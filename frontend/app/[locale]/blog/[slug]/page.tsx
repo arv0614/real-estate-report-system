@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { getAllPostMeta, getPostBySlug } from "@/lib/blog";
+import BlogMiniMapWrapper from "@/components/blog/BlogMiniMapWrapper";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
@@ -74,6 +75,11 @@ export default async function BlogPostPage({ params }: Props) {
     keywords: post.tags.join(", "),
   };
 
+  const loc = post.primaryLocation;
+  const researchHref = loc
+    ? `${isEn ? "/en" : ""}/research?lat=${loc.lat}&lng=${loc.lng}&type=mansion`
+    : null;
+
   return (
     <div className="min-h-screen bg-slate-50">
       <script
@@ -126,6 +132,31 @@ export default async function BlogPostPage({ params }: Props) {
             </time>
           )}
         </div>
+
+        {/* Area map card (shown when primaryLocation is present) */}
+        {loc && (
+          <div className="mb-8 bg-white rounded-xl border border-slate-200 p-4">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
+              📍 {isEn ? "Target Area" : "対象エリア"}: {loc.name}
+            </p>
+            <BlogMiniMapWrapper
+              primaryLocation={loc}
+              secondaryLocations={post.secondaryLocations}
+            />
+            {researchHref && (
+              <div className="mt-3">
+                <Link
+                  href={researchHref}
+                  className="inline-flex items-center gap-1.5 bg-teal-600 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors"
+                >
+                  {isEn
+                    ? "Analyze this area in β →"
+                    : "β 版でこのエリアを調べる →"}
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Markdown body */}
         <article className="prose prose-slate prose-sm sm:prose-base max-w-none
