@@ -12,7 +12,7 @@ import {
   buildGoogleMapsUrl, buildStreetViewUrl,
   buildHazardMapUrl, buildJShisUrl, buildGsiLandformUrl,
 } from "@/lib/links/externalMaps";
-import { ExternalLink, AlertTriangle, ChevronDown } from "lucide-react";
+import { ExternalLink, AlertTriangle, ChevronDown, Loader2 } from "lucide-react";
 import type { PropertyType } from "@/types/research";
 
 const TYPE_FILTER: Record<PropertyType, string> = {
@@ -33,7 +33,7 @@ function SkeletonBlock({ className }: { className?: string }) {
 const STEPS_JA = ["位置情報取得 ✓", "エリアデータ取得中…", "表示"];
 const STEPS_EN = ["Location ✓", "Fetching area data…", "Rendering"];
 
-function AreaSkeleton({ isEn, slow }: { isEn: boolean; slow: boolean }) {
+function AreaSkeleton({ isEn, slow, verySlow }: { isEn: boolean; slow: boolean; verySlow: boolean }) {
   const steps = isEn ? STEPS_EN : STEPS_JA;
   return (
     <div className="space-y-4">
@@ -55,8 +55,25 @@ function AreaSkeleton({ isEn, slow }: { isEn: boolean; slow: boolean }) {
         </div>
       </div>
 
-      {/* Slow warning */}
-      {slow && (
+      {/* Very slow — calm informational message (cold start) */}
+      {verySlow && (
+        <div className="rounded-xl bg-slate-50 border border-slate-200 px-4 py-3 text-xs text-slate-600 flex items-start gap-2">
+          <Loader2 className="w-3.5 h-3.5 animate-spin flex-shrink-0 mt-0.5 text-slate-500" />
+          <div>
+            <p className="font-medium">
+              {isEn ? "Server is warming up…" : "サーバーが立ち上がっているところです"}
+            </p>
+            <p className="text-slate-500 mt-0.5">
+              {isEn
+                ? "First request after a while can take up to a minute. Please wait."
+                : "しばらくぶりのアクセスのため、最大 1 分ほどかかる場合があります。"}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Slow warning (10s–30s) */}
+      {slow && !verySlow && (
         <div className="flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2.5 text-xs text-amber-700">
           <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
           {isEn ? "Taking longer than usual…" : "少し時間がかかっています…"}
@@ -247,15 +264,15 @@ export function AreaClient({ initialLat, initialLng, initialType, isEn, locale, 
   const [isPending,    startTransition] = useTransition();
   const [propertyType, setPropertyType] = useState<PropertyType>(initialType ?? "mansion");
   const [slowLoad,     setSlowLoad]     = useState(false);
-  const [timedOut,     setTimedOut]     = useState(false);
+  const [verySlowLoad, setVerySlowLoad] = useState(false);
   const [detailOpen,   setDetailOpen]   = useState(false);
 
-  // Show "slow" warning after 10s, timeout error after 15s
+  // Slow warning at 10s, very-slow (cold-start) message at 30s — never block results
   useEffect(() => {
-    if (!isPending) { setSlowLoad(false); setTimedOut(false); return; }
-    const slowTimer    = setTimeout(() => setSlowLoad(true),  10_000);
-    const timeoutTimer = setTimeout(() => setTimedOut(true),  15_000);
-    return () => { clearTimeout(slowTimer); clearTimeout(timeoutTimer); };
+    if (!isPending) { setSlowLoad(false); setVerySlowLoad(false); return; }
+    const slowTimer     = setTimeout(() => setSlowLoad(true),      10_000);
+    const verySlowTimer = setTimeout(() => setVerySlowLoad(true),  30_000);
+    return () => { clearTimeout(slowTimer); clearTimeout(verySlowTimer); };
   }, [isPending]);
 
   const runAnalysis = useCallback((lat: number, lng: number) => {
@@ -305,9 +322,8 @@ export function AreaClient({ initialLat, initialLng, initialType, isEn, locale, 
       .map((r) => Math.round(r.tradePrice / 10000));
   }, [result, propertyType]);
 
-  // Show skeleton whenever result is not yet available — covers the brief window
-  // between mount and useEffect firing, plus the actual pending state
-  const showSkeleton = (!result && !runError && !timedOut) || (isPending && !timedOut);
+  // Show skeleton while no result or error has arrived yet
+  const showSkeleton = !result && !runError;
 
   return (
     <div className={embedded ? "space-y-4" : "max-w-2xl mx-auto px-4 py-10"}>
@@ -343,26 +359,22 @@ export function AreaClient({ initialLat, initialLng, initialType, isEn, locale, 
       )}
 
       {/* Loading skeleton — shown until result (or error) arrives */}
-      {showSkeleton && <AreaSkeleton isEn={isEn} slow={slowLoad} />}
+      {showSkeleton && <AreaSkeleton isEn={isEn} slow={slowLoad} verySlow={verySlowLoad} />}
 
-      {/* Timeout error */}
-      {timedOut && (
-        <div className="rounded-xl bg-red-50 border border-red-200 p-4 text-sm text-red-700 flex items-start gap-3">
-          <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5 text-red-500" />
-          <div>
-            <p className="font-semibold">{isEn ? "Request timed out" : "タイムアウトしました"}</p>
-            <p className="text-xs mt-1">{isEn ? "The server took too long to respond. Please try again." : "サーバーの応答に時間がかかりすぎています。再度お試しください。"}</p>
-          </div>
-        </div>
-      )}
-
-      {/* Network / unexpected error */}
+      {/* Network / unexpected error — with retry */}
       {runError && (
         <div className="rounded-xl bg-red-50 border border-red-200 p-4 text-sm text-red-700 flex items-start gap-3">
           <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5 text-red-500" />
-          <div>
-            <p className="font-semibold">{isEn ? "Analysis failed" : "分析に失敗しました"}</p>
+          <div className="flex-1">
+            <p className="font-semibold">{isEn ? "Failed to load data" : "データ取得に失敗しました"}</p>
             <p className="text-xs mt-1">{runError}</p>
+            <button
+              type="button"
+              onClick={() => coords && runAnalysis(coords.lat, coords.lng)}
+              className="mt-2 px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-semibold hover:bg-red-700 transition-colors"
+            >
+              {isEn ? "Retry" : "再試行"}
+            </button>
           </div>
         </div>
       )}
