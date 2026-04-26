@@ -45,6 +45,16 @@ const LOADING_MSGS_EN = [
   "Calculating score…",
 ];
 
+function DataDisclaimer({ isEn }: { isEn: boolean }) {
+  return (
+    <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-xs text-amber-800 leading-relaxed">
+      {isEn
+        ? "⚠️ This report aggregates public data for reference only. It does not guarantee accuracy or completeness. Always conduct on-site verification and consult a licensed real estate professional before making any purchase, rental, or investment decision."
+        : "⚠️ このレポートは公的機関のデータを集計した参考情報であり、正確性・完全性を保証するものではありません。物件の購入・賃貸・投資等の最終判断は、必ず現地確認および宅地建物取引士等の専門家にご相談ください。"}
+    </div>
+  );
+}
+
 function StagedLoader({ isEn }: { isEn: boolean }) {
   const msgs = isEn ? LOADING_MSGS_EN : LOADING_MSGS_JA;
   const [idx, setIdx] = useState(0);
@@ -220,6 +230,7 @@ export function ResearchClient({
           >
             ← {isEn ? "Search another area" : "別のエリアを調べる"}
           </button>
+          <DataDisclaimer isEn={isEn} />
           <AreaClient
             initialLat={areaCoords.lat}
             initialLng={areaCoords.lng}
@@ -228,6 +239,7 @@ export function ResearchClient({
             locale={locale}
             embedded={true}
           />
+          <DataDisclaimer isEn={isEn} />
         </div>
       )}
 
@@ -266,6 +278,9 @@ export function ResearchClient({
               </div>
             </div>
           )}
+
+          {/* Disclaimer */}
+          <DataDisclaimer isEn={isEn} />
 
           {/* Score card */}
           <ScoreCard result={propertyResult} isEn={isEn} onScrollToMap={handleScrollToMap} />
@@ -393,6 +408,9 @@ export function ResearchClient({
               </div>
             </div>
           </div>
+
+          {/* Bottom disclaimer */}
+          <DataDisclaimer isEn={isEn} />
 
           {/* ActionBar */}
           <div className="space-y-3 pt-2">
