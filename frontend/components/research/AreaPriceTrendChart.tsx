@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  Line, LineChart, Bar, BarChart,
+  Line, LineChart,
   CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import type { TransactionRecord } from "@/types/api";
@@ -32,11 +32,18 @@ function periodLabel(period: string): string {
   return period.replace(/(\d{4})年第(\d)四半期/, "$1 Q$2");
 }
 
+function median(arr: number[]): number {
+  if (!arr.length) return 0;
+  const s = [...arr].sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
+
 interface PeriodData {
   label: string;
   sortKey: number;
-  avgTradePrice: number;
-  avgUnitPrice: number | null;
+  medianPrice: number;
+  medianPricePerSqm: number | null;
   count: number;
 }
 
@@ -49,20 +56,19 @@ function buildChartData(records: TransactionRecord[]): PeriodData[] {
     groups.set(r.period, arr);
   }
 
-  const avg = (arr: number[]) =>
-    arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
-
   return Array.from(groups.entries())
     .map(([period, recs]) => {
       const prices = recs.map((r) => r.tradePrice).filter((p) => p > 0);
       const unitPrices = recs
-        .map((r) => r.unitPrice)
-        .filter((v): v is number => v !== null && v > 0);
+        .filter((r) => r.area && r.area > 0 && r.tradePrice > 0)
+        .map((r) => r.tradePrice / r.area!);
       return {
         label: periodLabel(period),
         sortKey: periodSortKey(period),
-        avgTradePrice: Math.round(avg(prices) / 10000),
-        avgUnitPrice: unitPrices.length ? Math.round(avg(unitPrices) / 10000) : null,
+        medianPrice: Math.round(median(prices) / 10000),
+        medianPricePerSqm: unitPrices.length >= 2
+          ? Math.round(median(unitPrices) / 10000 * 10) / 10
+          : null,
         count: recs.length,
       };
     })
@@ -70,8 +76,8 @@ function buildChartData(records: TransactionRecord[]): PeriodData[] {
     .sort((a, b) => a.sortKey - b.sortKey);
 }
 
-const TRADE_COLOR = "#14b8a6";
-const UNIT_COLOR  = "#f97316";
+const PRICE_COLOR    = "#0d9488"; // teal-600
+const UNIT_PRC_COLOR = "#0284c7"; // sky-600
 
 export function AreaPriceTrendChart({ records, isEn }: Props) {
   if (records.length < 10) {
@@ -105,10 +111,10 @@ export function AreaPriceTrendChart({ records, isEn }: Props) {
     );
   }
 
-  const hasUnitPrice = data.some((d) => d.avgUnitPrice !== null);
+  const hasUnitPrice = data.some((d) => d.medianPricePerSqm !== null);
   const removedCount = records.length - filtered.length;
-  const priceLbl    = isEn ? "Avg. price"   : "平均取引価格";
-  const unitPriceLbl = isEn ? "Avg. unit price" : "平均㎡単価";
+  const priceLbl    = isEn ? "Median price (¥10k)"    : "物件価格中央値（万円）";
+  const unitPriceLbl = isEn ? "Median unit price (¥10k/㎡)" : "平米単価中央値（万円/㎡）";
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-5">
@@ -128,33 +134,71 @@ export function AreaPriceTrendChart({ records, isEn }: Props) {
         </p>
       </div>
 
-      <ResponsiveContainer width="100%" height={220}>
-        {hasUnitPrice ? (
-          <LineChart data={data} margin={{ top: 4, right: 24, left: 4, bottom: 4 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-            <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#94a3b8" }} interval="preserveStartEnd" />
-            <YAxis yAxisId="trade" orientation="left" tick={{ fontSize: 10, fill: "#94a3b8" }} tickFormatter={(v) => `${v}万`} width={52} />
-            <YAxis yAxisId="unit" orientation="right" tick={{ fontSize: 10, fill: "#94a3b8" }} tickFormatter={(v) => `${v}万/㎡`} width={60} />
-            <Tooltip
-              formatter={(value, name) => name === priceLbl ? [`${value}万円`, name] : [`${value}万円/㎡`, name]}
-              contentStyle={{ fontSize: 11 }}
+      <ResponsiveContainer width="100%" height={260}>
+        <LineChart data={data} margin={{ top: 4, right: 40, left: 4, bottom: 4 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+          <XAxis
+            dataKey="label"
+            tick={{ fontSize: 10, fill: "#94a3b8" }}
+            interval="preserveStartEnd"
+          />
+          <YAxis
+            yAxisId="price"
+            orientation="left"
+            tick={{ fontSize: 10, fill: "#94a3b8" }}
+            tickFormatter={(v) => `${v.toLocaleString()}`}
+            width={56}
+            unit="万"
+          />
+          {hasUnitPrice && (
+            <YAxis
+              yAxisId="unit"
+              orientation="right"
+              tick={{ fontSize: 10, fill: "#94a3b8" }}
+              tickFormatter={(v) => `${v}`}
+              width={52}
+              unit="万/㎡"
             />
-            <Legend wrapperStyle={{ fontSize: 11 }} />
-            <Line yAxisId="trade" type="monotone" dataKey="avgTradePrice" name={priceLbl} stroke={TRADE_COLOR} strokeWidth={2} dot={{ r: 3 }} isAnimationActive={false} />
-            <Line yAxisId="unit" type="monotone" dataKey="avgUnitPrice" name={unitPriceLbl} stroke={UNIT_COLOR} strokeWidth={2} dot={{ r: 3 }} connectNulls isAnimationActive={false} />
-          </LineChart>
-        ) : (
-          <BarChart data={data} margin={{ top: 4, right: 16, left: 4, bottom: 4 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-            <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#94a3b8" }} interval="preserveStartEnd" />
-            <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} tickFormatter={(v) => `${v}万`} width={52} />
-            <Tooltip formatter={(value) => [`${value}万円`, priceLbl]} contentStyle={{ fontSize: 11 }} />
-            <Bar dataKey="avgTradePrice" name={priceLbl} fill={TRADE_COLOR} radius={[3, 3, 0, 0]} isAnimationActive={false} />
-          </BarChart>
-        )}
+          )}
+          <Tooltip
+            formatter={(value, name) =>
+              name === priceLbl
+                ? [`${Number(value).toLocaleString()}万円`, name]
+                : [`${value}万円/㎡`, name]
+            }
+            contentStyle={{ fontSize: 11 }}
+          />
+          <Legend wrapperStyle={{ fontSize: 11 }} />
+          <Line
+            yAxisId="price"
+            type="monotone"
+            dataKey="medianPrice"
+            name={priceLbl}
+            stroke={PRICE_COLOR}
+            strokeWidth={2}
+            dot={{ r: 3 }}
+            isAnimationActive={false}
+          />
+          {hasUnitPrice && (
+            <Line
+              yAxisId="unit"
+              type="monotone"
+              dataKey="medianPricePerSqm"
+              name={unitPriceLbl}
+              stroke={UNIT_PRC_COLOR}
+              strokeWidth={2}
+              dot={{ r: 3 }}
+              connectNulls
+              isAnimationActive={false}
+            />
+          )}
+        </LineChart>
       </ResponsiveContainer>
+
       <p className="text-xs text-slate-400 text-center mt-1">
-        {isEn ? "※ Periods with ≥2 transactions only · MLIT 不動産情報ライブラリ" : "※ 各期2件以上のデータのみ表示 · 国交省不動産情報ライブラリ"}
+        {isEn
+          ? "※ Periods with ≥2 transactions only · MLIT 不動産情報ライブラリ"
+          : "※ 各期2件以上のデータのみ表示 · 国交省不動産情報ライブラリ"}
       </p>
     </div>
   );
