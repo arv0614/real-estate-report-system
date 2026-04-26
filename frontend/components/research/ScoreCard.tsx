@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { ExternalLink, MapPin, BarChart2 } from "lucide-react";
 import { calcPropertyScore, gradeColor, gradeBg } from "@/lib/scoring";
 import type { PropertyScore, ScoreGrade, SubScore } from "@/lib/scoring";
@@ -87,8 +87,11 @@ function gradeRange(grade: ScoreGrade, _isEn: boolean): string {
   return m[grade];
 }
 
-// ── Score breakdown (U21-3) ───────────────────────────────────────────────────
+// ── Score breakdown (collapsible, U23-2) ─────────────────────────────────────
 function PropertyScoreBreakdown({ score, isEn }: { score: PropertyScore; isEn: boolean }) {
+  const [open, setOpen] = useState(false);
+  const toggle = useCallback(() => setOpen((o) => !o), []);
+
   if (score.total.status !== "ok") return null;
 
   const items = [
@@ -103,37 +106,45 @@ function PropertyScoreBreakdown({ score, isEn }: { score: PropertyScore; isEn: b
   const totalW = avail.reduce((s, i) => s + i.sub.weight, 0);
 
   return (
-    <div className="mt-4 px-4 py-3 bg-white/60 rounded-xl border border-slate-200/70">
-      <p className="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">
-        {isEn ? "Score breakdown" : "スコアの内訳"}
-      </p>
-      <div className="space-y-1 text-xs">
-        {avail.map(({ label, sub }) => {
-          const wPct = Math.round((sub.weight / totalW) * 100);
-          const contrib = (sub.value * sub.weight / totalW).toFixed(1);
-          return (
-            <div key={label} className="flex items-center justify-between text-slate-600">
-              <span>
-                {label}{" "}
-                <span className="text-slate-400">({wPct}%)</span>
-              </span>
-              <span className="tabular-nums">
-                {sub.value} × {wPct}% ={" "}
-                <strong className="text-slate-900">{contrib}</strong>
-              </span>
+    <div className="mt-3">
+      <button
+        type="button"
+        onClick={toggle}
+        className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition-colors underline underline-offset-2"
+      >
+        {isEn ? "? How this index is calculated" : "? この指標の計算方法"}
+      </button>
+      {open && (
+        <div className="mt-2 px-4 py-3 bg-white/60 rounded-xl border border-slate-200/70">
+          <div className="space-y-1 text-xs">
+            {avail.map(({ label, sub }) => {
+              const wPct = Math.round((sub.weight / totalW) * 100);
+              const contrib = (sub.value * sub.weight / totalW).toFixed(1);
+              return (
+                <div key={label} className="flex items-center justify-between text-slate-600">
+                  <span>
+                    {label}{" "}
+                    <span className="text-slate-400">({wPct}%)</span>
+                  </span>
+                  <span className="tabular-nums">
+                    {sub.value} × {wPct}% ={" "}
+                    <strong className="text-slate-900">{contrib}</strong>
+                  </span>
+                </div>
+              );
+            })}
+            <div className="border-t border-slate-200 mt-1.5 pt-1.5 flex justify-between font-bold text-sm">
+              <span className="text-slate-700">{isEn ? "Total" : "合計"}</span>
+              <span className="font-mono text-slate-900">{score.total.score} / 100</span>
             </div>
-          );
-        })}
-        <div className="border-t border-slate-200 mt-1.5 pt-1.5 flex justify-between font-bold text-sm">
-          <span className="text-slate-700">{isEn ? "Total" : "合計"}</span>
-          <span className="font-mono text-slate-900">{score.total.score} / 100</span>
+          </div>
+          <p className="text-xs text-slate-500 mt-2">
+            {isEn
+              ? `Index ${score.total.grade} · ${score.total.score}/100 (${gradeRange(score.total.grade, isEn)})`
+              : `インデックス ${score.total.grade} · ${score.total.score}/100（${gradeRange(score.total.grade, isEn)}）`}
+          </p>
         </div>
-      </div>
-      <p className="text-xs text-slate-500 mt-2">
-        {isEn
-          ? `Index ${score.total.grade} · ${score.total.score}/100 (${gradeRange(score.total.grade, isEn)})`
-          : `インデックス ${score.total.grade} · ${score.total.score}/100（${gradeRange(score.total.grade, isEn)}）`}
-      </p>
+      )}
     </div>
   );
 }
