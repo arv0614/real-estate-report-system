@@ -8,6 +8,7 @@ import type { AreaResult, AreaSummaryResult } from "@/app/[locale]/research/area
 import { PopulationChart } from "./PopulationChart";
 import { AreaScoreCard } from "./AreaScoreCard";
 import { AreaTopReasons } from "./AreaTopReasons";
+import { AreaPriceTrendChart } from "./AreaPriceTrendChart";
 import {
   buildGoogleMapsUrl, buildStreetViewUrl,
   buildHazardMapUrl, buildJShisUrl, buildGsiLandformUrl,
@@ -85,68 +86,6 @@ function AreaSkeleton({ isEn, slow, verySlow }: { isEn: boolean; slow: boolean; 
       <SkeletonBlock className="h-40" />
       <SkeletonBlock className="h-32" />
       <SkeletonBlock className="h-32" />
-    </div>
-  );
-}
-
-// ── Price histogram ───────────────────────────────────────────────────────────
-function PriceHistogram({ prices, isEn }: { prices: number[]; isEn: boolean }) {
-  if (prices.length === 0) return null;
-
-  const sorted = [...prices].sort((a, b) => a - b);
-  const min = sorted[0];
-  const max = sorted[sorted.length - 1];
-  const med = sorted.length % 2 === 0
-    ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
-    : sorted[Math.floor(sorted.length / 2)];
-
-  // Build 8 buckets
-  const bucketCount = 8;
-  const range = max - min || 1;
-  const bucketSize = range / bucketCount;
-  const buckets = Array.from({ length: bucketCount }, (_, i) => ({
-    start: min + i * bucketSize,
-    end: min + (i + 1) * bucketSize,
-    count: 0,
-  }));
-  for (const p of prices) {
-    const idx = Math.min(Math.floor((p - min) / bucketSize), bucketCount - 1);
-    buckets[idx].count++;
-  }
-  const maxCount = Math.max(...buckets.map((b) => b.count));
-
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-5">
-      <h3 className="text-sm font-bold text-slate-900 mb-1">
-        {isEn ? "Transaction Price Distribution" : "取引価格分布（エリア全体）"}
-      </h3>
-      <p className="text-xs text-slate-500 mb-4">
-        {isEn ? `${prices.length} transactions` : `${prices.length}件の取引データ`}
-      </p>
-      <div className="flex items-end gap-1 h-24">
-        {buckets.map((b, i) => (
-          <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
-            <div
-              className="w-full rounded-t bg-blue-400 transition-all duration-500"
-              style={{ height: maxCount > 0 ? `${(b.count / maxCount) * 88}px` : "2px" }}
-            />
-          </div>
-        ))}
-      </div>
-      <div className="flex justify-between text-xs text-slate-400 mt-1">
-        <span>{Math.round(min).toLocaleString()}万</span>
-        <span>{Math.round(max).toLocaleString()}万</span>
-      </div>
-      <div className="mt-3 flex gap-4 text-xs">
-        <span className="text-slate-600">
-          {isEn ? "Median" : "中央値"}:{" "}
-          <strong>{Math.round(med).toLocaleString()}万円</strong>
-        </span>
-        <span className="text-slate-600">
-          {isEn ? "Range" : "レンジ"}:{" "}
-          <strong>{Math.round(min).toLocaleString()}〜{Math.round(max).toLocaleString()}万円</strong>
-        </span>
-      </div>
     </div>
   );
 }
@@ -313,14 +252,17 @@ export function AreaClient({ initialLat, initialLng, initialType, isEn, locale, 
     router.push(`/${locale}/research${base}`);
   }, [coords, locale, propertyType, router]);
 
-  // Client-side price filtering by propertyType (9-8)
-  const filteredPrices = useMemo(() => {
+  // Client-side price filtering by propertyType
+  const filteredTransactions = useMemo(() => {
     if (!result || !result.ok) return [];
     const requiredType = TYPE_FILTER[propertyType];
-    return result.allTransactions
-      .filter((r) => r.type === requiredType && r.tradePrice > 0)
-      .map((r) => Math.round(r.tradePrice / 10000));
+    return result.allTransactions.filter((r) => r.type === requiredType && r.tradePrice > 0);
   }, [result, propertyType]);
+
+  const filteredPrices = useMemo(
+    () => filteredTransactions.map((r) => Math.round(r.tradePrice / 10000)),
+    [filteredTransactions]
+  );
 
   // Show skeleton while no result or error has arrived yet
   const showSkeleton = !result && !runError;
@@ -436,7 +378,7 @@ export function AreaClient({ initialLat, initialLng, initialType, isEn, locale, 
             <div className={`grid transition-all duration-300 ease-in-out ${detailOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
               <div className="overflow-hidden">
                 <div className="border-t border-slate-200 space-y-4 p-5">
-                  <PriceHistogram prices={filteredPrices} isEn={isEn} />
+                  <AreaPriceTrendChart records={filteredTransactions} isEn={isEn} />
                   <DisasterSummary result={result} isEn={isEn} />
                   {result.population && (
                     <PopulationChart
