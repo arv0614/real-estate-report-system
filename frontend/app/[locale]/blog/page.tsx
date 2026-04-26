@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { getAllPostMeta } from "@/lib/blog";
+import BlogIndexClient from "@/components/blog/BlogIndexClient";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
@@ -40,15 +42,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       };
 }
 
-function formatDate(iso: string, locale: string) {
-  const d = new Date(iso);
-  return d.toLocaleDateString(locale === "en" ? "en-US" : "ja-JP", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-}
-
 export default async function BlogIndexPage({ params }: Props) {
   const { locale } = await params;
   const posts = getAllPostMeta();
@@ -57,10 +50,14 @@ export default async function BlogIndexPage({ params }: Props) {
   const homeHref = isEn ? "/en" : "/";
   const blogLabel = isEn ? "Blog" : "ブログ";
   const serviceName = isEn ? "Mekiki Research" : "物件目利きリサーチ";
-  const emptyMsg = isEn ? "No articles yet." : "記事がありません。";
   const subtitle = isEn
     ? "Insights on Japan real estate investing and home buying"
     : "マイホーム購入・不動産投資に役立つ情報を発信しています";
+
+  const labels = {
+    listTab: isEn ? "List" : "リスト",
+    mapTab: isEn ? "Map" : "地図",
+  };
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -86,49 +83,9 @@ export default async function BlogIndexPage({ params }: Props) {
           <p className="text-sm text-slate-500">{subtitle}</p>
         </div>
 
-        {posts.length === 0 ? (
-          <p className="text-slate-500 text-sm">{emptyMsg}</p>
-        ) : (
-          <div className="space-y-6">
-            {posts.map((post) => (
-              <article
-                key={post.slug}
-                className="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-md transition-shadow"
-              >
-                <Link href={`${isEn ? "/en" : ""}/blog/${post.slug}`} className="group block">
-                  <h2 className="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors mb-2 leading-snug">
-                    {post.title}
-                  </h2>
-                  {post.description && (
-                    <p className="text-sm text-slate-600 leading-relaxed line-clamp-3 mb-3">
-                      {post.description}
-                    </p>
-                  )}
-                  <div className="flex flex-wrap items-center gap-3">
-                    {post.publishedAt && (
-                      <time
-                        dateTime={post.publishedAt}
-                        className="text-xs text-slate-400"
-                      >
-                        {formatDate(post.publishedAt, locale)}
-                      </time>
-                    )}
-                    <div className="flex flex-wrap gap-1.5">
-                      {post.tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </Link>
-              </article>
-            ))}
-          </div>
-        )}
+        <Suspense fallback={null}>
+          <BlogIndexClient posts={posts} locale={locale} labels={labels} />
+        </Suspense>
       </main>
 
       <footer className="mt-12 border-t border-slate-200 bg-white py-8">
