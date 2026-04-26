@@ -5,6 +5,7 @@ import { ExternalLink } from "lucide-react";
 import { calcAreaScore, gradeBg } from "@/lib/scoring/areaScore";
 import type { AreaScore, ScoreGrade, SubScore } from "@/lib/scoring/areaScore";
 import type { AreaSummaryResult } from "@/app/[locale]/research/area/areaActions";
+import type { PopulationFailReason } from "@/lib/research/populationApi";
 import type { SeismicData, TerrainData, PopulationData } from "@/types/research";
 import type { HazardInfo } from "@/types/api";
 import { ScoreExplainer } from "./ScoreExplainer";
@@ -203,6 +204,26 @@ function buildDisasterCriteria(
   return rows;
 }
 
+function populationFailMessage(
+  reason: PopulationFailReason | "no_city_code" | null,
+  isEn: boolean
+): string {
+  switch (reason) {
+    case "no_city_code":
+      return isEn ? "Area code not returned by MLIT API" : "MLIT APIから市区町村コードが取得できませんでした";
+    case "no_api_key":
+      return isEn ? "ESTAT_API_KEY not configured" : "ESTAT_API_KEYが設定されていません";
+    case "no_tables":
+      return isEn ? "No e-Stat tables found for this municipality" : "この市区町村のe-Statテーブルが見つかりませんでした";
+    case "insufficient_data":
+      return isEn ? "Insufficient population data points from e-Stat" : "e-Statのデータ点数が不足しています";
+    case "api_error":
+      return isEn ? "e-Stat API error" : "e-Stat APIエラー";
+    default:
+      return isEn ? "Population data unavailable" : "人口データ未取得";
+  }
+}
+
 function buildFutureCriteria(population: PopulationData | null, isEn: boolean): CriterionRow[] {
   if (!population || population.history.length < 2) {
     return [{
@@ -240,10 +261,11 @@ function buildMarketActivityCriteria(txCount: number, isEn: boolean): CriterionR
 }
 
 // ── Sub-score row ─────────────────────────────────────────────────────────────
-function SubScoreRow({ label, sub, explainer }: {
+function SubScoreRow({ label, sub, explainer, insufficientNote }: {
   label: string;
   sub: SubScore;
   explainer?: React.ReactNode;
+  insufficientNote?: string;
 }) {
   if (sub.status === "insufficient") {
     return (
@@ -253,7 +275,7 @@ function SubScoreRow({ label, sub, explainer }: {
             <span className="text-xs font-semibold text-slate-600 flex-shrink-0">{label}</span>
             {explainer}
           </div>
-          <span className="text-xs text-slate-400">— データ不足: {sub.reason}</span>
+          <span className="text-xs text-slate-400">— {insufficientNote ?? sub.reason}</span>
         </div>
         <div className="w-full h-2 bg-slate-100 rounded-full" />
       </div>
@@ -303,6 +325,7 @@ interface Props {
   txCount: number;
 }
 
+
 export function AreaScoreCard({ result, isEn, txCount }: Props) {
   const score: AreaScore = useMemo(
     () => calcAreaScore(result.hazard, result.seismic, result.terrain, result.population, txCount),
@@ -332,6 +355,7 @@ export function AreaScoreCard({ result, isEn, txCount }: Props) {
       key: "disaster",
       label: t.disaster,
       sub: score.disaster,
+      insufficientNote: undefined as string | undefined,
       explainer: (
         <ScoreExplainer
           title={isEn ? "How disaster risk is calculated" : "災害リスクの計算方法"}
@@ -347,6 +371,9 @@ export function AreaScoreCard({ result, isEn, txCount }: Props) {
       key: "future",
       label: t.future,
       sub: score.future,
+      insufficientNote: result.populationFailReason
+        ? populationFailMessage(result.populationFailReason, isEn)
+        : undefined,
       explainer: (
         <ScoreExplainer
           title={isEn ? "How population trend is calculated" : "人口動態の計算方法"}
@@ -362,6 +389,7 @@ export function AreaScoreCard({ result, isEn, txCount }: Props) {
       key: "marketActivity",
       label: t.market,
       sub: score.marketActivity,
+      insufficientNote: undefined as string | undefined,
       explainer: (
         <ScoreExplainer
           title={isEn ? "How market activity is calculated" : "市場活性度の計算方法"}
@@ -410,8 +438,8 @@ export function AreaScoreCard({ result, isEn, txCount }: Props) {
       </div>
 
       <div className="mt-5 space-y-5">
-        {subRows.map(({ key, label, sub, explainer }) => (
-          <SubScoreRow key={key} label={label} sub={sub} explainer={explainer} />
+        {subRows.map(({ key, label, sub, explainer, insufficientNote }) => (
+          <SubScoreRow key={key} label={label} sub={sub} explainer={explainer} insufficientNote={insufficientNote} />
         ))}
       </div>
     </div>
