@@ -26,23 +26,36 @@ export default function BlogMiniMap({ primaryLocation, secondaryLocations, zoom 
 
       const map = new maplibregl.Map({
         container: containerRef.current,
-        style: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
+        style: "https://tiles.openfreemap.org/styles/liberty",
         center: [primaryLocation.lng, primaryLocation.lat],
         zoom,
+        attributionControl: {
+          customAttribution:
+            '© <a href="https://openfreemap.org/" target="_blank" rel="noopener">OpenFreeMap</a> © OpenStreetMap contributors',
+        },
       });
 
       mapRef.current = map;
+
+      map.on("error", (e) => {
+        console.error("[BlogMiniMap] MapLibre error:", e);
+      });
+
       map.addControl(new maplibregl.NavigationControl());
 
-      new maplibregl.Marker({ color: "#0d9488" })
-        .setLngLat([primaryLocation.lng, primaryLocation.lat])
-        .addTo(map);
+      map.on("load", () => {
+        if (cancelled) return;
 
-      for (const loc of secondaryLocations ?? []) {
-        new maplibregl.Marker({ color: "#64748b", scale: 0.7 })
-          .setLngLat([loc.lng, loc.lat])
+        new maplibregl.Marker({ color: "#0d9488" })
+          .setLngLat([primaryLocation.lng, primaryLocation.lat])
           .addTo(map);
-      }
+
+        for (const loc of secondaryLocations ?? []) {
+          new maplibregl.Marker({ color: "#64748b", scale: 0.7 })
+            .setLngLat([loc.lng, loc.lat])
+            .addTo(map);
+        }
+      });
     })();
 
     return () => {

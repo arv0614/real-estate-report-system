@@ -47,33 +47,46 @@ export default function BlogMap({ posts, locale }: Props) {
 
       const map = new maplibregl.Map({
         container: containerRef.current,
-        style: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
+        style: "https://tiles.openfreemap.org/styles/liberty",
         center: [137.5, 37.5],
         zoom: 4.5,
+        attributionControl: {
+          customAttribution:
+            '© <a href="https://openfreemap.org/" target="_blank" rel="noopener">OpenFreeMap</a> © <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>',
+        },
       });
 
       mapRef.current = map;
+
+      map.on("error", (e) => {
+        console.error("[BlogMap] MapLibre error:", e);
+      });
+
       map.addControl(new maplibregl.NavigationControl());
 
-      for (const post of posts) {
-        if (!post.primaryLocation || post.excludeFromMap) continue;
-        const loc = post.primaryLocation;
-        const blogHref = `${locale === "en" ? "/en" : ""}/blog/${post.slug}`;
+      map.on("load", () => {
+        if (cancelled) return;
 
-        const popup = new maplibregl.Popup({ offset: 25, maxWidth: "260px" }).setHTML(`
-          <div style="font-size:13px;line-height:1.5">
-            <h3 style="font-weight:700;margin:0 0 4px;font-size:13px;color:#0f172a">${escapeHtml(truncate(post.title, 60))}</h3>
-            <p style="color:#94a3b8;font-size:11px;margin:0 0 5px">${escapeHtml(formatDate(post.publishedAt))}</p>
-            <p style="color:#475569;font-size:12px;margin:0 0 8px">${escapeHtml(truncate(post.description, 80))}</p>
-            <a href="${escapeHtml(blogHref)}" style="color:#0d9488;font-weight:600;font-size:12px;text-decoration:none">記事を読む →</a>
-          </div>
-        `);
+        for (const post of posts) {
+          if (!post.primaryLocation || post.excludeFromMap) continue;
+          const loc = post.primaryLocation;
+          const blogHref = `${locale === "en" ? "/en" : ""}/blog/${post.slug}`;
 
-        new maplibregl.Marker({ color: "#0d9488" })
-          .setLngLat([loc.lng, loc.lat])
-          .setPopup(popup)
-          .addTo(map);
-      }
+          const popup = new maplibregl.Popup({ offset: 25, maxWidth: "260px" }).setHTML(`
+            <div style="font-size:13px;line-height:1.5">
+              <h3 style="font-weight:700;margin:0 0 4px;font-size:13px;color:#0f172a">${escapeHtml(truncate(post.title, 60))}</h3>
+              <p style="color:#94a3b8;font-size:11px;margin:0 0 5px">${escapeHtml(formatDate(post.publishedAt))}</p>
+              <p style="color:#475569;font-size:12px;margin:0 0 8px">${escapeHtml(truncate(post.description, 80))}</p>
+              <a href="${escapeHtml(blogHref)}" style="color:#0d9488;font-weight:600;font-size:12px;text-decoration:none">記事を読む →</a>
+            </div>
+          `);
+
+          new maplibregl.Marker({ color: "#0d9488" })
+            .setLngLat([loc.lng, loc.lat])
+            .setPopup(popup)
+            .addTo(map);
+        }
+      });
     })();
 
     return () => {
@@ -88,8 +101,8 @@ export default function BlogMap({ posts, locale }: Props) {
   return (
     <div
       ref={containerRef}
-      className="w-full rounded-xl overflow-hidden border border-slate-200"
-      style={{ height: "clamp(400px, 50vw, 600px)" }}
+      className="w-full rounded-2xl overflow-hidden border border-slate-200"
+      style={{ height: "clamp(300px, 40vw, 400px)" }}
     />
   );
 }
