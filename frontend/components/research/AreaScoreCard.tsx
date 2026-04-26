@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useEffect, useState, useCallback } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { ExternalLink } from "lucide-react";
-import { calcAreaScore, gradeBg } from "@/lib/scoring/areaScore";
+import { calcAreaScore } from "@/lib/scoring/areaScore";
 import type { AreaScore, ScoreGrade, SubScore } from "@/lib/scoring/areaScore";
 import type { AreaSummaryResult } from "@/app/[locale]/research/area/areaActions";
 import type { PopulationFailReason } from "@/lib/research/populationApi";
@@ -11,41 +11,79 @@ import type { HazardInfo } from "@/types/api";
 import { ScoreExplainer } from "./ScoreExplainer";
 import type { CriterionRow } from "./ScoreExplainer";
 
-// ── Count-up hook ─────────────────────────────────────────────────────────────
-function useCountUp(target: number, duration = 900): number {
-  const [current, setCurrent] = useState(0);
-  useEffect(() => {
-    let elapsed = 0;
-    const timer = setInterval(() => {
-      elapsed += 16;
-      const progress = Math.min(elapsed / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setCurrent(Math.round(eased * target));
-      if (progress >= 1) clearInterval(timer);
-    }, 16);
-    return () => clearInterval(timer);
-  }, [target, duration]);
-  return current;
-}
 
 
-// ── Grade ring ────────────────────────────────────────────────────────────────
-function GradeRing({ grade, overall }: { grade: ScoreGrade; overall: number }) {
-  const displayScore = useCountUp(overall);
+// ── Key metrics grid (U23-1 — main focus) ────────────────────────────────────
+function KeyMetrics({
+  result,
+  txCount,
+  isEn,
+}: {
+  result: AreaSummaryResult;
+  txCount: number;
+  isEn: boolean;
+}) {
+  const items: { label: string; value: string; source: string }[] = [];
+
+  if (result.seismic) {
+    items.push({
+      label: isEn ? "30-yr earthquake prob." : "30年地震確率",
+      value: `${result.seismic.probPct}%`,
+      source: "J-SHIS",
+    });
+  }
+
+  if (result.hazard) {
+    const rank = result.hazard.flood.maxDepthRank ?? 0;
+    items.push({
+      label: isEn ? "Flood depth" : "洪水浸水深",
+      value: rank === 0 ? (isEn ? "Outside zone" : "区域外") : `${isEn ? "Rank" : "ランク"} ${rank}`,
+      source: isEn ? "MLIT" : "国交省",
+    });
+  }
+
+  if (result.terrain?.elevation !== null && result.terrain?.elevation !== undefined) {
+    items.push({
+      label: isEn ? "Elevation" : "標高",
+      value: `${result.terrain.elevation}m`,
+      source: isEn ? "GSI" : "国土地理院",
+    });
+  }
+
+  if (txCount > 0) {
+    items.push({
+      label: isEn ? "Transactions" : "周辺取引件数",
+      value: txCount.toLocaleString() + (isEn ? "" : "件"),
+      source: isEn ? "MLIT" : "国交省",
+    });
+  }
+
+  if (result.population) {
+    const pct = (result.population.trend * 100).toFixed(2);
+    const sign = result.population.trend >= 0 ? "+" : "";
+    items.push({
+      label: isEn ? "Population CAGR" : "人口年変化率",
+      value: `${sign}${pct}%/yr`,
+      source: "e-Stat",
+    });
+  }
+
+  if (items.length === 0) return null;
+
   return (
-    <div className="relative flex items-center justify-center w-28 h-28 rounded-full bg-gradient-to-br from-teal-500 to-emerald-600 shadow-xl shadow-teal-200 flex-shrink-0">
-      <div className="flex flex-col items-center leading-none">
-        <span className="text-4xl font-black text-white tracking-tight animate-grade-bounce">{grade}</span>
-        <span className="text-white/70 text-xs mt-1">{displayScore}/100</span>
+    <div className="rounded-xl bg-white border border-slate-200 px-4 py-3 mb-4">
+      <p className="text-xs font-semibold text-slate-400 mb-2.5 uppercase tracking-wide">
+        {isEn ? "Key indicators (public data)" : "主要実測値（公的データ）"}
+      </p>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+        {items.slice(0, 4).map((item) => (
+          <div key={item.label}>
+            <p className="text-xs text-slate-500 leading-tight">{item.label}</p>
+            <p className="text-lg font-bold text-slate-900 leading-tight mt-0.5">{item.value}</p>
+            <p className="text-xs text-slate-400">{item.source}</p>
+          </div>
+        ))}
       </div>
-    </div>
-  );
-}
-
-function InsufficientRing() {
-  return (
-    <div className="flex items-center justify-center w-28 h-28 rounded-full border-4 border-dashed border-slate-300 bg-slate-50 flex-shrink-0">
-      <span className="text-4xl font-black text-slate-400">—</span>
     </div>
   );
 }
@@ -325,7 +363,7 @@ export function AreaScoreCard({ result, isEn, txCount }: Props) {
     [result.hazard, result.seismic, result.terrain, result.population, txCount]
   );
 
-  const bgClass = score.total.status === "ok" ? gradeBg(score.total.grade) : "bg-slate-50 border-slate-200";
+  // Neutral card — no grade-based color to avoid success/failure connotation
 
   const sourceNote = isEn
     ? "Sources: J-SHIS (earthquake probability), GSI (terrain / elevation), MLIT real estate transaction data, e-Stat population statistics."
@@ -399,40 +437,41 @@ export function AreaScoreCard({ result, isEn, txCount }: Props) {
   ];
 
   return (
-    <div className={`rounded-2xl border-2 p-6 shadow-sm ${bgClass}`}>
-      <div className="flex items-start gap-5">
-        {score.total.status === "ok" ? (
-          <GradeRing grade={score.total.grade} overall={score.total.score} />
-        ) : (
-          <InsufficientRing />
-        )}
+    <div className="rounded-2xl border-2 bg-slate-50 border-slate-200 p-6 shadow-sm">
+      {/* Title row */}
+      <div className="flex items-center gap-2 mb-1 flex-wrap">
+        <span className="text-base font-bold text-slate-900">{t.title}</span>
+        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-teal-100 text-teal-700">{t.badge}</span>
+      </div>
+      <p className="text-xs text-slate-500 mb-4 leading-relaxed">{gradeDescription(isEn)}</p>
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <span className="text-base font-bold text-slate-900">{t.title}</span>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-teal-100 text-teal-700">{t.badge}</span>
+      {/* Main focus: key measured values */}
+      <KeyMetrics result={result} txCount={txCount} isEn={isEn} />
+
+      {/* Small composite index pill — secondary info */}
+      {score.total.status === "ok" ? (
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="inline-flex items-center gap-2 bg-sky-50 border border-sky-200 rounded-lg px-3 py-1.5">
+            <span className="text-xs text-sky-500 font-medium">
+              {isEn ? "Composite index" : "総合インデックス"}
+            </span>
+            <span className="text-sm font-bold text-sky-700 font-mono">{score.total.grade}</span>
+            <span className="text-xs text-sky-500">{score.total.score}pt</span>
           </div>
-
-          {score.total.status === "ok" ? (
-            <>
-              <p className="text-sm text-slate-700 mb-2 leading-relaxed">
-                {gradeDescription(isEn)}
-              </p>
-              {score.total.note && (
-                <span className="inline-block text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
-                  {score.total.note}
-                </span>
-              )}
-            </>
-          ) : (
-            <p className="text-sm text-slate-500">{t.insufficient}</p>
+          <span className="text-xs text-slate-400">{isEn ? "— reference only" : "— 参考値"}</span>
+          {score.total.note && (
+            <span className="inline-block text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+              {score.total.note}
+            </span>
           )}
-
           <ScoreBreakdown score={score} isEn={isEn} />
         </div>
-      </div>
+      ) : (
+        <p className="text-sm text-slate-500">{t.insufficient}</p>
+      )}
 
-      <div className="mt-5 space-y-5">
+      {/* Indicator details */}
+      <div className="mt-5 space-y-5 border-t border-slate-200 pt-5">
         {subRows.map(({ key, label, sub, explainer, insufficientNote, sourceCite }) => (
           <SubScoreRow key={key} label={label} sub={sub} explainer={explainer} insufficientNote={insufficientNote} sourceCite={sourceCite} />
         ))}
