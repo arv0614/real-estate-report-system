@@ -19,8 +19,10 @@ function median(arr: number[]): number | null {
 }
 
 const TYPE_FILTER: Record<PropertyType, string> = {
-  mansion: "中古マンション等",
-  house:   "宅地(土地と建物)",
+  mansion:  "中古マンション等",
+  house:    "宅地(土地と建物)",
+  forest:   "林地",
+  farmland: "農地",
 };
 
 export async function fetchAreaDefaults(

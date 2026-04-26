@@ -8,7 +8,7 @@ interface Props {
   address: string;
   isEn: boolean;
   autoFilled?: boolean;
-  propertyType?: "house" | "mansion";
+  propertyType?: "house" | "mansion" | "forest" | "farmland";
 }
 
 const SITE_URL =

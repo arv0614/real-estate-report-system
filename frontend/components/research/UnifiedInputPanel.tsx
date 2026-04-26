@@ -9,6 +9,7 @@ import {
 import { PropertyForm } from "./PropertyForm";
 import type { PropertyFormHandle } from "./PropertyForm";
 import type { PropertyInput, PropertyMode, PropertyType } from "@/types/research";
+import { ComingSoonPanel } from "./ComingSoonPanel";
 
 const ResearchMap = dynamic(
   () => import("./ResearchMap").then((m) => m.ResearchMap),
@@ -295,26 +296,54 @@ export function UnifiedInputPanel({
           <span className="text-xs text-red-400 font-medium ml-0.5">*</span>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          {(["mansion", "house"] as const).map((pt) => (
-            <button
-              key={pt}
-              type="button"
-              onClick={() => {
-                haptic();
-                onPropertyTypeChange(pt);
-                setTypeSelected(true);
-              }}
-              className={`py-3 rounded-xl text-sm font-semibold transition-all duration-100 border-2 active:scale-95 ${
-                propertyType === pt
-                  ? "border-teal-600 bg-teal-600 text-white shadow-sm"
-                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
-              }`}
-            >
-              {pt === "mansion" ? (isEn ? "🏢 Apartment" : "🏢 マンション") : (isEn ? "🏠 House" : "🏠 戸建")}
-            </button>
-          ))}
+          {(["mansion", "house", "forest", "farmland"] as const).map((pt) => {
+            const isComingSoon = pt === "forest" || pt === "farmland";
+            const label =
+              pt === "mansion"  ? (isEn ? "🏢 Apartment" : "🏢 マンション") :
+              pt === "house"    ? (isEn ? "🏠 House"     : "🏠 戸建") :
+              pt === "forest"   ? (isEn ? "🌲 Forest"    : "🌲 山林") :
+                                  (isEn ? "🌾 Farmland"  : "🌾 農地");
+            const comingSoonBadge = isEn ? " (Soon)" : "（準備中）";
+            return (
+              <button
+                key={pt}
+                type="button"
+                onClick={() => {
+                  haptic();
+                  onPropertyTypeChange(pt);
+                  if (!isComingSoon) setTypeSelected(true);
+                }}
+                className={`py-3 rounded-xl text-sm font-semibold transition-all duration-100 border-2 active:scale-95 ${
+                  propertyType === pt
+                    ? isComingSoon
+                      ? "border-slate-400 bg-slate-400 text-white shadow-sm"
+                      : "border-teal-600 bg-teal-600 text-white shadow-sm"
+                    : isComingSoon
+                      ? "border-slate-200 bg-slate-50 text-slate-400"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                }`}
+              >
+                <span className="block leading-snug">{label}</span>
+                {isComingSoon && (
+                  <span className="block text-[10px] font-normal opacity-75 mt-0.5">{comingSoonBadge}</span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </section>
+
+      {/* ── Coming soon panel (forest / farmland) ─────────────────────────────── */}
+      {(propertyType === "forest" || propertyType === "farmland") && (
+        <ComingSoonPanel
+          type={propertyType}
+          onBack={() => { onPropertyTypeChange("mansion"); setTypeSelected(false); }}
+          isEn={isEn}
+        />
+      )}
+
+      {/* ── STEP 2〜4: Hidden for coming-soon types ───────────────────────────── */}
+      {propertyType !== "forest" && propertyType !== "farmland" && (<>
 
       {/* ── STEP 2: Purpose / mode ─────────────────────────────────────────────── */}
       <section>
@@ -572,6 +601,8 @@ export function UnifiedInputPanel({
           </div>
         </details>
       </section>
+
+      </>)}
 
     </div>
   );
