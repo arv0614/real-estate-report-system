@@ -28,21 +28,6 @@ function useCountUp(target: number, duration = 900): number {
   return current;
 }
 
-// ── Score bar ─────────────────────────────────────────────────────────────────
-function ScoreBar({ score, color }: { score: number; color: string }) {
-  return (
-    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-      <div className={`h-full rounded-full transition-all duration-700 ${color}`} style={{ width: `${score}%` }} />
-    </div>
-  );
-}
-
-function scoreBarColor(score: number): string {
-  if (score >= 80) return "bg-emerald-400";
-  if (score >= 60) return "bg-green-400";
-  if (score >= 45) return "bg-amber-400";
-  return "bg-red-400";
-}
 
 // ── Grade ring ────────────────────────────────────────────────────────────────
 function GradeRing({ grade, overall }: { grade: ScoreGrade; overall: number }) {
@@ -261,38 +246,34 @@ function buildMarketActivityCriteria(txCount: number, isEn: boolean): CriterionR
 }
 
 // ── Sub-score row ─────────────────────────────────────────────────────────────
-function SubScoreRow({ label, sub, explainer, insufficientNote }: {
+function SubScoreRow({ label, sub, explainer, insufficientNote, sourceCite }: {
   label: string;
   sub: SubScore;
   explainer?: React.ReactNode;
   insufficientNote?: string;
+  sourceCite?: string;
 }) {
   if (sub.status === "insufficient") {
     return (
       <div>
-        <div className="flex items-start justify-between mb-1 gap-2">
-          <div className="flex items-center gap-1">
-            <span className="text-xs font-semibold text-slate-600 flex-shrink-0">{label}</span>
-            {explainer}
-          </div>
-          <span className="text-xs text-slate-400">— {insufficientNote ?? sub.reason}</span>
+        <div className="flex items-start gap-2">
+          <span className="text-xs font-semibold text-slate-600 flex-shrink-0">{label}</span>
+          {sourceCite && <span className="text-xs text-slate-400">{sourceCite}</span>}
+          {explainer}
+          <span className="text-xs text-slate-400 ml-auto">{insufficientNote ?? sub.reason}</span>
         </div>
-        <div className="w-full h-2 bg-slate-100 rounded-full" />
       </div>
     );
   }
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-1">
-        <div className="flex items-center gap-1">
-          <span className="text-xs font-semibold text-slate-600">{label}</span>
-          {explainer}
-        </div>
-        <span className="text-xs font-bold text-slate-800 tabular-nums">{sub.value}</span>
+      <div className="flex items-center gap-1 mb-1.5">
+        <span className="text-xs font-semibold text-slate-600">{label}</span>
+        {sourceCite && <span className="text-xs text-slate-400">{sourceCite}</span>}
+        {explainer}
       </div>
-      <ScoreBar score={sub.value} color={scoreBarColor(sub.value)} />
-      <ul className="mt-1.5 space-y-0.5 pl-0.5">
+      <ul className="space-y-0.5 pl-0.5">
         {sub.evidence.map((e) => (
           <li key={e.label} className="flex items-baseline gap-1.5 text-xs text-slate-600">
             <span className="text-slate-400 flex-shrink-0">•</span>
@@ -355,6 +336,7 @@ export function AreaScoreCard({ result, isEn, txCount }: Props) {
       key: "disaster",
       label: t.disaster,
       sub: score.disaster,
+      sourceCite: isEn ? "(J-SHIS, GSI, MLIT)" : "（J-SHIS, 国土地理院, 国交省）",
       insufficientNote: undefined as string | undefined,
       explainer: (
         <ScoreExplainer
@@ -371,6 +353,7 @@ export function AreaScoreCard({ result, isEn, txCount }: Props) {
       key: "future",
       label: t.future,
       sub: score.future,
+      sourceCite: isEn ? "(e-Stat)" : "（e-Stat）",
       insufficientNote: result.populationFailReason
         ? populationFailMessage(result.populationFailReason, isEn)
         : undefined,
@@ -389,6 +372,7 @@ export function AreaScoreCard({ result, isEn, txCount }: Props) {
       key: "marketActivity",
       label: t.market,
       sub: score.marketActivity,
+      sourceCite: isEn ? "(MLIT)" : "（国交省）",
       insufficientNote: undefined as string | undefined,
       explainer: (
         <ScoreExplainer
@@ -438,8 +422,8 @@ export function AreaScoreCard({ result, isEn, txCount }: Props) {
       </div>
 
       <div className="mt-5 space-y-5">
-        {subRows.map(({ key, label, sub, explainer, insufficientNote }) => (
-          <SubScoreRow key={key} label={label} sub={sub} explainer={explainer} insufficientNote={insufficientNote} />
+        {subRows.map(({ key, label, sub, explainer, insufficientNote, sourceCite }) => (
+          <SubScoreRow key={key} label={label} sub={sub} explainer={explainer} insufficientNote={insufficientNote} sourceCite={sourceCite} />
         ))}
       </div>
     </div>
