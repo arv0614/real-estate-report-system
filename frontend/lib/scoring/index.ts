@@ -59,7 +59,7 @@ export function buildMarketSubScore(
     {
       label: "中央値",
       value: `${med.toLocaleString()}万円`,
-      sourceUrl: "https://www.land.mlit.go.jp/webland/",
+      sourceUrl: "https://www.reinfolib.mlit.go.jp/",
     },
     { label: "入力価格", value: `${inputPrice.toLocaleString()}万円` },
     { label: "乖離率", value: `${sign}${pct}%` },
@@ -102,7 +102,7 @@ export function buildDisasterSubScore(
     evidence.push({
       label: "洪水最大浸水深ランク",
       value: rank === 0 ? "区域外" : `ランク ${rank}`,
-      sourceUrl: "https://www.land.mlit.go.jp/webland/",
+      sourceUrl: "https://www.reinfolib.mlit.go.jp/",
     });
     if (land) {
       evidence.push({ label: "土砂災害リスク", value: "区域あり" });

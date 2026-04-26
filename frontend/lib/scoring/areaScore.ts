@@ -45,7 +45,7 @@ function buildMarketActivitySubScore(txCount: number, weight: number): SubScore 
       {
         label: "取引件数（直近）",
         value: `${txCount}件`,
-        sourceUrl: "https://www.land.mlit.go.jp/webland/",
+        sourceUrl: "https://www.reinfolib.mlit.go.jp/",
       },
     ],
   };

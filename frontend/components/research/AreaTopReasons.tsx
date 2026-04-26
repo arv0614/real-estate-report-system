@@ -82,7 +82,7 @@ function extractReasons(result: AreaSummaryResult, txCount: number, isEn: boolea
       icon: "🏘️",
       text: isEn
         ? `${txCount} transactions in area (MLIT)`
-        : `周辺取引 ${txCount} 件（国交省不動産取引価格）`,
+        : `周辺取引 ${txCount} 件（国交省不動産情報ライブラリ）`,
       sentiment: "good",
     });
   } else if (txCount > 0 && txCount < 5) {
@@ -90,7 +90,7 @@ function extractReasons(result: AreaSummaryResult, txCount: number, isEn: boolea
       icon: "📊",
       text: isEn
         ? `${txCount} transactions in area (MLIT)`
-        : `周辺取引 ${txCount} 件（国交省不動産取引価格）`,
+        : `周辺取引 ${txCount} 件（国交省不動産情報ライブラリ）`,
       sentiment: "neutral",
     });
   }
