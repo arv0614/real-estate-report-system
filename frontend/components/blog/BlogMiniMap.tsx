@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { BlogPostLocation } from "@/lib/blog";
+import { OSM_RASTER_STYLE } from "@/lib/blog/mapStyle";
 
 interface Props {
   primaryLocation: BlogPostLocation;
@@ -26,13 +27,9 @@ export default function BlogMiniMap({ primaryLocation, secondaryLocations, zoom 
 
       const map = new maplibregl.Map({
         container: containerRef.current,
-        style: "https://tiles.openfreemap.org/styles/liberty",
+        style: OSM_RASTER_STYLE,
         center: [primaryLocation.lng, primaryLocation.lat],
         zoom,
-        attributionControl: {
-          customAttribution:
-            '© <a href="https://openfreemap.org/" target="_blank" rel="noopener">OpenFreeMap</a> © OpenStreetMap contributors',
-        },
       });
 
       mapRef.current = map;
@@ -41,7 +38,7 @@ export default function BlogMiniMap({ primaryLocation, secondaryLocations, zoom 
         console.error("[BlogMiniMap] MapLibre error:", e);
       });
 
-      map.addControl(new maplibregl.NavigationControl());
+      map.addControl(new maplibregl.NavigationControl(), "top-right");
 
       map.on("load", () => {
         if (cancelled) return;

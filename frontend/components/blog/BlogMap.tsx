@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { PostMeta } from "@/lib/blog";
+import { OSM_RASTER_STYLE } from "@/lib/blog/mapStyle";
 
 interface Props {
   posts: PostMeta[];
@@ -47,13 +48,9 @@ export default function BlogMap({ posts, locale }: Props) {
 
       const map = new maplibregl.Map({
         container: containerRef.current,
-        style: "https://tiles.openfreemap.org/styles/liberty",
+        style: OSM_RASTER_STYLE,
         center: [137.5, 37.5],
         zoom: 4.5,
-        attributionControl: {
-          customAttribution:
-            '© <a href="https://openfreemap.org/" target="_blank" rel="noopener">OpenFreeMap</a> © <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>',
-        },
       });
 
       mapRef.current = map;
@@ -62,7 +59,7 @@ export default function BlogMap({ posts, locale }: Props) {
         console.error("[BlogMap] MapLibre error:", e);
       });
 
-      map.addControl(new maplibregl.NavigationControl());
+      map.addControl(new maplibregl.NavigationControl(), "top-right");
 
       map.on("load", () => {
         if (cancelled) return;
