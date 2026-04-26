@@ -17,8 +17,10 @@ import { ExternalLink, AlertTriangle, ChevronDown, Loader2 } from "lucide-react"
 import type { PropertyType } from "@/types/research";
 
 const TYPE_FILTER: Record<PropertyType, string> = {
-  mansion: "中古マンション等",
-  house:   "宅地(土地と建物)",
+  mansion:  "中古マンション等",
+  house:    "宅地(土地と建物)",
+  forest:   "林地",
+  farmland: "農地",
 };
 
 const ResearchMap = dynamic(

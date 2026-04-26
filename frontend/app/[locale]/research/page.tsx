@@ -69,7 +69,9 @@ export default async function ResearchPage({ params, searchParams }: PageProps) 
   const hasCoords = !isNaN(lat) && !isNaN(lng);
 
   const initialPropertyType: PropertyType =
-    typeStr === "house" ? "house" : "mansion";
+    typeStr === "house"     ? "house"     :
+    typeStr === "forest"    ? "forest"    :
+    typeStr === "farmland"  ? "farmland"  : "mansion";
 
   const initialAction = actionStr === "area" && hasCoords ? "area" : null;
 

@@ -4,7 +4,7 @@ import type { PopulationData } from "@/lib/research/populationApi";
 import type { SearchRange } from "@/lib/research/similarSearch";
 
 export type PropertyMode = "home" | "investment";
-export type PropertyType = "house" | "mansion";
+export type PropertyType = "house" | "mansion" | "forest" | "farmland";
 
 export interface PropertyInput {
   address: string;

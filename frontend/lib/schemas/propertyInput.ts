@@ -43,7 +43,7 @@ export const PropertyInputSchema = z.object({
 
   mode: z.enum(["home", "investment"]),
 
-  propertyType: z.enum(["house", "mansion"]).default("mansion"),
+  propertyType: z.enum(["house", "mansion", "forest", "farmland"]).default("mansion"),
 
   coordOverride: z
     .object({

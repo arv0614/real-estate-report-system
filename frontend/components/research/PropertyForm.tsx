@@ -309,16 +309,31 @@ export const PropertyForm = forwardRef<PropertyFormHandle, Props>(function Prope
             ))}
           </div>
           <div className="grid grid-cols-2 gap-2">
-            {(["mansion", "house"] as const).map((pt) => (
-              <button key={pt} type="button" onClick={() => onPropertyTypeChange(pt)}
-                className={`py-2 rounded-xl text-sm font-semibold transition-colors border-2 ${
-                  propertyType === pt
-                    ? "border-teal-600 bg-teal-600 text-white"
-                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
-                }`}>
-                {pt === "mansion" ? t.typeMansion : t.typeHouse}
-              </button>
-            ))}
+            {(["mansion", "house", "forest", "farmland"] as const).map((pt) => {
+              const isComingSoon = pt === "forest" || pt === "farmland";
+              const label =
+                pt === "mansion"  ? t.typeMansion :
+                pt === "house"    ? t.typeHouse :
+                pt === "forest"   ? (isEn ? "🌲 Forest" : "🌲 山林") :
+                                    (isEn ? "🌾 Farmland" : "🌾 農地");
+              return (
+                <button key={pt} type="button" onClick={() => onPropertyTypeChange(pt)}
+                  className={`py-2 rounded-xl text-sm font-semibold transition-colors border-2 ${
+                    propertyType === pt
+                      ? isComingSoon
+                        ? "border-slate-400 bg-slate-400 text-white"
+                        : "border-teal-600 bg-teal-600 text-white"
+                      : isComingSoon
+                        ? "border-slate-200 bg-slate-50 text-slate-400"
+                        : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                  }`}>
+                  <span className="block">{label}</span>
+                  {isComingSoon && (
+                    <span className="block text-[10px] font-normal opacity-75">{isEn ? "(Soon)" : "（準備中）"}</span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}

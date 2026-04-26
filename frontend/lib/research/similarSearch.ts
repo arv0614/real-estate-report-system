@@ -2,8 +2,10 @@ import type { TransactionRecord } from "@/types/api";
 import type { SimilarTx, PropertyType } from "@/types/research";
 
 const TYPE_FILTER: Record<PropertyType, string> = {
-  mansion: "中古マンション等",
-  house:   "宅地(土地と建物)",
+  mansion:  "中古マンション等",
+  house:    "宅地(土地と建物)",
+  forest:   "林地",
+  farmland: "農地",
 };
 
 export type SearchRange = "strict" | "city" | "wide";
