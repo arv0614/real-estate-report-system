@@ -86,36 +86,20 @@ function InsufficientRing() {
 }
 
 // ── Grade description ─────────────────────────────────────────────────────────
-function gradeDescription(grade: ScoreGrade, mode: string, isEn: boolean): string {
-  const isHome = mode === "home";
-  if (isEn) {
-    switch (grade) {
-      case "A+": return isHome ? "Excellent fundamentals — low risk and strong value." : "Strong investment candidate with favorable indicators.";
-      case "A":  return isHome ? "Solid property with good fundamentals." : "Good investment potential based on available data.";
-      case "B+": return isHome ? "Generally favorable — a few factors to keep in mind." : "Moderate-to-good investment potential.";
-      case "B":  return isHome ? "Reasonable option — some areas to review." : "Moderate return potential with some risk factors.";
-      case "C":  return isHome ? "Caution advised — review risk details carefully." : "Elevated risk factors present.";
-      case "D":  return isHome ? "Significant concerns found — careful review suggested." : "High risk profile based on available data.";
-    }
-  }
-  switch (grade) {
-    case "A+": return isHome ? "各指標が良好な物件です。相場・リスクともに参考値として優位な水準を示しています。" : "各指標が投資候補として有望な水準を示しています。";
-    case "A":  return isHome ? "バランスの取れた良好な物件です。" : "投資パフォーマンスが期待できる水準です。";
-    case "B+": return isHome ? "概ね良好ですが、一部の指標に注意が必要です。" : "まずまずの水準ですが、一部の指標を確認してください。";
-    case "B":  return isHome ? "概ね問題ありませんが、一部確認が必要な指標があります。" : "投資リターンは中程度の水準です。";
-    case "C":  return isHome ? "価格または災害リスクに注意が必要な指標があります。" : "リスク要因が見受けられます。慎重に検討ください。";
-    case "D":  return isHome ? "複数の懸念点があります。詳細を確認の上、ご判断ください。" : "高リスクな水準を示しています。詳細をご確認ください。";
-  }
+function gradeDescription(isEn: boolean): string {
+  return isEn
+    ? "Score based on aggregated public data indicators. For final decisions, please conduct on-site verification and consult a licensed real estate professional."
+    : "公的データに基づく指標の集計結果です。最終的なご判断は、現地確認や専門家（宅地建物取引士等）への相談を併用してください。";
 }
 
 function gradeRange(grade: ScoreGrade, isEn: boolean): string {
   const m: Record<ScoreGrade, [string, string, string]> = {
-    "A+": ["85+",   "excellent",  "優秀"],
-    "A":  ["75–84", "good",       "良好"],
-    "B+": ["65–74", "above avg",  "平均以上"],
-    "B":  ["55–64", "average",    "平均的"],
-    "C":  ["45–54", "below avg",  "平均以下"],
-    "D":  ["0–44",  "poor",       "低評価"],
+    "A+": ["85+",   "all indicators good",      "全項目良好"],
+    "A":  ["75–84", "mostly favorable",          "概ね良好"],
+    "B+": ["65–74", "some items to check",       "一部要確認"],
+    "B":  ["55–64", "multiple items to check",   "複数項目要確認"],
+    "C":  ["45–54", "several caution items",     "注意項目多い"],
+    "D":  ["0–44",  "many items require review", "多くの項目で要確認"],
   };
   const [range, en, ja] = m[grade];
   return isEn ? `${range} / ${en}` : `${range} / ${ja}`;
@@ -466,7 +450,7 @@ export function ScoreCard({ result, isEn, onScrollToMap }: Props) {
   const futWeight = isInvestment ? 30 : 20;
 
   const t = {
-    title:     isEn ? "Overall Verdict"       : "総合判定",
+    title:     isEn ? "Overall Indicators"     : "総合指標",
     modeLabel: isInvestment
       ? (isEn ? "Investment mode"   : "投資モード")
       : (isEn ? "Home purchase mode" : "自宅購入モード"),
@@ -576,7 +560,7 @@ export function ScoreCard({ result, isEn, onScrollToMap }: Props) {
           {score.total.status === "ok" ? (
             <>
               <p className="text-sm text-slate-700 mb-2 leading-relaxed">
-                {gradeDescription(score.total.grade, input.mode, isEn)}
+                {gradeDescription(isEn)}
               </p>
               {score.total.note && (
                 <span className="inline-block text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">

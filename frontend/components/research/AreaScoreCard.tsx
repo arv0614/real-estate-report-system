@@ -65,35 +65,20 @@ function InsufficientRing() {
 }
 
 // ── Grade helpers ─────────────────────────────────────────────────────────────
-function gradeDescription(grade: ScoreGrade, isEn: boolean): string {
-  if (isEn) {
-    switch (grade) {
-      case "A+": return "Excellent area — low disaster risk and favorable population trend.";
-      case "A":  return "Good area with solid fundamentals.";
-      case "B+": return "Generally favorable — some factors worth keeping in mind.";
-      case "B":  return "Reasonable area — some aspects to review carefully.";
-      case "C":  return "Caution advised — notable risk factors present.";
-      case "D":  return "Significant concerns found — careful review suggested.";
-    }
-  }
-  switch (grade) {
-    case "A+": return "各指標が良好なエリアです。災害リスク・人口動態ともに優位な水準を示しています。";
-    case "A":  return "バランスの取れた良好なエリアです。";
-    case "B+": return "概ね良好ですが、一部の指標に注意が必要です。";
-    case "B":  return "概ね問題ありませんが、一部確認が必要な指標があります。";
-    case "C":  return "災害リスクまたは人口動態に注意が必要な指標があります。";
-    case "D":  return "複数の懸念点があります。詳細を確認の上、ご判断ください。";
-  }
+function gradeDescription(isEn: boolean): string {
+  return isEn
+    ? "Score based on aggregated public data indicators. For final decisions, please conduct on-site verification and consult a licensed real estate professional."
+    : "公的データに基づく指標の集計結果です。最終的なご判断は、現地確認や専門家（宅地建物取引士等）への相談を併用してください。";
 }
 
 function gradeRange(grade: ScoreGrade, isEn: boolean): string {
   const m: Record<ScoreGrade, [string, string, string]> = {
-    "A+": ["85+",   "excellent",  "優秀"],
-    "A":  ["75–84", "good",       "良好"],
-    "B+": ["65–74", "above avg",  "平均以上"],
-    "B":  ["55–64", "average",    "平均的"],
-    "C":  ["45–54", "below avg",  "平均以下"],
-    "D":  ["0–44",  "poor",       "低評価"],
+    "A+": ["85+",   "all indicators good",   "全項目良好"],
+    "A":  ["75–84", "mostly favorable",       "概ね良好"],
+    "B+": ["65–74", "some items to check",    "一部要確認"],
+    "B":  ["55–64", "multiple items to check","複数項目要確認"],
+    "C":  ["45–54", "several caution items",  "注意項目多い"],
+    "D":  ["0–44",  "many items require review", "多くの項目で要確認"],
   };
   const [range, en, ja] = m[grade];
   return isEn ? `${range} / ${en}` : `${range} / ${ja}`;
@@ -332,7 +317,7 @@ export function AreaScoreCard({ result, isEn, txCount }: Props) {
     : "出典: J-SHIS地震ハザードステーション / 国土地理院（地形・標高）/ 国交省不動産取引価格情報 / e-Stat人口推計";
 
   const t = {
-    title:    isEn ? "Area Verdict"     : "エリア総合評価",
+    title:    isEn ? "Area Indicator Summary" : "エリア指標サマリー",
     badge:    isEn ? "Area analysis"    : "エリア分析",
     disaster: isEn ? "Disaster Risk"    : "災害リスク",
     future:   isEn ? "Population Trend" : "人口動態",
@@ -408,7 +393,7 @@ export function AreaScoreCard({ result, isEn, txCount }: Props) {
           {score.total.status === "ok" ? (
             <>
               <p className="text-sm text-slate-700 mb-2 leading-relaxed">
-                {gradeDescription(score.total.grade, isEn)}
+                {gradeDescription(isEn)}
               </p>
               {score.total.note && (
                 <span className="inline-block text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
