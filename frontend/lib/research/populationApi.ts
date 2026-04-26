@@ -115,19 +115,20 @@ async function fetchCensusPoint(
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
+import { unstable_cache } from "next/cache";
+
 export type PopulationFailReason =
   | "no_api_key"
   | "no_tables"
   | "api_error"
   | "insufficient_data";
 
-export async function fetchPopulationTrend(
+// Inner function takes apiKey as a parameter but is cached only on cityCode
+// (apiKey is a fixed server-side env var, not user-specific)
+async function _fetchPopulationTrend(
   cityCode: string,
   apiKey: string
 ): Promise<{ data: PopulationData; failReason: null } | { data: null; failReason: PopulationFailReason }> {
-  if (!apiKey) {
-    return { data: null, failReason: "no_api_key" };
-  }
 
   try {
     const results = await Promise.allSettled(
@@ -179,4 +180,19 @@ export async function fetchPopulationTrend(
     console.error(`[populationApi] error for cityCode=${cityCode}:`, err);
     return { data: null, failReason: "api_error" };
   }
+}
+
+// Cache keyed on cityCode only — apiKey is a fixed server-side env var.
+// Census data (2000-2020) is immutable; 90d revalidate for safety.
+const _fetchPopulationTrendCached = unstable_cache(
+  _fetchPopulationTrend,
+  ["population-trend"],
+  { revalidate: 7_776_000, tags: ["population"] }
+);
+export function fetchPopulationTrend(
+  cityCode: string,
+  apiKey: string
+): ReturnType<typeof _fetchPopulationTrend> {
+  if (!apiKey) return Promise.resolve({ data: null, failReason: "no_api_key" as const });
+  return _fetchPopulationTrendCached(cityCode, apiKey);
 }
