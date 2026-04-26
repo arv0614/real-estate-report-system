@@ -57,7 +57,7 @@ export function ScoreExplainer({ title, weight, criteria, totalScore, sourceNote
 
             <div className="p-5 space-y-4">
               <p className="text-xs text-slate-600">
-                {isEn ? "Weight in overall score:" : "総合評価への影響度:"}{" "}
+                {isEn ? "Weight in index:" : "指標の重み:"}{" "}
                 <strong className="text-slate-800">{weight}</strong>
               </p>
 
