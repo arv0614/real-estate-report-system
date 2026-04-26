@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Suspense } from "react";
 import { getAllPostMeta } from "@/lib/blog";
 import BlogIndexClient from "@/components/blog/BlogIndexClient";
 
@@ -54,10 +53,7 @@ export default async function BlogIndexPage({ params }: Props) {
     ? "Insights on Japan real estate investing and home buying"
     : "マイホーム購入・不動産投資に役立つ情報を発信しています";
 
-  const labels = {
-    listTab: isEn ? "List" : "リスト",
-    mapTab: isEn ? "Map" : "地図",
-  };
+  const emptyMsg = isEn ? "No articles yet." : "記事がありません。";
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -83,9 +79,7 @@ export default async function BlogIndexPage({ params }: Props) {
           <p className="text-sm text-slate-500">{subtitle}</p>
         </div>
 
-        <Suspense fallback={null}>
-          <BlogIndexClient posts={posts} locale={locale} labels={labels} />
-        </Suspense>
+        <BlogIndexClient posts={posts} locale={locale} emptyMsg={emptyMsg} />
       </main>
 
       <footer className="mt-12 border-t border-slate-200 bg-white py-8">
