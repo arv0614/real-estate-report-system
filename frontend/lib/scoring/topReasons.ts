@@ -42,19 +42,20 @@ export function calcTopReasons(
     if (med > 0) {
       const diff = (inputPrice - med) / med;
       const pct = Math.round(Math.abs(diff) * 100);
+      const sign = diff >= 0 ? "+" : "-";
       if (diff <= -T.market.good) {
         candidates.push({
           sentiment: "good",
           category: "market",
-          textJa: `相場より ${pct}% 安い`,
-          textEn: `${pct}% below market median`,
+          textJa: `入力価格: 中央値比 ${sign}${pct}%（国交省）`,
+          textEn: `Input price: ${sign}${pct}% vs. median (MLIT)`,
         });
       } else if (diff >= T.market.bad) {
         candidates.push({
           sentiment: "bad",
           category: "market",
-          textJa: `相場より ${pct}% 高い`,
-          textEn: `${pct}% above market median`,
+          textJa: `入力価格: 中央値比 ${sign}${pct}%（国交省）`,
+          textEn: `Input price: ${sign}${pct}% vs. median (MLIT)`,
         });
       }
     }
@@ -64,19 +65,12 @@ export function calcTopReasons(
   if (seismic !== null) {
     const p = seismic.prob30;
     const pct = seismic.probPct;
-    if (p < T.seismic.good) {
+    if (p < T.seismic.good || p >= T.seismic.bad) {
       candidates.push({
-        sentiment: "good",
+        sentiment: p < T.seismic.good ? "good" : "bad",
         category: "disaster",
-        textJa: `地震リスク低い（30年確率 ${pct}%）`,
-        textEn: `Low earthquake risk (30-yr probability ${pct}%)`,
-      });
-    } else if (p >= T.seismic.bad) {
-      candidates.push({
-        sentiment: "bad",
-        category: "disaster",
-        textJa: `地震リスク高い（30年確率 ${pct}%）`,
-        textEn: `High earthquake risk (30-yr probability ${pct}%)`,
+        textJa: `30年地震確率: ${pct}%（J-SHIS）`,
+        textEn: `30-yr earthquake prob.: ${pct}% (J-SHIS)`,
       });
     }
   }
@@ -84,21 +78,14 @@ export function calcTopReasons(
   // Future (population trend)
   if (population !== null) {
     const t = population.trend;
-    const pct = (Math.abs(t) * 100).toFixed(1);
-    const sign = t >= 0 ? "+" : "−";
-    if (t >= T.population.good) {
+    const pct = (Math.abs(t) * 100).toFixed(2);
+    const sign = t >= 0 ? "+" : "-";
+    if (t >= T.population.good || t <= T.population.bad) {
       candidates.push({
-        sentiment: "good",
+        sentiment: t >= T.population.good ? "good" : "bad",
         category: "future",
-        textJa: `人口増加傾向（年 ${sign}${pct}%）`,
-        textEn: `Growing population (${sign}${pct}%/yr)`,
-      });
-    } else if (t <= T.population.bad) {
-      candidates.push({
-        sentiment: "bad",
-        category: "future",
-        textJa: `人口減少傾向（年 −${pct}%）`,
-        textEn: `Declining population (−${pct}%/yr)`,
+        textJa: `人口年変化率: ${sign}${pct}%/年（e-Stat）`,
+        textEn: `Population CAGR: ${sign}${pct}%/yr (e-Stat)`,
       });
     }
   }

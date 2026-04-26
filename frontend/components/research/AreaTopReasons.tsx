@@ -13,62 +13,26 @@ function extractReasons(result: AreaSummaryResult, txCount: number, isEn: boolea
 
   if (result.seismic) {
     const { riskLevel, probPct } = result.seismic;
-    if (riskLevel === "low" || riskLevel === "very_low") {
-      reasons.push({
-        icon: "🟢",
-        text: isEn
-          ? `30-yr earthquake prob.: ${probPct}% (J-SHIS — relatively low)`
-          : `30年地震確率: ${probPct}%（J-SHIS データ上、相対的に低い）`,
-        sentiment: "good",
-      });
-    } else if (riskLevel === "moderate") {
-      reasons.push({
-        icon: "🟡",
-        text: isEn
-          ? `30-yr earthquake prob.: ${probPct}% (J-SHIS — moderate)`
-          : `30年地震確率: ${probPct}%（J-SHIS データ上、中程度）`,
-        sentiment: "neutral",
-      });
-    } else {
-      reasons.push({
-        icon: "🔴",
-        text: isEn
-          ? `30-yr earthquake prob.: ${probPct}% (J-SHIS — relatively high)`
-          : `30年地震確率: ${probPct}%（J-SHIS データ上、相対的に高い）`,
-        sentiment: "bad",
-      });
-    }
+    reasons.push({
+      icon: riskLevel === "low" || riskLevel === "very_low" ? "🟢" : riskLevel === "moderate" ? "🟡" : "🔴",
+      text: isEn
+        ? `30-yr earthquake prob.: ${probPct}% (J-SHIS)`
+        : `30年地震確率: ${probPct}%（J-SHIS）`,
+      sentiment: riskLevel === "low" || riskLevel === "very_low" ? "good" : riskLevel === "moderate" ? "neutral" : "bad",
+    });
   }
 
   if (result.population) {
     const trend = result.population.trend;
     const pct = (trend * 100).toFixed(2);
     const sign = trend >= 0 ? "+" : "";
-    if (trend >= 0.005) {
-      reasons.push({
-        icon: "📈",
-        text: isEn
-          ? `Population CAGR: ${sign}${pct}%/yr (e-Stat — increasing)`
-          : `人口年変化率: ${sign}${pct}%/年（e-Stat — 増加傾向）`,
-        sentiment: "good",
-      });
-    } else if (trend >= -0.005) {
-      reasons.push({
-        icon: "➡️",
-        text: isEn
-          ? `Population CAGR: ${sign}${pct}%/yr (e-Stat — stable)`
-          : `人口年変化率: ${sign}${pct}%/年（e-Stat — 横ばい）`,
-        sentiment: "neutral",
-      });
-    } else {
-      reasons.push({
-        icon: "📉",
-        text: isEn
-          ? `Population CAGR: ${sign}${pct}%/yr (e-Stat — declining)`
-          : `人口年変化率: ${sign}${pct}%/年（e-Stat — 減少傾向）`,
-        sentiment: "bad",
-      });
-    }
+    reasons.push({
+      icon: trend >= 0.005 ? "📈" : trend >= -0.005 ? "➡️" : "📉",
+      text: isEn
+        ? `Population CAGR: ${sign}${pct}%/yr (e-Stat)`
+        : `人口年変化率: ${sign}${pct}%/年（e-Stat）`,
+      sentiment: trend >= 0.005 ? "good" : trend >= -0.005 ? "neutral" : "bad",
+    });
   }
 
   if (result.hazard) {
@@ -95,48 +59,38 @@ function extractReasons(result: AreaSummaryResult, txCount: number, isEn: boolea
         icon: "⛰️",
         text: isEn
           ? "Landslide risk area designated (MLIT hazard map)"
-          : "土砂災害警戒区域に指定あり（国交省ハザードマップ）",
+          : "土砂災害警戒区域指定あり（国交省ハザードマップ）",
         sentiment: "bad",
       });
     }
   }
 
-  if (result.terrain?.terrainRisk) {
+  if (result.terrain?.terrainRisk && result.terrain.terrainClass) {
+    const cls = result.terrain.terrainClass;
     const risk = result.terrain.terrainRisk;
-    const cls = result.terrain.terrainClass ?? "";
-    if (risk === "low") {
-      reasons.push({
-        icon: "🗾",
-        text: isEn
-          ? `Terrain: ${cls || "low risk"} (GSI terrain classification)`
-          : `地形分類: ${cls || "低リスク地形"}（国土地理院）`,
-        sentiment: "good",
-      });
-    } else if (risk === "high") {
-      reasons.push({
-        icon: "⚠️",
-        text: isEn
-          ? `Terrain: ${cls || "high risk"} (GSI terrain classification)`
-          : `地形分類: ${cls || "高リスク地形"}（国土地理院）`,
-        sentiment: "bad",
-      });
-    }
+    reasons.push({
+      icon: risk === "high" ? "⚠️" : "🗾",
+      text: isEn
+        ? `Terrain: ${cls} (GSI)`
+        : `地形分類: ${cls}（国土地理院）`,
+      sentiment: risk === "high" ? "bad" : risk === "low" ? "good" : "neutral",
+    });
   }
 
   if (txCount >= 20) {
     reasons.push({
       icon: "🏘️",
       text: isEn
-        ? `${txCount} transactions in area (MLIT real estate data)`
-        : `周辺取引 ${txCount} 件（国交省 不動産取引価格情報）`,
+        ? `${txCount} transactions in area (MLIT)`
+        : `周辺取引 ${txCount} 件（国交省不動産取引価格）`,
       sentiment: "good",
     });
   } else if (txCount > 0 && txCount < 5) {
     reasons.push({
       icon: "📊",
       text: isEn
-        ? `${txCount} transactions in area — limited sample (MLIT)`
-        : `周辺取引 ${txCount} 件（国交省 — サンプル少数）`,
+        ? `${txCount} transactions in area (MLIT)`
+        : `周辺取引 ${txCount} 件（国交省不動産取引価格）`,
       sentiment: "neutral",
     });
   }
