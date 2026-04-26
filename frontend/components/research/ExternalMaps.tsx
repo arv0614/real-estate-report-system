@@ -1,7 +1,7 @@
 "use client";
 
-import { ExternalLink, Map, Camera } from "lucide-react";
-import { buildGoogleMapsUrl, buildStreetViewUrl, buildHazardMapUrl, buildJShisUrl } from "@/lib/links/externalMaps";
+import { ExternalLink, Map } from "lucide-react";
+import { buildGoogleMapsUrl, buildHazardMapUrl, buildJShisUrl } from "@/lib/links/externalMaps";
 
 interface Props {
   lat: number;
@@ -15,11 +15,6 @@ export function ExternalMaps({ lat, lng, isEn }: Props) {
       href: buildGoogleMapsUrl(lat, lng),
       icon: <Map className="w-4 h-4" />,
       label: isEn ? "Google Maps" : "Google マップ",
-    },
-    {
-      href: buildStreetViewUrl(lat, lng),
-      icon: <Camera className="w-4 h-4" />,
-      label: isEn ? "Street View" : "ストリートビュー",
     },
     {
       href: buildHazardMapUrl(lat, lng),
