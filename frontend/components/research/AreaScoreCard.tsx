@@ -1,11 +1,16 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
-import { ChevronDown, ExternalLink } from "lucide-react";
+import { useMemo, useEffect, useState } from "react";
+import { ExternalLink } from "lucide-react";
 import { calcAreaScore, gradeBg } from "@/lib/scoring/areaScore";
 import type { AreaScore, ScoreGrade, SubScore } from "@/lib/scoring/areaScore";
 import type { AreaSummaryResult } from "@/app/[locale]/research/area/areaActions";
+import type { SeismicData, TerrainData, PopulationData } from "@/types/research";
+import type { HazardInfo } from "@/types/api";
+import { ScoreExplainer } from "./ScoreExplainer";
+import type { CriterionRow } from "./ScoreExplainer";
 
+// ── Count-up hook ─────────────────────────────────────────────────────────────
 function useCountUp(target: number, duration = 900): number {
   const [current, setCurrent] = useState(0);
   useEffect(() => {
@@ -22,6 +27,7 @@ function useCountUp(target: number, duration = 900): number {
   return current;
 }
 
+// ── Score bar ─────────────────────────────────────────────────────────────────
 function ScoreBar({ score, color }: { score: number; color: string }) {
   return (
     <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -37,6 +43,7 @@ function scoreBarColor(score: number): string {
   return "bg-red-400";
 }
 
+// ── Grade ring ────────────────────────────────────────────────────────────────
 function GradeRing({ grade, overall }: { grade: ScoreGrade; overall: number }) {
   const displayScore = useCountUp(overall);
   return (
@@ -57,6 +64,7 @@ function InsufficientRing() {
   );
 }
 
+// ── Grade helpers ─────────────────────────────────────────────────────────────
 function gradeDescription(grade: ScoreGrade, isEn: boolean): string {
   if (isEn) {
     switch (grade) {
@@ -78,61 +86,232 @@ function gradeDescription(grade: ScoreGrade, isEn: boolean): string {
   }
 }
 
-function EvidencePanel({ sub }: { sub: Extract<SubScore, { status: "ok" }> }) {
+function gradeRange(grade: ScoreGrade, isEn: boolean): string {
+  const m: Record<ScoreGrade, [string, string, string]> = {
+    "A+": ["85+",   "excellent",  "優秀"],
+    "A":  ["75–84", "good",       "良好"],
+    "B+": ["65–74", "above avg",  "平均以上"],
+    "B":  ["55–64", "average",    "平均的"],
+    "C":  ["45–54", "below avg",  "平均以下"],
+    "D":  ["0–44",  "poor",       "低評価"],
+  };
+  const [range, en, ja] = m[grade];
+  return isEn ? `${range} / ${en}` : `${range} / ${ja}`;
+}
+
+// ── Score breakdown (U21-3) ───────────────────────────────────────────────────
+function ScoreBreakdown({ score, isEn }: { score: AreaScore; isEn: boolean }) {
+  if (score.total.status !== "ok") return null;
+
+  const items = [
+    { label: isEn ? "Disaster" : "災害リスク",  sub: score.disaster },
+    { label: isEn ? "Population" : "人口動態",  sub: score.future },
+    { label: isEn ? "Market" : "市場活性度",    sub: score.marketActivity },
+  ];
+  const avail = items.filter(
+    (i): i is { label: string; sub: Extract<SubScore, { status: "ok" }> } =>
+      i.sub.status === "ok"
+  );
+  const totalW = avail.reduce((s, i) => s + i.sub.weight, 0);
+
   return (
-    <div className="mt-2 bg-slate-50 rounded-lg p-3 text-xs space-y-1.5">
-      {sub.evidence.map((e) => (
-        <div key={e.label} className="flex items-start justify-between gap-2">
-          <span className="text-slate-500 flex-shrink-0">{e.label}</span>
-          {e.sourceUrl ? (
-            <a href={e.sourceUrl} target="_blank" rel="noopener noreferrer" className="font-medium text-blue-600 hover:underline flex items-center gap-0.5">
-              {e.value}<ExternalLink className="w-2.5 h-2.5" />
-            </a>
-          ) : (
-            <span className="font-medium text-slate-700">{e.value}</span>
-          )}
+    <div className="mt-4 px-4 py-3 bg-white/60 rounded-xl border border-slate-200/70">
+      <p className="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">
+        {isEn ? "Score breakdown" : "スコアの内訳"}
+      </p>
+      <div className="space-y-1 text-xs">
+        {avail.map(({ label, sub }) => {
+          const wPct = Math.round((sub.weight / totalW) * 100);
+          const contrib = (sub.value * sub.weight / totalW).toFixed(1);
+          return (
+            <div key={label} className="flex items-center justify-between text-slate-600">
+              <span>
+                {label}{" "}
+                <span className="text-slate-400">({wPct}%)</span>
+              </span>
+              <span className="tabular-nums">
+                {sub.value} × {wPct}% ={" "}
+                <strong className="text-slate-900">{contrib}</strong>
+              </span>
+            </div>
+          );
+        })}
+        <div className="border-t border-slate-200 mt-1.5 pt-1.5 flex justify-between font-bold text-sm">
+          <span className="text-slate-700">{isEn ? "Total" : "合計"}</span>
+          <span className="font-mono text-slate-900">{score.total.score} / 100</span>
         </div>
-      ))}
-      <p className="text-slate-400 pt-1.5 border-t border-slate-200 leading-relaxed">
-        過去および公的統計に基づく参考指標です。将来の価格や投資成果を保証するものではありません。
+      </div>
+      <p className="text-xs text-slate-500 mt-2">
+        {isEn
+          ? `${score.total.score}/100 → Grade ${score.total.grade} (${gradeRange(score.total.grade, isEn)})`
+          : `${score.total.score}/100 → ${score.total.grade} 評価（${gradeRange(score.total.grade, isEn)}）`}
       </p>
     </div>
   );
 }
 
-function SubScoreRow({ label, sub, isExpanded, onToggle }: {
+// ── Criteria builders for ScoreExplainer modals ───────────────────────────────
+function buildDisasterCriteria(
+  seismic: SeismicData | null,
+  terrain: TerrainData | null,
+  hazard: HazardInfo | null,
+  isEn: boolean
+): CriterionRow[] {
+  const rows: CriterionRow[] = [];
+
+  if (seismic) {
+    const p = seismic.prob30;
+    const s = p >= 0.70 ? 15 : p >= 0.40 ? 35 : p >= 0.20 ? 55 : p >= 0.06 ? 75 : 90;
+    rows.push({
+      label: isEn ? "30-year earthquake probability" : "30年地震確率（震度6弱以上）",
+      threshold: isEn
+        ? "< 6% → 90pt  |  6–20% → 75pt  |  20–40% → 55pt  |  40–70% → 35pt  |  ≥70% → 15pt"
+        : "6%未満→90点 / 6〜20%→75点 / 20〜40%→55点 / 40〜70%→35点 / 70%以上→15点",
+      score: `${s}pt  (${seismic.probPct}% — ${seismic.riskLabel})`,
+      matched: true,
+    });
+  }
+
+  if (terrain) {
+    const s = terrain.terrainRisk === "high" ? 25 : terrain.terrainRisk === "moderate" ? 60 : 90;
+    const lbl = terrain.terrainRisk === "high"
+      ? (isEn ? "high" : "高")
+      : terrain.terrainRisk === "moderate"
+      ? (isEn ? "moderate" : "中")
+      : (isEn ? "low" : "低");
+    rows.push({
+      label: isEn ? "Terrain risk" : "地形リスク",
+      threshold: isEn
+        ? "Low → 90pt  |  Moderate → 60pt  |  High → 25pt"
+        : "低→90点 / 中→60点 / 高→25点",
+      score: `${s}pt  (${lbl}${terrain.terrainClass ? ` — ${terrain.terrainClass}` : ""})`,
+      matched: true,
+    });
+  }
+
+  if (hazard) {
+    const rank = hazard.flood.maxDepthRank ?? 0;
+    const land = hazard.landslide.hasRisk;
+    const s = (rank >= 4 || land) ? 20 : rank >= 3 ? 40 : rank >= 1 ? 60 : 90;
+    const ctx = rank === 0 && !land
+      ? (isEn ? "No risk" : "区域外")
+      : `${isEn ? "Rank" : "ランク"} ${rank}${land ? (isEn ? " + landslide" : " + 土砂") : ""}`;
+    rows.push({
+      label: isEn ? "Flood / landslide hazard" : "洪水・土砂災害リスク",
+      threshold: isEn
+        ? "No risk → 90pt  |  Rank 1-2 → 60pt  |  Rank 3 → 40pt  |  Rank 4+ / landslide → 20pt"
+        : "区域外→90点 / ランク1-2→60点 / ランク3→40点 / ランク4以上・土砂→20点",
+      score: `${s}pt  (${ctx})`,
+      matched: true,
+    });
+  }
+
+  if (rows.length === 0) {
+    rows.push({
+      label: isEn ? "No data available" : "データ未取得",
+      threshold: isEn ? "All disaster components require data" : "災害データが取得できませんでした",
+      score: "—",
+      matched: false,
+    });
+  }
+
+  return rows;
+}
+
+function buildFutureCriteria(population: PopulationData | null, isEn: boolean): CriterionRow[] {
+  if (!population || population.history.length < 2) {
+    return [{
+      label: isEn ? "Population data unavailable" : "人口データ未取得",
+      threshold: isEn ? "Requires e-Stat population data" : "e-Stat人口データが必要です",
+      score: "—",
+      matched: false,
+    }];
+  }
+  const t = population.trend;
+  const s = t >= 0.02 ? 90 : t >= 0.005 ? 78 : t >= -0.005 ? 65 : t >= -0.01 ? 50 : t >= -0.02 ? 35 : 18;
+  const sign = t >= 0 ? "+" : "";
+  const pct = (t * 100).toFixed(2);
+  return [{
+    label: isEn ? "Population annual growth rate (CAGR)" : "人口年平均変化率（CAGR）",
+    threshold: isEn
+      ? "≥+2%/yr → 90pt  |  +0.5–2% → 78pt  |  ±0.5% → 65pt  |  −0.5 to −1% → 50pt  |  −1 to −2% → 35pt  |  ≤−2% → 18pt"
+      : "≥+2%/年→90点 / +0.5〜2%→78点 / ±0.5%→65点 / -0.5〜-1%→50点 / -1〜-2%→35点 / -2%以下→18点",
+    score: `${s}pt  (${sign}${pct}%/年 — ${population.cityName})`,
+    matched: true,
+  }];
+}
+
+function buildMarketActivityCriteria(txCount: number, isEn: boolean): CriterionRow[] {
+  const s = txCount === 0 ? null
+    : txCount >= 50 ? 90 : txCount >= 20 ? 80 : txCount >= 10 ? 70 : txCount >= 5 ? 60 : 40;
+  return [{
+    label: isEn ? "Transaction count in tile" : "タイル内取引件数",
+    threshold: isEn
+      ? "≥50 → 90pt  |  20-49 → 80pt  |  10-19 → 70pt  |  5-9 → 60pt  |  1-4 → 40pt  |  0 → insufficient"
+      : "50件以上→90点 / 20〜49件→80点 / 10〜19件→70点 / 5〜9件→60点 / 1〜4件→40点 / 0件→データ不足",
+    score: s !== null ? `${s}pt  (${txCount}件)` : (isEn ? "Insufficient data" : "データ不足"),
+    matched: txCount > 0,
+  }];
+}
+
+// ── Sub-score row ─────────────────────────────────────────────────────────────
+function SubScoreRow({ label, sub, explainer }: {
   label: string;
   sub: SubScore;
-  isExpanded: boolean;
-  onToggle: () => void;
+  explainer?: React.ReactNode;
 }) {
   if (sub.status === "insufficient") {
     return (
       <div>
         <div className="flex items-start justify-between mb-1 gap-2">
-          <span className="text-xs font-semibold text-slate-600 flex-shrink-0">{label}</span>
+          <div className="flex items-center gap-1">
+            <span className="text-xs font-semibold text-slate-600 flex-shrink-0">{label}</span>
+            {explainer}
+          </div>
           <span className="text-xs text-slate-400">— データ不足: {sub.reason}</span>
         </div>
         <div className="w-full h-2 bg-slate-100 rounded-full" />
       </div>
     );
   }
+
   return (
     <div>
-      <button type="button" onClick={onToggle} className="w-full flex items-center justify-between mb-1 group">
-        <span className="text-xs font-semibold text-slate-600">{label}</span>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-500">{sub.evidence[0]?.value ?? ""}</span>
-          <span className="text-xs font-bold text-slate-800 w-6 text-right">{sub.value}</span>
-          <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-1">
+          <span className="text-xs font-semibold text-slate-600">{label}</span>
+          {explainer}
         </div>
-      </button>
+        <span className="text-xs font-bold text-slate-800 tabular-nums">{sub.value}</span>
+      </div>
       <ScoreBar score={sub.value} color={scoreBarColor(sub.value)} />
-      {isExpanded && <EvidencePanel sub={sub} />}
+      <ul className="mt-1.5 space-y-0.5 pl-0.5">
+        {sub.evidence.map((e) => (
+          <li key={e.label} className="flex items-baseline gap-1.5 text-xs text-slate-600">
+            <span className="text-slate-400 flex-shrink-0">•</span>
+            <span>
+              {e.label}:{" "}
+              {e.sourceUrl ? (
+                <a
+                  href={e.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold text-slate-800 hover:text-blue-600 inline-flex items-center gap-0.5"
+                >
+                  {e.value}<ExternalLink className="w-2.5 h-2.5 text-slate-400 ml-0.5" />
+                </a>
+              ) : (
+                <strong className="text-slate-800">{e.value}</strong>
+              )}
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
 
+// ── Main component ────────────────────────────────────────────────────────────
 interface Props {
   result: AreaSummaryResult;
   isEn: boolean;
@@ -140,31 +319,75 @@ interface Props {
 }
 
 export function AreaScoreCard({ result, isEn, txCount }: Props) {
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-
   const score: AreaScore = useMemo(
     () => calcAreaScore(result.hazard, result.seismic, result.terrain, result.population, txCount),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [result.hazard, result.seismic, result.terrain, result.population, txCount]
   );
 
-  const toggle = (key: string) => setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
-
   const bgClass = score.total.status === "ok" ? gradeBg(score.total.grade) : "bg-slate-50 border-slate-200";
 
+  const sourceNote = isEn
+    ? "Sources: J-SHIS (earthquake probability), GSI (terrain / elevation), MLIT real estate transaction data, e-Stat population statistics."
+    : "出典: J-SHIS地震ハザードステーション / 国土地理院（地形・標高）/ 国交省不動産取引価格情報 / e-Stat人口推計";
+
   const t = {
-    title:        isEn ? "Area Verdict"      : "エリア総合評価",
-    badge:        isEn ? "Area analysis"     : "エリア分析",
-    disaster:     isEn ? "Disaster Risk"     : "災害リスク",
-    future:       isEn ? "Population Trend"  : "人口動態",
-    market:       isEn ? "Market Activity"   : "市場活性度",
-    insufficient: isEn ? "Insufficient data to calculate overall grade." : "算出に必要なデータが不足しています。",
+    title:    isEn ? "Area Verdict"     : "エリア総合評価",
+    badge:    isEn ? "Area analysis"    : "エリア分析",
+    disaster: isEn ? "Disaster Risk"    : "災害リスク",
+    future:   isEn ? "Population Trend" : "人口動態",
+    market:   isEn ? "Market Activity"  : "市場活性度",
+    insufficient: isEn
+      ? "Insufficient data to calculate overall grade."
+      : "算出に必要なデータが不足しています。",
   };
 
   const subRows = [
-    { key: "disaster",       label: t.disaster, sub: score.disaster },
-    { key: "future",         label: t.future,   sub: score.future },
-    { key: "marketActivity", label: t.market,   sub: score.marketActivity },
+    {
+      key: "disaster",
+      label: t.disaster,
+      sub: score.disaster,
+      explainer: (
+        <ScoreExplainer
+          title={isEn ? "How disaster risk is calculated" : "災害リスクの計算方法"}
+          weight={isEn ? "50% of overall score" : "総合評価の 50%"}
+          criteria={buildDisasterCriteria(result.seismic, result.terrain, result.hazard, isEn)}
+          totalScore={score.disaster.status === "ok" ? score.disaster.value : 0}
+          sourceNote={sourceNote}
+          isEn={isEn}
+        />
+      ),
+    },
+    {
+      key: "future",
+      label: t.future,
+      sub: score.future,
+      explainer: (
+        <ScoreExplainer
+          title={isEn ? "How population trend is calculated" : "人口動態の計算方法"}
+          weight={isEn ? "30% of overall score" : "総合評価の 30%"}
+          criteria={buildFutureCriteria(result.population, isEn)}
+          totalScore={score.future.status === "ok" ? score.future.value : 0}
+          sourceNote={sourceNote}
+          isEn={isEn}
+        />
+      ),
+    },
+    {
+      key: "marketActivity",
+      label: t.market,
+      sub: score.marketActivity,
+      explainer: (
+        <ScoreExplainer
+          title={isEn ? "How market activity is calculated" : "市場活性度の計算方法"}
+          weight={isEn ? "20% of overall score" : "総合評価の 20%"}
+          criteria={buildMarketActivityCriteria(txCount, isEn)}
+          totalScore={score.marketActivity.status === "ok" ? score.marketActivity.value : 0}
+          sourceNote={sourceNote}
+          isEn={isEn}
+        />
+      ),
+    },
   ];
 
   return (
@@ -196,18 +419,14 @@ export function AreaScoreCard({ result, isEn, txCount }: Props) {
           ) : (
             <p className="text-sm text-slate-500">{t.insufficient}</p>
           )}
+
+          <ScoreBreakdown score={score} isEn={isEn} />
         </div>
       </div>
 
-      <div className="mt-5 space-y-4">
-        {subRows.map(({ key, label, sub }) => (
-          <SubScoreRow
-            key={key}
-            label={label}
-            sub={sub}
-            isExpanded={!!expanded[key]}
-            onToggle={() => toggle(key)}
-          />
+      <div className="mt-5 space-y-5">
+        {subRows.map(({ key, label, sub, explainer }) => (
+          <SubScoreRow key={key} label={label} sub={sub} explainer={explainer} />
         ))}
       </div>
     </div>
