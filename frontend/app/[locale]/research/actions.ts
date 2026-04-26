@@ -140,8 +140,18 @@ export async function analyzeProperty(input: PropertyInput): Promise<AnalyzeResu
 
   // ── Step 4: e-Stat (sequential — needs cityCode) ───────────────────────────
   const estatKey = process.env.ESTAT_API_KEY ?? "";
-  const population =
-    cityCode && estatKey ? await fetchPopulationTrend(cityCode, estatKey) : null;
+  let population = null;
+  if (!cityCode) {
+    console.error("[analyzeProperty] cityCode is null — cannot fetch population data");
+  } else if (!estatKey) {
+    console.error("[analyzeProperty] ESTAT_API_KEY is not configured");
+  } else {
+    const popResult = await fetchPopulationTrend(cityCode, estatKey);
+    population = popResult.data;
+    if (!population) {
+      console.error(`[analyzeProperty] population fetch failed: ${popResult.failReason} (cityCode=${cityCode})`);
+    }
+  }
 
   perfLog("analyzeProperty total", Date.now() - _t0, { address: valid.address });
   return {

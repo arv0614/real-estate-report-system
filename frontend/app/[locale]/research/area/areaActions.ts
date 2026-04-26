@@ -1,7 +1,7 @@
 "use server";
 
 import { fetchSeismicData, fetchTerrainData } from "@/lib/research/seismicApi";
-import { fetchPopulationTrend } from "@/lib/research/populationApi";
+import { fetchPopulationTrend, type PopulationFailReason } from "@/lib/research/populationApi";
 import type { SeismicData, TerrainData } from "@/lib/research/seismicApi";
 import type { PopulationData } from "@/lib/research/populationApi";
 import type { HazardInfo, TransactionRecord } from "@/types/api";
@@ -14,6 +14,7 @@ export interface AreaSummaryResult {
   seismic: SeismicData | null;
   terrain: TerrainData | null;
   population: PopulationData | null;
+  populationFailReason: PopulationFailReason | "no_city_code" | null;
   cityCode: string | null;
   cityName: string | null;
   allPrices: number[];          // 万円, all transactions in tile (unfiltered)
@@ -64,10 +65,24 @@ export async function analyzeArea(lat: number, lng: number): Promise<AreaResult>
   const terrain = terrainResult.status === "fulfilled" ? terrainResult.value : null;
 
   const estatKey = process.env.ESTAT_API_KEY ?? "";
-  const population =
-    cityCode && estatKey ? await fetchPopulationTrend(cityCode, estatKey) : null;
+  let population = null;
+  let populationFailReason: AreaSummaryResult["populationFailReason"] = null;
+  if (!cityCode) {
+    populationFailReason = "no_city_code";
+    console.error("[analyzeArea] cityCode is null — cannot fetch population data");
+  } else if (!estatKey) {
+    populationFailReason = "no_api_key";
+    console.error("[analyzeArea] ESTAT_API_KEY is not configured");
+  } else {
+    const popResult = await fetchPopulationTrend(cityCode, estatKey);
+    population = popResult.data;
+    populationFailReason = popResult.failReason;
+    if (!population) {
+      console.error(`[analyzeArea] population fetch failed: ${popResult.failReason} (cityCode=${cityCode})`);
+    }
+  }
 
-  perfLog("analyzeArea total", Date.now() - _t0, { lat, lng, totalFetched });
+  perfLog("analyzeArea total", Date.now() - _t0, { lat, lng, totalFetched, cityCode, populationFailReason });
   return {
     ok: true,
     coords: { lat, lng },
@@ -75,6 +90,7 @@ export async function analyzeArea(lat: number, lng: number): Promise<AreaResult>
     seismic,
     terrain,
     population,
+    populationFailReason,
     cityCode,
     cityName: population?.cityName ?? null,
     allPrices,

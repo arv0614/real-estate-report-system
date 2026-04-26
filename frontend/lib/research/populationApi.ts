@@ -162,15 +162,28 @@ async function getStatsData(
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
+export type PopulationFailReason =
+  | "no_api_key"
+  | "no_tables"
+  | "api_error"
+  | "insufficient_data";
+
 export async function fetchPopulationTrend(
   cityCode: string,
   apiKey: string
-): Promise<PopulationData | null> {
-  if (!apiKey) return null;
+): Promise<{ data: PopulationData; failReason: null } | { data: null; failReason: PopulationFailReason }> {
+  if (!apiKey) {
+    return { data: null, failReason: "no_api_key" };
+  }
 
   try {
     const tables = await getStatsList(cityCode, apiKey);
-    if (tables.length === 0) return null;
+    if (tables.length === 0) {
+      console.error(`[populationApi] getStatsList returned 0 tables for cityCode=${cityCode}`);
+      return { data: null, failReason: "no_tables" };
+    }
+
+    console.info(`[populationApi] found ${tables.length} tables for cityCode=${cityCode}`);
 
     // Sort by survey date descending, take up to 8 most recent
     const sorted = tables
@@ -193,7 +206,12 @@ export async function fetchPopulationTrend(
       }
     }
 
-    if (points.length < 2) return null;
+    console.info(`[populationApi] extracted ${points.length} population points for cityCode=${cityCode}`);
+
+    if (points.length < 2) {
+      console.error(`[populationApi] insufficient data points (${points.length}) for cityCode=${cityCode}`);
+      return { data: null, failReason: "insufficient_data" };
+    }
 
     const history = points.sort((a, b) => a.year - b.year);
     const trend = annualGrowthRate(history);
@@ -211,15 +229,19 @@ export async function fetchPopulationTrend(
     const cityName = sorted[0]?.STAT_NAME?.["$"] ?? cityCode;
 
     return {
-      cityCode,
-      cityName,
-      history,
-      trend,
-      proj5: project(5),
-      proj10: project(10),
-      source: "e-Stat 住民基本台帳",
+      data: {
+        cityCode,
+        cityName,
+        history,
+        trend,
+        proj5: project(5),
+        proj10: project(10),
+        source: "e-Stat 住民基本台帳",
+      },
+      failReason: null,
     };
-  } catch {
-    return null;
+  } catch (err) {
+    console.error(`[populationApi] error for cityCode=${cityCode}:`, err);
+    return { data: null, failReason: "api_error" };
   }
 }
