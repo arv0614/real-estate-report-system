@@ -416,10 +416,10 @@ export function AiReport({
             );
           })}
 
-          {/* オープンベータ告知（PDF非表示） */}
+          {/* プラン告知（PDF非表示） */}
           <div className="pdf-hide border-t border-blue-100 bg-gradient-to-r from-blue-50 to-indigo-50 px-5 py-3 text-center">
             <p className="text-xs text-blue-700">
-              🎉 <span className="font-semibold">{t("betaBannerBold")}</span> {t("betaBannerSuffix")}
+              📢 <span className="font-semibold">{t("betaBannerBold")}</span> {t("betaBannerSuffix")}
             </p>
           </div>
         </div>
