@@ -119,14 +119,8 @@ function DisasterSummary({
             <span className="text-slate-500">
               {isEn ? "30-yr Earthquake Probability" : "30年地震確率（震度6弱以上）"}
             </span>
-            <span className={`font-semibold ${
-              seismic.riskLevel === "very_high" || seismic.riskLevel === "high"
-                ? "text-red-600"
-                : seismic.riskLevel === "moderate"
-                ? "text-amber-600"
-                : "text-green-600"
-            }`}>
-              {seismic.probPct}%（{seismic.riskLabel}）
+            <span className="font-semibold text-slate-800">
+              {seismic.probPct}%
             </span>
           </div>
         </div>
@@ -143,13 +137,7 @@ function DisasterSummary({
           {terrain.terrainClass && (
             <div className="flex items-center justify-between">
               <span className="text-slate-500">{isEn ? "Terrain" : "地形分類"}</span>
-              <span className={`font-medium px-1.5 py-0.5 rounded text-xs ${
-                terrain.terrainRisk === "high"
-                  ? "bg-red-100 text-red-700"
-                  : terrain.terrainRisk === "moderate"
-                  ? "bg-amber-100 text-amber-700"
-                  : "bg-green-100 text-green-700"
-              }`}>
+              <span className="font-medium px-1.5 py-0.5 rounded text-xs bg-slate-100 text-slate-700">
                 {terrain.terrainClass}
               </span>
             </div>

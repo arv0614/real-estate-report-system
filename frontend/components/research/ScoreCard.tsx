@@ -161,7 +161,7 @@ function buildDisasterCriteria(
       threshold: isEn
         ? "< 6% → 90pt  |  6–20% → 75pt  |  20–40% → 55pt  |  40–70% → 35pt  |  ≥70% → 15pt"
         : "6%未満→90点 / 6〜20%→75点 / 20〜40%→55点 / 40〜70%→35点 / 70%以上→15点",
-      score: `${s}pt  (${seismic.probPct}% — ${seismic.riskLabel})`,
+      score: `${s}pt  (${seismic.probPct}%)`,
       matched: true,
     });
   }
