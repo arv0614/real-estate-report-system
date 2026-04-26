@@ -88,8 +88,8 @@ function InsufficientRing() {
 // ── Grade description ─────────────────────────────────────────────────────────
 function gradeDescription(isEn: boolean): string {
   return isEn
-    ? "Score based on aggregated public data indicators. For final decisions, please conduct on-site verification and consult a licensed real estate professional."
-    : "公的データに基づく指標の集計結果です。最終的なご判断は、現地確認や専門家（宅地建物取引士等）への相談を併用してください。";
+    ? "This summary aggregates public-agency data as reference only. It is not a real estate assessment or recommendation."
+    : "本サマリーは公的機関データを集計した参考情報であり、不動産の評価・推奨ではありません。";
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

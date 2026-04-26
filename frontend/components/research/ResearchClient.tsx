@@ -49,8 +49,8 @@ function DataDisclaimer({ isEn }: { isEn: boolean }) {
   return (
     <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-xs text-amber-800 leading-relaxed">
       {isEn
-        ? "⚠️ This report aggregates public data for reference only. It does not guarantee accuracy or completeness. Always conduct on-site verification and consult a licensed real estate professional before making any purchase, rental, or investment decision."
-        : "⚠️ このレポートは公的機関のデータを集計した参考情報であり、正確性・完全性を保証するものではありません。物件の購入・賃貸・投資等の最終判断は、必ず現地確認および宅地建物取引士等の専門家にご相談ください。"}
+        ? "⚠️ This summary aggregates public-agency data as reference information only and does not constitute a real estate assessment, recommendation, or guarantee of accuracy. For any purchase, rental, or investment decision, always conduct on-site verification and consult a licensed real estate professional."
+        : "⚠️ 本サマリーは公的機関データを集計した参考情報であり、不動産の評価・推奨・勧誘ではありません。最終判断は必ず現地確認および宅地建物取引士等の専門家への相談を併用してください。"}
     </div>
   );
 }
