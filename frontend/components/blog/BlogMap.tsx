@@ -7,8 +7,8 @@ import { OSM_RASTER_STYLE } from "@/lib/blog/mapStyle";
 interface Props {
   posts: PostMeta[];
   locale: string;
-  /** Slug of the most recently-published post — its marker is highlighted with a NEW badge. */
-  latestSlug?: string;
+  /** Slugs of the most recent posts (top N) — these markers are highlighted with a NEW badge. */
+  latestSlugs?: string[];
 }
 
 function escapeHtml(s: string): string {
@@ -33,17 +33,23 @@ function formatDate(iso: string): string {
   });
 }
 
-/** Marker DOM with optional NEW badge — rendered as a circular pin. */
+const PIN_SIZE = 26;
+
+/** Marker DOM with optional NEW badge — rendered as a circular pin.
+ *  The wrap is sized exactly to the pin so MapLibre's `anchor: 'center'`
+ *  centers on the pin (not on the visual extent of the absolute-positioned badge).
+ *  We avoid setting `position` inline because MapLibre's `.maplibregl-marker`
+ *  class applies `position: absolute; left: 0; top: 0` — overriding it would
+ *  put the marker at its flow position and offset it from the coordinate. */
 function buildMarkerEl(isLatest: boolean): HTMLElement {
   const wrap = document.createElement("div");
-  wrap.style.position = "relative";
-  wrap.style.width = "26px";
-  wrap.style.height = "26px";
+  wrap.style.width = `${PIN_SIZE}px`;
+  wrap.style.height = `${PIN_SIZE}px`;
   wrap.style.cursor = "pointer";
 
   const pin = document.createElement("div");
-  pin.style.width = "100%";
-  pin.style.height = "100%";
+  pin.style.position = "absolute";
+  pin.style.inset = "0";
   pin.style.borderRadius = "50%";
   pin.style.border = "2px solid white";
   pin.style.boxShadow = "0 2px 6px rgba(0,0,0,0.25)";
@@ -66,13 +72,14 @@ function buildMarkerEl(isLatest: boolean): HTMLElement {
     badge.style.borderRadius = "8px";
     badge.style.whiteSpace = "nowrap";
     badge.style.boxShadow = "0 1px 3px rgba(0,0,0,0.25)";
+    badge.style.pointerEvents = "none";
     wrap.appendChild(badge);
   }
 
   return wrap;
 }
 
-export default function BlogMap({ posts, locale, latestSlug }: Props) {
+export default function BlogMap({ posts, locale, latestSlugs }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapRef = useRef<any>(null);
@@ -81,6 +88,7 @@ export default function BlogMap({ posts, locale, latestSlug }: Props) {
     if (!containerRef.current) return;
 
     let cancelled = false;
+    const latestSet = new Set(latestSlugs ?? []);
 
     (async () => {
       const maplibregl = (await import("maplibre-gl")).default;
@@ -109,7 +117,7 @@ export default function BlogMap({ posts, locale, latestSlug }: Props) {
           if (!post.primaryLocation || post.excludeFromMap) continue;
           const loc = post.primaryLocation;
           const blogHref = `${locale === "en" ? "/en" : ""}/blog/${post.slug}`;
-          const isLatest = post.slug === latestSlug;
+          const isLatest = latestSet.has(post.slug);
           const newBadgeHtml = isLatest
             ? `<span style="display:inline-block;font-size:10px;font-weight:700;letter-spacing:0.05em;color:white;background:#e11d48;padding:1px 6px;border-radius:8px;margin-left:6px;vertical-align:middle">NEW</span>`
             : "";
@@ -123,7 +131,10 @@ export default function BlogMap({ posts, locale, latestSlug }: Props) {
             </div>
           `);
 
-          new maplibregl.Marker({ element: buildMarkerEl(isLatest) })
+          new maplibregl.Marker({
+            element: buildMarkerEl(isLatest),
+            anchor: "center",
+          })
             .setLngLat([loc.lng, loc.lat])
             .setPopup(popup)
             .addTo(map);
@@ -138,7 +149,7 @@ export default function BlogMap({ posts, locale, latestSlug }: Props) {
         mapRef.current = null;
       }
     };
-  }, [posts, locale, latestSlug]);
+  }, [posts, locale, latestSlugs]);
 
   return (
     <div

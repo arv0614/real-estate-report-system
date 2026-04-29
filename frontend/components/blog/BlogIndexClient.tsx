@@ -15,7 +15,7 @@ interface Props {
 
 type SortOrder = "newest" | "oldest";
 
-const NEW_BADGE_DAYS = 14;
+const NEW_BADGE_TOP_N = 3;
 
 function formatDate(iso: string, locale: string) {
   return new Date(iso).toLocaleDateString(locale === "en" ? "en-US" : "ja-JP", {
@@ -23,14 +23,6 @@ function formatDate(iso: string, locale: string) {
     month: "long",
     day: "numeric",
   });
-}
-
-function isNewPost(iso: string): boolean {
-  if (!iso) return false;
-  const published = new Date(iso).getTime();
-  if (Number.isNaN(published)) return false;
-  const ageMs = Date.now() - published;
-  return ageMs >= 0 && ageMs <= NEW_BADGE_DAYS * 24 * 60 * 60 * 1000;
 }
 
 export default function BlogIndexClient({ posts, locale, emptyMsg }: Props) {
@@ -59,11 +51,13 @@ export default function BlogIndexClient({ posts, locale, emptyMsg }: Props) {
     });
   }, [posts, sortOrder, areaFilter]);
 
-  // Most-recent post (across all posts) — used to highlight the latest article on the map.
-  const latestSlug = useMemo(() => {
+  // Top-N most-recent posts (across all posts) — used to highlight the latest articles
+  // in both the list (NEW badge) and on the map (red pin + NEW badge).
+  const latestSlugs = useMemo(() => {
     const sorted = [...posts].sort((a, b) => (a.publishedAt < b.publishedAt ? 1 : -1));
-    return sorted[0]?.slug;
+    return sorted.slice(0, NEW_BADGE_TOP_N).map((p) => p.slug);
   }, [posts]);
+  const latestSlugSet = useMemo(() => new Set(latestSlugs), [latestSlugs]);
 
   const sortLabel = isEn ? "Sort" : "並び替え";
   const areaLabel = isEn ? "Area" : "エリア";
@@ -79,7 +73,7 @@ export default function BlogIndexClient({ posts, locale, emptyMsg }: Props) {
     <>
       {/* Map section — always visible */}
       <div className="mb-8">
-        <BlogMap posts={visiblePosts} locale={locale} latestSlug={latestSlug} />
+        <BlogMap posts={visiblePosts} locale={locale} latestSlugs={latestSlugs} />
       </div>
 
       {/* Filter & sort controls */}
@@ -129,7 +123,7 @@ export default function BlogIndexClient({ posts, locale, emptyMsg }: Props) {
       ) : (
         <div className="space-y-6">
           {visiblePosts.map((post) => {
-            const showNew = isNewPost(post.publishedAt);
+            const showNew = latestSlugSet.has(post.slug);
             return (
               <article
                 key={post.slug}
