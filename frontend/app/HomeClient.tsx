@@ -473,6 +473,12 @@ function HomePageContent() {
           >
             {t("Header.aboutLink")}
           </Link>
+          <Link
+            href={`${locale === "en" ? "/en" : ""}/blog`}
+            className="hidden sm:inline-flex text-xs px-3 py-1.5 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
+          >
+            {t("Header.blogLink")}
+          </Link>
           {/* Free ユーザー向けアップグレードボタン */}
           {!planLoading && plan === "free" && (
             <button
@@ -902,6 +908,7 @@ function HomePageContent() {
           </div>
           <nav className="flex flex-wrap justify-center gap-4">
             <Link href="/about" className="hover:text-slate-600 transition-colors">{t("Home.footerAbout")}</Link>
+            <Link href={`${locale === "en" ? "/en" : ""}/blog`} className="hover:text-slate-600 transition-colors">{t("Header.blogLink")}</Link>
             <Link href="/terms" className="hover:text-slate-600 transition-colors">{t("Home.footerTerms")}</Link>
             <Link href="/privacy" className="hover:text-slate-600 transition-colors">{t("Home.footerPrivacy")}</Link>
             <Link href="/about#legal" className="hover:text-slate-600 transition-colors">{t("Home.footerCommercial")}</Link>
