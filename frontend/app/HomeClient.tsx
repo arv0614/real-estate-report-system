@@ -874,6 +874,19 @@ function HomePageContent() {
       {/* 右下フローティング履歴ボタン（ログイン中のみ） */}
       {user && <HistoryList uid={user.uid} onReplay={handleReplay} />}
 
+      {/* 左下フローティング ブログ導線（モバイルのみ — ヘッダーのリンクは sm 以上で表示） */}
+      <Link
+        href={`${locale === "en" ? "/en" : ""}/blog`}
+        aria-label={t("Header.blogLink")}
+        className="sm:hidden fixed bottom-6 left-6 z-[9999] inline-flex items-center gap-1.5 h-12 px-4 rounded-full bg-white border border-slate-200 text-slate-700 shadow-lg active:scale-95 transition-transform"
+      >
+        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+        </svg>
+        <span className="text-sm font-semibold">{t("Header.blogLink")}</span>
+      </Link>
+
       {/* プラン比較モーダル */}
       <PlanComparisonModal
         open={planModalOpen}
