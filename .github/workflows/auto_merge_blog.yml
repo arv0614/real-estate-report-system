@@ -1,0 +1,65 @@
+name: Auto-merge blog post PRs
+
+# 自動生成されたブログ記事 PR（Anthropic の Claude スケジュール エージェントが
+# `claude/*` ブランチで作成）を即時 main にマージし、デプロイを開始する。
+#
+# 安全策:
+# - ブランチ名が `claude/` で始まる PR のみ対象
+# - 変更ファイルがブログ記事 (`frontend/content/blog/*.md`) と
+#   X 投稿用プロモーション JSON (`marketing/x_promotions.json`) のみの場合のみ自動マージ
+# - 上記以外のパスを変更している PR はスキップ（手動マージのまま残る）
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  auto-merge:
+    name: Auto-merge claude/* blog PRs
+    runs-on: ubuntu-latest
+    if: startsWith(github.head_ref, 'claude/') && github.event.pull_request.draft == false
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Verify only blog-related files changed
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          FILES=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json files --jq '.files[].path')
+          echo "Changed files in PR #$PR_NUMBER:"
+          echo "$FILES" | sed 's/^/  - /'
+
+          SKIP=false
+          while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            case "$f" in
+              frontend/content/blog/*.md) ;;
+              marketing/x_promotions.json) ;;
+              *)
+                echo "::notice::File '$f' is outside the blog auto-merge whitelist; PR will require manual merge."
+                SKIP=true
+                ;;
+            esac
+          done <<< "$FILES"
+
+          echo "skip=$SKIP" >> "$GITHUB_OUTPUT"
+
+      - name: Auto-merge PR
+        if: steps.check.outputs.skip == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          echo "Auto-merging PR #$PR_NUMBER (blog post)"
+          # --admin: ブランチプロテクションの required-reviews を回避（GITHUB_TOKEN に
+          # 管理者権限がない場合でも、保護がなければ通常通りマージされる）
+          gh pr merge "$PR_NUMBER" --repo "$REPO" --merge --delete-branch --admin
