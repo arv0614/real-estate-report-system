@@ -7,6 +7,8 @@ import { OSM_RASTER_STYLE } from "@/lib/blog/mapStyle";
 interface Props {
   posts: PostMeta[];
   locale: string;
+  /** Slug of the most recently-published post — its marker is highlighted with a NEW badge. */
+  latestSlug?: string;
 }
 
 function escapeHtml(s: string): string {
@@ -31,7 +33,46 @@ function formatDate(iso: string): string {
   });
 }
 
-export default function BlogMap({ posts, locale }: Props) {
+/** Marker DOM with optional NEW badge — rendered as a circular pin. */
+function buildMarkerEl(isLatest: boolean): HTMLElement {
+  const wrap = document.createElement("div");
+  wrap.style.position = "relative";
+  wrap.style.width = "26px";
+  wrap.style.height = "26px";
+  wrap.style.cursor = "pointer";
+
+  const pin = document.createElement("div");
+  pin.style.width = "100%";
+  pin.style.height = "100%";
+  pin.style.borderRadius = "50%";
+  pin.style.border = "2px solid white";
+  pin.style.boxShadow = "0 2px 6px rgba(0,0,0,0.25)";
+  pin.style.background = isLatest ? "#e11d48" : "#0d9488";
+  wrap.appendChild(pin);
+
+  if (isLatest) {
+    const badge = document.createElement("span");
+    badge.textContent = "NEW";
+    badge.style.position = "absolute";
+    badge.style.top = "-10px";
+    badge.style.left = "50%";
+    badge.style.transform = "translateX(-50%)";
+    badge.style.fontSize = "9px";
+    badge.style.fontWeight = "700";
+    badge.style.letterSpacing = "0.05em";
+    badge.style.color = "white";
+    badge.style.background = "#e11d48";
+    badge.style.padding = "1px 5px";
+    badge.style.borderRadius = "8px";
+    badge.style.whiteSpace = "nowrap";
+    badge.style.boxShadow = "0 1px 3px rgba(0,0,0,0.25)";
+    wrap.appendChild(badge);
+  }
+
+  return wrap;
+}
+
+export default function BlogMap({ posts, locale, latestSlug }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapRef = useRef<any>(null);
@@ -68,17 +109,21 @@ export default function BlogMap({ posts, locale }: Props) {
           if (!post.primaryLocation || post.excludeFromMap) continue;
           const loc = post.primaryLocation;
           const blogHref = `${locale === "en" ? "/en" : ""}/blog/${post.slug}`;
+          const isLatest = post.slug === latestSlug;
+          const newBadgeHtml = isLatest
+            ? `<span style="display:inline-block;font-size:10px;font-weight:700;letter-spacing:0.05em;color:white;background:#e11d48;padding:1px 6px;border-radius:8px;margin-left:6px;vertical-align:middle">NEW</span>`
+            : "";
 
           const popup = new maplibregl.Popup({ offset: 25, maxWidth: "260px" }).setHTML(`
             <div style="font-size:13px;line-height:1.5">
-              <h3 style="font-weight:700;margin:0 0 4px;font-size:13px;color:#0f172a">${escapeHtml(truncate(post.title, 60))}</h3>
+              <h3 style="font-weight:700;margin:0 0 4px;font-size:13px;color:#0f172a">${escapeHtml(truncate(post.title, 60))}${newBadgeHtml}</h3>
               <p style="color:#94a3b8;font-size:11px;margin:0 0 5px">${escapeHtml(formatDate(post.publishedAt))}</p>
               <p style="color:#475569;font-size:12px;margin:0 0 8px">${escapeHtml(truncate(post.description, 80))}</p>
               <a href="${escapeHtml(blogHref)}" style="color:#0d9488;font-weight:600;font-size:12px;text-decoration:none">記事を読む →</a>
             </div>
           `);
 
-          new maplibregl.Marker({ color: "#0d9488" })
+          new maplibregl.Marker({ element: buildMarkerEl(isLatest) })
             .setLngLat([loc.lng, loc.lat])
             .setPopup(popup)
             .addTo(map);
@@ -93,7 +138,7 @@ export default function BlogMap({ posts, locale }: Props) {
         mapRef.current = null;
       }
     };
-  }, [posts, locale]);
+  }, [posts, locale, latestSlug]);
 
   return (
     <div
