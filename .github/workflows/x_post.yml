@@ -1,9 +1,9 @@
 name: X Auto Post
 
 on:
-  # 毎日 JST 09:00 (UTC 00:00)
+  # 月・水・金 JST 09:00 (UTC 00:00 = 1=Mon, 3=Wed, 5=Fri)
   schedule:
-    - cron: "0 0 * * *"
+    - cron: "0 0 * * 1,3,5"
   # 手動実行
   workflow_dispatch:
 
