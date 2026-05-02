@@ -2,10 +2,17 @@
   "meta": {
     "service": "物件目利きリサーチ (Mekiki Research)",
     "url": "https://mekiki-research.com",
-    "generated": "2026-04-15",
+    "generated": "2026-05-02",
     "note": "各ツイートは280文字以内（日本語）または280文字以内（英語）に設定済み。投稿前にURLのクリック計測用UTMパラメータを付与すること推奨。"
   },
   "tweets": [
+    {
+      "id": 42,
+      "type": "ブログ記事紹介 — 神戸三宮×タワマン規制×ウォーターフロント再生",
+      "target": "不動産投資家・関西不動産ウォッチャー",
+      "lang": "ja",
+      "text": "神戸市は2020年に都心タワマン規制を導入し、住宅から再開発・観光・オフィスへ舵を切りました。GLION ARENA KOBE開業、JR三宮新駅ビル建設、新港町ウォーターフロント再生で動く2026年神戸不動産を解説👇\nhttps://mekiki-research.com/blog/2026-05-02-kobe-sannomiya-redevelopment\n#神戸不動産 #三宮 #不動産投資"
+    },
     {
       "id": 41,
       "type": "中の人のつぶやき — 人口推計の見方",

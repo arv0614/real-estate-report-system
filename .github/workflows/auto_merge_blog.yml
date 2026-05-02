@@ -3,63 +3,119 @@ name: Auto-merge blog post PRs
 # 自動生成されたブログ記事 PR（Anthropic の Claude スケジュール エージェントが
 # `claude/*` ブランチで作成）を即時 main にマージし、デプロイを開始する。
 #
+# トリガー:
+# - pull_request: PR の作成・更新時に即時実行（メイン経路）
+# - schedule:    毎時実行（pull_request が発火しなかった/コンフリクト解消された PR を救済）
+# - workflow_dispatch: 手動再実行用
+#
 # 安全策:
 # - ブランチ名が `claude/` で始まる PR のみ対象
 # - 変更ファイルがブログ記事 (`frontend/content/blog/*.md`) と
 #   X 投稿用プロモーション JSON (`marketing/x_promotions.json`) のみの場合のみ自動マージ
 # - 上記以外のパスを変更している PR はスキップ（手動マージのまま残る）
+# - コンフリクト中の PR は `merge-conflict` ラベルを付与して人間に委ねる
 
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
+  schedule:
+    # 毎時 0 分に未処理の claude/* PR をスイープ
+    - cron: "0 * * * *"
+  workflow_dispatch:
 
 jobs:
   auto-merge:
     name: Auto-merge claude/* blog PRs
     runs-on: ubuntu-latest
-    if: startsWith(github.head_ref, 'claude/') && github.event.pull_request.draft == false
     permissions:
       contents: write
       pull-requests: write
 
     steps:
-      - name: Verify only blog-related files changed
-        id: check
+      - name: Collect target PR numbers
+        id: collect
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
           REPO: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_PR_NUMBER: ${{ github.event.pull_request.number }}
+          EVENT_PR_DRAFT: ${{ github.event.pull_request.draft }}
+          EVENT_HEAD_REF: ${{ github.event.pull_request.head.ref }}
         run: |
           set -euo pipefail
+          PR_NUMBERS=""
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            # pull_request イベント: 対象を当該 PR に限定（draft / claude/* 以外は除外）
+            if [ "$EVENT_PR_DRAFT" = "true" ]; then
+              echo "PR #$EVENT_PR_NUMBER is draft; skipping."
+            elif [[ "$EVENT_HEAD_REF" != claude/* ]]; then
+              echo "PR #$EVENT_PR_NUMBER head ref '$EVENT_HEAD_REF' is not claude/*; skipping."
+            else
+              PR_NUMBERS="$EVENT_PR_NUMBER"
+            fi
+          else
+            # schedule / workflow_dispatch: claude/* で始まるオープン PR を全件対象に
+            PR_NUMBERS=$(gh pr list \
+              --repo "$REPO" \
+              --state open \
+              --search "head:claude/ draft:false" \
+              --json number,headRefName \
+              --jq '.[] | select(.headRefName | startswith("claude/")) | .number' \
+              | tr '\n' ' ')
+          fi
+          echo "Target PR numbers: '${PR_NUMBERS}'"
+          echo "pr_numbers=${PR_NUMBERS}" >> "$GITHUB_OUTPUT"
 
-          FILES=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json files --jq '.files[].path')
-          echo "Changed files in PR #$PR_NUMBER:"
-          echo "$FILES" | sed 's/^/  - /'
-
-          SKIP=false
-          while IFS= read -r f; do
-            [ -z "$f" ] && continue
-            case "$f" in
-              frontend/content/blog/*.md) ;;
-              marketing/x_promotions.json) ;;
-              *)
-                echo "::notice::File '$f' is outside the blog auto-merge whitelist; PR will require manual merge."
-                SKIP=true
-                ;;
-            esac
-          done <<< "$FILES"
-
-          echo "skip=$SKIP" >> "$GITHUB_OUTPUT"
-
-      - name: Auto-merge PR
-        if: steps.check.outputs.skip == 'false'
+      - name: Auto-merge each eligible PR
+        if: steps.collect.outputs.pr_numbers != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
           REPO: ${{ github.repository }}
+          PR_NUMBERS: ${{ steps.collect.outputs.pr_numbers }}
         run: |
           set -euo pipefail
-          echo "Auto-merging PR #$PR_NUMBER (blog post)"
-          # --admin: ブランチプロテクションの required-reviews を回避（GITHUB_TOKEN に
-          # 管理者権限がない場合でも、保護がなければ通常通りマージされる）
-          gh pr merge "$PR_NUMBER" --repo "$REPO" --merge --delete-branch --admin
+          for PR_NUMBER in $PR_NUMBERS; do
+            [ -z "$PR_NUMBER" ] && continue
+            echo ""
+            echo "==================== Processing PR #$PR_NUMBER ===================="
+
+            # 変更ファイルのホワイトリスト判定
+            FILES=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json files --jq '.files[].path')
+            echo "Changed files:"
+            echo "$FILES" | sed 's/^/  - /'
+            SKIP=false
+            while IFS= read -r f; do
+              [ -z "$f" ] && continue
+              case "$f" in
+                frontend/content/blog/*.md) ;;
+                marketing/x_promotions.json) ;;
+                *)
+                  echo "::notice::PR #$PR_NUMBER changes file '$f' outside whitelist; manual merge required."
+                  SKIP=true
+                  break
+                  ;;
+              esac
+            done <<< "$FILES"
+            if [ "$SKIP" = "true" ]; then
+              continue
+            fi
+
+            # マージ可否チェック（コンフリクトなら label 付けてスキップ）
+            MERGE_INFO=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json mergeable,mergeStateStatus --jq '"\(.mergeable)|\(.mergeStateStatus)"')
+            MERGEABLE="${MERGE_INFO%%|*}"
+            MERGE_STATE="${MERGE_INFO##*|}"
+            echo "mergeable=$MERGEABLE mergeStateStatus=$MERGE_STATE"
+            if [ "$MERGEABLE" = "CONFLICTING" ]; then
+              echo "::warning::PR #$PR_NUMBER has merge conflicts. Adding 'merge-conflict' label and skipping."
+              gh pr edit "$PR_NUMBER" --repo "$REPO" --add-label "merge-conflict" 2>/dev/null || true
+              continue
+            fi
+
+            # 実マージ
+            echo "Auto-merging PR #$PR_NUMBER"
+            if ! gh pr merge "$PR_NUMBER" --repo "$REPO" --merge --delete-branch --admin; then
+              echo "::error::Failed to merge PR #$PR_NUMBER (will retry on next schedule run)"
+              continue
+            fi
+            echo "Successfully merged PR #$PR_NUMBER"
+          done
