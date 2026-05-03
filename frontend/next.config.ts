@@ -68,14 +68,22 @@ const nextConfig: NextConfig = {
     ];
   },
   async rewrites() {
-    // /sitemap.xml と /robots.txt は metadata route や app/sitemap.xml/route.ts
+    // /sitemap.xml と /robots.txt は metadata route や `app/sitemap.xml/route.ts`
     // として配置すると next-intl の `[locale]` 動的セグメントに吸われて 404 と
     // なるため、`/api/*` 配下の Route Handler に rewrite で逃がす。
-    // rewrites は Next.js のルーティングより先に評価されるので確実。
-    return [
-      { source: "/sitemap.xml", destination: "/api/sitemap" },
-      { source: "/robots.txt", destination: "/api/robots" },
-    ];
+    //
+    // 重要: 配列形式の rewrites は `afterFiles` として動作し、filesystem routes
+    // (= `[locale]` を含む app router の動的ルート) より **後** に評価される。
+    // 結果として `/sitemap.xml` は先に `[locale]=sitemap.xml` でマッチして
+    // notFound に到達してしまうため、`beforeFiles` で確実に先回りする。
+    return {
+      beforeFiles: [
+        { source: "/sitemap.xml", destination: "/api/sitemap" },
+        { source: "/robots.txt", destination: "/api/robots" },
+      ],
+      afterFiles: [],
+      fallback: [],
+    };
   },
 };
 
