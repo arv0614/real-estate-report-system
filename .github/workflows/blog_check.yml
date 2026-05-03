@@ -1,0 +1,98 @@
+name: Daily Blog Post Check
+
+# 毎日 10:00 JST (UTC 01:00) に main の `frontend/content/blog/` を検査し、
+# 当日 (JST) のブログ記事 (YYYY-MM-DD-*.md) が存在しなければ Issue を起票する。
+#
+# このワークフローは「外部の Anthropic スケジュールエージェント (claude.ai 上で
+# claude/* ブランチに PR を作成) が動作しているか」のリポジトリ側健全性チェック。
+# 本リポジトリにはブログ生成ロジックそのものは存在しないため、ここでは検知のみ
+# 行い、Issue 起票で人間 / Claude Code 側のリカバリーをトリガーする。
+
+on:
+  schedule:
+    # 毎日 JST 10:00 = UTC 01:00
+    - cron: "0 1 * * *"
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: Verify today's blog post exists
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Check today's blog post (JST)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          TODAY=$(TZ=Asia/Tokyo date +%Y-%m-%d)
+          echo "Today (JST): $TODAY"
+
+          # frontend/content/blog/${TODAY}-*.md が存在するか
+          MATCHES=$(find frontend/content/blog -maxdepth 1 -name "${TODAY}-*.md" -type f 2>/dev/null || true)
+
+          if [ -n "$MATCHES" ]; then
+            echo "✅ Blog post exists for ${TODAY}:"
+            echo "$MATCHES"
+            exit 0
+          fi
+
+          echo "::warning::No blog post found for ${TODAY}."
+
+          # 同日の既存オープン Issue があるか確認 (重複起票防止)
+          ISSUE_TITLE="⚠️ Blog post missing for ${TODAY}"
+          EXISTING=$(gh issue list \
+            --repo "$REPO" \
+            --state open \
+            --search "in:title \"${ISSUE_TITLE}\"" \
+            --json number \
+            --jq '.[].number' || true)
+
+          if [ -n "$EXISTING" ]; then
+            echo "Issue already exists for ${TODAY}: #${EXISTING}. Skipping create."
+            exit 1
+          fi
+
+          # Issue 起票
+          BODY=$(cat <<EOF
+          本日 \`${TODAY}\` 分のブログ記事が \`frontend/content/blog/${TODAY}-*.md\` の形式で存在しません。
+
+          ## 想定される原因
+          - Anthropic スケジュールエージェント (claude.ai 上で \`claude/*\` ブランチに PR を作成する仕組み) が当日実行されなかった
+          - \`auto_merge_blog.yml\` がコンフリクト等でマージ完了に至らなかった
+          - 何らかの障害で main へのマージが遅延
+
+          ## 推奨アクション
+          1. \`gh pr list --state all --limit 5\` で本日の \`claude/*\` PR があるか確認
+          2. PR があればコンフリクト解決 or 手動マージ
+          3. PR がなければ手動でリカバリー記事を作成して直接 main へ push
+          4. 過去のリカバリー手順例: コミット \`727d25a\` (5/2 神戸三宮) や \`8e50da8\` (5/1 札幌)
+
+          ## 検知元
+          GitHub Actions: \`Daily Blog Post Check\` (run \`\${{ github.run_id }}\`)
+          EOF
+          )
+
+          gh issue create \
+            --repo "$REPO" \
+            --title "$ISSUE_TITLE" \
+            --body "$BODY" \
+            --label "blog-missing" 2>&1 || {
+              # ラベル未作成でも起票は成功させる
+              gh issue create \
+                --repo "$REPO" \
+                --title "$ISSUE_TITLE" \
+                --body "$BODY"
+          }
+
+          # CI 上でも失敗ステータスにし、メール通知を発火させる
+          exit 1
