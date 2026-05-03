@@ -71,6 +71,7 @@ jobs:
             --quiet
 
       - name: Health check
+        id: health
         run: |
           FRONTEND_URL="${{ secrets.NEXT_PUBLIC_SITE_URL }}"
           echo "🩺 ヘルスチェック中: $FRONTEND_URL"
@@ -78,9 +79,81 @@ jobs:
             HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$FRONTEND_URL" || echo "000")
             if [[ "$HTTP_STATUS" == "200" ]]; then
               echo "✅ ヘルスチェック OK (HTTP $HTTP_STATUS)"
+              echo "ok=true" >> "$GITHUB_OUTPUT"
               exit 0
             fi
             echo "  ... HTTP $HTTP_STATUS (${i}/6回目、10秒後に再試行)"
             sleep 10
           done
           echo "⚠️  ヘルスチェック未確認 (HTTP $HTTP_STATUS) — デプロイ自体は成功している可能性があります"
+          echo "ok=false" >> "$GITHUB_OUTPUT"
+
+      - name: Verify sitemap.xml is reachable
+        id: sitemap
+        if: steps.health.outputs.ok == 'true'
+        run: |
+          SITE_URL="${{ secrets.NEXT_PUBLIC_SITE_URL }}"
+          SITE_URL="${SITE_URL%/}"
+          SITEMAP_URL="${SITE_URL}/sitemap.xml"
+          echo "🗺  sitemap 確認: $SITEMAP_URL"
+          for i in $(seq 1 3); do
+            HTTP=$(curl -s -o /tmp/sm.body -w "%{http_code}" "$SITEMAP_URL" || echo "000")
+            if [[ "$HTTP" == "200" ]] && grep -q "<urlset" /tmp/sm.body; then
+              URL_COUNT=$(grep -c "<loc>" /tmp/sm.body || echo 0)
+              echo "✅ sitemap.xml OK (HTTP $HTTP, ${URL_COUNT} URLs)"
+              echo "url=${SITEMAP_URL}" >> "$GITHUB_OUTPUT"
+              echo "ok=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "  ... HTTP $HTTP (${i}/3回目、10秒後に再試行)"
+            sleep 10
+          done
+          echo "::warning::sitemap.xml が想定通りに応答していません (HTTP $HTTP) — Ping をスキップします"
+          echo "ok=false" >> "$GITHUB_OUTPUT"
+
+      - name: Ping Google with sitemap
+        if: steps.sitemap.outputs.ok == 'true'
+        env:
+          SITEMAP_URL: ${{ steps.sitemap.outputs.url }}
+        run: |
+          # NOTE: Google は 2023年6月に sitemap-ping エンドポイント
+          #   (https://www.google.com/ping?sitemap=...) を「廃止予定」と発表し、
+          #   2024年以降は実質的に no-op (HTTP 200 を返すが処理されない場合あり)。
+          #   推奨は Search Console での登録 + robots.txt の Sitemap: 行による
+          #   自動発見だが、ユーザー要件として明示的な ping を残す。
+          #   失敗してもデプロイ全体は成功扱いにする (continue-on-error 相当)。
+          ENCODED=$(printf '%s' "$SITEMAP_URL" | jq -sRr @uri)
+          PING_URL="https://www.google.com/ping?sitemap=${ENCODED}"
+          echo "📡 Google ping: $PING_URL"
+          HTTP=$(curl -sS -L -o /dev/null -w "%{http_code}" --max-time 15 "$PING_URL" || echo "000")
+          if [[ "$HTTP" == "200" ]]; then
+            echo "✅ Google ping OK ($HTTP) — ただし Google 側で実際に再クロールされるかは保証されません"
+          else
+            echo "::warning::Google ping returned HTTP $HTTP (廃止された API のため非致命的)"
+          fi
+
+      - name: Ping IndexNow (Bing/Yandex)
+        if: steps.sitemap.outputs.ok == 'true' && env.INDEXNOW_KEY != ''
+        env:
+          INDEXNOW_KEY: ${{ secrets.INDEXNOW_KEY }}
+          SITEMAP_URL: ${{ steps.sitemap.outputs.url }}
+          SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+        run: |
+          # IndexNow: Bing/Yandex/Seznam 等が連携した即時通知 API
+          # (Google は未対応)。INDEXNOW_KEY を Secrets に追加した場合のみ実行。
+          PAYLOAD=$(jq -n \
+            --arg host "$(echo "$SITE_URL" | sed -E 's,^https?://,,' | sed 's,/$,,')" \
+            --arg key "$INDEXNOW_KEY" \
+            --arg sitemap "$SITEMAP_URL" \
+            '{host: $host, key: $key, urlList: [$sitemap]}')
+          echo "📡 IndexNow ping: $PAYLOAD"
+          HTTP=$(curl -sS -X POST "https://api.indexnow.org/IndexNow" \
+            -H "Content-Type: application/json" \
+            --data "$PAYLOAD" \
+            --max-time 15 \
+            -o /tmp/indexnow.out -w "%{http_code}" || echo "000")
+          if [[ "$HTTP" =~ ^(200|202)$ ]]; then
+            echo "✅ IndexNow OK ($HTTP)"
+          else
+            echo "::warning::IndexNow returned HTTP $HTTP (非致命的)"
+          fi
