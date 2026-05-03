@@ -67,6 +67,16 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async rewrites() {
+    // /sitemap.xml と /robots.txt は metadata route や app/sitemap.xml/route.ts
+    // として配置すると next-intl の `[locale]` 動的セグメントに吸われて 404 と
+    // なるため、`/api/*` 配下の Route Handler に rewrite で逃がす。
+    // rewrites は Next.js のルーティングより先に評価されるので確実。
+    return [
+      { source: "/sitemap.xml", destination: "/api/sitemap" },
+      { source: "/robots.txt", destination: "/api/robots" },
+    ];
+  },
 };
 
 const withNextIntl = createNextIntlPlugin("./i18n/request.ts");

@@ -1,5 +1,4 @@
-// Next.js 16 の metadata route (`app/robots.ts`) と同じく、明示的な Route
-// Handler に置き換えて i18n ルーティングと衝突しない経路で配信する。
+// /robots.txt への rewrite ターゲット (next.config.ts で rewrites 設定)。
 export const dynamic = "force-dynamic";
 
 const SITE_URL =

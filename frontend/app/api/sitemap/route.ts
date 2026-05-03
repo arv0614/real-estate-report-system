@@ -1,9 +1,8 @@
 import { AREAS } from "@/lib/areas";
 import { getAllPostMeta } from "@/lib/blog";
 
-// Next.js 16 の metadata route (`app/sitemap.ts`) は next-intl の `[locale]`
-// セグメントと相互作用して `/sitemap.xml` が 404 になる事象が発生したため、
-// 明示的な Route Handler に置き換えた。常に最新のブログ記事一覧を返す。
+// /sitemap.xml への rewrite ターゲット (next.config.ts で rewrites 設定)。
+// [locale] セグメントによる動的ルーティングと衝突しないよう /api 配下に配置。
 export const dynamic = "force-dynamic";
 
 const SITE_URL =
@@ -54,7 +53,6 @@ export async function GET(): Promise<Response> {
     priority: 0.7,
   }));
 
-  // ブログ記事は読み取りに失敗しても sitemap 全体を 500 にしないよう try/catch
   let blogEntries: SitemapEntry[] = [];
   try {
     blogEntries = getAllPostMeta().map((post) => ({
