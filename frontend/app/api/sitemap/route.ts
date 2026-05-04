@@ -55,17 +55,34 @@ export async function GET(): Promise<Response> {
 
   let blogEntries: SitemapEntry[] = [];
   try {
-    blogEntries = getAllPostMeta().map((post) => ({
+    // 日本語記事 (ja, デフォルト URL は /blog/<slug>)
+    const jaEntries: SitemapEntry[] = getAllPostMeta("ja").map((post) => ({
       loc: `${SITE_URL}/blog/${post.slug}`,
       lastmod: (post.publishedAt ? new Date(post.publishedAt) : new Date()).toISOString(),
       changefreq: "monthly",
       priority: 0.7,
     }));
+    // 英語記事 (en, /en/blog/<slug>)
+    const enEntries: SitemapEntry[] = getAllPostMeta("en").map((post) => ({
+      loc: `${SITE_URL}/en/blog/${post.slug}`,
+      lastmod: (post.publishedAt ? new Date(post.publishedAt) : new Date()).toISOString(),
+      changefreq: "monthly",
+      priority: 0.65,
+    }));
+    blogEntries = [...jaEntries, ...enEntries];
   } catch (err) {
     console.warn("[sitemap] Failed to enumerate blog posts:", err);
   }
 
-  const all = [...staticEntries, ...areaEntries, ...blogEntries];
+  // /en の英語ブログインデックスも追加
+  const enBlogIndex: SitemapEntry = {
+    loc: `${SITE_URL}/en/blog`,
+    lastmod: now,
+    changefreq: "weekly",
+    priority: 0.75,
+  };
+
+  const all = [...staticEntries, enBlogIndex, ...areaEntries, ...blogEntries];
   const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${all.map(entryToXml).join("\n")}\n</urlset>\n`;
 
   return new Response(xml, {

@@ -3,8 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { getAllPostMeta, getPostBySlug } from "@/lib/blog";
+import { getAllPostMeta, getAvailableLocales, getPostBySlug, type Locale } from "@/lib/blog";
 import BlogMiniMapWrapper from "@/components/blog/BlogMiniMapWrapper";
+import LanguageToggle from "@/components/LanguageToggle";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
@@ -12,13 +13,28 @@ const SITE_URL =
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
 
+function asLocale(s: string): Locale {
+  return s === "en" ? "en" : "ja";
+}
+
+function blogPathFor(locale: Locale, slug: string): string {
+  return locale === "en" ? `${SITE_URL}/en/blog/${slug}` : `${SITE_URL}/blog/${slug}`;
+}
+
 export async function generateStaticParams() {
-  return getAllPostMeta().map((post) => ({ slug: post.slug }));
+  // 日英いずれかで利用可能な slug の集合を返す。実際にどのロケール × slug の
+  // 組み合わせで記事を持つかは、ページ本体で getPostBySlug(locale) が判断し、
+  // 該当ファイルがなければ notFound() が呼ばれる。
+  const slugs = new Set<string>();
+  for (const post of getAllPostMeta("ja")) slugs.add(post.slug);
+  for (const post of getAllPostMeta("en")) slugs.add(post.slug);
+  return Array.from(slugs).map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
-  const post = getPostBySlug(slug);
+  const { locale: rawLocale, slug } = await params;
+  const locale = asLocale(rawLocale);
+  const post = getPostBySlug(slug, locale);
   if (!post) return {};
 
   // ブログ専用 OGP 画像 (1200x630, summary_large_image) を絶対 URL で構築。
@@ -32,17 +48,28 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (post.publishedAt) ogImage.searchParams.set("date", post.publishedAt);
   const ogImageUrl = ogImage.toString();
 
+  // 翻訳済み記事のみ hreflang alternate を出す (未翻訳の言語は alternate に含めない)
+  const available = getAvailableLocales(slug);
+  const languages: Record<string, string> = {};
+  if (available.includes("ja")) languages["ja"] = blogPathFor("ja", slug);
+  if (available.includes("en")) languages["en"] = blogPathFor("en", slug);
+  if (available.includes("ja")) languages["x-default"] = blogPathFor("ja", slug);
+
+  const siteName = locale === "en" ? "Mekiki Research" : "物件目利きリサーチ";
+  const canonical = blogPathFor(locale, slug);
+
   return {
-    title: `${post.title} | 物件目利きリサーチ`,
+    title: `${post.title} | ${siteName}`,
     description: post.description,
-    alternates: { canonical: `${SITE_URL}/blog/${slug}` },
+    alternates: { canonical, languages },
     openGraph: {
       type: "article",
-      url: `${SITE_URL}/blog/${slug}`,
+      url: canonical,
       title: post.title,
       description: post.description,
       publishedTime: post.publishedAt,
       tags: post.tags,
+      locale: locale === "en" ? "en_US" : "ja_JP",
       images: [
         {
           url: ogImageUrl,
@@ -61,9 +88,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-function formatDate(iso: string) {
+function formatDate(iso: string, locale: Locale) {
   const d = new Date(iso);
-  return d.toLocaleDateString("ja-JP", {
+  return d.toLocaleDateString(locale === "en" ? "en-US" : "ja-JP", {
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -71,14 +98,19 @@ function formatDate(iso: string) {
 }
 
 export default async function BlogPostPage({ params }: Props) {
-  const { locale, slug } = await params;
-  const post = getPostBySlug(slug);
+  const { locale: rawLocale, slug } = await params;
+  const locale = asLocale(rawLocale);
+  const post = getPostBySlug(slug, locale);
   if (!post) notFound();
 
   const isEn = locale === "en";
   const homeHref = isEn ? "/en" : "/";
   const blogHref = isEn ? "/en/blog" : "/blog";
   const serviceName = isEn ? "Mekiki Research" : "物件目利きリサーチ";
+
+  // この記事が翻訳済みのロケールを取得 (LanguageToggle が翻訳のない方向への
+  // 切り替えを表示しないため)
+  const availableLocales = getAvailableLocales(slug);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -132,6 +164,9 @@ export default async function BlogPostPage({ params }: Props) {
           >
             {isEn ? "Blog" : "ブログ"}
           </Link>
+          <div className="ml-auto">
+            <LanguageToggle currentLocale={locale} availableLocales={availableLocales} />
+          </div>
         </div>
       </header>
 
@@ -153,7 +188,7 @@ export default async function BlogPostPage({ params }: Props) {
           </h1>
           {post.publishedAt && (
             <time dateTime={post.publishedAt} className="text-sm text-slate-400">
-              {formatDate(post.publishedAt)}
+              {formatDate(post.publishedAt, locale)}
             </time>
           )}
         </div>

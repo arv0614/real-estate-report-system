@@ -1,13 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getAllPostMeta } from "@/lib/blog";
+import { getAllPostMeta, type Locale } from "@/lib/blog";
 import BlogIndexClient from "@/components/blog/BlogIndexClient";
+import LanguageToggle from "@/components/LanguageToggle";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
   "https://mekiki-research.com";
 
 type Props = { params: Promise<{ locale: string }> };
+
+function asLocale(s: string): Locale {
+  return s === "en" ? "en" : "ja";
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
@@ -42,8 +47,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function BlogIndexPage({ params }: Props) {
-  const { locale } = await params;
-  const posts = getAllPostMeta();
+  const { locale: rawLocale } = await params;
+  const locale = asLocale(rawLocale);
+  const posts = getAllPostMeta(locale);
   const isEn = locale === "en";
 
   const homeHref = isEn ? "/en" : "/";
@@ -70,6 +76,9 @@ export default async function BlogIndexPage({ params }: Props) {
               {serviceName}
             </span>
           </Link>
+          <div className="ml-auto">
+            <LanguageToggle currentLocale={locale} />
+          </div>
         </div>
       </header>
 
