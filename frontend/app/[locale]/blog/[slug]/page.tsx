@@ -21,6 +21,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const post = getPostBySlug(slug);
   if (!post) return {};
 
+  // ブログ専用 OGP 画像 (1200x630, summary_large_image) を絶対 URL で構築。
+  // X / Slack / Facebook の OGP scraper はクロスオリジン取得を行うため、
+  // 必ず絶対 URL を返す必要がある (相対パスだとデフォルトのサイトロゴに
+  // フォールバックして「グレーアイコン」になる)。
+  const ogImage = new URL(`${SITE_URL}/api/og/blog`);
+  ogImage.searchParams.set("title", post.title);
+  if (post.description) ogImage.searchParams.set("description", post.description);
+  if (post.tags.length > 0) ogImage.searchParams.set("tags", post.tags.slice(0, 4).join(","));
+  if (post.publishedAt) ogImage.searchParams.set("date", post.publishedAt);
+  const ogImageUrl = ogImage.toString();
+
   return {
     title: `${post.title} | 物件目利きリサーチ`,
     description: post.description,
@@ -32,6 +43,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: post.description,
       publishedTime: post.publishedAt,
       tags: post.tags,
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: post.title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: post.title,
+      description: post.description,
+      images: [ogImageUrl],
     },
   };
 }
