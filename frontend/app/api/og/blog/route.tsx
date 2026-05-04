@@ -7,36 +7,85 @@ const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
   "https://mekiki-research.com";
 
-// ブログ記事用の OGP 画像 (1200x630, summary_large_image)。
-// クエリパラメータ:
-//   - title (required, 〜100文字推奨)
-//   - description (optional)
-//   - tags (optional, カンマ区切り、上位4件まで採用)
-//   - date (optional, ISO 8601 / YYYY-MM-DD)
-//
-// 画像は X の OGP scraper や Slack/Facebook クローラから取得される。
-// 既存の /api/og (物件リサーチ結果用) と完全に分離して干渉を避ける。
+// ─────────────────────────────────────────────────────────────────
+// 文字サニタイズ
+// Satori (next/og) の同梱フォント (Noto Sans) のグリフ範囲外の特殊記号は
+// ☒ (ballot box with X) に化けるため、レンダリング前に ASCII 系に置換する。
+// ─────────────────────────────────────────────────────────────────
+const CHAR_MAP: Record<string, string> = {
+  // 罫線・横線
+  "│": "|",
+  "┃": "|",
+  // 全角記号
+  "＝": "=",
+  "÷": "/",
+  // 乗除・×記号 (ユーザー要望で必ず x に変換)
+  "×": "x",
+  "✕": "x",
+  "✗": "x",
+  "✘": "x",
+  // ☒ そのものが入ってきても保険で除去
+  "☒": "",
+  // 装飾系
+  "■": "",
+  "□": "",
+  "▪": "",
+  "▫": "",
+  "◆": "",
+  "◇": "",
+  "●": "",
+  "○": "",
+  "★": "",
+  "☆": "",
+};
+
+function sanitize(input: string): string {
+  // 連続する横線 (── ── ━━ など) は視覚的な区切りとして残したいので
+  // " - " (前後スペース付きハイフン) に置き換え。単発はただのハイフンに。
+  let s = input
+    .replace(/[─━]{2,}/g, " - ")
+    .replace(/[─━]/g, "-");
+  // 1 文字ずつのマッピング
+  let out = "";
+  for (const ch of s) {
+    out += CHAR_MAP[ch] ?? ch;
+  }
+  // 連続スペースは 1 個に圧縮
+  return out.replace(/[ \t]{2,}/g, " ").trim();
+}
+
+// タイトル長から動的フォントサイズ
+function titleFontSize(len: number): number {
+  if (len <= 20) return 66;
+  if (len <= 30) return 58;
+  if (len <= 44) return 48;
+  if (len <= 60) return 40;
+  return 34;
+}
+
+// 文字列ハッシュ → 0..N のインデックス
+function hashIndex(s: string, mod: number): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+  }
+  return Math.abs(h) % mod;
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
 
-  const title = (searchParams.get("title") || "ブログ記事").slice(0, 100);
-  const description = (searchParams.get("description") || "").slice(0, 160);
+  const title = sanitize(searchParams.get("title") || "ブログ記事").slice(0, 100);
+  const description = sanitize(searchParams.get("description") || "").slice(0, 200);
   const tagsRaw = searchParams.get("tags") || "";
   const dateRaw = searchParams.get("date") || "";
+  const imageUrl = searchParams.get("image") || "";
 
   const tags = tagsRaw
     .split(",")
-    .map((t) => t.trim())
+    .map((t) => sanitize(t.trim()))
     .filter(Boolean)
-    .slice(0, 4);
-
-  // タイトル長で動的にフォントサイズを調整 (日本語前提)
-  const titleFontSize =
-    title.length <= 22 ? 68
-    : title.length <= 32 ? 58
-    : title.length <= 46 ? 50
-    : title.length <= 64 ? 42
-    : 36;
+    .slice(0, 6);
 
   // 日付フォーマット
   let formattedDate = "";
@@ -47,6 +96,26 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // タグクラウド用の固定座標 (画像 URL なしのときのみ表示)
+  // 6 ポジションを用意し、tags 配列をループで埋める
+  const cloudSlots: Array<{
+    top: string;
+    horizPos: { left: string } | { right: string };
+    fontSize: number;
+    opacity: number;
+    rotate: number;
+  }> = [
+    { top: "3%",  horizPos: { left: "3%" },   fontSize: 108, opacity: 0.09, rotate: -6 },
+    { top: "10%", horizPos: { right: "5%" },  fontSize: 78,  opacity: 0.075, rotate: 5 },
+    { top: "32%", horizPos: { left: "-2%" },  fontSize: 138, opacity: 0.07, rotate: -3 },
+    { top: "55%", horizPos: { right: "-3%" }, fontSize: 96,  opacity: 0.075, rotate: 7 },
+    { top: "78%", horizPos: { left: "4%" },   fontSize: 60,  opacity: 0.085, rotate: -8 },
+    { top: "88%", horizPos: { right: "12%" }, fontSize: 50,  opacity: 0.075, rotate: 4 },
+  ];
+  const showTagCloud = tags.length > 0 && !imageUrl;
+
+  const titleSize = titleFontSize(title.length);
+
   return new ImageResponse(
     (
       <div
@@ -56,70 +125,140 @@ export async function GET(req: NextRequest) {
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          background: "linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #1e3a5f 100%)",
+          background: "linear-gradient(135deg, #0b1230 0%, #1e3a8a 45%, #0f2a4a 100%)",
           fontFamily: "sans-serif",
           position: "relative",
           overflow: "hidden",
-          padding: "56px 64px",
+          padding: "44px 56px",
         }}
       >
-        {/* 装飾円 */}
-        <div
-          style={{
-            display: "flex",
-            position: "absolute",
-            top: "-160px",
-            right: "-110px",
-            width: "560px",
-            height: "560px",
-            borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(96,165,250,0.28) 0%, transparent 70%)",
-          }}
-        />
-        <div
-          style={{
-            display: "flex",
-            position: "absolute",
-            bottom: "-120px",
-            left: "-90px",
-            width: "460px",
-            height: "460px",
-            borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(59,130,246,0.18) 0%, transparent 70%)",
-          }}
-        />
+        {/* ── レイヤー1: 背景画像 (image= 指定時のみ) ────────────── */}
+        {imageUrl ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={imageUrl}
+              alt=""
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "1200px",
+                height: "630px",
+                objectFit: "cover",
+                filter: "blur(8px) brightness(0.42) saturate(0.9)",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "1200px",
+                height: "630px",
+                display: "flex",
+                background: "linear-gradient(135deg, rgba(11,18,48,0.65) 0%, rgba(15,42,74,0.55) 100%)",
+              }}
+            />
+          </>
+        ) : null}
 
-        {/* ── 上部: ブランド + 日付 ── */}
+        {/* ── レイヤー2: タグクラウド透かし (画像なし時) ────────── */}
+        {showTagCloud &&
+          cloudSlots.map((slot, i) => {
+            const tag = tags[i % tags.length];
+            const horiz = "left" in slot.horizPos
+              ? { left: slot.horizPos.left }
+              : { right: slot.horizPos.right };
+            return (
+              <div
+                key={`cloud-${i}-${tag}`}
+                style={{
+                  display: "flex",
+                  position: "absolute",
+                  top: slot.top,
+                  ...horiz,
+                  fontSize: `${slot.fontSize}px`,
+                  fontWeight: 900,
+                  color: `rgba(191, 219, 254, ${slot.opacity})`,
+                  transform: `rotate(${slot.rotate}deg)`,
+                  letterSpacing: "-1.5px",
+                  whiteSpace: "nowrap",
+                  textShadow: "0 0 1px rgba(96,165,250,0.2)",
+                }}
+              >
+                #{tag}
+              </div>
+            );
+          })}
+
+        {/* ── レイヤー3: 装飾の光球 (image なし時のアクセント) ── */}
+        {!imageUrl && (
+          <>
+            <div
+              style={{
+                display: "flex",
+                position: "absolute",
+                top: "-180px",
+                right: "-120px",
+                width: "560px",
+                height: "560px",
+                borderRadius: "50%",
+                background: "radial-gradient(circle, rgba(96,165,250,0.30) 0%, transparent 70%)",
+              }}
+            />
+            <div
+              style={{
+                display: "flex",
+                position: "absolute",
+                bottom: "-140px",
+                left: "-100px",
+                width: "480px",
+                height: "480px",
+                borderRadius: "50%",
+                background: "radial-gradient(circle, rgba(59,130,246,0.20) 0%, transparent 70%)",
+              }}
+            />
+          </>
+        )}
+
+        {/* ── 上部: ブランドバッジ + 日付 ─────────────────────── */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
+            zIndex: 10,
           }}
         >
           <div
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "14px",
+              gap: "12px",
+              background: "rgba(255,255,255,0.10)",
+              border: "1px solid rgba(191,219,254,0.30)",
+              padding: "8px 18px",
+              borderRadius: "999px",
             }}
           >
             <div
               style={{
                 display: "flex",
-                width: "10px",
-                height: "32px",
-                background: "linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%)",
-                borderRadius: "3px",
+                width: "8px",
+                height: "8px",
+                background: "#60a5fa",
+                borderRadius: "50%",
+                boxShadow: "0 0 8px rgba(96,165,250,0.8)",
               }}
             />
             <div
               style={{
                 display: "flex",
-                fontSize: "26px",
+                fontSize: "20px",
                 fontWeight: 700,
-                color: "#bfdbfe",
-                letterSpacing: "0.5px",
+                color: "#dbeafe",
+                letterSpacing: "0.3px",
               }}
             >
               物件目利きリサーチ
@@ -127,11 +266,11 @@ export async function GET(req: NextRequest) {
             <div
               style={{
                 display: "flex",
-                fontSize: "16px",
-                fontWeight: 600,
-                color: "rgba(191,219,254,0.55)",
+                fontSize: "14px",
+                fontWeight: 700,
+                color: "rgba(191,219,254,0.65)",
                 letterSpacing: "2px",
-                marginLeft: "6px",
+                marginLeft: "4px",
               }}
             >
               BLOG
@@ -141,10 +280,14 @@ export async function GET(req: NextRequest) {
             <div
               style={{
                 display: "flex",
-                fontSize: "18px",
-                color: "rgba(148,163,184,0.85)",
-                fontWeight: 500,
-                letterSpacing: "1px",
+                fontSize: "16px",
+                color: "rgba(191,219,254,0.85)",
+                fontWeight: 600,
+                letterSpacing: "1.2px",
+                background: "rgba(15,23,42,0.55)",
+                border: "1px solid rgba(96,165,250,0.25)",
+                padding: "8px 16px",
+                borderRadius: "999px",
               }}
             >
               {formattedDate}
@@ -152,18 +295,25 @@ export async function GET(req: NextRequest) {
           )}
         </div>
 
-        {/* ── 中央: タイトル + 説明 + タグ ── */}
+        {/* ── 中央: タイトル + 説明 + タグ pill (カードパネル) ─ */}
         <div
           style={{
             display: "flex",
             flexDirection: "column",
             gap: "22px",
+            background: "rgba(11, 18, 40, 0.72)",
+            border: "1px solid rgba(96,165,250,0.30)",
+            borderRadius: "24px",
+            padding: "36px 44px",
+            boxShadow: "0 30px 80px rgba(0,0,0,0.45)",
+            zIndex: 10,
           }}
         >
+          {/* タイトル */}
           <div
             style={{
               display: "flex",
-              fontSize: `${titleFontSize}px`,
+              fontSize: `${titleSize}px`,
               fontWeight: 800,
               color: "#ffffff",
               lineHeight: 1.22,
@@ -173,19 +323,21 @@ export async function GET(req: NextRequest) {
             {title}
           </div>
 
+          {/* 説明 */}
           {description && (
             <div
               style={{
                 display: "flex",
-                fontSize: "20px",
-                color: "rgba(226,232,240,0.82)",
+                fontSize: "19px",
+                color: "rgba(226,232,240,0.85)",
                 lineHeight: 1.55,
               }}
             >
-              {description.length > 100 ? description.slice(0, 99) + "…" : description}
+              {description.length > 110 ? description.slice(0, 109) + "…" : description}
             </div>
           )}
 
+          {/* タグ pill (Flexbox の gap + flexWrap でグリッド状に整列) */}
           {tags.length > 0 && (
             <div
               style={{
@@ -195,54 +347,66 @@ export async function GET(req: NextRequest) {
                 marginTop: "4px",
               }}
             >
-              {tags.map((tag) => (
-                <div
-                  key={tag}
-                  style={{
-                    display: "flex",
-                    fontSize: "16px",
-                    color: "#dbeafe",
-                    background: "rgba(59,130,246,0.20)",
-                    border: "1px solid rgba(96,165,250,0.45)",
-                    padding: "6px 16px",
-                    borderRadius: "20px",
-                    fontWeight: 600,
-                  }}
-                >
-                  #{tag}
-                </div>
-              ))}
+              {tags.map((tag, i) => {
+                // tag 名のハッシュで色相を決定 (3 色から選択)
+                const palette = [
+                  { bg: "rgba(59,130,246,0.30)", border: "rgba(96,165,250,0.60)", color: "#dbeafe" },
+                  { bg: "rgba(20,184,166,0.28)", border: "rgba(45,212,191,0.55)", color: "#ccfbf1" },
+                  { bg: "rgba(168,85,247,0.25)", border: "rgba(192,132,252,0.55)", color: "#f3e8ff" },
+                ];
+                const c = palette[hashIndex(tag, palette.length)];
+                return (
+                  <div
+                    key={`pill-${i}-${tag}`}
+                    style={{
+                      display: "flex",
+                      fontSize: "16px",
+                      color: c.color,
+                      background: c.bg,
+                      border: `1px solid ${c.border}`,
+                      padding: "7px 18px",
+                      borderRadius: "999px",
+                      fontWeight: 600,
+                    }}
+                  >
+                    #{tag}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
 
-        {/* ── 下部: タグライン + ドメイン ── */}
+        {/* ── 下部: タグライン + ドメイン ──────────────────────── */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
+            zIndex: 10,
           }}
         >
           <div
             style={{
               display: "flex",
-              fontSize: "16px",
-              color: "rgba(148,163,184,0.85)",
-              letterSpacing: "0.3px",
+              fontSize: "15px",
+              color: "rgba(191,219,254,0.70)",
+              letterSpacing: "0.4px",
+              fontWeight: 500,
             }}
           >
-            国交省データ × AI で読み解く不動産市況
+            国交省データ x AI で読み解く不動産市況
           </div>
           <div
             style={{
               display: "flex",
-              fontSize: "15px",
+              alignItems: "center",
+              fontSize: "14px",
               color: "rgba(191,219,254,0.85)",
-              background: "rgba(96,165,250,0.10)",
-              border: "1px solid rgba(96,165,250,0.30)",
-              padding: "8px 18px",
-              borderRadius: "22px",
+              background: "rgba(96,165,250,0.12)",
+              border: "1px solid rgba(96,165,250,0.35)",
+              padding: "7px 16px",
+              borderRadius: "999px",
               fontWeight: 600,
             }}
           >
