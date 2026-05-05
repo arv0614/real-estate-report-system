@@ -17,16 +17,34 @@ type SortOrder = "newest" | "oldest";
 
 const NEW_BADGE_TOP_N = 3;
 
+const DATE_LOCALE_TAG: Record<string, string> = {
+  ja: "ja-JP",
+  en: "en-US",
+  "zh-TW": "zh-TW",
+  "zh-CN": "zh-CN",
+};
+
 function formatDate(iso: string, locale: string) {
-  return new Date(iso).toLocaleDateString(locale === "en" ? "en-US" : "ja-JP", {
+  return new Date(iso).toLocaleDateString(DATE_LOCALE_TAG[locale] ?? "ja-JP", {
     year: "numeric",
     month: "long",
     day: "numeric",
   });
 }
 
+const LIST_LABELS: Record<
+  string,
+  { sort: string; area: string; allAreas: string; newest: string; oldest: string; postsSingular?: string; postsPlural?: string; countSuffix: string }
+> = {
+  ja: { sort: "並び替え", area: "エリア", allAreas: "すべてのエリア", newest: "新しい順", oldest: "古い順", countSuffix: "件" },
+  en: { sort: "Sort", area: "Area", allAreas: "All areas", newest: "Newest first", oldest: "Oldest first", postsSingular: "post", postsPlural: "posts", countSuffix: "" },
+  "zh-TW": { sort: "排序", area: "區域", allAreas: "所有區域", newest: "由新至舊", oldest: "由舊至新", countSuffix: "篇" },
+  "zh-CN": { sort: "排序", area: "区域", allAreas: "所有区域", newest: "由新到旧", oldest: "由旧到新", countSuffix: "篇" },
+};
+
 export default function BlogIndexClient({ posts, locale, emptyMsg }: Props) {
-  const isEn = locale === "en";
+  const labels = LIST_LABELS[locale] ?? LIST_LABELS.ja;
+  const localePrefix = locale === "ja" ? "" : `/${locale}`;
 
   const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
   const [areaFilter, setAreaFilter] = useState<string>("all");
@@ -59,15 +77,16 @@ export default function BlogIndexClient({ posts, locale, emptyMsg }: Props) {
   }, [posts]);
   const latestSlugSet = useMemo(() => new Set(latestSlugs), [latestSlugs]);
 
-  const sortLabel = isEn ? "Sort" : "並び替え";
-  const areaLabel = isEn ? "Area" : "エリア";
-  const allAreasLabel = isEn ? "All areas" : "すべてのエリア";
-  const newestLabel = isEn ? "Newest first" : "新しい順";
-  const oldestLabel = isEn ? "Oldest first" : "古い順";
+  const sortLabel = labels.sort;
+  const areaLabel = labels.area;
+  const allAreasLabel = labels.allAreas;
+  const newestLabel = labels.newest;
+  const oldestLabel = labels.oldest;
   const newBadgeLabel = "NEW";
-  const countLabel = isEn
-    ? `${visiblePosts.length} ${visiblePosts.length === 1 ? "post" : "posts"}`
-    : `${visiblePosts.length}件`;
+  const countLabel =
+    locale === "en"
+      ? `${visiblePosts.length} ${visiblePosts.length === 1 ? labels.postsSingular : labels.postsPlural}`
+      : `${visiblePosts.length}${labels.countSuffix}`;
 
   return (
     <>
@@ -130,7 +149,7 @@ export default function BlogIndexClient({ posts, locale, emptyMsg }: Props) {
                 className="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-md transition-shadow"
               >
                 <Link
-                  href={`${isEn ? "/en" : ""}/blog/${post.slug}`}
+                  href={`${localePrefix}/blog/${post.slug}`}
                   className="group block"
                 >
                   <div className="flex items-start gap-2 mb-2">

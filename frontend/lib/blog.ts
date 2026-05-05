@@ -4,11 +4,15 @@ import matter from "gray-matter";
 
 const BLOG_DIR = path.join(process.cwd(), "content/blog");
 
-// 日英の MD ファイルを 1 ディレクトリで管理する命名規約:
-//   - <slug>.md     → 日本語 (ja, デフォルト)
-//   - <slug>.en.md  → 英語   (en)
+// 多言語 MD ファイルを 1 ディレクトリで管理する命名規約:
+//   - <slug>.md         → 日本語 (ja, デフォルト)
+//   - <slug>.en.md      → 英語   (en)
+//   - <slug>.zh-TW.md   → 繁体中文 (zh-TW)
+//   - <slug>.zh-CN.md   → 簡体中文 (zh-CN)
 // 拡張子から locale を判定する。
 const EN_SUFFIX = ".en.md";
+const ZH_TW_SUFFIX = ".zh-TW.md";
+const ZH_CN_SUFFIX = ".zh-CN.md";
 const JA_SUFFIX = ".md";
 
 export interface BlogPostLocation {
@@ -18,7 +22,11 @@ export interface BlogPostLocation {
   areaCode?: string;
 }
 
-export type Locale = "ja" | "en";
+export { ALL_LOCALES } from "./locale";
+export type { Locale } from "./locale";
+
+import type { Locale } from "./locale";
+import { ALL_LOCALES } from "./locale";
 
 export type PostMeta = {
   slug: string;
@@ -65,18 +73,60 @@ function isEnFile(filename: string): boolean {
   return filename.endsWith(EN_SUFFIX);
 }
 
+function isZhTwFile(filename: string): boolean {
+  return filename.endsWith(ZH_TW_SUFFIX);
+}
+
+function isZhCnFile(filename: string): boolean {
+  return filename.endsWith(ZH_CN_SUFFIX);
+}
+
 function isJaFile(filename: string): boolean {
-  return filename.endsWith(JA_SUFFIX) && !filename.endsWith(EN_SUFFIX);
+  return (
+    filename.endsWith(JA_SUFFIX) &&
+    !filename.endsWith(EN_SUFFIX) &&
+    !filename.endsWith(ZH_TW_SUFFIX) &&
+    !filename.endsWith(ZH_CN_SUFFIX)
+  );
 }
 
 function filenameToSlug(filename: string, locale: Locale): string {
-  return locale === "en"
-    ? filename.replace(/\.en\.md$/, "")
-    : filename.replace(/\.md$/, "");
+  switch (locale) {
+    case "en":
+      return filename.replace(/\.en\.md$/, "");
+    case "zh-TW":
+      return filename.replace(/\.zh-TW\.md$/, "");
+    case "zh-CN":
+      return filename.replace(/\.zh-CN\.md$/, "");
+    default:
+      return filename.replace(/\.md$/, "");
+  }
 }
 
 function slugToFilename(slug: string, locale: Locale): string {
-  return locale === "en" ? `${slug}.en.md` : `${slug}.md`;
+  switch (locale) {
+    case "en":
+      return `${slug}.en.md`;
+    case "zh-TW":
+      return `${slug}.zh-TW.md`;
+    case "zh-CN":
+      return `${slug}.zh-CN.md`;
+    default:
+      return `${slug}.md`;
+  }
+}
+
+function fileFilterFor(locale: Locale): (filename: string) => boolean {
+  switch (locale) {
+    case "en":
+      return isEnFile;
+    case "zh-TW":
+      return isZhTwFile;
+    case "zh-CN":
+      return isZhCnFile;
+    default:
+      return isJaFile;
+  }
 }
 
 function parseFrontmatter(filename: string, locale: Locale): PostMeta {
@@ -99,15 +149,17 @@ function parseFrontmatter(filename: string, locale: Locale): PostMeta {
 
 /**
  * 指定 locale の全記事メタデータを取得する。
- * - locale="ja": *.md (但し *.en.md を除く)
- * - locale="en": *.en.md
+ * - locale="ja":    *.md (但し *.en.md / *.zh-TW.md / *.zh-CN.md を除く)
+ * - locale="en":    *.en.md
+ * - locale="zh-TW": *.zh-TW.md
+ * - locale="zh-CN": *.zh-CN.md
  *
- * 英語ロケールでは英訳済み記事のみが返る (未翻訳記事は EN サイトに出さない)。
+ * 翻訳が存在しない記事は、そのロケールでは返らない (未翻訳記事はそのサイトに出さない)。
  */
 export function getAllPostMeta(locale: Locale = "ja"): PostMeta[] {
   ensureBlogDir();
   const files = fs.readdirSync(BLOG_DIR);
-  const targetFiles = locale === "en" ? files.filter(isEnFile) : files.filter(isJaFile);
+  const targetFiles = files.filter(fileFilterFor(locale));
 
   return targetFiles
     .map((f) => parseFrontmatter(f, locale))
@@ -146,13 +198,12 @@ export function getPostBySlug(slug: string, locale: Locale = "ja"): Post | null 
 }
 
 /**
- * 指定 slug が日本語/英語のどちらで利用可能かを返す。
+ * 指定 slug が ja / en / zh-TW / zh-CN のどのロケールで利用可能かを返す。
  * Sitemap 生成や hreflang メタデータ生成に使う。
  */
 export function getAvailableLocales(slug: string): Locale[] {
   ensureBlogDir();
-  const out: Locale[] = [];
-  if (fs.existsSync(path.join(BLOG_DIR, slugToFilename(slug, "ja")))) out.push("ja");
-  if (fs.existsSync(path.join(BLOG_DIR, slugToFilename(slug, "en")))) out.push("en");
-  return out;
+  return ALL_LOCALES.filter((loc) =>
+    fs.existsSync(path.join(BLOG_DIR, slugToFilename(slug, loc))),
+  );
 }

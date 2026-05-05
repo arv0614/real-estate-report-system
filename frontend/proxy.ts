@@ -14,8 +14,10 @@ export const config = {
     // and excluding API routes, static assets, and crawler metadata files
     // (sitemap.xml, robots.txt — see next.config.ts rewrites that map them to /api/*).
     "/((?!api|_next/static|_next/image|favicon.ico|reports/|seo-images/|.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp|woff|woff2|ttf|js|css|map|xml|txt)).*)",
-    // Include /en/* but explicitly exclude /en/api/* and /en/_next/* to prevent middleware
-    // from intercepting API calls or static assets when NEXT_PUBLIC_API_URL is unset
+    // Include /<locale>/* for each non-default locale, while excluding /<locale>/api/*
+    // and /<locale>/_next/* so middleware doesn't intercept API calls or static assets
     "/en/((?!api|_next/).*)",
+    "/zh-TW/((?!api|_next/).*)",
+    "/zh-CN/((?!api|_next/).*)",
   ],
 };

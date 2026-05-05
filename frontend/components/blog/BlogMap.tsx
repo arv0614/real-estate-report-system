@@ -116,7 +116,8 @@ export default function BlogMap({ posts, locale, latestSlugs }: Props) {
         for (const post of posts) {
           if (!post.primaryLocation || post.excludeFromMap) continue;
           const loc = post.primaryLocation;
-          const blogHref = `${locale === "en" ? "/en" : ""}/blog/${post.slug}`;
+          const localePrefix = locale === "ja" ? "" : `/${locale}`;
+          const blogHref = `${localePrefix}/blog/${post.slug}`;
           const isLatest = latestSet.has(post.slug);
           const newBadgeHtml = isLatest
             ? `<span style="display:inline-block;font-size:10px;font-weight:700;letter-spacing:0.05em;color:white;background:#e11d48;padding:1px 6px;border-radius:8px;margin-left:6px;vertical-align:middle">NEW</span>`

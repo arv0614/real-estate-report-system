@@ -69,20 +69,33 @@ export async function GET(): Promise<Response> {
       changefreq: "monthly",
       priority: 0.65,
     }));
-    blogEntries = [...jaEntries, ...enEntries];
+    // 繁体中文記事 (zh-TW, /zh-TW/blog/<slug>)
+    const zhTwEntries: SitemapEntry[] = getAllPostMeta("zh-TW").map((post) => ({
+      loc: `${SITE_URL}/zh-TW/blog/${post.slug}`,
+      lastmod: (post.publishedAt ? new Date(post.publishedAt) : new Date()).toISOString(),
+      changefreq: "monthly",
+      priority: 0.65,
+    }));
+    // 簡体中文記事 (zh-CN, /zh-CN/blog/<slug>)
+    const zhCnEntries: SitemapEntry[] = getAllPostMeta("zh-CN").map((post) => ({
+      loc: `${SITE_URL}/zh-CN/blog/${post.slug}`,
+      lastmod: (post.publishedAt ? new Date(post.publishedAt) : new Date()).toISOString(),
+      changefreq: "monthly",
+      priority: 0.65,
+    }));
+    blogEntries = [...jaEntries, ...enEntries, ...zhTwEntries, ...zhCnEntries];
   } catch (err) {
     console.warn("[sitemap] Failed to enumerate blog posts:", err);
   }
 
-  // /en の英語ブログインデックスも追加
-  const enBlogIndex: SitemapEntry = {
-    loc: `${SITE_URL}/en/blog`,
-    lastmod: now,
-    changefreq: "weekly",
-    priority: 0.75,
-  };
+  // 各ロケールのブログインデックスも追加
+  const localizedBlogIndexes: SitemapEntry[] = [
+    { loc: `${SITE_URL}/en/blog`, lastmod: now, changefreq: "weekly", priority: 0.75 },
+    { loc: `${SITE_URL}/zh-TW/blog`, lastmod: now, changefreq: "weekly", priority: 0.7 },
+    { loc: `${SITE_URL}/zh-CN/blog`, lastmod: now, changefreq: "weekly", priority: 0.7 },
+  ];
 
-  const all = [...staticEntries, enBlogIndex, ...areaEntries, ...blogEntries];
+  const all = [...staticEntries, ...localizedBlogIndexes, ...areaEntries, ...blogEntries];
   const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${all.map(entryToXml).join("\n")}\n</urlset>\n`;
 
   return new Response(xml, {

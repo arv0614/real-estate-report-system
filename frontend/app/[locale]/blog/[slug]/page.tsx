@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { getAllPostMeta, getAvailableLocales, getPostBySlug, type Locale } from "@/lib/blog";
+import { ALL_LOCALES, getAllPostMeta, getAvailableLocales, getPostBySlug, type Locale } from "@/lib/blog";
 import BlogMiniMapWrapper from "@/components/blog/BlogMiniMapWrapper";
 import LanguageToggle from "@/components/LanguageToggle";
 
@@ -14,20 +14,100 @@ const SITE_URL =
 type Props = { params: Promise<{ locale: string; slug: string }> };
 
 function asLocale(s: string): Locale {
-  return s === "en" ? "en" : "ja";
+  return (ALL_LOCALES as string[]).includes(s) ? (s as Locale) : "ja";
 }
 
 function blogPathFor(locale: Locale, slug: string): string {
-  return locale === "en" ? `${SITE_URL}/en/blog/${slug}` : `${SITE_URL}/blog/${slug}`;
+  return locale === "ja"
+    ? `${SITE_URL}/blog/${slug}`
+    : `${SITE_URL}/${locale}/blog/${slug}`;
 }
 
+const SLUG_LABELS: Record<
+  Locale,
+  {
+    blogLabel: string;
+    serviceName: string;
+    targetArea: string;
+    analyzeCta: string;
+    ctaTitle: string;
+    ctaDesc: string;
+    ctaBtn: string;
+    backToBlog: string;
+    topLabel: string;
+    termsLabel: string;
+    privacyLabel: string;
+    siteLocale: string;
+  }
+> = {
+  ja: {
+    blogLabel: "ブログ",
+    serviceName: "物件目利きリサーチ",
+    targetArea: "対象エリア",
+    analyzeCta: "β 版でこのエリアを調べる →",
+    ctaTitle: "物件目利きリサーチを無料で試してみましょう",
+    ctaDesc:
+      "住所を入力するだけで、相場・ハザードリスク・AIレポートが30秒で確認できます",
+    ctaBtn: "無料で調査する →",
+    backToBlog: "← ブログ一覧に戻る",
+    topLabel: "トップ",
+    termsLabel: "利用規約",
+    privacyLabel: "プライバシーポリシー",
+    siteLocale: "ja_JP",
+  },
+  en: {
+    blogLabel: "Blog",
+    serviceName: "Mekiki Research",
+    targetArea: "Target Area",
+    analyzeCta: "Analyze this area in β →",
+    ctaTitle: "Try Mekiki Research for free",
+    ctaDesc:
+      "Enter any address in Japan — get price data, hazard risk, and an AI area report in 30 seconds.",
+    ctaBtn: "Start for free →",
+    backToBlog: "← Back to Blog",
+    topLabel: "Top",
+    termsLabel: "Terms",
+    privacyLabel: "Privacy",
+    siteLocale: "en_US",
+  },
+  "zh-TW": {
+    blogLabel: "部落格",
+    serviceName: "物件目利研究",
+    targetArea: "對象區域",
+    analyzeCta: "用 β 版調查此區域 →",
+    ctaTitle: "免費試用物件目利研究",
+    ctaDesc: "只需輸入地址,30 秒即可確認行情、災害風險與 AI 報告。",
+    ctaBtn: "免費調查 →",
+    backToBlog: "← 返回部落格列表",
+    topLabel: "首頁",
+    termsLabel: "服務條款",
+    privacyLabel: "隱私權政策",
+    siteLocale: "zh_TW",
+  },
+  "zh-CN": {
+    blogLabel: "博客",
+    serviceName: "物件目利研究",
+    targetArea: "目标区域",
+    analyzeCta: "用 β 版调查此区域 →",
+    ctaTitle: "免费试用物件目利研究",
+    ctaDesc: "只需输入地址,30 秒即可确认行情、灾害风险与 AI 报告。",
+    ctaBtn: "免费调查 →",
+    backToBlog: "← 返回博客列表",
+    topLabel: "首页",
+    termsLabel: "服务条款",
+    privacyLabel: "隐私政策",
+    siteLocale: "zh_CN",
+  },
+};
+
 export async function generateStaticParams() {
-  // 日英いずれかで利用可能な slug の集合を返す。実際にどのロケール × slug の
+  // 4ロケールいずれかで利用可能な slug の集合を返す。実際にどのロケール × slug の
   // 組み合わせで記事を持つかは、ページ本体で getPostBySlug(locale) が判断し、
   // 該当ファイルがなければ notFound() が呼ばれる。
   const slugs = new Set<string>();
-  for (const post of getAllPostMeta("ja")) slugs.add(post.slug);
-  for (const post of getAllPostMeta("en")) slugs.add(post.slug);
+  for (const loc of ALL_LOCALES) {
+    for (const post of getAllPostMeta(loc)) slugs.add(post.slug);
+  }
   return Array.from(slugs).map((slug) => ({ slug }));
 }
 
@@ -51,11 +131,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // 翻訳済み記事のみ hreflang alternate を出す (未翻訳の言語は alternate に含めない)
   const available = getAvailableLocales(slug);
   const languages: Record<string, string> = {};
-  if (available.includes("ja")) languages["ja"] = blogPathFor("ja", slug);
-  if (available.includes("en")) languages["en"] = blogPathFor("en", slug);
+  for (const loc of available) {
+    languages[loc] = blogPathFor(loc, slug);
+  }
   if (available.includes("ja")) languages["x-default"] = blogPathFor("ja", slug);
 
-  const siteName = locale === "en" ? "Mekiki Research" : "物件目利きリサーチ";
+  const labels = SLUG_LABELS[locale];
+  const siteName = labels.serviceName;
   const canonical = blogPathFor(locale, slug);
 
   return {
@@ -69,7 +151,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: post.description,
       publishedTime: post.publishedAt,
       tags: post.tags,
-      locale: locale === "en" ? "en_US" : "ja_JP",
+      locale: labels.siteLocale,
       images: [
         {
           url: ogImageUrl,
@@ -88,9 +170,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
+const DATE_LOCALE: Record<Locale, string> = {
+  ja: "ja-JP",
+  en: "en-US",
+  "zh-TW": "zh-TW",
+  "zh-CN": "zh-CN",
+};
+
 function formatDate(iso: string, locale: Locale) {
   const d = new Date(iso);
-  return d.toLocaleDateString(locale === "en" ? "en-US" : "ja-JP", {
+  return d.toLocaleDateString(DATE_LOCALE[locale], {
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -103,10 +192,10 @@ export default async function BlogPostPage({ params }: Props) {
   const post = getPostBySlug(slug, locale);
   if (!post) notFound();
 
-  const isEn = locale === "en";
-  const homeHref = isEn ? "/en" : "/";
-  const blogHref = isEn ? "/en/blog" : "/blog";
-  const serviceName = isEn ? "Mekiki Research" : "物件目利きリサーチ";
+  const labels = SLUG_LABELS[locale];
+  const homeHref = locale === "ja" ? "/" : `/${locale}`;
+  const blogHref = locale === "ja" ? "/blog" : `/${locale}/blog`;
+  const serviceName = labels.serviceName;
 
   // この記事が翻訳済みのロケールを取得 (LanguageToggle が翻訳のない方向への
   // 切り替えを表示しないため)
@@ -133,8 +222,9 @@ export default async function BlogPostPage({ params }: Props) {
   };
 
   const loc = post.primaryLocation;
+  const localePrefix = locale === "ja" ? "" : `/${locale}`;
   const researchHref = loc
-    ? `${isEn ? "/en" : ""}/research?lat=${loc.lat}&lng=${loc.lng}&type=mansion`
+    ? `${localePrefix}/research?lat=${loc.lat}&lng=${loc.lng}&type=mansion`
     : null;
 
   return (
@@ -162,7 +252,7 @@ export default async function BlogPostPage({ params }: Props) {
             href={blogHref}
             className="text-sm text-slate-500 hover:text-slate-700 transition-colors"
           >
-            {isEn ? "Blog" : "ブログ"}
+            {labels.blogLabel}
           </Link>
           <div className="ml-auto">
             <LanguageToggle currentLocale={locale} availableLocales={availableLocales} />
@@ -197,7 +287,7 @@ export default async function BlogPostPage({ params }: Props) {
         {loc && (
           <div className="mb-8 bg-white rounded-xl border border-slate-200 p-4">
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
-              📍 {isEn ? "Target Area" : "対象エリア"}: {loc.name}
+              📍 {labels.targetArea}: {loc.name}
             </p>
             <BlogMiniMapWrapper
               primaryLocation={loc}
@@ -209,9 +299,7 @@ export default async function BlogPostPage({ params }: Props) {
                   href={researchHref}
                   className="inline-flex items-center gap-1.5 bg-teal-600 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors"
                 >
-                  {isEn
-                    ? "Analyze this area in β →"
-                    : "β 版でこのエリアを調べる →"}
+                  {labels.analyzeCta}
                 </Link>
               </div>
             )}
@@ -242,21 +330,13 @@ export default async function BlogPostPage({ params }: Props) {
 
         {/* CTA */}
         <div className="mt-12 bg-blue-50 border border-blue-100 rounded-xl px-6 py-6 text-center">
-          <p className="font-bold text-slate-800 mb-1">
-            {isEn
-              ? "Try Mekiki Research for free"
-              : "物件目利きリサーチを無料で試してみましょう"}
-          </p>
-          <p className="text-sm text-slate-600 mb-4">
-            {isEn
-              ? "Enter any address in Japan — get price data, hazard risk, and an AI area report in 30 seconds."
-              : "住所を入力するだけで、相場・ハザードリスク・AIレポートが30秒で確認できます"}
-          </p>
+          <p className="font-bold text-slate-800 mb-1">{labels.ctaTitle}</p>
+          <p className="text-sm text-slate-600 mb-4">{labels.ctaDesc}</p>
           <Link
             href={homeHref}
             className="inline-block bg-blue-600 text-white font-semibold text-sm px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-colors"
           >
-            {isEn ? "Start for free →" : "無料で調査する →"}
+            {labels.ctaBtn}
           </Link>
         </div>
 
@@ -266,7 +346,7 @@ export default async function BlogPostPage({ params }: Props) {
             href={blogHref}
             className="text-sm text-slate-400 hover:text-slate-600 transition-colors"
           >
-            {isEn ? "← Back to Blog" : "← ブログ一覧に戻る"}
+            {labels.backToBlog}
           </Link>
         </div>
       </main>
@@ -276,19 +356,19 @@ export default async function BlogPostPage({ params }: Props) {
           <span>© 2026 {serviceName}</span>
           <nav className="flex flex-wrap justify-center gap-4">
             <Link href={homeHref} className="hover:text-slate-600 transition-colors">
-              {isEn ? "Top" : "トップ"}
+              {labels.topLabel}
             </Link>
             <Link
-              href={isEn ? "/en/terms" : "/terms"}
+              href={`${localePrefix}/terms`}
               className="hover:text-slate-600 transition-colors"
             >
-              {isEn ? "Terms" : "利用規約"}
+              {labels.termsLabel}
             </Link>
             <Link
-              href={isEn ? "/en/privacy" : "/privacy"}
+              href={`${localePrefix}/privacy`}
               className="hover:text-slate-600 transition-colors"
             >
-              {isEn ? "Privacy" : "プライバシーポリシー"}
+              {labels.privacyLabel}
             </Link>
           </nav>
         </div>

@@ -1,14 +1,14 @@
 "use client";
 
 import { usePathname, useRouter } from "@/i18n/navigation";
-import type { Locale } from "@/lib/blog";
+import { ALL_LOCALES, type Locale } from "@/lib/locale";
 
 type Props = {
   currentLocale: Locale;
   /**
    * オプション。指定された場合、リストにないロケールへの切替ボタンは
    * 視覚的に「未翻訳」として無効化される。ブログ詳細ページで「この記事は
-   * 英語版がない」場合に EN ボタンを抑止するために使用。
+   * 該当言語版がない」場合にボタンを抑止するために使用。
    */
   availableLocales?: Locale[];
 };
@@ -16,6 +16,8 @@ type Props = {
 const LABELS: Record<Locale, { short: string; full: string }> = {
   ja: { short: "JA", full: "日本語" },
   en: { short: "EN", full: "English" },
+  "zh-TW": { short: "繁", full: "繁體中文" },
+  "zh-CN": { short: "简", full: "简体中文" },
 };
 
 export default function LanguageToggle({ currentLocale, availableLocales }: Props) {
@@ -25,7 +27,7 @@ export default function LanguageToggle({ currentLocale, availableLocales }: Prop
   const switchTo = (target: Locale) => {
     if (target === currentLocale) return;
     // next-intl/navigation は path を locale-agnostic に保持するため、
-    // locale だけ差し替えれば router 側で正しく `/` or `/en/` に変換される。
+    // locale だけ差し替えれば router 側で正しく `/` or `/en/` 等に変換される。
     router.replace(pathname, { locale: target });
   };
 
@@ -37,7 +39,7 @@ export default function LanguageToggle({ currentLocale, availableLocales }: Prop
       role="group"
       aria-label="Language switcher"
     >
-      {(["ja", "en"] as Locale[]).map((loc) => {
+      {ALL_LOCALES.map((loc) => {
         const isActive = loc === currentLocale;
         const enabled = isAvailable(loc);
         return (
@@ -49,7 +51,7 @@ export default function LanguageToggle({ currentLocale, availableLocales }: Prop
             aria-pressed={isActive}
             title={!enabled ? "Not translated" : LABELS[loc].full}
             className={[
-              "px-3 py-1.5 font-semibold transition-colors",
+              "px-2.5 py-1.5 font-semibold transition-colors",
               isActive
                 ? "bg-slate-800 text-white cursor-default"
                 : enabled
