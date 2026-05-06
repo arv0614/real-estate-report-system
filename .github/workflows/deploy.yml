@@ -8,6 +8,7 @@ on:
       - "frontend/**"
       - "scripts/deploy_frontend.sh"
       - ".github/workflows/deploy.yml"
+  workflow_dispatch:
 
 jobs:
   deploy:
