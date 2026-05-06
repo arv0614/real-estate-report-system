@@ -13,17 +13,21 @@ const { TwitterApi } = require("twitter-api-v2");
 const fs = require("fs");
 const path = require("path");
 
+const DRY_RUN = process.argv.includes("--dry-run");
+
 // ─── 環境変数チェック ──────────────────────────────────────────────────────────
-const required = [
-  "X_API_KEY",
-  "X_API_SECRET",
-  "X_ACCESS_TOKEN",
-  "X_ACCESS_TOKEN_SECRET",
-];
-const missing = required.filter((k) => !process.env[k]);
-if (missing.length > 0) {
-  console.error(`[ERROR] 必須環境変数が未設定です: ${missing.join(", ")}`);
-  process.exit(1);
+if (!DRY_RUN) {
+  const required = [
+    "X_API_KEY",
+    "X_API_SECRET",
+    "X_ACCESS_TOKEN",
+    "X_ACCESS_TOKEN_SECRET",
+  ];
+  const missing = required.filter((k) => !process.env[k]);
+  if (missing.length > 0) {
+    console.error(`[ERROR] 必須環境変数が未設定です: ${missing.join(", ")}`);
+    process.exit(1);
+  }
 }
 
 // ─── ツイート候補を読み込む ────────────────────────────────────────────────────
@@ -45,7 +49,39 @@ if (!Array.isArray(tweets) || tweets.length === 0) {
 // ─── ランダムに1件選択 ────────────────────────────────────────────────────────
 const selected = tweets[Math.floor(Math.random() * tweets.length)];
 console.log(`[INFO] 選択されたツイート: id=${selected.id} type="${selected.type}"`);
-console.log(`[INFO] 投稿テキスト:\n${selected.text}\n`);
+
+// ─── 重複投稿対策 (X API は同一テキスト連投で 403 Forbidden) ─────────────────
+// 末尾に JST タイムスタンプ ` [YYYY/MM/DD HH:MM]` を付与する。
+// 280 字制限を超える場合は本文を末尾省略 (…) して必ずスタンプを残す。
+function jstTimestampSuffix() {
+  const now = new Date();
+  const jst = new Date(now.getTime() + (9 * 60 - now.getTimezoneOffset()) * 60_000);
+  const y = jst.getUTCFullYear();
+  const m = String(jst.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(jst.getUTCDate()).padStart(2, "0");
+  const hh = String(jst.getUTCHours()).padStart(2, "0");
+  const mm = String(jst.getUTCMinutes()).padStart(2, "0");
+  return ` [${y}/${m}/${d} ${hh}:${mm}]`;
+}
+
+function appendTimestamp(text) {
+  const suffix = jstTimestampSuffix();
+  const MAX = 280; // X / Twitter v2 の最大文字数
+  const chars = Array.from(text);
+  if (chars.length + Array.from(suffix).length <= MAX) {
+    return text + suffix;
+  }
+  const allowed = MAX - Array.from(suffix).length - 1; // 1 = 省略記号
+  return chars.slice(0, allowed).join("") + "…" + suffix;
+}
+
+const finalText = appendTimestamp(selected.text);
+console.log(`[INFO] 投稿テキスト:\n${finalText}\n`);
+
+if (DRY_RUN) {
+  console.log("[DRY] --dry-run 指定のため投稿はスキップします");
+  process.exit(0);
+}
 
 // ─── X API クライアント初期化 ─────────────────────────────────────────────────
 const client = new TwitterApi({
@@ -58,7 +94,7 @@ const client = new TwitterApi({
 // ─── 投稿実行 ──────────────────────────────────────────────────────────────────
 (async () => {
   try {
-    const response = await client.v2.tweet(selected.text);
+    const response = await client.v2.tweet(finalText);
     console.log(`[SUCCESS] ツイートを投稿しました。tweet_id=${response.data.id}`);
   } catch (err) {
     console.error(`[ERROR] 投稿に失敗しました: ${err.message}`);

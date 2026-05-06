@@ -1,0 +1,83 @@
+name: Generate Daily Blog
+
+# 毎日 JST 07:00 (UTC 22:00 前日) に Gemini API で
+# 4言語 (ja / en / zh-TW / zh-CN) のブログ記事を1件自動生成し、
+# main に直接コミット & プッシュする。
+#
+# 後続:
+# - push を契機に deploy.yml が frontend をビルド & Cloud Run へデプロイ
+# - blog_check.yml が当日記事の存在を別系統で監視
+
+on:
+  schedule:
+    - cron: "0 22 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: generate-daily-blog
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    name: Generate & commit blog post
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate blog post (4 languages)
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TZ: Asia/Tokyo
+        run: node scripts/generate_daily_blog.js
+
+      - name: Commit and push generated articles
+        env:
+          TZ: Asia/Tokyo
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add frontend/content/blog/
+
+          if git diff --cached --quiet; then
+            echo "::notice::No new blog articles produced. Nothing to commit."
+            exit 0
+          fi
+
+          TODAY=$(date +%Y-%m-%d)
+          NEW_FILES=$(git diff --cached --name-only --diff-filter=A | tr '\n' ' ')
+          echo "New files: ${NEW_FILES}"
+
+          MSG_FILE=$(mktemp)
+          {
+            echo "feat: auto-generate daily blog post (${TODAY})"
+            echo
+            echo "Generated via GitHub Actions (.github/workflows/generate-blog.yml)"
+            echo "Files: ${NEW_FILES}"
+            echo
+            echo "Co-Authored-By: Gemini <noreply@google.com>"
+          } > "$MSG_FILE"
+          git commit -F "$MSG_FILE"
+
+          # 競合した場合に備えてリベースしてから push
+          git pull --rebase origin main
+          git push origin main
