@@ -13,7 +13,9 @@ import createNextIntlPlugin from "next-intl/plugin";
 //   - 国土地理院住所検索API:            msearch.gsi.go.jp, mreversegeocoder.gsi.go.jp
 //   - Cloud Run バックエンド (asia-northeast1): *.a.run.app (e.g. xxx-an.a.run.app)
 //   - Lemon Squeezy 決済:              app.lemonsqueezy.com, assets.lemonsqueezy.com
-//   - GTM + GA4:                       www.googletagmanager.com, www.google-analytics.com
+//   - GTM + GA4:                       www.googletagmanager.com, *.google-analytics.com,
+//                                      analytics.google.com, www.google.com
+//   - Adobe Analytics:                 *.omtrdc.net, *.sc.omtrdc.net, *.2o7.net
 //   - Next.js (inline styles/scripts): unsafe-inline, unsafe-eval
 //   - ローカル開発バックエンド:         http://localhost:8080 (dev only)
 const isDev = process.env.NODE_ENV === "development";
@@ -24,13 +26,15 @@ const CSP = [
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.gstatic.com https://us-assets.i.posthog.com https://assets.lemonsqueezy.com https://www.googletagmanager.com https://www.google-analytics.com",
   // Tailwind / CSS-in-JS
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://assets.lemonsqueezy.com",
-  // 画像: Firebase Storage / Google アカウント写真 / 国土地理院タイル / Lemon Squeezy / base64 / GTMピクセル / OSMタイル
-  "img-src 'self' data: blob: https://lh3.googleusercontent.com https://firebasestorage.googleapis.com https://cyberjapandata.gsi.go.jp https://maps.gsi.go.jp https://assets.lemonsqueezy.com https://www.googletagmanager.com https://www.google-analytics.com https://*.tile.openstreetmap.org",
+  // 画像: Firebase Storage / Google アカウント写真 / 国土地理院タイル / Lemon Squeezy / base64 / GTMピクセル / GA4・Adobe Analytics ビーコン / OSMタイル
+  "img-src 'self' data: blob: https://lh3.googleusercontent.com https://firebasestorage.googleapis.com https://cyberjapandata.gsi.go.jp https://maps.gsi.go.jp https://assets.lemonsqueezy.com https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://analytics.google.com https://www.google.com https://*.omtrdc.net https://*.sc.omtrdc.net https://*.2o7.net https://*.tile.openstreetmap.org",
   // フォント
   "font-src 'self' https://fonts.gstatic.com https://assets.lemonsqueezy.com",
-  // API・WebSocket通信 + GA4データ収集 + OSMタイル (MapLibre fetch)
+  // API・WebSocket通信 + GA4データ収集 + Adobe Analytics ビーコン + OSMタイル (MapLibre fetch)
   // NOTE: Cloud Run URLs (asia-northeast1) follow the pattern *.a.run.app — NOT *.run.app
-  `connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://firebasestorage.googleapis.com https://storage.googleapis.com https://us.i.posthog.com https://us-assets.i.posthog.com https://*.a.run.app https://*.run.app https://msearch.gsi.go.jp https://mreversegeocoder.gsi.go.jp https://*.firebaseapp.com https://app.lemonsqueezy.com https://api.lemonsqueezy.com https://www.googletagmanager.com https://www.google-analytics.com https://region1.google-analytics.com https://*.tile.openstreetmap.org${devConnectSrc}`,
+  // NOTE: *.google-analytics.com は region1.google-analytics.com も内包する。
+  //       *.omtrdc.net は *.sc.omtrdc.net も内包するが、明示性のため両方記載。
+  `connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://firebasestorage.googleapis.com https://storage.googleapis.com https://us.i.posthog.com https://us-assets.i.posthog.com https://*.a.run.app https://*.run.app https://msearch.gsi.go.jp https://mreversegeocoder.gsi.go.jp https://*.firebaseapp.com https://app.lemonsqueezy.com https://api.lemonsqueezy.com https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://analytics.google.com https://www.google.com https://region1.google-analytics.com https://*.omtrdc.net https://*.sc.omtrdc.net https://*.2o7.net https://*.tile.openstreetmap.org${devConnectSrc}`,
   // Google OAuth ポップアップ + Firebase Auth hidden iframe + Lemon Squeezy チェックアウト + GTM noscript iframe
   "frame-src 'self' https://accounts.google.com https://*.firebaseapp.com https://app.lemonsqueezy.com https://www.googletagmanager.com",
   // Service Worker
