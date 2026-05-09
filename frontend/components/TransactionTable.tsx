@@ -45,6 +45,16 @@ type SortKey =
   | "cityPlanning"
   | "period";
 type SortDir = "asc" | "desc";
+type Sort = { key: SortKey; dir: SortDir };
+
+/** 同時に保持できるソート条件の最大数（第一・第二） */
+const MAX_SORTS = 2;
+
+/** デフォルトソート: 取引時期 (新しい順) → 築年 (新しい順) のマルチソート */
+const DEFAULT_SORTS: Sort[] = [
+  { key: "period",       dir: "desc" },
+  { key: "buildingYear", dir: "desc" },
+];
 
 /** 列キー → レコードからソート用比較値を取り出す。null/undefined は常に末尾に置く。 */
 function sortValue(r: TransactionRecord, key: SortKey): number | string | null {
@@ -87,16 +97,27 @@ function compareSorted(
 interface SortableHeadProps {
   label: string;
   sortKey: SortKey;
-  current: { key: SortKey; dir: SortDir };
+  /** マルチソートの全条件。配列順がそのまま優先順位 (0 = primary, 1 = secondary)。 */
+  sorts: Sort[];
   onClick: (k: SortKey) => void;
   align?: "left" | "right";
   widthClass?: string;
 }
 
-function SortableHead({ label, sortKey, current, onClick, align = "left", widthClass }: SortableHeadProps) {
-  const isActive = current.key === sortKey;
-  const arrow = !isActive ? "↕" : current.dir === "asc" ? "▲" : "▼";
-  const ariaSort = !isActive ? "none" : current.dir === "asc" ? "ascending" : "descending";
+function SortableHead({ label, sortKey, sorts, onClick, align = "left", widthClass }: SortableHeadProps) {
+  const idx = sorts.findIndex((s) => s.key === sortKey);
+  const active = idx !== -1;
+  const isPrimary = idx === 0;
+  const dir = active ? sorts[idx].dir : null;
+  const arrow = !active ? "↕" : dir === "asc" ? "▲" : "▼";
+  const ariaSort = !active ? "none" : dir === "asc" ? "ascending" : "descending";
+
+  // a11y: 第二ソートは aria-sort には載せられない（仕様上 'none' or 'ascending'/'descending'/'other' のみ）。
+  // 「2つ目のソート」であることを伝えるため aria-label に "(secondary sort)" 等を追記する。
+  const ariaLabel = active
+    ? `${label} — ${isPrimary ? "primary" : "secondary"} sort, ${dir === "asc" ? "ascending" : "descending"}`
+    : `${label} — sort`;
+
   return (
     <TableHead
       className={`text-xs ${widthClass ?? ""} ${align === "right" ? "text-right" : ""}`}
@@ -105,21 +126,42 @@ function SortableHead({ label, sortKey, current, onClick, align = "left", widthC
       <button
         type="button"
         onClick={() => onClick(sortKey)}
+        aria-label={ariaLabel}
         className={`group inline-flex items-center gap-1 ${
           align === "right" ? "ml-auto" : ""
         } whitespace-nowrap font-semibold transition-colors ${
-          isActive ? "text-blue-700" : "text-slate-700 hover:text-blue-700"
+          active
+            ? isPrimary
+              ? "text-blue-700"
+              : "text-blue-500"
+            : "text-slate-700 hover:text-blue-700"
         }`}
       >
         <span>{label}</span>
         <span
           aria-hidden
           className={`text-[10px] tabular-nums leading-none ${
-            isActive ? "text-blue-600" : "text-slate-300 group-hover:text-blue-400"
+            active
+              ? isPrimary ? "text-blue-600" : "text-blue-400"
+              : "text-slate-300 group-hover:text-blue-400"
           }`}
         >
           {arrow}
         </span>
+        {/* 優先順位バッジ: 第一ソートは塗り、第二ソートは枠線のみで弱く見せる */}
+        {active && (
+          <span
+            aria-hidden
+            className={`tabular-nums text-[9px] leading-none rounded-full px-1 py-[1px] font-bold ${
+              isPrimary
+                ? "bg-blue-600 text-white"
+                : "border border-blue-300 text-blue-500 bg-white"
+            }`}
+            title={isPrimary ? "Primary sort" : "Secondary sort"}
+          >
+            {idx + 1}
+          </span>
+        )}
       </button>
     </TableHead>
   );
@@ -136,8 +178,9 @@ export function TransactionTable({
   const [districtFilter, setDistrictFilter] = useState("");
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState<PageSizeOption>(20);
-  // デフォルトソート: 取引時期 (新しい順)。第二条件は固定で「築年 (新しい順)」。
-  const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({ key: "period", dir: "desc" });
+  // マルチソート: 配列の先頭が第一ソート、2要素目が第二ソート。
+  // デフォルト: 取引時期 (新しい順) → 築年 (新しい順)
+  const [sorts, setSorts] = useState<Sort[]>(DEFAULT_SORTS);
 
   useEffect(() => {
     setDistrictFilter(autoDistrict ?? "");
@@ -150,9 +193,19 @@ export function TransactionTable({
   }, [propertyTypeFilter]);
 
   function handleSort(key: SortKey) {
-    setSort((prev) => (prev.key === key
-      ? { key, dir: prev.dir === "asc" ? "desc" : "asc" }
-      : { key, dir: "desc" })); // 新しい列に切り替えたときは降順から開始
+    setSorts((prev) => {
+      // 同じ列を再クリック: 第一ソートの方向だけトグル、第二ソートは保持
+      if (prev[0]?.key === key) {
+        const toggled: Sort = { key, dir: prev[0].dir === "asc" ? "desc" : "asc" };
+        return [toggled, ...prev.slice(1)];
+      }
+      // 別列クリック: 新キーを第一ソートに昇格、直前の第一ソートを第二ソートへ降格、
+      // 古い第二ソートは破棄（MAX_SORTS=2 で打ち切る）。
+      const old0 = prev[0];
+      const next: Sort[] = [{ key, dir: "desc" }];
+      if (old0) next.push(old0);
+      return next.slice(0, MAX_SORTS);
+    });
     setPage(0);
   }
 
@@ -175,18 +228,16 @@ export function TransactionTable({
       const districtMatch = districtFilter === "" || r.districtName === districtFilter;
       return typeMatch && districtMatch;
     });
-    // ② プライマリソート + 第二ソート（period 以外なら period DESC、period のときは buildingYear DESC）
+    // ② sorts 配列の順に第一→第二と評価。それでも同値なら period DESC を最終フォールバック。
     return [...base].sort((a, b) => {
-      const primary = compareSorted(a, b, sort.key, sort.dir);
-      if (primary !== 0) return primary;
-      if (sort.key === "period") {
-        const ay = a.buildingYear ?? -Infinity;
-        const by = b.buildingYear ?? -Infinity;
-        return by - ay;
+      for (const s of sorts) {
+        const cmp = compareSorted(a, b, s.key, s.dir);
+        if (cmp !== 0) return cmp;
       }
+      // ユーザー指定ソートで決着しない場合の暗黙のフォールバック
       return periodSortKey(b.period) - periodSortKey(a.period);
     });
-  }, [records, propertyTypeFilter, districtFilter, sort]);
+  }, [records, propertyTypeFilter, districtFilter, sorts]);
 
   const totalPages = Math.ceil(sortedFiltered.length / pageSize);
   const effectivePage = isPdfExporting ? 0 : page;
@@ -246,15 +297,15 @@ export function TransactionTable({
           <Table>
             <TableHeader>
               <TableRow className="bg-slate-50 hover:bg-slate-50">
-                <SortableHead label={t("colType")}      sortKey="type"         current={sort} onClick={handleSort} widthClass="w-28" />
-                <SortableHead label={t("colDistrict")}  sortKey="districtName" current={sort} onClick={handleSort} widthClass="w-24" />
-                <SortableHead label={t("colPrice")}     sortKey="tradePrice"   current={sort} onClick={handleSort} widthClass="w-28" align="right" />
-                <SortableHead label={t("colArea")}      sortKey="area"         current={sort} onClick={handleSort} widthClass="w-20" align="right" />
-                <SortableHead label={t("colUnitPrice")} sortKey="unitPrice"    current={sort} onClick={handleSort} widthClass="w-28" align="right" />
-                <SortableHead label={t("colBuildYear")} sortKey="buildingYear" current={sort} onClick={handleSort} widthClass="w-20" />
-                <SortableHead label={t("colStructure")} sortKey="structure"    current={sort} onClick={handleSort} widthClass="w-16" />
-                <SortableHead label={t("colCityPlan")}  sortKey="cityPlanning" current={sort} onClick={handleSort} widthClass="w-32" />
-                <SortableHead label={t("colPeriod")}    sortKey="period"       current={sort} onClick={handleSort} widthClass="w-28" />
+                <SortableHead label={t("colType")}      sortKey="type"         sorts={sorts} onClick={handleSort} widthClass="w-28" />
+                <SortableHead label={t("colDistrict")}  sortKey="districtName" sorts={sorts} onClick={handleSort} widthClass="w-24" />
+                <SortableHead label={t("colPrice")}     sortKey="tradePrice"   sorts={sorts} onClick={handleSort} widthClass="w-28" align="right" />
+                <SortableHead label={t("colArea")}      sortKey="area"         sorts={sorts} onClick={handleSort} widthClass="w-20" align="right" />
+                <SortableHead label={t("colUnitPrice")} sortKey="unitPrice"    sorts={sorts} onClick={handleSort} widthClass="w-28" align="right" />
+                <SortableHead label={t("colBuildYear")} sortKey="buildingYear" sorts={sorts} onClick={handleSort} widthClass="w-20" />
+                <SortableHead label={t("colStructure")} sortKey="structure"    sorts={sorts} onClick={handleSort} widthClass="w-16" />
+                <SortableHead label={t("colCityPlan")}  sortKey="cityPlanning" sorts={sorts} onClick={handleSort} widthClass="w-32" />
+                <SortableHead label={t("colPeriod")}    sortKey="period"       sorts={sorts} onClick={handleSort} widthClass="w-28" />
               </TableRow>
             </TableHeader>
             <TableBody>

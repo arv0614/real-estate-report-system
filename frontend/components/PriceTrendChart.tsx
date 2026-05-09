@@ -13,6 +13,7 @@ import {
   YAxis,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { resolveUnitPrice } from "@/lib/api";
 import type { TransactionRecord } from "@/types/api";
 
 interface Props {
@@ -53,8 +54,10 @@ function buildChartData(records: TransactionRecord[]): PeriodData[] {
   return Array.from(groups.entries())
     .map(([period, recs]) => {
       const prices = recs.map((r) => r.tradePrice).filter((p) => p > 0);
+      // 宅地(土地) 以外でも tradePrice/area から ㎡単価を算出して採用するため
+      // resolveUnitPrice() を使用する（API の r.unitPrice 直接参照は土地のみで非null）
       const unitPrices = recs
-        .map((r) => r.unitPrice)
+        .map(resolveUnitPrice)
         .filter((v): v is number => v !== null && v > 0);
       return {
         label: periodLabel(period),
