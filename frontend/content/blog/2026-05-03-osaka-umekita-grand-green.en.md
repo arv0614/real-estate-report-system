@@ -133,4 +133,4 @@ In 2026 we are still in **"year 2 after first-stage opening"** — meaningful up
 
 The "Mekiki Research" tool lets you check MLIT transaction data, hazard information, and neighbourhood context for any address in Japan — including central Osaka, Umekita and Nakanoshima — in 30 seconds. A good first step to translate the **"how far has the Umekita effect spread?"** question into a property-level view.
 
-> 🔗 [Analyse Umeda / Umekita properties on Mekiki Research →](https://mekiki-research.com)
+> 🔗 [Analyse Umeda / Umekita properties on Mekiki Research →](https://mekiki-research.com/?lat=34.7027&lng=135.4959)

@@ -139,4 +139,4 @@ primaryLocation:
 經歷百年一遇的變革，從單純的「年輕人之街」進化為匯集多元人群、工作、享樂的「全球娛樂城市 (Global Entertainment City)」，澀谷。著眼於其未來價值的不動產投資，無疑將成為愈來愈具吸引力的選擇。
 
 若您對澀谷地區最新的交易案例、租金行情、未來人口動態等更詳細的數據分析感興趣，歡迎至物件Mekiki Research查詢。
-[透過「物件Mekiki Research」查詢澀谷地區的不動產價值 →](https://mekiki-research.com)
+[透過「物件Mekiki Research」查詢澀谷地區的不動產價值 →](https://mekiki-research.com/?lat=35.658&lng=139.7016)

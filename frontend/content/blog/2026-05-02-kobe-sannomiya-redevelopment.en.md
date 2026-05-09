@@ -148,4 +148,4 @@ A monolithic view that "Kobe's no good because condominiums don't appreciate" mi
 
 The "Mekiki Research" tool lets you check MLIT transaction data, hazard information, and neighbourhood context for any address in 30 seconds — including Kobe-area reports. Sannomiya offices and homes, Shinminato waterfront, Hanshinkan residentials, suburban new towns — when area characteristics differ this much, data-based selection pays off.
 
-> 🔗 [Analyse Kobe-area properties on Mekiki Research →](https://mekiki-research.com)
+> 🔗 [Analyse Kobe-area properties on Mekiki Research →](https://mekiki-research.com/?lat=34.6948&lng=135.1953)

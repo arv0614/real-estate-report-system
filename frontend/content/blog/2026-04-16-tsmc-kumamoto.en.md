@@ -102,7 +102,7 @@ The shift TSMC has brought to Kumamoto's real estate market is no longer a "regi
 
 The Mekiki Research tool lets you check MLIT actual transaction data, surrounding hazard information, and AI area reports for any address — Kikuyo, Ozu, Koshi, and east Kumamoto City alike — in 30 seconds. Try it once for the 2026 real estate literacy of judging by data, not by the crowd.
 
-**[Check Kumamoto / Kikuyo-area pricing on Mekiki Research →](https://mekiki-research.com)**
+**[Check Kumamoto / Kikuyo-area pricing on Mekiki Research →](https://mekiki-research.com/?lat=32.8783&lng=130.835)**
 
 ---
 

@@ -161,4 +161,4 @@ The era of "Yokohama is cheap because it's in Kanagawa" is approaching its end. 
 
 The "Mekiki Research" tool lets you check MLIT transaction data, hazard information, and neighbourhood context for any address in 30 seconds — including reports across all of Yokohama. Minato Mirai, around Yokohama Station, Kannai, suburban new towns: with such different area characteristics, data-based selection raises the precision of investment judgement.
 
-> 🔗 [Analyse Yokohama-area properties on Mekiki Research →](https://mekiki-research.com)
+> 🔗 [Analyse Yokohama-area properties on Mekiki Research →](https://mekiki-research.com/?lat=35.4564&lng=139.632)

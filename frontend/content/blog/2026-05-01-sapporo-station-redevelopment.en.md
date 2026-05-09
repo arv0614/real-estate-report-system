@@ -145,4 +145,4 @@ The simple narrative "Sapporo will rise because the Shinkansen is coming" no lon
 
 The "Mekiki Research" tool lets you check MLIT transaction data, hazard information, and neighbourhood context for any address in 30 seconds — including Sapporo, Kitahiroshima, and Kutchan reports. As a first step in finding **"essential property-level value, independent of Shinkansen timing,"** give it a try.
 
-> 🔗 [Analyse Sapporo-area properties on Mekiki Research →](https://mekiki-research.com)
+> 🔗 [Analyse Sapporo-area properties on Mekiki Research →](https://mekiki-research.com/?lat=43.0686&lng=141.3508)

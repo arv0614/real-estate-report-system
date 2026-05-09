@@ -153,4 +153,4 @@ primaryLocation:
 
 關於品川地區及其周邊的具體物件價格動向與未來潛力，詳細的數據分析不可或缺。歡迎隨時查詢最新的市場數據。
 
-[透過「物件目利Research」查詢品川地區的最新市場數據 →](https://mekiki-research.com)
+[透過「物件目利Research」查詢品川地區的最新市場數據 →](https://mekiki-research.com/?lat=35.6284&lng=139.7388)

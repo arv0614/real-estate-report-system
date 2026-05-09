@@ -153,4 +153,4 @@ Shinagawa's transformation has only just begun. In the coming years, this city i
 
 Detailed data analysis is indispensable for understanding specific property price trends and future potential in the Shinagawa area and its surroundings. Be sure to check the latest market data.
 
-[Check the latest market data for the Shinagawa area on Mekiki Research →](https://mekiki-research.com)
+[Check the latest market data for the Shinagawa area on Mekiki Research →](https://mekiki-research.com/?lat=35.6284&lng=139.7388)

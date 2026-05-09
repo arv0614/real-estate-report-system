@@ -107,4 +107,4 @@ Kyoto real estate is moving on **three forces**:
 
 The "Mekiki Research" tool lets you check MLIT transaction data, hazard information, and neighbourhood context for any address in 30 seconds — including Kyoto-area reports. As a first step in property selection, give it a try.
 
-> 🔗 [Analyse Kyoto-area properties on Mekiki Research →](https://mekiki-research.com)
+> 🔗 [Analyse Kyoto-area properties on Mekiki Research →](https://mekiki-research.com/?lat=35.0116&lng=135.7681)

@@ -139,4 +139,4 @@ Of course, macroeconomic risk factors such as global economic trends and interes
 Undergoing a once-in-a-century transformation, Shibuya is evolving from a "city of youth" into a "Global Entertainment City" where a diverse range of people gather, work, and play. With this future in sight, real estate investment in Shibuya is set to become an increasingly attractive option.
 
 For those interested in a more detailed analysis based on the latest transaction data, rental market rates, and future demographic trends in the Shibuya area, please visit Mekiki-Research.com.
-[Research Shibuya's Real Estate Value on Mekiki-Research.com →](https://mekiki-research.com)
+[Research Shibuya's Real Estate Value on Mekiki-Research.com →](https://mekiki-research.com/?lat=35.658&lng=139.7016)

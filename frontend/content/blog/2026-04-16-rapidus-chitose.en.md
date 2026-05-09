@@ -107,7 +107,7 @@ The Rapidus effect in Chitose is one of two ongoing **structural shifts in Japan
 
 But getting swept up in the bubble's excitement is dangerous — **data-based, level-headed judgement** matters more than ever. The Mekiki Research tool lets you check MLIT actual transaction data, hazard information, and AI area reports for any address — Chitose, Eniwa, or Tomakomai included — in 30 seconds.
 
-**[Check Chitose-area pricing on Mekiki Research →](https://mekiki-research.com)**
+**[Check Chitose-area pricing on Mekiki Research →](https://mekiki-research.com/?lat=42.8225&lng=141.6522)**
 
 ---
 

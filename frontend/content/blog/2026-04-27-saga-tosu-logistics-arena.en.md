@@ -101,4 +101,4 @@ Saga Prefecture's population is in long-term decline. Demand concentrating in Sa
 
 Saga's case proves: **with the right infrastructure investment and industrial concentration, even prefectures in population decline can see land prices rise.** A draw mechanism in SAGA Arena, the geographic inevitability of being Kyushu's logistics navel, and spillover from the Fukuoka metro economy. With these three combined, Saga City and Tosu City should remain a "dark horse" in Kyushu's real estate market beyond 2026.
 
-When considering purchases or investments, check transaction-price trends and hazard information for the Saga Station area or Tosu City on [Mekiki Research](https://mekiki-research.com), and stay grounded in data.
+When considering purchases or investments, check transaction-price trends and hazard information for the Saga Station area or Tosu City on [Mekiki Research](https://mekiki-research.com/?lat=33.2635&lng=130.1058), and stay grounded in data.

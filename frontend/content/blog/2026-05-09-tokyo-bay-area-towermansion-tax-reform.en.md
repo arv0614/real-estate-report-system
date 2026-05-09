@@ -137,4 +137,4 @@ While prices are expected to remain firm for the time being, the difference in v
 The era when any high-rise condominium would appreciate in value is over. We have entered an age where the ability to "discern"—to find that one truly superior unit among many that will maintain and increase its value over the long term—is equally demanded of both investors and end-users.
 
 For more detailed market trends in the Kachidoki area or to assess the value of individual properties, we recommend using "Mekiki Property Research," which provides objective analysis based on vast amounts of data.
-**Research properties around Kachidoki Station with Mekiki Property Research →** (https://mekiki-research.com)
+**Research properties around Kachidoki Station with Mekiki Property Research →** (https://mekiki-research.com/?lat=35.6582&lng=139.7828)
