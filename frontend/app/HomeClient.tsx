@@ -97,28 +97,30 @@ function HomePageContent() {
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
-  const autoSearchTriggered = useRef(false);
+  const urlParamsApplied = useRef(false);
 
   const [pdfExportOptions, setPdfExportOptions] = useState<PdfExportOptions>(DEFAULT_PDF_OPTIONS);
   const [propertyTypeFilter, setPropertyTypeFilter] = useState<PropertyTypeValue>(ALL_TYPE);
 
-  // URLパラメータからの自動検索（シェアURL経由でのアクセス時）
+  // URLパラメータ (?lat=&lng=) でランディング時の挙動:
+  //   - 検索バーの lat / lng と地図ピンに座標を反映するだけに留める
+  //   - 自動的に fetchTransactions は発火させない (ゲスト枠を意図せず消費しないため)
+  //   - ユーザーが「調査開始」ボタンを押したときに初めて API リクエストが飛ぶ
+  // ブログ記事の CTA / シェアURL から流入したユーザーが、
+  // 地点が地図に乗った状態で内容を確認してから自分の意思で検索を実行できる UX。
   useEffect(() => {
-    if (autoSearchTriggered.current) return;
-    if (authLoading || planLoading) return;
+    if (urlParamsApplied.current) return;
     const latParam = searchParams.get("lat");
     const lngParam = searchParams.get("lng");
-    if (latParam && lngParam) {
-      const lat = parseFloat(latParam);
-      const lng = parseFloat(lngParam);
-      if (!isNaN(lat) && !isNaN(lng)) {
-        autoSearchTriggered.current = true;
-        setExternalCoords({ lat, lng });
-        handleSearch(lat, lng);
-      }
-    }
+    if (!latParam || !lngParam) return;
+    const lat = parseFloat(latParam);
+    const lng = parseFloat(lngParam);
+    if (isNaN(lat) || isNaN(lng)) return;
+    urlParamsApplied.current = true;
+    setExternalCoords({ lat, lng });
+    // intentionally NOT calling handleSearch(lat, lng) here.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, planLoading]);
+  }, []);
 
   // 設定パネル外クリックで閉じる
   useEffect(() => {
