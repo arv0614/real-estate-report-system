@@ -844,7 +844,7 @@ function HomePageContent() {
               )}
 
               <div className={pdfHide(pdfSections.chart)}>
-                <PriceTrendChart records={result.data.data} />
+                <PriceTrendChart records={filteredRecords} />
               </div>
 
               {result.aiReport && (
@@ -870,7 +870,12 @@ function HomePageContent() {
               )}
 
               <div className={pdfHide(pdfSections.table)}>
-                <TransactionTable records={result.data.data} isPdfExporting={pdfLoading} autoDistrict={autoDistrict} />
+                <TransactionTable
+                  records={result.data.data}
+                  propertyTypeFilter={propertyTypeFilter}
+                  isPdfExporting={pdfLoading}
+                  autoDistrict={autoDistrict}
+                />
               </div>
 
               {/* シェアアクション（PDF非表示・レポート末尾） */}

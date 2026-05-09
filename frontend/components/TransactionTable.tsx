@@ -11,22 +11,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatPrice, formatUnitPrice, resolveUnitPrice } from "@/lib/api";
+import { formatPrice, formatUnitPrice, parseArea, resolveUnitPrice } from "@/lib/api";
 import type { TransactionRecord } from "@/types/api";
-
-// Filter values stay in Japanese to match API data (r.type is always Japanese from MLIT)
-const TYPE_FILTER_VALUES = ["すべて", "宅地(土地と建物)", "宅地(土地)", "中古マンション等", "農地", "林地"] as const;
-type FilterValue = (typeof TYPE_FILTER_VALUES)[number];
-
-// Maps Japanese filter values to translation keys
-const TYPE_FILTER_KEYS: Record<FilterValue, string> = {
-  "すべて": "filterAll",
-  "宅地(土地と建物)": "filterLandBuilding",
-  "宅地(土地)": "filterLand",
-  "中古マンション等": "filterCondoUsed",
-  "農地": "filterFarm",
-  "林地": "filterForest",
-};
+import { ALL_TYPE, type PropertyTypeValue } from "@/components/PropertyTypeFilter";
 
 const COLUMN_COUNT = 9;
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
@@ -34,31 +21,138 @@ type PageSizeOption = (typeof PAGE_SIZE_OPTIONS)[number];
 
 interface Props {
   records: TransactionRecord[];
+  /** ページ全体のグローバル種別フィルタ。"すべて" のときは全種別を表示。 */
+  propertyTypeFilter: PropertyTypeValue;
   isPdfExporting?: boolean;
   autoDistrict?: string;
 }
 
-/** "YYYY年第N四半期" → ソートキー（降順用に大きい値=新しい） */
+/** "YYYY年第N四半期" → ソートキー（大きい値=新しい） */
 function periodSortKey(period: string): number {
   const m = period.match(/(\d{4})年第(\d)四半期/);
   return m ? parseInt(m[1]) * 4 + parseInt(m[2]) : 0;
 }
 
-export function TransactionTable({ records, isPdfExporting = false, autoDistrict }: Props) {
+// ─── ソート定義 ───────────────────────────────────────────────────────────
+type SortKey =
+  | "type"
+  | "districtName"
+  | "tradePrice"
+  | "area"
+  | "unitPrice"
+  | "buildingYear"
+  | "structure"
+  | "cityPlanning"
+  | "period";
+type SortDir = "asc" | "desc";
+
+/** 列キー → レコードからソート用比較値を取り出す。null/undefined は常に末尾に置く。 */
+function sortValue(r: TransactionRecord, key: SortKey): number | string | null {
+  switch (key) {
+    case "type":         return r.type ?? "";
+    case "districtName": return r.districtName ?? "";
+    case "tradePrice":   return typeof r.tradePrice === "number" ? r.tradePrice : null;
+    case "area":         return parseArea(r.area);
+    case "unitPrice":    return resolveUnitPrice(r);
+    case "buildingYear": return r.buildingYear ?? null;
+    case "structure":    return r.structure ?? "";
+    case "cityPlanning": return r.cityPlanning ?? "";
+    case "period":       return periodSortKey(r.period);
+  }
+}
+
+function compareSorted(
+  a: TransactionRecord,
+  b: TransactionRecord,
+  key: SortKey,
+  dir: SortDir,
+): number {
+  const av = sortValue(a, key);
+  const bv = sortValue(b, key);
+  // null は常に末尾（昇降に依らない）
+  const aNull = av === null || av === "";
+  const bNull = bv === null || bv === "";
+  if (aNull && bNull) return 0;
+  if (aNull) return 1;
+  if (bNull) return -1;
+  let cmp: number;
+  if (typeof av === "number" && typeof bv === "number") {
+    cmp = av - bv;
+  } else {
+    cmp = String(av).localeCompare(String(bv), "ja");
+  }
+  return dir === "asc" ? cmp : -cmp;
+}
+
+interface SortableHeadProps {
+  label: string;
+  sortKey: SortKey;
+  current: { key: SortKey; dir: SortDir };
+  onClick: (k: SortKey) => void;
+  align?: "left" | "right";
+  widthClass?: string;
+}
+
+function SortableHead({ label, sortKey, current, onClick, align = "left", widthClass }: SortableHeadProps) {
+  const isActive = current.key === sortKey;
+  const arrow = !isActive ? "↕" : current.dir === "asc" ? "▲" : "▼";
+  const ariaSort = !isActive ? "none" : current.dir === "asc" ? "ascending" : "descending";
+  return (
+    <TableHead
+      className={`text-xs ${widthClass ?? ""} ${align === "right" ? "text-right" : ""}`}
+      aria-sort={ariaSort as React.AriaAttributes["aria-sort"]}
+    >
+      <button
+        type="button"
+        onClick={() => onClick(sortKey)}
+        className={`group inline-flex items-center gap-1 ${
+          align === "right" ? "ml-auto" : ""
+        } whitespace-nowrap font-semibold transition-colors ${
+          isActive ? "text-blue-700" : "text-slate-700 hover:text-blue-700"
+        }`}
+      >
+        <span>{label}</span>
+        <span
+          aria-hidden
+          className={`text-[10px] tabular-nums leading-none ${
+            isActive ? "text-blue-600" : "text-slate-300 group-hover:text-blue-400"
+          }`}
+        >
+          {arrow}
+        </span>
+      </button>
+    </TableHead>
+  );
+}
+
+export function TransactionTable({
+  records,
+  propertyTypeFilter,
+  isPdfExporting = false,
+  autoDistrict,
+}: Props) {
   const t = useTranslations("TransactionTable");
   const locale = useLocale();
-  const [filter, setFilter] = useState<FilterValue>("すべて");
   const [districtFilter, setDistrictFilter] = useState("");
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState<PageSizeOption>(20);
+  // デフォルトソート: 取引時期 (新しい順)。第二条件は固定で「築年 (新しい順)」。
+  const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({ key: "period", dir: "desc" });
 
   useEffect(() => {
     setDistrictFilter(autoDistrict ?? "");
     setPage(0);
   }, [autoDistrict]);
 
-  function handleFilterChange(f: FilterValue) {
-    setFilter(f);
+  // グローバル種別フィルタが変わったらページもリセット（薄いレイヤだが UX 改善）
+  useEffect(() => {
+    setPage(0);
+  }, [propertyTypeFilter]);
+
+  function handleSort(key: SortKey) {
+    setSort((prev) => (prev.key === key
+      ? { key, dir: prev.dir === "asc" ? "desc" : "asc" }
+      : { key, dir: "desc" })); // 新しい列に切り替えたときは降順から開始
     setPage(0);
   }
 
@@ -75,13 +169,24 @@ export function TransactionTable({ records, isPdfExporting = false, autoDistrict
   }, [records]);
 
   const sortedFiltered = useMemo(() => {
+    // ① グローバル種別フィルタ + 地区フィルタ
     const base = records.filter((r) => {
-      const typeMatch = filter === "すべて" || r.type === filter;
+      const typeMatch = propertyTypeFilter === ALL_TYPE || r.type === propertyTypeFilter;
       const districtMatch = districtFilter === "" || r.districtName === districtFilter;
       return typeMatch && districtMatch;
     });
-    return [...base].sort((a, b) => periodSortKey(b.period) - periodSortKey(a.period));
-  }, [records, filter, districtFilter]);
+    // ② プライマリソート + 第二ソート（period 以外なら period DESC、period のときは buildingYear DESC）
+    return [...base].sort((a, b) => {
+      const primary = compareSorted(a, b, sort.key, sort.dir);
+      if (primary !== 0) return primary;
+      if (sort.key === "period") {
+        const ay = a.buildingYear ?? -Infinity;
+        const by = b.buildingYear ?? -Infinity;
+        return by - ay;
+      }
+      return periodSortKey(b.period) - periodSortKey(a.period);
+    });
+  }, [records, propertyTypeFilter, districtFilter, sort]);
 
   const totalPages = Math.ceil(sortedFiltered.length / pageSize);
   const effectivePage = isPdfExporting ? 0 : page;
@@ -120,7 +225,7 @@ export function TransactionTable({ records, isPdfExporting = false, autoDistrict
                 ))}
               </select>
 
-              {/* 地区名フィルター */}
+              {/* 地区名フィルター（種別フィルタはページ上部の PropertyTypeFilter に統合済み） */}
               <select
                 value={districtFilter}
                 onChange={(e) => handleDistrictChange(e.target.value)}
@@ -131,23 +236,6 @@ export function TransactionTable({ records, isPdfExporting = false, autoDistrict
                   <option key={d} value={d}>{d}</option>
                 ))}
               </select>
-
-              {/* 種別フィルター */}
-              <div className="flex flex-wrap gap-1">
-                {TYPE_FILTER_VALUES.map((tf) => (
-                  <button
-                    key={tf}
-                    onClick={() => handleFilterChange(tf)}
-                    className={`text-xs px-2 py-1 rounded-full border transition-colors ${
-                      filter === tf
-                        ? "bg-blue-600 text-white border-blue-600"
-                        : "text-slate-600 border-slate-200 hover:bg-slate-100"
-                    }`}
-                  >
-                    {t(TYPE_FILTER_KEYS[tf] as Parameters<typeof t>[0])}
-                  </button>
-                ))}
-              </div>
             </div>
           )}
         </div>
@@ -158,15 +246,15 @@ export function TransactionTable({ records, isPdfExporting = false, autoDistrict
           <Table>
             <TableHeader>
               <TableRow className="bg-slate-50 hover:bg-slate-50">
-                <TableHead className="text-xs w-28">{t("colType")}</TableHead>
-                <TableHead className="text-xs w-24">{t("colDistrict")}</TableHead>
-                <TableHead className="text-xs text-right w-28">{t("colPrice")}</TableHead>
-                <TableHead className="text-xs text-right w-20">{t("colArea")}</TableHead>
-                <TableHead className="text-xs text-right w-28">{t("colUnitPrice")}</TableHead>
-                <TableHead className="text-xs w-20">{t("colBuildYear")}</TableHead>
-                <TableHead className="text-xs w-16">{t("colStructure")}</TableHead>
-                <TableHead className="text-xs w-32">{t("colCityPlan")}</TableHead>
-                <TableHead className="text-xs w-28">{t("colPeriod")}</TableHead>
+                <SortableHead label={t("colType")}      sortKey="type"         current={sort} onClick={handleSort} widthClass="w-28" />
+                <SortableHead label={t("colDistrict")}  sortKey="districtName" current={sort} onClick={handleSort} widthClass="w-24" />
+                <SortableHead label={t("colPrice")}     sortKey="tradePrice"   current={sort} onClick={handleSort} widthClass="w-28" align="right" />
+                <SortableHead label={t("colArea")}      sortKey="area"         current={sort} onClick={handleSort} widthClass="w-20" align="right" />
+                <SortableHead label={t("colUnitPrice")} sortKey="unitPrice"    current={sort} onClick={handleSort} widthClass="w-28" align="right" />
+                <SortableHead label={t("colBuildYear")} sortKey="buildingYear" current={sort} onClick={handleSort} widthClass="w-20" />
+                <SortableHead label={t("colStructure")} sortKey="structure"    current={sort} onClick={handleSort} widthClass="w-16" />
+                <SortableHead label={t("colCityPlan")}  sortKey="cityPlanning" current={sort} onClick={handleSort} widthClass="w-32" />
+                <SortableHead label={t("colPeriod")}    sortKey="period"       current={sort} onClick={handleSort} widthClass="w-28" />
               </TableRow>
             </TableHeader>
             <TableBody>

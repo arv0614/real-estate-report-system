@@ -2,20 +2,23 @@
 
 import { useTranslations, useLocale } from "next-intl";
 
-// MLIT API が返す r.type の値（言語非依存・常に日本語）。
-// "すべて" は API 値ではなく "未フィルタ" のセンチネル。
-export const PROPERTY_TYPE_FILTERS = [
-  { value: "すべて",            labelKey: "filterAll",         icon: "📦" },
-  { value: "中古マンション等",   labelKey: "filterCondoUsed",   icon: "🏢" },
-  { value: "宅地(土地と建物)",   labelKey: "filterLandBuilding", icon: "🏡" },
-  { value: "宅地(土地)",        labelKey: "filterLand",         icon: "📐" },
-  { value: "農地",              labelKey: "filterFarm",         icon: "🌾" },
-  { value: "林地",              labelKey: "filterForest",       icon: "🌲" },
-] as const;
+// MLIT API が返す `r.type` の値（言語非依存・常に日本語文字列）。
+// "すべて" は API 値ではなく "未フィルタ" センチネル。
+export const ALL_TYPE = "すべて";
+export type PropertyTypeValue = string;
 
-export type PropertyTypeValue = (typeof PROPERTY_TYPE_FILTERS)[number]["value"];
-
-export const ALL_TYPE: PropertyTypeValue = "すべて";
+/**
+ * 既知の MLIT 種別のラベルキー（TransactionTable 名前空間の filter*）と
+ * チップ用アイコン。未知の種別は生文字列で表示する（API が新種別を増やしても壊れない）。
+ */
+const KNOWN_TYPE_META: Record<string, { labelKey: string; icon: string }> = {
+  [ALL_TYPE]:           { labelKey: "filterAll",          icon: "📦" },
+  "中古マンション等":   { labelKey: "filterCondoUsed",    icon: "🏢" },
+  "宅地(土地と建物)":   { labelKey: "filterLandBuilding", icon: "🏡" },
+  "宅地(土地)":         { labelKey: "filterLand",         icon: "📐" },
+  "農地":               { labelKey: "filterFarm",         icon: "🌾" },
+  "林地":               { labelKey: "filterForest",       icon: "🌲" },
+};
 
 interface Props {
   selected: PropertyTypeValue;
@@ -41,14 +44,45 @@ export function PropertyTypeFilter({
   const numFmt = (n: number) =>
     n.toLocaleString(locale === "en" ? "en-US" : locale === "ja" ? "ja-JP" : locale);
 
-  // 実データに含まれる種別だけをチップ化（"すべて" は常に表示）
-  const available = PROPERTY_TYPE_FILTERS.filter(
-    (f) => f.value === ALL_TYPE || (typeBreakdown[f.value] ?? 0) > 0,
-  );
+  // 既知種別の優先順位（"すべて" 直後に並べたい順）。未知種別は KNOWN にないため
+  // 後段の自動ソートで件数順に末尾へ追加される。
+  const KNOWN_ORDER = [
+    "中古マンション等",
+    "宅地(土地と建物)",
+    "宅地(土地)",
+    "農地",
+    "林地",
+  ];
 
-  const selectedDef = PROPERTY_TYPE_FILTERS.find((f) => f.value === selected) ?? PROPERTY_TYPE_FILTERS[0];
-  const selectedLabel = tType(selectedDef.labelKey);
+  // 実データに含まれる種別だけを動的に列挙し、件数順で安定ソート。
+  // 既知種別は KNOWN_ORDER の優先度を維持、未知種別は件数降順で末尾。
+  const dataTypeEntries = Object.entries(typeBreakdown).filter(([, c]) => c > 0);
+  dataTypeEntries.sort(([a, ca], [b, cb]) => {
+    const ai = KNOWN_ORDER.indexOf(a);
+    const bi = KNOWN_ORDER.indexOf(b);
+    if (ai !== -1 && bi !== -1) return ai - bi;
+    if (ai !== -1) return -1; // 既知 a を前
+    if (bi !== -1) return 1;  // 既知 b を前
+    return cb - ca;           // 両方未知: 件数降順
+  });
+
+  // "すべて" を先頭、続けて実データ種別。
+  const chips: Array<{ value: string; count: number }> = [
+    { value: ALL_TYPE, count: totalCount },
+    ...dataTypeEntries.map(([value, count]) => ({ value, count })),
+  ];
+
+  function labelFor(value: string): string {
+    const meta = KNOWN_TYPE_META[value];
+    if (meta) return tType(meta.labelKey as Parameters<typeof tType>[0]);
+    return value; // 未知種別はそのまま表示
+  }
+  function iconFor(value: string): string {
+    return KNOWN_TYPE_META[value]?.icon ?? "🏷️";
+  }
+
   const isAll = selected === ALL_TYPE;
+  const selectedLabel = labelFor(selected);
 
   return (
     <div
@@ -82,24 +116,23 @@ export function PropertyTypeFilter({
 
       {/* チップ（タブ）UI */}
       <div className="flex flex-wrap gap-2" role="tablist" aria-label={t("ariaLabel")}>
-        {available.map((f) => {
-          const count = f.value === ALL_TYPE ? totalCount : typeBreakdown[f.value] ?? 0;
-          const isSelected = selected === f.value;
-          const label = tType(f.labelKey);
+        {chips.map((c) => {
+          const isSelected = selected === c.value;
+          const label = labelFor(c.value);
           return (
             <button
-              key={f.value}
+              key={c.value}
               type="button"
               role="tab"
               aria-selected={isSelected}
-              onClick={() => onChange(f.value)}
+              onClick={() => onChange(c.value)}
               className={`group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
                 isSelected
                   ? "bg-blue-600 text-white border-blue-600 shadow-sm hover:bg-blue-700"
                   : "bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
               }`}
             >
-              <span aria-hidden className="text-sm leading-none">{f.icon}</span>
+              <span aria-hidden className="text-sm leading-none">{iconFor(c.value)}</span>
               <span>{label}</span>
               <span
                 className={`tabular-nums text-[10px] px-1.5 py-0.5 rounded-full ${
@@ -108,7 +141,7 @@ export function PropertyTypeFilter({
                     : "bg-slate-100 text-slate-500 group-hover:bg-blue-100 group-hover:text-blue-600"
                 }`}
               >
-                {numFmt(count)}
+                {numFmt(c.count)}
               </span>
             </button>
           );
