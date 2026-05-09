@@ -177,6 +177,13 @@
     "footerCommercial": "特定商取引法",
     "footerLicenses": "OSSライセンス"
   },
+  "PropertyTypeFilter": {
+    "title": "物件種別フィルタ",
+    "subtitle": "選んだ種別だけで統計を再集計します",
+    "ariaLabel": "物件種別を選択",
+    "displayingAll": "全種別 {count} 件の統計",
+    "displayingFiltered": "「{type}」{count} 件のみの統計"
+  },
   "SummaryCards": {
     "dataCount": "データ件数",
     "dataCountValue": "{count} 件",

@@ -36,6 +36,7 @@ import type { DistrictMarker } from "@/components/SearchForm";
 import { HistoryList } from "@/components/HistoryList";
 import { SourceBadge } from "@/components/SourceBadge";
 import { SummaryCards } from "@/components/SummaryCards";
+import { PropertyTypeFilter, ALL_TYPE, type PropertyTypeValue } from "@/components/PropertyTypeFilter";
 import { TransactionTable } from "@/components/TransactionTable";
 import { PriceTrendChart } from "@/components/PriceTrendChart";
 import { EnvironmentInfoCard } from "@/components/EnvironmentInfo";
@@ -99,6 +100,7 @@ function HomePageContent() {
   const autoSearchTriggered = useRef(false);
 
   const [pdfExportOptions, setPdfExportOptions] = useState<PdfExportOptions>(DEFAULT_PDF_OPTIONS);
+  const [propertyTypeFilter, setPropertyTypeFilter] = useState<PropertyTypeValue>(ALL_TYPE);
 
   // URLパラメータからの自動検索（シェアURL経由でのアクセス時）
   useEffect(() => {
@@ -420,11 +422,31 @@ function HomePageContent() {
     setPdfSections((prev) => ({ ...prev, [key]: !prev[key] }));
   }
 
-  const summary = useMemo(
+  // 全レコードから種別チップの件数を集計（フィルタ適用前）
+  const unfilteredSummary = useMemo(
     () => (result ? calcSummary(result.data.data) : null),
     [result]
   );
+
+  // フィルタ適用後のレコード（フロントで再集計するため API は再リクエストしない）
+  const filteredRecords = useMemo(() => {
+    if (!result) return [];
+    if (propertyTypeFilter === ALL_TYPE) return result.data.data;
+    return result.data.data.filter((r) => r.type === propertyTypeFilter);
+  }, [result, propertyTypeFilter]);
+
+  // SummaryCards 表示用: 選択された種別だけで再集計
+  const summary = useMemo(
+    () => (result ? calcSummary(filteredRecords) : null),
+    [result, filteredRecords]
+  );
   const firstRecord = result?.data.data[0];
+
+  // 新しい検索結果が来たら種別フィルタは「すべて」に戻す
+  // （新エリアでは旧種別の取引が0件のことがあるため）
+  useEffect(() => {
+    setPropertyTypeFilter(ALL_TYPE);
+  }, [result?.cacheKey, result?.fetchedAt]);
 
   /** OGP用の総合スコアをハザード情報から簡易計算（0-100） */
   const ogScore = useMemo(() => {
@@ -793,6 +815,19 @@ function HomePageContent() {
                     lng={searchCoords.lng}
                     onChange={() => {}}
                     readOnly
+                  />
+                </div>
+              )}
+
+              {/* 種別フィルタ（PDF出力時は非表示）*/}
+              {unfilteredSummary && unfilteredSummary.totalCount > 0 && (
+                <div className="pdf-hide">
+                  <PropertyTypeFilter
+                    selected={propertyTypeFilter}
+                    onChange={setPropertyTypeFilter}
+                    typeBreakdown={unfilteredSummary.typeBreakdown}
+                    totalCount={unfilteredSummary.totalCount}
+                    filteredCount={summary?.totalCount ?? 0}
                   />
                 </div>
               )}

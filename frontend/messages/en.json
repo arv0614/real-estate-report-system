@@ -177,6 +177,13 @@
     "footerCommercial": "Commercial Disclosure",
     "footerLicenses": "OSS Licenses"
   },
+  "PropertyTypeFilter": {
+    "title": "Property Type Filter",
+    "subtitle": "Statistics are recalculated for the selected type only",
+    "ariaLabel": "Select property type",
+    "displayingAll": "Statistics for all types ({count} records)",
+    "displayingFiltered": "{type} only ({count} records)"
+  },
   "SummaryCards": {
     "dataCount": "Records",
     "dataCountValue": "{count}",

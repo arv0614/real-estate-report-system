@@ -177,6 +177,13 @@
     "footerCommercial": "特定商交易法",
     "footerLicenses": "OSS 许可"
   },
+  "PropertyTypeFilter": {
+    "title": "物件类别筛选",
+    "subtitle": "按所选类别重新计算统计值",
+    "ariaLabel": "选择物件类别",
+    "displayingAll": "全部类别共 {count} 条的统计",
+    "displayingFiltered": "仅「{type}」{count} 条的统计"
+  },
   "SummaryCards": {
     "dataCount": "数据条数",
     "dataCountValue": "{count} 条",
