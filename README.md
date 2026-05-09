@@ -7,6 +7,7 @@
 
 🔗 **本番 URL**: https://mekiki-research.com
 🚀 **ステータス**: 商用リリース済み（Lemon Squeezy 決済稼働中・GA4 ファネル計測導入済み）
+📰 **ブログ自動運用**: 毎朝 JST 07:00 に Gemini 2.5 Pro が4言語の日次記事を自動生成 → 自動デプロイ
 
 > **💳 Pro プラン（¥980/月）の決済が本番稼働中です**
 > Free プランでは基本機能を無料でご利用いただけます。検索上限（ゲスト: 1回/日、Free: 3回/日）に達した際は直接プランモーダルに誘導し、Lemon Squeezy でシームレスにアップグレードできます。Pro プランでは検索無制限・PDF 出力・暮らしイメージ生成などすべての機能が利用可能です。
@@ -19,18 +20,21 @@
 2. [主な機能 (Key Features)](#-主な機能-key-features)
 3. [料金プランと利用制限](#-料金プランと利用制限)
 4. [システムアーキテクチャ](#-システムアーキテクチャ)
-5. [技術スタック (Tech Stack)](#-技術スタック-tech-stack)
-6. [多言語対応（i18n）の仕組み](#-多言語対応i18nの仕組み)
-7. [セキュリティ・コンプライアンス対策](#-セキュリティコンプライアンス対策)
-8. [SEO 戦略と sitemap](#-seo-戦略と-sitemap)
-9. [テストと品質保証 (QA)](#-テストと品質保証-qa)
-10. [ローカル開発環境のセットアップ](#-ローカル開発環境のセットアップ)
-11. [Cloud Run へのデプロイ](#-cloud-run-へのデプロイ)
-12. [Artifact Registry コスト最適化](#-artifact-registry-コスト最適化)
-13. [Lemon Squeezy 決済の運用手順](#-lemon-squeezy-決済の運用手順)
-14. [ディレクトリ構成](#-ディレクトリ構成)
-15. [注意事項](#-注意事項)
-16. [ライセンス](#-ライセンス)
+5. [ブログ完全自動化基盤（メディア運用）](#-ブログ完全自動化基盤メディア運用)
+6. [GitHub Actions ワークフロー（CI/CD）](#-github-actions-ワークフローcicd)
+7. [技術スタック (Tech Stack)](#-技術スタック-tech-stack)
+8. [多言語対応（i18n）の仕組み](#-多言語対応i18nの仕組み)
+9. [セキュリティ・コンプライアンス対策](#-セキュリティコンプライアンス対策)
+10. [SEO 戦略と sitemap](#-seo-戦略と-sitemap)
+11. [テストと品質保証 (QA)](#-テストと品質保証-qa)
+12. [環境変数と GitHub Secrets](#-環境変数と-github-secrets)
+13. [ローカル開発環境のセットアップ](#-ローカル開発環境のセットアップ)
+14. [Cloud Run へのデプロイ](#-cloud-run-へのデプロイ)
+15. [Artifact Registry コスト最適化](#-artifact-registry-コスト最適化)
+16. [Lemon Squeezy 決済の運用手順](#-lemon-squeezy-決済の運用手順)
+17. [ディレクトリ構成](#-ディレクトリ構成)
+18. [注意事項](#-注意事項)
+19. [ライセンス](#-ライセンス)
 
 ---
 
@@ -39,6 +43,7 @@
 ### Step 1 — 検索・ピン留め
 地図上をクリックするか、住所・地名（例：「東京都墨田区押上」）を入力して **「調査開始」** を押します。
 国土交通省 不動産情報ライブラリ API から直近5年分の取引データを自動取得します。
+ブログ記事末尾の CTA から遷移してきた場合は、`?lat=&lng=` クエリで検索が自動実行されます。
 
 ### Step 2 — 取引データ・リスクを確認
 - **取引価格サマリー**: 平均・中央値・最小/最大・物件種別の内訳をカード表示
@@ -48,7 +53,6 @@
 
 ### Step 3 — AI コンサルタントのエリア分析を読む
 **10項目にわたる Gemini 2.5 Flash のエリア分析**をアコーディオンで展開。
-セクションをクリックして必要な情報だけ開けます。
 
 | # | セクション | Free | Pro |
 |---|---|:---:|:---:|
@@ -67,25 +71,11 @@
 Google アカウントでログイン後、AI レポート内の **「✨ 暮らしイメージを生成」** ボタンをクリック。
 エリア総評テキストを基に Gemini がエリア固有の英語プロンプトを動的生成し、Imagen 4 で画像化します。
 
-- 豪雪地帯（北海道・長野山間部など）→ 雪景色・スキー場を自動反映
-- 東京23区などの都市部 → スカイライン・都市景観を自動反映
-- 温泉地・リゾート → 外湯・旅館街・リゾートシーンを自動反映
-
 ### Step 5 — PDF でエクスポート（Pro プラン）
-右上の **「⚙️ 出力設定」** でセクションを選択し、**「📄 PDF をダウンロード」** をクリック。
-顧客への提案書・社内報告書など用途に応じて5セクションを個別に ON/OFF できます。
-
-| セクション | 内容 |
-|---|---|
-| 取引価格サマリー & ハザード | 価格統計とリスクバッジ |
-| 生活環境情報 | 学区・医療機関・最寄り駅 |
-| 価格推移グラフ | 年別トレンドチャート |
-| AI エリア分析レポート | Gemini による10項目レポート |
-| 取引事例一覧 | 詳細な個別取引データテーブル |
+右上の **「⚙️ 出力設定」** で5セクションを個別 ON/OFF し、**「📄 PDF をダウンロード」** をクリック。
 
 ### Step 6 — 履歴から復元（ログインユーザー）
-右下の **「🕐 履歴」** ボタンから過去の検索を一覧表示。
-クリックするだけで当時の取引データ・AI レポート・生成画像を即座に復元します。
+右下の **「🕐 履歴」** から過去の検索を一覧表示し、当時のレポート・生成画像を即座に復元します。
 
 ---
 
@@ -101,7 +91,6 @@ Google アカウントでログイン後、AI レポート内の **「✨ 暮ら
 - **Gemini 2.5 Flash** による自動レポート生成（約1,500〜2,000字）
 - セクション9「リアルな住環境」ではネガティブ情報も正直に開示
 - セクション10「プロの視点」では不動産プロによる物件の魅力を生成
-- アコーディオン UI + 全展開 / 全折りたたみボタンで快適閲覧
 
 ### 暮らしのイメージ画像（2段階アーキテクチャ）
 
@@ -120,20 +109,11 @@ Google アカウントでログイン後、AI レポート内の **「✨ 暮ら
 - 洪水浸水想定区域 (XKT026) / 土砂災害警戒区域 (XKT029)
 - 用途地域 (XKT002) / 小中学校区 (XKT004/005) / 医療機関 (XKT010) / 最寄り駅 (XKT015)
 
-### PDF エクスポート
-- 5セクション個別 ON/OFF で出力内容をカスタマイズ
-- `dom-to-image-more` + `jsPDF` による高品質 PDF 生成（地図・グラフ・画像含む）
-- 非表示セクションは画面表示に影響なし（`pdf-hide` CSS クラス制御）
-
 ### Pro プラン（¥980/月）— 商用リリース済み
-- **検索無制限**: 日次制限なし（ゲスト: 1回/日、Free: 3回/日 の制限を撤廃）
-- **PDF レポート出力**: 顧客提案書・社内報告書として即座にエクスポート
-- **暮らしのイメージ画像生成**: AI による自動エリアビジュアライゼーション
-- **Lemon Squeezy 連携**: Firebase ID Token 認証 + HMAC-SHA256 Webhook 署名検証により安全な決済フローを実装
-- 検索上限到達時は `WaitlistModal` ではなく `PlanComparisonModal` に直接誘導し、決済への最短導線を実現
+- 検索無制限 / PDF レポート出力 / 暮らしのイメージ画像生成
+- Firebase ID Token 認証 + HMAC-SHA256 Webhook 署名検証
 
 ### GA4 コンバージョンファネル計測（導入済み）
-`frontend/lib/gtag.ts` + GTM を組み合わせ、以下のファネルイベントをすべて計測しています。
 
 | イベント名 | 発火タイミング | 主なパラメータ |
 |---|---|---|
@@ -142,8 +122,6 @@ Google アカウントでログイン後、AI レポート内の **「✨ 暮ら
 | `view_plan_modal` | 料金モーダルが表示される直前 | `event_label`: "header" / "limit_modal" / "pdf" |
 | `begin_checkout` | 決済ボタンクリック → Lemon Squeezy API 呼び出し前 | `event_label`: "Pro" |
 | `purchase` | `?payment=success` リダイレクト検知時（初回のみ） | `value`: 980, `currency`: "JPY" |
-
-> `purchase` イベントは `sessionStorage` による同一セッション内重複防止 + URL から `?payment=success` を即座に除去することでリロード時の二重計測を防いでいます。
 
 ---
 
@@ -159,58 +137,342 @@ Google アカウントでログイン後、AI レポート内の **「✨ 暮ら
 | PDF エクスポート | ❌ | ❌ | **✅** |
 | 検索履歴の保存 | ❌ | ✅ | ✅ |
 
-利用制限の判定は localStorage（ゲスト）と Firestore（ログイン済み）で管理しています。
+利用制限は localStorage（ゲスト）と Firestore（ログイン済み）で管理。
 
 ---
 
 ## 🏗 システムアーキテクチャ
 
+本リポジトリは **3つの責務** を1つの monorepo で管理しています。
+
 ```
-[ブラウザ]
-  │  Google Login (Firebase Auth)
-  │  調査フォーム（住所 or 緯度経度入力）
-  ▼
-[Next.js 16 Frontend / Cloud Run — asia-northeast1]
-  │  セキュリティヘッダー: HSTS / CSP / X-Frame-Options 等（next.config.ts）
-  │
-  │  GET /api/property/transactions
-  ▼
-[Hono Backend / Cloud Run — asia-northeast1]
-  │  secureHeaders() ミドルウェア / CORS / IPレートリミット
-  ├── reverseGeocode(lat, lng)      → 国土地理院 GSI API
-  ├── fetchTransactionPrices()      → 国交省 不動産情報ライブラリ (XIT001)
-  ├── fetchHazardInfo()             → XKT026 / XKT029
-  ├── fetchEnvironmentInfo()        → XKT002 / XKT004 / XKT005 / XKT010 / XKT015
-  ├── generateAreaReport()          → Gemini 2.5 Flash
-  └── readCache / writeCache        → Google Cloud Storage (30日 TTL)
+┌─────────────────────────────────────────────────────────────────────┐
+│  ① Frontend (Next.js 16 / Cloud Run / asia-northeast1)             │
+│     mekiki-research.com 本番ドメイン                                 │
+│     - App Router + next-intl で 4言語ルーティング                    │
+│     - ?lat=&lng= で検索を自動実行（ブログCTA・シェアURLから着地）  │
+│     - HSTS / CSP / X-Frame-Options 等のセキュリティヘッダー出力     │
+└───────────────────┬─────────────────────────────────────────────────┘
+                    │ GET /api/property/transactions?lat=&lng=&zoom=15&locale=
+                    ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  ② Backend API (Hono / Cloud Run / asia-northeast1)                │
+│     realestate-api-2hctlfcy6a-an.a.run.app                          │
+│     - secureHeaders() ミドルウェア / CORS / IPレートリミット         │
+│     - reverseGeocode → 国土地理院 GSI                                │
+│     - fetchTransactionPrices → 国交省 XIT001                         │
+│     - fetchHazardInfo → XKT026 / XKT029                              │
+│     - fetchEnvironmentInfo → XKT002/004/005/010/015                  │
+│     - generateAreaReport → Gemini 2.5 Flash                          │
+│     - GCS キャッシュ（30日 TTL・ロケール別キー）                    │
+│     - Lemon Squeezy Checkout / Webhook (HMAC-SHA256 署名検証)       │
+└─────────────────────────────────────────────────────────────────────┘
 
-  │  POST /api/property/generate-image
-  ▼
-[2段階画像生成パイプライン]
-  ├── generateDynamicPrompt()       → Gemini 2.5 Flash（英語プロンプト動的生成）
-  ├── generateViaImagen4()          → Imagen 4 Fast（Primary）
-  └── generateViaGeminiImage()      → Gemini 2.5 Flash Image（Fallback）
+┌─────────────────────────────────────────────────────────────────────┐
+│  ③ Automation Scripts (GitHub Actions / scripts/)                  │
+│     - generate_daily_blog.js: 毎朝7時に4言語ブログ記事を生成        │
+│       → 実データ取得 (上記 ② の同じAPIを叩く) → エビデンスとして引用 │
+│       → 加重ランダムで全国の都市を選定（首都圏偏重を回避）          │
+│       → ?lat=&lng= 形式で① のトップページにCTAリンク                │
+│     - post_to_x.js: 旧 X 自動投稿（現在は無効化）                    │
+│     - deploy.sh / deploy_frontend.sh: Cloud Run 手動デプロイ         │
+└─────────────────────────────────────────────────────────────────────┘
 
-  │  POST /api/lemonsqueezy/create-checkout（Firebase ID Token 認証必須）
-  ▼
-[Lemon Squeezy Checkout] ※稼働中（¥980/月）
-  └── Webhook → /api/lemonsqueezy/webhook → Firestore users/{uid}.plan = "pro" / "free"
-
-[Firebase]
-  ├── Authentication — Google OAuth 2.0
-  ├── Firestore     — ユーザープラン・検索履歴管理（Security Rules デプロイ済み）
-  └── Storage       — 生成画像の永続化
-
-[PostHog]
-  └── アクセス解析・イベントトラッキング（Webhook 署名検証済み）
-
-[GA4 + GTM]
-  └── コンバージョンファネル計測（generate_report / reach_limit / view_plan_modal / begin_checkout / purchase）
-      purchase イベント: sessionStorage 重複防止 + URL クリーンアップで二重計測を防止
-
-[Terraform]
-  └── Cloud Run / Artifact Registry / GCS / IAM の IaC 管理
+[Firebase]  Authentication / Firestore (users, history) / Storage (images)
+[GA4 + GTM] generate_report / reach_limit / view_plan_modal / begin_checkout / purchase
+[PostHog]   行動ログ計測（Webhook 署名検証付き）
+[Terraform] Cloud Run / Artifact Registry / GCS / IAM の IaC 管理
 ```
+
+---
+
+## 📰 ブログ完全自動化基盤（メディア運用）
+
+オウンドメディア [/blog](https://mekiki-research.com/blog) は **完全自動運用** されています。
+人間の介入なしに、毎朝 JST 07:00 に新規記事が4言語同時に公開され、自動的に Cloud Run にデプロイされます。
+
+### 全体フロー
+
+```
+[GitHub Actions] generate-blog.yml (cron: "0 22 * * *" UTC = JST 07:00)
+      │
+      ▼
+[Node 20] node scripts/generate_daily_blog.js
+      │
+      ├─ ① 加重ランダムで地域選定（REGION_POOL）
+      ├─ ② Gemini 2.5 Pro: メタデータ生成（slug/title/desc/tags/primaryLocation/outline）
+      ├─ ③ ★ 実データ取得: 本番 API /api/property/transactions?lat=&lng= を叩く
+      │     → MLIT 取引データ + 国土地理院ハザード + 周辺環境 を summarize
+      ├─ ④ Gemini 2.5 Pro: 本文生成（実データを引用エビデンスとして注入）
+      ├─ ⑤ Gemini 2.5 Pro: 英 / 繁 / 簡 の3言語にメタ + 本文を翻訳
+      └─ ⑥ frontend/content/blog/YYYY-MM-DD-<slug>.{,en,zh-TW,zh-CN}.md として保存
+      │
+      ▼
+[Git] PAT_TOKEN で main へ直接 push
+      │
+      ▼ (push が deploy.yml の paths: frontend/** にマッチ → 連鎖トリガー)
+      │
+[GitHub Actions] deploy.yml → Cloud Build → Cloud Run デプロイ
+      │
+      ▼
+[mekiki-research.com/blog] 4言語で記事公開
+```
+
+### 1. `scripts/generate_daily_blog.js` の仕組み（Gemini API 使用）
+
+| 項目 | 仕様 |
+|---|---|
+| LLM | Google Gemini 2.5 Pro（`gemini-2.5-pro`、`GEMINI_MODEL` で上書き可） |
+| SDK | `@google/genai` |
+| 実行環境 | Node 20+（`fetch`/`AbortController` 標準利用） |
+| 出力先 | `frontend/content/blog/YYYY-MM-DD-<slug>.md`（+ `.en.md` / `.zh-TW.md` / `.zh-CN.md`） |
+| 必須環境変数 | `GEMINI_API_KEY` |
+| 任意環境変数 | `GEMINI_MODEL`（既定 `gemini-2.5-pro`）<br>`BLOG_DATE`（YYYY-MM-DD で対象日上書き）<br>`BLOG_DRY_RUN=1`（API を呼ばず構成のみ確認）<br>`BLOG_API_BASE_URL`（既定: Cloud Run の本番URL）<br>`BLOG_SITE_BASE_URL`（既定: `https://mekiki-research.com`） |
+
+**設計上の分離**: メタデータ（JSON）と本文（Markdown）は **別々の Gemini 呼び出し** で生成しています。本文を JSON 文字列に詰め込むと制御文字エスケープが破綻して `JSON.parse` が失敗するため、実運用で問題が起きた末に分離した経緯があります。
+
+### 2. 4言語展開とSEO対策（hreflang / canonical / 構造化データ）
+
+1記事あたり日本語 → 英語 → 繁体字 → 簡体字 の順に翻訳して、合計 **4ファイル** を生成します。
+
+| ロケール | URL 形式 | siteLocale |
+|---|---|---|
+| 日本語 (`ja`) | `/blog/<slug>` | `ja_JP` |
+| 英語 (`en`) | `/en/blog/<slug>` | `en_US` |
+| 繁体字 (`zh-TW`) | `/zh-TW/blog/<slug>` | `zh_TW` |
+| 簡体字 (`zh-CN`) | `/zh-CN/blog/<slug>` | `zh_CN` |
+
+`frontend/app/[locale]/blog/[slug]/page.tsx` の `generateMetadata` が以下を出力します：
+
+| SEO 要素 | 仕様 |
+|---|---|
+| **canonical** | `alternates.canonical = blogPathFor(currentLocale, slug)`（現在ロケールの絶対URL） |
+| **hreflang alternate** | `alternates.languages` に **翻訳済みロケールのみ** を列挙（未翻訳言語は意図的に含めない、Google の品質基準に準拠） |
+| **x-default** | 日本語版が存在する場合、`x-default` として日本語URLを指定 |
+| **OGP** | `og:type=article`, `og:url=canonical`, `og:title`, `og:description`, `og:image` |
+| **OGP 画像** | `/api/og/blog?title=...&description=...&tags=...&date=...` で記事ごとに 1200×630 を動的生成（next/og） |
+| **Twitter Card** | `summary_large_image` |
+| **JSON-LD** | `BlogPosting` 構造化データ（`headline`, `description`, `datePublished`, `author`, `publisher`, `keywords`） |
+| **言語切替 UI** | `LanguageToggle` コンポーネントが**翻訳済みロケールのみ** をボタン表示 |
+
+> 翻訳が片方向だけ存在する slug があった場合、未翻訳側を `hreflang` から除外することで、Google Search Console の「翻訳ペアが不一致」警告を回避しています。
+
+### 3. ★ 実データ連動：本番APIから取得したエビデンスで本文を補強
+
+これが本ブログ自動化システムの **最も重要な特徴** です。
+
+メタ生成と本文生成の **間** に、`primaryLocation.lat / lng` を使ってトップページが叩くのと同じバックエンド API を叩き、実取引データ・ハザード・周辺環境を取得して本文プロンプトに注入します。
+
+```
+┌─ Stage 1: メタ生成 ────────────┐
+│  Gemini → primaryLocation:     │
+│    { lat, lng, name }          │
+└────────────────┬───────────────┘
+                 │
+                 ▼ fetchAreaData(lat, lng)
+┌─ Stage 2: 実データ取得（NEW）──────────────────────────┐
+│  GET ${API_BASE_URL}/api/property/transactions       │
+│    ?lat=<lat>&lng=<lng>&zoom=15&locale=ja            │
+│  ↓                                                    │
+│  summarizeAreaData() で約3〜4KBに圧縮:                │
+│    - location (prefecture/municipality/cityCode)     │
+│    - transactionStats (sampleCount, yearRange,       │
+│        avg/median/min/max tradePrice, avgUnitPrice)  │
+│    - samples (上位6件: type/use/district/price/...)  │
+│    - hazard (flood / landslide)                      │
+│    - environment (zoning/schools/station/medical)    │
+└────────────────┬─────────────────────────────────────┘
+                 │
+                 ▼ jaBodyPrompt({ today, meta, areaData })
+┌─ Stage 3: 本文生成 ───────────────────────────────────┐
+│  Gemini プロンプトに JSON エビデンスブロックを注入:   │
+│  「以下は実際にバックエンドから取得した実データです。 │
+│   本文中で **複数セクション** で具体的に引用し、      │
+│   推測ではなく裏付けとして専門的に分析してください」 │
+│  - 価格は ○,○○○万円 形式に変換（45,320,000 → 約4,500万円） │
+│  - 単価は ○○万円/㎡ 形式に変換                          │
+│  - データ0件/null は捏造禁止、率直に開示              │
+└──────────────────────────────────────────────────────┘
+```
+
+**API 失敗時のフォールバック**: ネットワークエラーや上流障害で実データ取得に失敗した場合は `areaData = null` のまま本文生成に進み、プロンプトは「一般公開情報・国交省統計・地価公示の傾向に基づいて執筆。具体的な数値の断定は避けること」というフォールバック指示に切り替わります。記事生成プロセス自体は止めません。
+
+### 4. ★ 地域分散アルゴリズム：加重ランダム選定
+
+過去の記事が首都圏（東京23区中心部）に偏る問題を解決するため、**加重ランダム** で全国の地域を意図的にローテーションします。
+
+```javascript
+// scripts/generate_daily_blog.js
+const REGION_POOL = [
+  { name: "関西エリア",       weight: 3, examples: "大阪市梅田・なんば、京都市..." },
+  { name: "中京エリア",       weight: 2, examples: "名古屋市栄・名駅、岐阜市..." },
+  { name: "北海道・東北",     weight: 2, examples: "札幌市大通、仙台市青葉区..." },
+  { name: "中国・四国",       weight: 2, examples: "広島市紙屋町、岡山市..." },
+  { name: "九州・沖縄",       weight: 2, examples: "福岡市天神・博多、那覇市..." },
+  { name: "北陸・甲信越",     weight: 2, examples: "新潟市、金沢市、長野市..." },
+  { name: "注目地方エリア",   weight: 1, examples: "ニセコ町、軽井沢、別府市..." },
+  { name: "首都圏（最低頻度）", weight: 1, examples: "..." },
+];
+```
+
+| 重み | 地域 | 採用確率（合計重み15） |
+|---|---|---|
+| 3 | 関西エリア | 20% |
+| 2 | 中京 / 北海道東北 / 中国四国 / 九州沖縄 / 北陸甲信越 | 各 13.3%（合計 66.7%） |
+| 1 | 注目地方エリア / 首都圏 | 各 6.7%（合計 13.3%） |
+
+選定された地域は `jaMetaPrompt()` に **強い制約** として渡され、Gemini は以下を厳守させられます：
+
+- 本記事は **「${region.name}」** に必ずフォーカスすること（他地域への逸脱禁止）
+- 候補エリア例から具体的な都市・地区を1つ選ぶこと
+- **首都圏（東京23区中心部・横浜駅周辺など）に偏ってはいけない**
+- 過去30件の slug と重複しない地点を意図的に選ぶこと
+- `primaryLocation.lat/lng` は **正確な実在座標** を出力（架空・近似丸めは禁止）
+
+### 5. トップページへの動的ルーティング（CTAクエリパラメータ）
+
+各ブログ記事の末尾には、その記事で扱った地域を **トップページで実際に検索する** ための CTA リンクが必ず挿入されます。
+
+```markdown
+## 8. まとめ
+
+...本文の結論...
+
+[博多駅周辺の不動産データを物件目利きリサーチで実際に調べる →](https://mekiki-research.com/?lat=33.5904&lng=130.4208)
+```
+
+**フロントエンド側の受け側ロジック**（`frontend/app/HomeClient.tsx`）：
+
+```typescript
+useEffect(() => {
+  if (autoSearchTriggered.current) return;
+  if (authLoading || planLoading) return;
+  const latParam = searchParams.get("lat");
+  const lngParam = searchParams.get("lng");
+  if (latParam && lngParam) {
+    const lat = parseFloat(latParam);
+    const lng = parseFloat(lngParam);
+    if (!isNaN(lat) && !isNaN(lng)) {
+      autoSearchTriggered.current = true;
+      setExternalCoords({ lat, lng });
+      handleSearch(lat, lng);  // クエリ着地時に即検索を発火
+    }
+  }
+}, [authLoading, planLoading]);
+```
+
+> **設計判断**: 旧来の `?address=` ベースのシェアURL や、ベータ版の `/research` パスではなく、**本番トップページの `?lat=&lng=`** に統一しました。これにより
+> ① ジオコーディングを経由しない高速着地、② ベータ機能の品質変動から記事の体験を切り離し、③ GA4 上で「ブログ流入 → 検索完了」までを一貫して計測、を達成しています。
+
+---
+
+## 🤖 GitHub Actions ワークフロー（CI/CD）
+
+`.github/workflows/` 配下の5ワークフローでメディア運用 + デプロイ + 監視を完全自動化しています。
+
+| ワークフロー | トリガー | 主な役割 | 状態 |
+|---|---|---|---|
+| `generate-blog.yml` | cron 22:00 UTC（毎日） + 手動 | 4言語ブログ記事を Gemini で自動生成し main へ push | 🟢 稼働中 |
+| `deploy.yml` | `frontend/**` への push + 手動 | Cloud Build → Cloud Run デプロイ + sitemap ping | 🟢 稼働中 |
+| `auto_merge_blog.yml` | `pull_request` + cron 毎時 | `claude/*` ブランチの自動生成 PR を main に即マージ | 🟢 稼働中（旧スケジュールエージェント救済用） |
+| `blog_check.yml` | cron 01:00 UTC（毎日） | 当日記事の存在を main で検査し、なければ Issue 起票 | 🟢 稼働中 |
+| `x_post.yml` | `workflow_dispatch` のみ | X 自動投稿（旧月水金 09:00 JST） | 🔴 **無効化済み（2026-05-09）** |
+
+### 1. `generate-blog.yml` — 毎朝7時の自動記事生成
+
+```yaml
+on:
+  schedule:
+    - cron: "0 22 * * *"   # UTC 22:00 = JST 07:00
+  workflow_dispatch:
+```
+
+| 設計上の重要ポイント | 解説 |
+|---|---|
+| **PAT_TOKEN による checkout / push** | デフォルトの `GITHUB_TOKEN` で push しても他ワークフローはトリガーされない（GitHub の無限ループ防止仕様）。`secrets.PAT_TOKEN`（repo + workflow スコープの PAT）を `actions/checkout` の `token` と `git remote set-url` の双方に渡すことで、push 後に **deploy.yml が連鎖起動** する設計。 |
+| **concurrency: generate-daily-blog** | 同時実行を防ぎ、JST 07:00 のスケジュールと手動 dispatch が衝突しないようにする（`cancel-in-progress: false`）。 |
+| **競合保護** | push 直前に `git pull --rebase origin main` を実行し、他ワークフローが先に main を進めていた場合に rebase してから push。 |
+| **空コミット防止** | 生成失敗時は `git diff --cached --quiet` で検知し、`::notice::` を出して exit 0。空コミットは作らない。 |
+
+### 2. `deploy.yml` — Cloud Run デプロイ + SEO Ping
+
+```yaml
+on:
+  push:
+    branches: [main]
+    paths:
+      - "frontend/**"           # ブログ記事追加もここに含まれる
+      - "scripts/deploy_frontend.sh"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+```
+
+ステップ:
+
+1. `google-github-actions/auth@v2` で `GCP_SA_KEY` 認証
+2. `gcloud builds submit frontend/` で Cloud Build 経由で Docker イメージビルド
+   - `_NEXT_PUBLIC_*` を substitution として渡す（ビルド時バンドル焼き込み）
+3. `gcloud run deploy realestate-frontend` で Cloud Run へデプロイ
+4. 本番 URL に対して 6回 × 10秒間隔のヘルスチェック
+5. `sitemap.xml` の到達性確認 → Google Ping（廃止 API なので非致命的） + IndexNow（Bing/Yandex）
+
+### 3. `auto_merge_blog.yml` — PR 自動マージ（旧経路の救済）
+
+`claude/*` ブランチで作成された自動 PR を、ホワイトリスト判定の上で即マージするワークフロー。
+**現在の主経路は `generate-blog.yml` の直接 push** ですが、過去の Anthropic スケジュールエージェントが PR ベースで動作していた名残として残しています。
+
+ホワイトリスト：
+
+- `frontend/content/blog/*.md`
+- `marketing/x_promotions.json`
+
+これら以外を変更している PR はスキップして手動マージに委ねます。コンフリクト時は `merge-conflict` ラベルを付与して人間に委譲。
+
+### 4. `blog_check.yml` — 当日記事の存在監視
+
+```yaml
+on:
+  schedule:
+    - cron: "0 1 * * *"   # UTC 01:00 = JST 10:00
+  workflow_dispatch:
+```
+
+JST 10:00（生成想定時刻 07:00 から3時間後）に `frontend/content/blog/${TODAY}-*.md` の存在を確認。存在しなければ：
+
+1. 同日タイトルの open Issue がないことを確認（重複起票防止）
+2. `⚠️ Blog post missing for YYYY-MM-DD` Issue を起票
+3. ジョブを `exit 1` で失敗させ、GitHub のメール通知を発火
+
+### 5. `x_post.yml` — X 自動投稿（**現在は無効化**）
+
+旧仕様では月・水・金 JST 09:00 に `marketing/x_promotions.json` から1ツイートをランダム選択して投稿していました。**スパム判定回避のため2026-05-09 に無効化**しています。
+
+現在の状態：
+
+```yaml
+on:
+  workflow_dispatch:   # cron スケジュールは削除済み
+
+jobs:
+  noop:
+    name: Disabled (no-op)
+    steps:
+      - run: echo "::notice::X Auto Post is disabled."
+```
+
+旧設定（cron + post ステップ）は同ファイル末尾にコメントとして保存されています。
+
+#### 復活させる場合の手順
+
+1. `.github/workflows/x_post.yml` の末尾コメントブロックから cron + post ステップを復元
+2. 冒頭の `name: X Auto Post (Disabled)` を `name: X Auto Post` に戻し、`noop` ジョブを削除
+3. GitHub Secrets に以下を設定（無効化中も削除はしていない想定）:
+   - `X_API_KEY`, `X_API_SECRET`, `X_ACCESS_TOKEN`, `X_ACCESS_TOKEN_SECRET`
+4. X (Twitter) Developer ポータルでアプリのレートリミット・スパム判定状態を確認
+5. 1日1回程度の頻度に抑えた cron（例: `0 0 * * 1` の月曜のみ）で再開し、段階的に増やす
+6. `node scripts/post_to_x.js --dry-run` で文面を事前検証してから本番投稿
+
+> **再開時の注意**: 短期間に同一文面を連投するとスパム判定で **アカウント凍結リスク** があります。`marketing/x_promotions.json` の文面バリエーションを十分に増やし、頻度を抑えること。
 
 ---
 
@@ -222,10 +484,11 @@ Google アカウントでログイン後、AI レポート内の **「✨ 暮ら
 |---|---|---|
 | Next.js (App Router) | 16 | フレームワーク・SSR/ISR/CSR |
 | React + TypeScript | 19 / 5 | UI コンポーネント |
+| next-intl | 4.9 | i18n（4ロケール: ja/en/zh-TW/zh-CN） |
 | Tailwind CSS | 4 | スタイリング |
 | Leaflet (react-leaflet) | — | インタラクティブ地図（国土地理院タイル） |
 | Recharts | — | 価格推移グラフ |
-| ReactMarkdown + remark-gfm | — | AI レポートのマークダウンレンダリング |
+| ReactMarkdown + remark-gfm | — | AIレポート・ブログ記事の Markdown レンダリング |
 | dom-to-image-more + jsPDF | — | PDF エクスポート |
 | Firebase SDK (Auth / Firestore / Storage) | — | 認証・履歴・画像保存 |
 | Playwright | — | E2E テスト（本番ドメイン対象・14シナリオ） |
@@ -241,21 +504,31 @@ Google アカウントでログイン後、AI レポート内の **「✨ 暮ら
 | Firebase Admin SDK | サーバー側 ID Token 検証 |
 | hono-rate-limiter | IP ベースのレートリミット（15分/100req） |
 
+### 自動化スクリプト
+
+| 技術 | 用途 |
+|---|---|
+| `@google/genai` | Gemini 2.5 Pro 呼び出し（記事生成・翻訳） |
+| Node 20 native `fetch` | 本番APIからの実データ取得 |
+| `twitter-api-v2` | X 自動投稿用 SDK（現在は無効化） |
+
 ### インフラ・BaaS/SaaS
 
 | サービス | 用途 |
 |---|---|
 | Google Cloud Run | フロントエンド・バックエンドのサーバーレスホスティング（分離構成） |
-| Google Cloud Storage (GCS) | API レスポンスの30日間キャッシュ（APIコスト削減・高速化） |
+| Google Cloud Storage | API レスポンスの30日間キャッシュ |
 | Google Artifact Registry | Docker イメージレジストリ |
 | Google Cloud Build | CI/CD パイプライン（docker 不要・Cloud 上でビルド） |
-| Firebase Authentication | ユーザー認証（Google OAuth 2.0） |
+| Firebase Authentication | Google OAuth 2.0 |
 | Firebase Firestore | ユーザープラン・検索履歴の永続化 |
 | Firebase Storage | AI 生成画像の永続化 |
 | Lemon Squeezy | サブスクリプション決済・Webhook（本番稼働中） |
 | PostHog | アクセス解析・イベントトラッキング |
-| Google Analytics 4 (GA4) + GTM | コンバージョンファネル計測（generate_report / reach_limit / begin_checkout / purchase） |
-| Terraform | GCP リソースの IaC 管理（Cloud Run / GCS / Artifact Registry / IAM） |
+| Google Analytics 4 + GTM | コンバージョンファネル計測 |
+| Adobe Analytics | 補助的なトラッキング（CSPで許可済み） |
+| Terraform | GCP リソースの IaC 管理 |
+| GitHub Actions | CI/CD・ブログ自動生成・PR 自動マージ・監視 |
 
 ### 外部 API
 
@@ -264,83 +537,58 @@ Google アカウントでログイン後、AI レポート内の **「✨ 暮ら
 | 国交省 不動産情報ライブラリ API (XIT001) | 取引価格データ取得 |
 | 国交省 不動産情報ライブラリ API (XKT026/029/002/004/005/010/015) | ハザード・生活環境データ取得 |
 | 国土地理院 API (GSI) | 逆ジオコーディング・住所検索・地図タイル |
-| Gemini 2.5 Flash | エリア分析レポート生成 / 画像プロンプト動的生成 |
+| Gemini 2.5 Pro | ブログ記事生成・翻訳（バッチ） |
+| Gemini 2.5 Flash | エリア分析レポート / 画像プロンプト動的生成（リアルタイム） |
 | Imagen 4 Fast | 暮らしのイメージ画像生成（Primary） |
 | Gemini 2.5 Flash Image | 画像生成 Fallback |
+| e-Stat API | 人口動態スコア（オプション） |
 
 ---
 
 ## 🌐 多言語対応（i18n）の仕組み
 
-`next-intl` を用いて **日本語（`/`）と英語（`/en/`）** の2言語に対応しています。SSG（静的生成）を維持したままルーティングを切り替えています。
+`next-intl` v4 を用いて **4言語**（日本語・英語・繁体字・簡体字）に対応。SSG/ISR を維持したままロケールルーティングを切り替えています。
 
 ### ルーティング構造
 
 ```
-/                          → app/page.tsx（日本語ホーム）
-/en                        → app/[locale]/page.tsx（英語ホーム、locale="en"）
-/reports/tokyo/shinjuku    → app/[locale]/reports/[pref]/[city]/page.tsx（日本語）
-/en/reports/tokyo/shinjuku → app/[locale]/reports/[pref]/[city]/page.tsx（英語）
-/terms, /privacy, /about, /licenses → app/[locale]/... でロケール対応済み
+/                              → app/[locale]/page.tsx (ja, デフォルト)
+/en                            → app/[locale]/page.tsx (en)
+/zh-TW                         → app/[locale]/page.tsx (zh-TW)
+/zh-CN                         → app/[locale]/page.tsx (zh-CN)
+/blog/<slug>                   → app/[locale]/blog/[slug]/page.tsx (ja)
+/en/blog/<slug>                → 〃 (en)
+/reports/tokyo/shinjuku        → app/[locale]/reports/[pref]/[city]/page.tsx (ja, ISR 24h)
+/en/reports/tokyo/shinjuku     → 〃 (en, ISR 24h)
 ```
 
-`next.config.ts` の `i18n` 設定と `middleware.ts` で `/en` プレフィックスを自動付与します。
+`frontend/proxy.ts`（Next.js 16 の proxy 規約）が `next-intl` のミドルウェアをラップ。
+`/api/*`、静的アセット、`/reports/[pref]/[city]`（SSG維持のため）はマッチャから除外。
 
 ### バックエンド API の多言語対応
 
-フロントエンドから API を呼ぶ際に `locale` パラメータを付与します。
-
 ```typescript
-// frontend/lib/api.ts
 const res = await fetch(`${getApiBase()}/api/property/transactions?lat=...&locale=${locale}`);
 ```
 
-バックエンドはこの `locale` を受け取り、Gemini へのプロンプトを切り替えます。
-
-```typescript
-// backend/src/services/geminiApi.ts
-const report = locale === "en" ? await buildPromptEn(data) : await buildPromptJa(data);
-```
-
-生成されたレポートは GCS へ **ロケール別キー** で独立してキャッシュされます。
-
-```
-z15/x29100/y12901/ja   ← 日本語レポート
-z15/x29100/y12901/en   ← 英語レポート（独立して保持）
-```
-
-> **言語ミスマッチ検出**: 旧キャッシュが誤ったロケールで保存されていた場合、
-> レポート冒頭80文字の日本語文字数（≥10文字）を判定してミスマッチを検出し、
-> Gemini に再生成を依頼します（`backend/src/routes/property.ts`）。
+GCS キャッシュは **ロケール別キー** で独立保持（`z15/x29100/y12901/ja`, `.../en`）。
+旧キャッシュが誤ったロケールで保存されていた場合は冒頭80文字の日本語文字数（≥10）でミスマッチを検出し、再生成を依頼します。
 
 ### API クライアントの絶対パス要件
 
-クライアントコンポーネントからバックエンドを呼ぶ際は **必ず `getApiBase()` で絶対パスを使用** してください。
-
 ```typescript
-// ✅ 正しい（frontend/lib/api.ts）
-export function getApiBase(): string {
-  return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
-}
+// ✅ 正しい — 絶対パス必須
 fetch(`${getApiBase()}/api/property/transactions?...`);
 
-// ❌ NG — 相対パスは /en/api/... に解決されて 404 になる
+// ❌ NG — /en/api/... に解決されて 404
 fetch(`/api/property/transactions?...`);
 ```
 
+`getApiBase()` は `NEXT_PUBLIC_API_URL` → `window.location.origin` → `NEXT_PUBLIC_SITE_URL` → `http://localhost:3000` の優先順位で解決します。
+
 ### CORS とローカル開発
 
-バックエンドの CORS 設定では、`ALLOWED_ORIGINS` に指定した本番ドメインに加えて、
-**ローカル開発用の `http://localhost:3000` と `http://localhost:3001` を常に追加** しています。
-
-```typescript
-// backend/src/index.ts
-const devOrigins = ["http://localhost:3000", "http://localhost:3001", "http://localhost:8080"];
-const effectiveOrigins = allowedOrigins.length > 0 ? [...allowedOrigins, ...devOrigins] : [];
-```
-
-これにより、`.env` の `ALLOWED_ORIGINS` を本番ドメイン限定に設定した状態でも、
-ローカル開発で `Failed to fetch` エラーが発生しません。
+バックエンドは `ALLOWED_ORIGINS`（本番ドメイン）に加え、`http://localhost:3000` / `:3001` / `:8080` を常に許可。`.env` を本番ドメイン限定にしていてもローカルで `Failed to fetch` にならない設計。
 
 ---
 
@@ -350,7 +598,7 @@ const effectiveOrigins = allowedOrigins.length > 0 ? [...allowedOrigins, ...devO
 
 ### HTTP セキュリティヘッダー（フロントエンド・バックエンド両対応）
 
-`next.config.ts` の `headers()` と Hono の `secureHeaders()` ミドルウェアにより、全ルートに以下のヘッダーを出力しています。
+`next.config.ts` の `headers()` と Hono の `secureHeaders()` ミドルウェアにより、全ルートに以下を出力。
 
 | ヘッダー | 値 | 目的 |
 |---|---|---|
@@ -358,32 +606,61 @@ const effectiveOrigins = allowedOrigins.length > 0 ? [...allowedOrigins, ...devO
 | `X-Content-Type-Options` | `nosniff` | MIME タイプスニッフィング防止 |
 | `X-Frame-Options` | `SAMEORIGIN` | クリックジャッキング防止 |
 | `X-XSS-Protection` | `1; mode=block` | レガシーブラウザ向け XSS フィルター |
-| `Referrer-Policy` | `strict-origin-when-cross-origin` | リファラー情報の漏洩制御 |
-| `Permissions-Policy` | `camera=(), microphone=(), geolocation=()` | 不要なブラウザ API の無効化 |
-| `Content-Security-Policy` | 下記参照 | リソース読み込み元の厳格なホワイトリスト制御 |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` | リファラー漏洩制御 |
+| `Permissions-Policy` | `camera=(), microphone=()` | 不要なブラウザ API 無効化 |
+| `Content-Security-Policy` | 下記参照 | リソース読み込み元の厳格制御 |
 
-#### Content-Security-Policy（CSP）設計
+### Content-Security-Policy（CSP）設計方針
 
-外部サービスを壊さないよう、アーキテクチャに合わせて以下ドメインを許可しています。
+**`frontend/next.config.ts`** で構築。アーキテクチャの全コンポーネントが連携できるよう、必要最小限のドメインだけを許可するホワイトリスト方式を採用。dev 環境のみ `http://localhost:8080` / `:3001` を `connect-src` に追加。
 
 | ディレクティブ | 許可ドメイン | 理由 |
 |---|---|---|
-| `connect-src` | `*.googleapis.com`, `*.firebaseio.com`, `wss://*.firebaseio.com` | Firebase Auth / Firestore / Storage |
-| `connect-src` | `us.i.posthog.com` | PostHog アクセス解析 |
-| `connect-src` | `*.run.app` | Cloud Run バックエンド API |
-| `img-src` | `lh3.googleusercontent.com` | Google アカウント プロフィール写真 |
-| `img-src` | `cyberjapandata.gsi.go.jp`, `maps.gsi.go.jp` | 国土地理院 地図タイル |
-| `img-src` | `firebasestorage.googleapis.com` | Firebase Storage 生成画像 |
-| `frame-src` | `accounts.google.com` | Google OAuth ポップアップ |
-| `font-src` | `fonts.gstatic.com` | Google Fonts |
+| `default-src` | `'self'` | 既定はオリジン同一のみ |
+| `script-src` | `'self' 'unsafe-inline' 'unsafe-eval'` | Next.js / Tailwind / Firebase SDK の動的スクリプト |
+| 〃 | `apis.google.com`, `www.gstatic.com` | Firebase Auth 動的スクリプト・Google API |
+| 〃 | `us-assets.i.posthog.com` | PostHog アセット |
+| 〃 | `assets.lemonsqueezy.com` | Lemon Squeezy チェックアウト |
+| 〃 | `www.googletagmanager.com`, `www.google-analytics.com` | GTM + GA4 |
+| `style-src` | `'self' 'unsafe-inline'` | Tailwind / CSS-in-JS |
+| 〃 | `fonts.googleapis.com`, `assets.lemonsqueezy.com` | フォント・LS UI |
+| `img-src` | `'self' data: blob:` | base64・blob URL（PDF生成・OGP） |
+| 〃 | `lh3.googleusercontent.com` | Google プロフィール写真 |
+| 〃 | `firebasestorage.googleapis.com` | Firebase Storage 生成画像 |
+| 〃 | `cyberjapandata.gsi.go.jp`, `maps.gsi.go.jp` | 国土地理院 地図タイル |
+| 〃 | `assets.lemonsqueezy.com` | Lemon Squeezy 画像 |
+| 〃 | `www.googletagmanager.com`, `www.google-analytics.com`, `*.google-analytics.com`, `analytics.google.com`, `www.google.com` | GTM / GA4 ピクセルビーコン |
+| 〃 | `*.omtrdc.net`, `*.sc.omtrdc.net`, `*.2o7.net` | **Adobe Analytics** ビーコン |
+| 〃 | `*.tile.openstreetmap.org` | OSM タイル（fallback） |
+| `font-src` | `'self'`, `fonts.gstatic.com`, `assets.lemonsqueezy.com` | Google Fonts / LS フォント |
+| `connect-src` | `'self'` | XHR/fetch/WebSocket オリジン |
+| 〃 | `*.googleapis.com`, `identitytoolkit.googleapis.com`, `securetoken.googleapis.com`, `firestore.googleapis.com`, `firebasestorage.googleapis.com`, `storage.googleapis.com` | Firebase / GCS |
+| 〃 | `*.firebaseio.com`, `wss://*.firebaseio.com`, `*.firebaseapp.com` | Firebase Realtime / Auth iframe |
+| 〃 | `*.a.run.app`, `*.run.app` | **Cloud Run バックエンド** API（asia-northeast1 は `*.a.run.app` 形式） |
+| 〃 | `us.i.posthog.com`, `us-assets.i.posthog.com` | PostHog ingestion |
+| 〃 | `msearch.gsi.go.jp`, `mreversegeocoder.gsi.go.jp` | 国土地理院 検索/逆ジオコーディング |
+| 〃 | `app.lemonsqueezy.com`, `api.lemonsqueezy.com` | LS チェックアウト + API |
+| 〃 | `www.googletagmanager.com`, `www.google-analytics.com`, `*.google-analytics.com`, `analytics.google.com`, `www.google.com`, `region1.google-analytics.com` | **GTM + GA4** データ収集（リージョン分割対応） |
+| 〃 | `*.omtrdc.net`, `*.sc.omtrdc.net`, `*.2o7.net` | **Adobe Analytics** データ収集 |
+| 〃 | `*.tile.openstreetmap.org` | MapLibre OSM タイル fetch |
+| `frame-src` | `'self'` | iframe 同一オリジン |
+| 〃 | `accounts.google.com` | Google OAuth ポップアップ |
+| 〃 | `*.firebaseapp.com` | Firebase Auth hidden iframe |
+| 〃 | `app.lemonsqueezy.com` | LS チェックアウト iframe |
+| 〃 | `www.googletagmanager.com` | GTM noscript iframe |
+| `worker-src` | `'self' blob:` | Service Worker / blob ワーカー |
+| `object-src` | `'none'` | プラグイン全面禁止 |
+| `base-uri` | `'self'` | `<base>` タグ改ざん防止 |
+
+> **GTM / GA4 / Adobe Analytics の追加経緯**: c0441b6 (2026-05-06) で Google + Adobe Analytics 用ドメインを CSP に正式追加。`*.omtrdc.net` は `*.sc.omtrdc.net` を内包するが、明示性のため両方記載しています。
 
 ### 認証・認可
 
 | 対策 | 実装内容 |
 |---|---|
-| **Lemon Squeezy Checkout の認証強化** | Firebase ID Token をヘッダー（`Authorization: Bearer <token>`）で受け取り、サーバー側で `admin.auth().verifyIdToken()` を使って検証。検証済み UID のみチェックアウトセッションを作成可能 |
-| **Lemon Squeezy Webhook 署名検証** | `HMAC-SHA256` + `crypto.timingSafeEqual()` による署名検証を実装。`x-signature` ヘッダーが不一致の場合は `400` を返却。改ざんされたイベントでプランが書き換えられることを防止 |
-| **Firebase Authentication** | Google OAuth 2.0 のみ対応。パスワードを自社で管理しないセキュアな認証基盤 |
+| **Lemon Squeezy Checkout の認証強化** | Firebase ID Token を `Authorization: Bearer` で受け取り、サーバー側で `admin.auth().verifyIdToken()` で検証。検証済み UID のみチェックアウトセッションを作成可能 |
+| **Lemon Squeezy Webhook 署名検証** | `HMAC-SHA256` + `crypto.timingSafeEqual()` による署名検証。`x-signature` 不一致時は `400`。改ざんされたイベントでプランが書き換えられることを防止 |
+| **Firebase Authentication** | Google OAuth 2.0 のみ。パスワードを自社管理しない |
 
 ### Firestore Security Rules（デプロイ済み）
 
@@ -397,44 +674,36 @@ allow delete : 禁止
 // その他すべて — デフォルト拒否
 ```
 
-`diff().affectedKeys()` を用いたフィールドレベルの書き込み制御により、クライアントが直接 `plan: "pro"` に書き換えることを防止しています。
+`diff().affectedKeys()` を用いたフィールドレベルの書き込み制御により、クライアントが直接 `plan: "pro"` に書き換えることを防止。
 
 ### ネットワーク・API セキュリティ
 
 | 対策 | 実装内容 |
 |---|---|
-| **CORS 設定** | 本番環境では `ALLOWED_ORIGINS` 環境変数で許可ドメインを厳格に制限。未設定時は起動ログで警告を出力 |
-| **IP ベースのレートリミット** | 15分間に100リクエスト超過で `429 Too Many Requests` を返却。ボット・総当たり攻撃を防止 |
-| **PostHog Webhook 署名検証** | `X-Webhook-Secret` ヘッダー必須化。未設定時は `503`、不一致時は `401` を返却（サイレントスキップを廃止） |
-| **ヘルスチェックエンドポイント** | `/health` から `env` フィールドを削除。内部環境情報の漏洩を防止 |
-
-### パフォーマンス・課金防御
-
-| 対策 | 実装内容 |
-|---|---|
-| **GCS API レスポンスキャッシュ** | 同一座標・ズームレベルへの重複リクエストを GCS にキャッシュ（TTL 30日）。MLIT API への二重コールと Gemini 生成コストを削減 |
-| **モックデータの完全排除** | 本番コードパスからモックデータを削除。API キー未設定時は `503`、API 障害時は `502` を返却し、架空データでのレスポンスを防止 |
-| **エラーハンドリング明確化** | ハザード・環境情報の取得失敗時は空データを返却。Gemini 生成失敗時は `undefined` を返却し、フロントエンドで適切に表示 |
+| **CORS 設定** | 本番では `ALLOWED_ORIGINS` 環境変数で許可ドメインを厳格制限。未設定時は起動ログで警告 |
+| **IPベースのレートリミット** | 15分間に100req超で `429` |
+| **PostHog Webhook 署名検証** | `X-Webhook-Secret` 必須化。未設定時 `503`、不一致時 `401` |
+| **ヘルスチェックエンドポイント** | `/health` から `env` フィールドを削除（内部情報漏洩防止） |
 
 ### PCI DSS / カード情報の非保持
 
-決済はすべて **Lemon Squeezy Checkout** にリダイレクトして行います。カード番号・有効期限・CVC などの決済情報は自社サーバー・データベースでは一切処理・保持しない設計（PCI DSS SAQ A 相当）。
+決済はすべて **Lemon Squeezy Checkout** にリダイレクト。カード情報は自社サーバーで一切処理・保持しない（PCI DSS SAQ A 相当）。
 
 ### XSS・インジェクション対策
 
-- Next.js の React 自動エスケープにより XSS を防止
-- Zod によるバックエンド入力バリデーション（型・範囲チェック）
-- Cloud Run（フルマネージド）上で動作。OS パッチ適用・コンテナ分離・IAM によるリソースアクセス制御を Google が管理
+- Next.js の React 自動エスケープ
+- Zod によるバックエンド入力バリデーション
+- Cloud Run（フルマネージド）上で動作。OS パッチ・コンテナ分離・IAM は Google が管理
 
 ### リーガル・コンプライアンス
 
 | 対応事項 | 詳細 |
 |---|---|
-| **生成 AI 免責事項** | AI レポート・生成画像は参考情報であることを UI と PDF に明記 |
-| **国交省データクレジット** | CC BY 4.0 ライセンスに基づき「国土交通省 不動産情報ライブラリ」のクレジットをフッターに常時表示 |
-| **改正電気通信事業法（外部送信規律）対応** | Firebase Analytics・PostHog・Stripe 等の外部送信について `/privacy` ページに開示 |
-| **OSS ライセンス一覧** | `/licenses` ページで使用ライブラリのライセンスを自動生成・一覧表示 |
-| **利用規約 / プライバシーポリシー** | `/terms`・`/privacy` ページを公開。フッターから常時アクセス可能 |
+| **生成 AI 免責事項** | AIレポート・生成画像は参考情報であることを UI と PDF に明記 |
+| **国交省データクレジット** | CC BY 4.0 ライセンスに基づきフッターに常時表示 |
+| **改正電気通信事業法（外部送信規律）対応** | Firebase / PostHog / GA4 / Adobe / LS 等の外部送信を `/privacy` で開示 |
+| **OSS ライセンス一覧** | `/licenses` で自動生成・一覧表示 |
+| **利用規約 / プライバシーポリシー** | `/terms` / `/privacy` をフッターから常時アクセス可能 |
 
 ---
 
@@ -442,7 +711,7 @@ allow delete : 禁止
 
 ### プログラマティック SEO（`/reports/[pref]/[city]`）
 
-全国の主要エリアを対象に、静的パス生成（`generateStaticParams`）と ISR（24時間 revalidate）を組み合わせたエリア別レポートページを実装しています。
+`generateStaticParams` + ISR（24時間 revalidate）で全国主要33エリアのレポートページを生成。
 
 | 都道府県 | 対象エリア数 |
 |---|---|
@@ -451,22 +720,19 @@ allow delete : 禁止
 | 大阪府 | 4 |
 | 計 | **33エリア** |
 
-### sitemap.xml（計38エントリ）
+### sitemap.xml
 
-`/app/sitemap.ts` が `NEXT_PUBLIC_SITE_URL`（未設定時: `https://mekiki-research.com`）をベースに自動生成します。
+`/app/sitemap.ts` が `NEXT_PUBLIC_SITE_URL` をベースに自動生成。記事URLは `frontend/content/blog/` の Markdown を読み取って動的に追加されます。
 
 | 種別 | パス | priority |
 |---|---|---|
 | トップページ | `/` | 1.0 |
 | サービス紹介 | `/about` | 0.8 |
-| 動的エリアページ | `/reports/[pref]/[city]` × 33件 | 0.7 |
+| 動的エリアページ | `/reports/[pref]/[city]` × 33 | 0.7 |
+| ブログ記事 | `/blog/<slug>` × N（4言語ぶん） | 0.6 |
 | 法的ページ | `/terms`, `/privacy`, `/licenses` | 0.2〜0.3 |
 
-```bash
-# sitemap の確認
-curl https://mekiki-research.com/sitemap.xml | grep "<loc>" | wc -l
-# → 38
-```
+`deploy.yml` のデプロイ後ステップで Google Ping（廃止 API のため非致命的）+ IndexNow（Bing/Yandex）を発火。
 
 ---
 
@@ -474,39 +740,90 @@ curl https://mekiki-research.com/sitemap.xml | grep "<loc>" | wc -l
 
 ### Playwright E2E テスト — 本番ドメイン対象
 
-`frontend/tests/production_e2e.spec.ts` に、**本番環境 `https://mekiki-research.com` を対象**とした E2E テストスイートを実装しています。
+`frontend/tests/production_e2e.spec.ts` に、本番環境 `https://mekiki-research.com` を対象とした14シナリオを実装。
 
 ```bash
 cd frontend
 npx playwright test tests/production_e2e.spec.ts --reporter=list
 ```
 
-#### テストスイート構成
+主要シナリオ：
 
-| シナリオ | テスト内容 | ステータス |
+- ホーム / about / terms / privacy / licenses の HTTP 200 + 主要見出しの存在確認
+- フッターリンクの遷移確認（terms/privacy）
+- ゲスト1回検索 → 結果表示（最大120秒タイムアウト：Cloud Run コールドスタート + MLIT API + Gemini 生成の合計を考慮）
+- ゲスト2回目 → `PlanComparisonModal` 表示
+- メタデータ（OGP・title）確認
+
+### ブログ生成スクリプトのローカル検証
+
+```bash
+# ドライラン（API を呼ばずプロンプト構成のみ確認）
+BLOG_DRY_RUN=1 node scripts/generate_daily_blog.js
+
+# 実行（GEMINI_API_KEY 必須・実 API を叩く）
+GEMINI_API_KEY=... node scripts/generate_daily_blog.js
+
+# 日付を指定して既存ファイルとの衝突を回避
+BLOG_DATE=2026-12-31 GEMINI_API_KEY=... node scripts/generate_daily_blog.js
+```
+
+---
+
+## 🔑 環境変数と GitHub Secrets
+
+### GitHub Secrets（Settings → Secrets and variables → Actions）
+
+| Secret 名 | 設定先ワークフロー | 目的 |
 |---|---|---|
-| **シナリオA** トップページ | HTTP 200 応答・主要 UI 要素の存在確認 | ✅ PASS |
-| **シナリオA** トップページ | `<title>` に「物件目利きリサーチ」が含まれること | ✅ PASS |
-| **シナリオB** `/about` | HTTP 200・見出し「精密調査」の存在確認 | ✅ PASS |
-| **シナリオB** `/terms` | HTTP 200・見出し「利用規約」の存在確認 | ✅ PASS |
-| **シナリオB** `/privacy` | HTTP 200・見出し「プライバシーポリシー」の存在確認 | ✅ PASS |
-| **シナリオB** `/licenses` | HTTP 200・見出し「オープンソースライセンス」の存在確認 | ✅ PASS |
-| **シナリオB** フッターリンク | 利用規約リンク → `/terms` 遷移 | ✅ PASS |
-| **シナリオB** フッターリンク | プライバシーポリシーリンク → `/privacy` 遷移 | ✅ PASS |
-| **シナリオC** ゲスト検索 | 1回目の検索で結果が表示されること（最大120秒） | ✅ PASS |
-| **シナリオC** ゲスト上限 | 2回目の検索でプランモーダル（PlanComparisonModal）が表示されること | ✅ PASS |
-| **シナリオC** PlanComparisonModal | プラン比較テーブル・アップグレード CTA が揃っていること | ✅ PASS |
-| **メタデータ** OGP | トップページの `og:title` が設定されていること | ✅ PASS |
-| **メタデータ** `/terms` | `<title>` が「利用規約 \| 物件目利きリサーチ」形式であること | ✅ PASS |
-| **メタデータ** `/privacy` | `<title>` が「プライバシーポリシー \| 物件目利きリサーチ」形式であること | ✅ PASS |
+| **`PAT_TOKEN`** | `generate-blog.yml` | repo + workflow スコープの Personal Access Token。デフォルトの `GITHUB_TOKEN` では他ワークフローを連鎖トリガーできない仕様への対処。push 後に `deploy.yml` を発火させるために必須 |
+| **`GEMINI_API_KEY`** | `generate-blog.yml` | Gemini 2.5 Pro 呼び出し用 API キー（記事生成・翻訳） |
+| `GCP_SA_KEY` | `deploy.yml` | Cloud Run / Artifact Registry / Cloud Build へのデプロイ権限を持つサービスアカウントの JSON キー |
+| `GCP_PROJECT_ID` | `deploy.yml` | GCP プロジェクト ID |
+| `GCP_REGION` | `deploy.yml` | デプロイリージョン（`asia-northeast1`） |
+| `NEXT_PUBLIC_API_URL` | `deploy.yml` | バックエンド Cloud Run の URL（ビルド時にバンドル焼き込み） |
+| `NEXT_PUBLIC_SITE_URL` | `deploy.yml` | 本番サイトURL（OGP / sitemap / canonical 用） |
+| `NEXT_PUBLIC_FIREBASE_API_KEY` 他 | `deploy.yml` | Firebase Web SDK 設定 7変数 |
+| `NEXT_PUBLIC_POSTHOG_KEY` | `deploy.yml` | PostHog プロジェクトキー |
+| `ESTAT_API_KEY` | `deploy.yml` | e-Stat API 人口動態スコア用（オプション） |
+| `INDEXNOW_KEY` | `deploy.yml` | IndexNow（Bing/Yandex）の認証キー（オプション） |
+| `X_API_KEY` 他 | `x_post.yml` (無効化中) | X Developer の Consumer/Access Token 4種（復活時のみ必要） |
+| `GITHUB_TOKEN` | `auto_merge_blog.yml`, `blog_check.yml` | デフォルト発行。明示設定不要 |
 
-**全14シナリオ PASS** 確認済み（検証日: 2026-03-30）
+### バックエンド環境変数（Cloud Run の `--env-vars-file`）
 
-#### テスト設計上の留意点
+| 変数名 | 必須 | 用途 |
+|---|---|---|
+| `GCP_PROJECT_ID` | ✅ | GCP プロジェクト |
+| `GCP_REGION` | ✅ | リージョン |
+| `GCS_CACHE_BUCKET` | ✅ | キャッシュ用バケット |
+| `MLIT_API_KEY` | ✅ | 国交省 不動産情報ライブラリ API |
+| `MLIT_API_BASE_URL` | ✅ | `https://www.reinfolib.mlit.go.jp/ex-api/external` |
+| `GEMINI_API_KEY` | ✅ | エリア分析・画像プロンプト生成 |
+| `FIREBASE_PROJECT_ID` | △ | 省略時 `GCP_PROJECT_ID` を使用 |
+| `ALLOWED_ORIGINS` | ✅ | CORS 許可ドメイン（カンマ区切り） |
+| `CACHE_TTL_DAYS` | △ | 既定 30 |
+| `LEMONSQUEEZY_API_KEY` | ✅ | LS REST API |
+| `LEMONSQUEEZY_STORE_ID` | ✅ | LS ストア |
+| `LEMONSQUEEZY_VARIANT_ID` | ✅ | Pro プランのバリアント |
+| `LEMONSQUEEZY_WEBHOOK_SECRET` | ✅ | HMAC-SHA256 署名検証 |
+| `LEMONSQUEEZY_SUCCESS_URL` | ✅ | 決済完了リダイレクト先 |
+| `POSTHOG_WEBHOOK_SECRET` | ✅ | PostHog Webhook 署名検証 |
+| `ESTAT_API_KEY` | △ | 人口動態スコア（未設定時はフォールバック） |
+| `PORT` | ❌ | Cloud Run 予約変数のため指定禁止 |
 
-- シナリオC（ゲスト検索）は Cloud Run コールドスタート + MLIT API + Gemini 生成の合計時間を考慮し、テスト単体タイムアウトを120秒に設定
-- `waitForFunction(fn, undefined, { timeout: 90_000 })` で Playwright の引数順（`pageFunction`, `arg?`, `options?`）を正しく指定
-- ゲスト利用制限は localStorage キー `guest_last_search_date` で管理。テスト前に `page.evaluate()` でリセット
+### 自動化スクリプトの環境変数
+
+`scripts/generate_daily_blog.js` で利用：
+
+| 変数名 | 必須 | 既定値 | 用途 |
+|---|---|---|---|
+| `GEMINI_API_KEY` | ✅ | — | Gemini 2.5 Pro |
+| `GEMINI_MODEL` | ❌ | `gemini-2.5-pro` | モデル切替 |
+| `BLOG_DATE` | ❌ | JST 本日 | 対象日上書き |
+| `BLOG_DRY_RUN` | ❌ | — | `1` で API 呼び出しスキップ |
+| `BLOG_API_BASE_URL` | ❌ | `https://realestate-api-2hctlfcy6a-an.a.run.app` | 実データ取得先 |
+| `BLOG_SITE_BASE_URL` | ❌ | `https://mekiki-research.com` | CTA リンクのドメイン |
 
 ---
 
@@ -518,87 +835,39 @@ npx playwright test tests/production_e2e.spec.ts --reporter=list
 - GCP プロジェクト（Cloud Run / GCS / Artifact Registry 有効化済み）
 - Firebase プロジェクト（Auth / Firestore / Storage 有効化済み）
 
-### 1. リポジトリのクローン
+### 1. クローン + 環境変数
 
 ```bash
 git clone <repo-url>
 cd real-estate-report-system
+cp .env.example .env                           # ルート（バックエンド・スクリプト用）
+cp frontend/.env.local.example frontend/.env.local
+# 各値を埋める
 ```
 
-### 2. 環境変数の設定
-
-プロジェクトルートに `.env` を作成（`.env.example` を参照）:
+### 2. バックエンド起動
 
 ```bash
-# GCP
-GCP_PROJECT_ID=your-project-id
-GCP_REGION=asia-northeast1
-GCS_CACHE_BUCKET=your-cache-bucket-name
-
-# 国土交通省 不動産情報ライブラリ API
-MLIT_API_KEY=your-mlit-api-key
-MLIT_API_BASE_URL=https://www.reinfolib.mlit.go.jp/ex-api/external
-
-# Gemini / Imagen API
-GEMINI_API_KEY=your-gemini-api-key
-
-# Firebase
-FIREBASE_PROJECT_ID=your-firebase-project-id
-
-# フロントエンドが参照するバックエンド URL（Cloud Run デプロイ後に取得）
-NEXT_PUBLIC_API_URL=https://your-backend-url.run.app
-
-# 本番サイト URL（sitemap.xml / OGP に使用）
-NEXT_PUBLIC_SITE_URL=https://mekiki-research.com
-
-# Lemon Squeezy 決済
-LEMONSQUEEZY_API_KEY=your-ls-api-key
-LEMONSQUEEZY_STORE_ID=your-store-id
-LEMONSQUEEZY_VARIANT_ID=your-variant-id
-LEMONSQUEEZY_WEBHOOK_SECRET=your-webhook-secret
-LEMONSQUEEZY_SUCCESS_URL=https://mekiki-research.com/?payment=success
-
-# PostHog
-POSTHOG_WEBHOOK_SECRET=your-webhook-secret
-
-# CORS（本番ドメインをカンマ区切りで指定）
-ALLOWED_ORIGINS=https://mekiki-research.com
+cd backend && npm install && npm run dev   # http://localhost:8080
 ```
 
-フロントエンドのローカル開発用に `frontend/.env.local` を作成:
+### 3. フロントエンド起動
 
 ```bash
-NEXT_PUBLIC_API_URL=http://localhost:8080
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
-
-NEXT_PUBLIC_FIREBASE_API_KEY=your-key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
-NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
+cd frontend && npm install && npm run dev  # http://localhost:3000
 ```
 
-### 3. バックエンドの起動
+### 4. ブログ生成スクリプトの動作確認
 
 ```bash
-cd backend
-npm install
-npm run dev       # http://localhost:8080 で起動
-```
-
-### 4. フロントエンドの起動
-
-```bash
-cd frontend
-npm install
-npm run dev       # http://localhost:3000 で起動
+# プロジェクトルートから
+BLOG_DRY_RUN=1 node scripts/generate_daily_blog.js  # 構成確認のみ
+GEMINI_API_KEY=... node scripts/generate_daily_blog.js  # 実際に1記事生成
 ```
 
 ### 5. Firestore Security Rules のデプロイ
 
 ```bash
-# firebase.json が存在することを確認してから実行
 npx firebase-tools@latest deploy --only firestore:rules --project your-project-id
 ```
 
@@ -606,40 +875,25 @@ npx firebase-tools@latest deploy --only firestore:rules --project your-project-i
 
 ## 🚀 Cloud Run へのデプロイ
 
-### バックエンド
+### バックエンド（手動）
 
 ```bash
 bash scripts/deploy.sh
 ```
 
-`deploy.sh` は `.env` を読み込み、Docker ビルド → Artifact Registry プッシュ → Cloud Run デプロイまで一括で行います。
+`deploy.sh` は `.env` を読み込み、Docker ビルド → Artifact Registry プッシュ → Cloud Run デプロイまで一括。
 
-> **⚠️ 環境変数の更新だけ行いたい場合**
+> **環境変数の更新だけ行いたい場合**
 >
-> `--set-env-vars` は **指定した変数だけに置き換え（他は消える）** ため危険です。
-> 代わりに `--env-vars-file` を使ってください。`PORT` は Cloud Run 予約変数のため除外が必要です。
+> `--set-env-vars` は **指定変数だけに置き換え（他は消える）** ため危険です。`--env-vars-file` を使ってください。`PORT` は Cloud Run 予約変数のため除外が必要です。
 >
 > ```bash
 > source .env
 > cat > /tmp/backend_env.yaml <<YAML
 > GCP_PROJECT_ID: "${GCP_PROJECT_ID}"
-> GCP_REGION: "${GCP_REGION}"
 > GCS_CACHE_BUCKET: "${GCS_CACHE_BUCKET}"
-> BQ_DATASET: "${BQ_DATASET}"
-> BQ_TABLE: "${BQ_TABLE}"
-> NODE_ENV: "${NODE_ENV}"
-> CACHE_TTL_DAYS: "${CACHE_TTL_DAYS}"
 > MLIT_API_KEY: "${MLIT_API_KEY}"
-> MLIT_API_BASE_URL: "${MLIT_API_BASE_URL}"
-> GEMINI_API_KEY: "${GEMINI_API_KEY}"
-> FIREBASE_PROJECT_ID: "${FIREBASE_PROJECT_ID}"
-> POSTHOG_WEBHOOK_SECRET: "${POSTHOG_WEBHOOK_SECRET}"
-> ALLOWED_ORIGINS: "${ALLOWED_ORIGINS}"
-> LEMONSQUEEZY_API_KEY: "${LEMONSQUEEZY_API_KEY}"
-> LEMONSQUEEZY_STORE_ID: "${LEMONSQUEEZY_STORE_ID}"
-> LEMONSQUEEZY_VARIANT_ID: "${LEMONSQUEEZY_VARIANT_ID}"
-> LEMONSQUEEZY_WEBHOOK_SECRET: "${LEMONSQUEEZY_WEBHOOK_SECRET}"
-> LEMONSQUEEZY_SUCCESS_URL: "${LEMONSQUEEZY_SUCCESS_URL}"
+> # ... 他必須変数を YAML に列挙
 > YAML
 >
 > gcloud run services update realestate-api \
@@ -647,53 +901,35 @@ bash scripts/deploy.sh
 >   --env-vars-file /tmp/backend_env.yaml
 > ```
 
-### フロントエンド
+### フロントエンド（自動・GitHub Actions）
+
+`frontend/**` への push をトリガーに `deploy.yml` が実行されます。手動デプロイする場合：
 
 ```bash
+gh workflow run deploy.yml
+# または
 source .env
 bash scripts/deploy_frontend.sh
 ```
 
-> **Note**: `NEXT_PUBLIC_*` はビルド時に JS バンドルへ焼き込まれるため、Cloud Run の実行時環境変数では反映されません。必ず Cloud Build のビルド引数として渡してください（`scripts/deploy_frontend.sh` 参照）。
+> **Note**: `NEXT_PUBLIC_*` はビルド時バンドル焼き込みのため、Cloud Run の実行時環境変数では反映されません。必ず Cloud Build の substitution として渡してください（`scripts/deploy_frontend.sh` 参照）。
 
 ---
 
 ## 💰 Artifact Registry コスト最適化
 
-デプロイのたびに `:latest` タグが新しいイメージへ移動し、古いイメージはタグなし（untagged）で蓄積されます。
-放置すると Artifact Registry のストレージ料金が継続的に増加するため、**クリーンアップポリシー**を設定しています。
+`:latest` タグの移動で蓄積される untagged イメージのストレージ料金を抑えるため、クリーンアップポリシーを適用しています。
 
-### 対象リポジトリ
-
-| リポジトリ | ロケーション | 用途 |
-|---|---|---|
-| `realestate-api` | `asia-northeast1` | `backend:latest` と `frontend:latest` イメージ |
-| `cloud-run-source-deploy` | `asia-northeast1` | Cloud Run ソースデプロイ用自動生成イメージ |
-
-### 適用ポリシー（2ルール）
-
-| ルール名 | アクション | 条件 |
-|---|---|---|
-| `keep-5-most-recent` | **保持** | 各パッケージの最新5バージョンを常に保持（ロールバック用） |
-| `delete-old-untagged` | **削除** | タグなし（untagged）かつ作成から1日（86400秒）以上経過したイメージ |
-
-### ポリシーの再適用方法
-
-設定変更が必要な場合は以下のコマンドを実行してください。
+| ポリシー | 動作 |
+|---|---|
+| `keep-5-most-recent` | 各パッケージの最新5バージョンを常に保持 |
+| `delete-old-untagged` | タグなし & 86400秒（1日）以上経過したイメージを削除 |
 
 ```bash
 cat > /tmp/cleanup-policy.json <<'EOF'
 [
-  {
-    "name": "keep-5-most-recent",
-    "action": { "type": "Keep" },
-    "mostRecentVersions": { "keepCount": 5 }
-  },
-  {
-    "name": "delete-old-untagged",
-    "action": { "type": "Delete" },
-    "condition": { "tagState": "untagged", "olderThan": "86400s" }
-  }
+  { "name": "keep-5-most-recent", "action": { "type": "Keep" }, "mostRecentVersions": { "keepCount": 5 } },
+  { "name": "delete-old-untagged", "action": { "type": "Delete" }, "condition": { "tagState": "untagged", "olderThan": "86400s" } }
 ]
 EOF
 
@@ -706,39 +942,27 @@ for REPO in realestate-api cloud-run-source-deploy; do
 done
 ```
 
-> GCP がクリーンアップを実行するタイミングはプラットフォーム側のスケジュール依存ですが、通常は数時間以内に古いイメージが自動削除されます。
-
 ---
 
 ## 💳 Lemon Squeezy 決済の運用手順
-
-### 現在の状態
-
-**Lemon Squeezy による Pro プラン（¥980/月）は本番稼働中です。**
-
-- フロントエンド: `PlanComparisonModal.tsx` — 決済フローに一本化済み（ウェイトリストフォーム廃止）
-- バックエンド: `POST /api/lemonsqueezy/create-checkout`・`POST /api/lemonsqueezy/webhook` 稼働中
-- SDK: `@lemonsqueezy/lemonsqueezy.js` v4
 
 ### 決済フロー
 
 ```
 [Free ユーザー]
-  → ヘッダー「Pro にアップグレード」ボタン または プランモーダルの CTA ボタンをクリック
-  → バックエンド POST /api/lemonsqueezy/create-checkout （Firebase ID Token 認証）
+  → 「Pro にアップグレード」ボタン または プランモーダル CTA をクリック
+  → POST /api/lemonsqueezy/create-checkout（Firebase ID Token 認証）
   → Lemon Squeezy Checkout ページにリダイレクト
   → 決済完了
-  → Lemon Squeezy が Webhook を送信
-  → バックエンド POST /api/lemonsqueezy/webhook
-    - HMAC-SHA256 署名検証（x-signature ヘッダー）
-    - subscription_created / subscription_updated → Firestore users/{uid}.plan = "pro"
-    - subscription_expired / subscription_cancelled → Firestore users/{uid}.plan = "free"
-  → ユーザーのヘッダーバッジが Free → Pro に変わり、全機能が解放される
+  → Lemon Squeezy が Webhook 送信
+  → POST /api/lemonsqueezy/webhook
+    - HMAC-SHA256 署名検証（x-signature）
+    - subscription_created / subscription_updated → users/{uid}.plan = "pro"
+    - subscription_expired / subscription_cancelled → users/{uid}.plan = "free"
+  → ヘッダーバッジが Free → Pro に変わり、全機能が解放される
 ```
 
-### Lemon Squeezy ダッシュボードの設定
-
-Webhook は以下の URL・イベントで登録してください。
+### Lemon Squeezy ダッシュボード設定
 
 | 項目 | 値 |
 |---|---|
@@ -746,9 +970,7 @@ Webhook は以下の URL・イベントで登録してください。
 | Signing Secret | `.env` の `LEMONSQUEEZY_WEBHOOK_SECRET` と一致させる |
 | イベント | `subscription_created`, `subscription_updated`, `subscription_expired`, `subscription_cancelled` |
 
-### キーの更新手順
-
-API キーや Variant ID を変更する場合は `--update-env-vars` で個別更新してください。
+### キーの更新
 
 ```bash
 gcloud run services update realestate-api \
@@ -756,12 +978,9 @@ gcloud run services update realestate-api \
   --update-env-vars="LEMONSQUEEZY_API_KEY=新しいキー,LEMONSQUEEZY_WEBHOOK_SECRET=新しいSecret"
 ```
 
-### ローカルでの Webhook テスト（開発時）
-
-[Lemon Squeezy CLI](https://docs.lemonsqueezy.com/guides/developer-guide/webhooks) または curl でシミュレーションできます。
+### ローカルでの Webhook テスト
 
 ```bash
-# 署名を生成してローカルのバックエンドに送信するサンプル
 PAYLOAD='{"meta":{"event_name":"subscription_created","custom_data":{"uid":"YOUR_FIREBASE_UID"}},"data":{"id":"sub_xxx","attributes":{"status":"active","customer_id":123}}}'
 SECRET="your-webhook-secret"
 SIG=$(echo -n "$PAYLOAD" | openssl dgst -sha256 -hmac "$SECRET" | awk '{print $2}')
@@ -777,86 +996,93 @@ curl -X POST http://localhost:8080/api/lemonsqueezy/webhook \
 
 ```
 real-estate-report-system/
+├── .github/
+│   └── workflows/
+│       ├── generate-blog.yml           # 毎朝7時のブログ自動生成（PAT_TOKENで連鎖デプロイ）
+│       ├── deploy.yml                  # Cloud Build + Cloud Run デプロイ + sitemap ping
+│       ├── auto_merge_blog.yml         # claude/* PR の自動マージ（旧経路救済）
+│       ├── blog_check.yml              # 当日記事の存在確認 → 未生成時は Issue 起票
+│       └── x_post.yml                  # X 自動投稿（DISABLED 2026-05-09）
 ├── backend/
 │   └── src/
-│       ├── index.ts                  # Hono エントリーポイント・secureHeaders・CORS・レートリミット
-│       ├── config.ts                 # 環境変数設定
+│       ├── index.ts                    # Hono エントリ・secureHeaders・CORS・レートリミット
+│       ├── config.ts                   # 環境変数設定
 │       ├── routes/
-│       │   ├── property.ts           # /api/property/* ルート定義
-│       │   ├── lemonsqueezy.ts       # Lemon Squeezy Checkout / Webhook（ID Token 認証 + HMAC-SHA256 署名検証）
-│       │   ├── posthog.ts            # PostHog Webhook（署名検証付き）
-│       │   └── waitlist.ts           # ウェイトリスト登録
+│       │   ├── property.ts             # /api/property/* — 取引データ・画像生成
+│       │   ├── lemonsqueezy.ts         # Checkout + Webhook（ID Token + HMAC-SHA256）
+│       │   ├── posthog.ts              # PostHog Webhook（署名検証）
+│       │   └── waitlist.ts             # 旧ウェイトリスト（廃止予定）
 │       ├── services/
-│       │   ├── mlitApi.ts            # 国交省 API クライアント
-│       │   ├── geminiApi.ts          # Gemini エリア分析レポート生成
-│       │   ├── imagenApi.ts          # 2段階画像生成パイプライン
-│       │   └── gcsCache.ts           # GCS キャッシュ管理（30日 TTL）
+│       │   ├── mlitApi.ts              # 国交省 API クライアント
+│       │   ├── geminiApi.ts            # Gemini エリア分析レポート生成
+│       │   ├── imagenApi.ts            # 2段階画像生成パイプライン
+│       │   └── gcsCache.ts             # GCS キャッシュ（30日 TTL・ロケール別キー）
 │       └── utils/
-│           ├── geocode.ts            # 逆ジオコーディング (GSI)
-│           └── tile.ts               # タイル座標変換
+│           ├── geocode.ts              # 逆ジオコーディング (GSI)
+│           └── tile.ts                 # タイル座標変換
 ├── frontend/
 │   ├── app/
-│   │   ├── page.tsx                  # 日本語ホームページ
-│   │   ├── HomeClient.tsx            # メインページクライアントコンポーネント
-│   │   ├── sitemap.ts                # sitemap.xml 自動生成（静的5件 + 動的33件 = 38件）
-│   │   ├── [locale]/                 # next-intl ロケール対応ルート（en / ja）
-│   │   │   ├── page.tsx              # 英語ホームページ (/en)
-│   │   │   ├── reports/[pref]/[city]/# エリア別 SEO ページ（ISR 24h・全33エリア）
-│   │   │   ├── about/                # サービス紹介ページ（日英）
-│   │   │   ├── terms/                # 利用規約（日英）
-│   │   │   ├── privacy/              # プライバシーポリシー（日英）
-│   │   │   └── licenses/             # OSS ライセンス一覧（日英）
-│   │   └── layout.tsx
-│   ├── components/
-│   │   ├── AiReport.tsx              # AI レポートアコーディオン + 暮らしイメージ生成 UI
-│   │   ├── PlanComparisonModal.tsx   # 料金プラン比較 / Lemon Squeezy チェックアウト（決済導線一本化・ウェイトリスト廃止済み）
-│   │   ├── PriceTrendChart.tsx       # 価格推移グラフ (Recharts)
-│   │   ├── TransactionTable.tsx      # 取引事例テーブル
-│   │   ├── SummaryCards.tsx          # 価格サマリー + ハザードカード
-│   │   ├── EnvironmentInfo.tsx       # 生活環境情報カード
-│   │   ├── SearchForm.tsx            # 検索フォーム + Leaflet 地図
-│   │   ├── HistoryList.tsx           # 検索履歴一覧（フローティング）
-│   │   └── WaitlistModal.tsx         # 旧ウェイトリスト登録モーダル（廃止・未使用）
-│   ├── messages/
-│   │   ├── ja.json                   # 日本語翻訳リソース（全ページ・全コンポーネント対応）
-│   │   └── en.json                   # 英語翻訳リソース
+│   │   ├── HomeClient.tsx              # ?lat=&lng= で自動検索する着地ロジック
+│   │   ├── api/
+│   │   │   ├── og/route.tsx            # トップページ用 OGP 画像生成
+│   │   │   ├── og/blog/route.tsx       # ブログ記事用 OGP 画像生成
+│   │   │   ├── research-og/route.tsx   # research ページ用 OGP
+│   │   │   ├── sitemap/route.ts        # sitemap.xml（rewrites でルーティング）
+│   │   │   └── robots/route.ts         # robots.txt
+│   │   ├── [locale]/
+│   │   │   ├── page.tsx                # ホーム（4ロケール対応）
+│   │   │   ├── blog/page.tsx           # ブログ一覧
+│   │   │   ├── blog/[slug]/page.tsx    # ブログ詳細（hreflang/canonical/JSON-LD）
+│   │   │   ├── reports/[pref]/[city]/  # エリア別 SEO ページ（ISR 24h・全33エリア）
+│   │   │   ├── research/               # β版機能ページ
+│   │   │   ├── about/, terms/, privacy/, licenses/
+│   │   │   └── layout.tsx
+│   │   └── ...
+│   ├── content/
+│   │   └── blog/                       # YYYY-MM-DD-<slug>.{,en,zh-TW,zh-CN}.md
+│   ├── components/                     # AiReport / SearchForm / PlanComparisonModal 等
+│   ├── messages/{ja,en,zh-TW,zh-CN}.json   # next-intl 翻訳辞書
 │   ├── lib/
-│   │   ├── api.ts                    # バックエンド API クライアント（getApiBase() 絶対パス・locale 対応）
-│   │   ├── areas.ts                  # エリアマスターデータ（SEO・sitemap・ページ生成に使用）
-│   │   ├── firebase.ts               # Firebase 初期化
-│   │   ├── gtag.ts                   # GA4 イベント送信ユーティリティ（gtagEvent / gtagPurchase）
-│   │   ├── analytics.ts              # GTM dataLayer ユーティリティ（dataLayerPush）
-│   │   ├── history.ts                # Firestore 履歴 CRUD + Storage 画像保存
-│   │   ├── userPlan.ts               # プラン判定・ゲスト利用制限管理
-│   │   ├── geocode.ts                # GSI ジオコーディング
-│   │   └── exportPdf.ts              # PDF エクスポート
-│   ├── next.config.ts                # HTTP セキュリティヘッダー（CSP / HSTS 等）設定
-│   └── tests/
-│       └── production_e2e.spec.ts    # Playwright E2E テスト（本番ドメイン・14シナリオ全 PASS）
-├── terraform/                        # GCP インフラ IaC（Cloud Run / GCS / Artifact Registry）
+│   │   ├── api.ts                      # getApiBase() + fetchTransactions() 等
+│   │   ├── blog/                       # ブログ Markdown ローダー + マップスタイル
+│   │   ├── research/                   # 人口動態 / 地震 / 類似検索 (β機能)
+│   │   ├── geo/, links/, parsers/, schemas/, scoring/, debug/
+│   │   ├── firebase.ts, gtag.ts, analytics.ts, posthog.ts
+│   │   ├── userPlan.ts                 # プラン判定・ゲスト制限
+│   │   └── exportPdf.ts                # PDF エクスポート
+│   ├── proxy.ts                        # next-intl ロケールルーティング
+│   ├── next.config.ts                  # CSP / HSTS / rewrites（sitemap・robots）
+│   ├── cloudbuild.yaml                 # Cloud Build substitution 定義
+│   └── tests/production_e2e.spec.ts    # Playwright E2E（本番ドメイン・14シナリオ）
 ├── scripts/
-│   ├── deploy_frontend.sh            # フロントエンドビルド + Cloud Run デプロイ
-│   └── deploy.sh                     # バックエンドデプロイ（Cloud Build 利用推奨）
+│   ├── generate_daily_blog.js          # ブログ自動生成（Gemini + 実データ + 地域分散）
+│   ├── post_to_x.js                    # X 自動投稿（無効化中）
+│   ├── deploy.sh                       # バックエンド手動デプロイ
+│   ├── deploy_frontend.sh              # フロントエンド手動デプロイ
+│   ├── terraform_apply.sh              # Terraform 適用ヘルパー
+│   └── test_local.sh                   # ローカル疎通テスト
+├── terraform/                          # GCP IaC（Cloud Run / GCS / Artifact Registry / IAM）
 ├── marketing/
-│   ├── launch_tweets.md              # X（Twitter）ローンチ告知ツイートツリー（初回）
-│   ├── beta_launch_tweets.md         # X（Twitter）Stripe BAN → 無料ベータ公開告知ツイートツリー
-│   ├── note_story.md                 # note.com 開発ストーリー記事ドラフト（初回）
-│   ├── note_beta_story.md            # note.com Stripe BAN エピソード記事ドラフト
-│   └── waitlist_emails.md            # ウェイトリスト登録者向けメール文面
-├── firestore.rules                   # Firestore Security Rules（デプロイ済み）
-├── firebase.json                     # Firebase CLI 設定
-├── .env.example                      # 環境変数テンプレート
-└── README.md
+│   ├── x_promotions.json               # X 投稿文面プール（再開時に使用）
+│   ├── launch_tweets.md, beta_launch_tweets.md
+│   ├── note_story.md, note_beta_story.md
+│   └── waitlist_emails.md
+├── firestore.rules                     # Firestore Security Rules
+├── firebase.json                       # Firebase CLI 設定
+├── .env.example                        # ルート環境変数テンプレート
+├── package.json                        # `post:x` / `generate:blog` npm scripts
+└── README.md                           # 本ファイル
 ```
 
 ---
 
 ## 📝 注意事項
 
-- 取引データ・AI レポートはすべて参考情報です。投資判断・購入判断の際は必ず最新の公式情報をご確認ください。
+- 取引データ・AI レポート・自動生成ブログ記事はすべて参考情報です。投資判断・購入判断の際は必ず最新の公式情報をご確認ください。
 - 暮らしのイメージ画像は AI が生成した架空のイメージであり、実際の物件・街並みとは異なります。
 - 国土交通省 不動産情報ライブラリ API の利用には API キーの申請が必要です（無料）。
 - Gemini API / Imagen API の利用料金は Google AI Studio の料金体系に従います。
+- ブログ自動生成は1日1記事 × 4言語 = 4ファイルを Gemini 2.5 Pro で呼び出すため、`GEMINI_API_KEY` の課金枠に余裕を持たせてください。
 
 ---
 
