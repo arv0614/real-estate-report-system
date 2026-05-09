@@ -44,7 +44,7 @@ const SLUG_LABELS: Record<
     blogLabel: "ブログ",
     serviceName: "物件目利きリサーチ",
     targetArea: "対象エリア",
-    analyzeCta: "β 版でこのエリアを調べる →",
+    analyzeCta: "このエリアの相場を調べる →",
     ctaTitle: "物件目利きリサーチを無料で試してみましょう",
     ctaDesc:
       "住所を入力するだけで、相場・ハザードリスク・AIレポートが30秒で確認できます",
@@ -59,7 +59,7 @@ const SLUG_LABELS: Record<
     blogLabel: "Blog",
     serviceName: "Mekiki Research",
     targetArea: "Target Area",
-    analyzeCta: "Analyze this area in β →",
+    analyzeCta: "Analyze this area's market →",
     ctaTitle: "Try Mekiki Research for free",
     ctaDesc:
       "Enter any address in Japan — get price data, hazard risk, and an AI area report in 30 seconds.",
@@ -74,7 +74,7 @@ const SLUG_LABELS: Record<
     blogLabel: "部落格",
     serviceName: "物件目利研究",
     targetArea: "對象區域",
-    analyzeCta: "用 β 版調查此區域 →",
+    analyzeCta: "查詢此區域的行情 →",
     ctaTitle: "免費試用物件目利研究",
     ctaDesc: "只需輸入地址,30 秒即可確認行情、災害風險與 AI 報告。",
     ctaBtn: "免費調查 →",
@@ -88,7 +88,7 @@ const SLUG_LABELS: Record<
     blogLabel: "博客",
     serviceName: "物件目利研究",
     targetArea: "目标区域",
-    analyzeCta: "用 β 版调查此区域 →",
+    analyzeCta: "查询此区域的行情 →",
     ctaTitle: "免费试用物件目利研究",
     ctaDesc: "只需输入地址,30 秒即可确认行情、灾害风险与 AI 报告。",
     ctaBtn: "免费调查 →",
@@ -223,9 +223,15 @@ export default async function BlogPostPage({ params }: Props) {
 
   const loc = post.primaryLocation;
   const localePrefix = locale === "ja" ? "" : `/${locale}`;
+  // 本番トップページに座標パラメータを渡す形式に統一（ベータ版 /research ではなく
+  // 本番フローへ直接ランディングさせ、HomeClient が自動で検索を発火する）。
   const researchHref = loc
-    ? `${localePrefix}/research?lat=${loc.lat}&lng=${loc.lng}&type=mansion`
+    ? `${localePrefix}/?lat=${loc.lat}&lng=${loc.lng}`
     : null;
+  // 末尾CTA: 記事に座標があれば同じく座標付きで遷移、なければ素の home へ。
+  const bottomCtaHref = loc
+    ? `${localePrefix}/?lat=${loc.lat}&lng=${loc.lng}`
+    : homeHref;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -333,7 +339,7 @@ export default async function BlogPostPage({ params }: Props) {
           <p className="font-bold text-slate-800 mb-1">{labels.ctaTitle}</p>
           <p className="text-sm text-slate-600 mb-4">{labels.ctaDesc}</p>
           <Link
-            href={homeHref}
+            href={bottomCtaHref}
             className="inline-block bg-blue-600 text-white font-semibold text-sm px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-colors"
           >
             {labels.ctaBtn}
