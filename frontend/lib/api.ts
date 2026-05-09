@@ -47,10 +47,52 @@ export async function fetchTransactions(
   return res.json();
 }
 
+/**
+ * area フィールドを ㎡ の数値に正規化する。
+ * - number → そのまま（>0 のときのみ採用）
+ * - 文字列 (例: "50", "2000以上", "65.5", "  ") → parseFloat で先頭の数値部分を抽出
+ *   ※ MLIT 国交省API は超大規模区画を「2000以上」とバケットして返すケースがある。
+ *     `parseFloat("2000以上")` は 2000 を返すため、保守的に下限値として採用する。
+ * - null / undefined / 空文字 / 数値化できない → null
+ */
+export function parseArea(area: number | string | null | undefined): number | null {
+  if (area == null) return null;
+  if (typeof area === "number") {
+    return Number.isFinite(area) && area > 0 ? area : null;
+  }
+  const trimmed = String(area).trim();
+  if (!trimmed) return null;
+  const n = parseFloat(trimmed);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/**
+ * 1レコードの平米単価 (円/㎡) を解決する。
+ *
+ *  - 「宅地(土地)」: API の `unitPrice` を最優先 (MLIT が公示する公式値)。
+ *    fallback として tradePrice / area を使う (土地のみで unitPrice が欠損していた場合)。
+ *  - それ以外 (中古マンション・宅地土地建物・農地・林地): API は `unitPrice` を
+ *    返さない (MLIT が建物込みの単価を公示しないため)。tradePrice / area で算出する。
+ *
+ * 計算不能な場合は null を返す。
+ */
+export function resolveUnitPrice(record: TransactionRecord): number | null {
+  // 「宅地(土地)」は API の値を優先 (公式単価・端数なし)
+  if (record.type === "宅地(土地)" && record.unitPrice && record.unitPrice > 0) {
+    return record.unitPrice;
+  }
+  // それ以外、または土地で API 値が欠損していた場合: tradePrice / area で算出
+  if (!record.tradePrice || record.tradePrice <= 0) return null;
+  const area = parseArea(record.area);
+  if (!area) return null;
+  return Math.round(record.tradePrice / area);
+}
+
 export function calcSummary(records: TransactionRecord[]): TransactionSummary {
   const prices = records.map((r) => r.tradePrice).filter((p) => p > 0);
+  // 平米単価は 種別ごとに「APIのunitPrice or tradePrice/area」で解決して集計
   const unitPrices = records
-    .map((r) => r.unitPrice)
+    .map(resolveUnitPrice)
     .filter((v): v is number => v !== null && v > 0);
 
   const avg = (arr: number[]) =>

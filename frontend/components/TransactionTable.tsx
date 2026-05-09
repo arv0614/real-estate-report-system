@@ -11,7 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatPrice, formatUnitPrice } from "@/lib/api";
+import { formatPrice, formatUnitPrice, resolveUnitPrice } from "@/lib/api";
 import type { TransactionRecord } from "@/types/api";
 
 // Filter values stay in Japanese to match API data (r.type is always Japanese from MLIT)
@@ -195,7 +195,12 @@ export function TransactionTable({ records, isPdfExporting = false, autoDistrict
                       {r.area?.toLocaleString() ?? "—"}
                     </TableCell>
                     <TableCell className="text-right tabular-nums text-slate-600">
-                      {r.unitPrice ? formatUnitPrice(r.unitPrice, locale).replace("/㎡", "") : "—"}
+                      {(() => {
+                        // 宅地(土地) 以外は tradePrice/area で動的算出。
+                        // resolveUnitPrice() がロジックを一元化している。
+                        const u = resolveUnitPrice(r);
+                        return u ? formatUnitPrice(u, locale).replace("/㎡", "") : "—";
+                      })()}
                     </TableCell>
                     <TableCell className="tabular-nums text-slate-600">
                       {r.buildingYear ? t("buildYear", { year: r.buildingYear }) : "—"}
