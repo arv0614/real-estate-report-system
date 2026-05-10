@@ -198,12 +198,7 @@ export default async function LocaleAreaReportPage({ params }: PageProps) {
             <h2 className="text-base font-semibold text-slate-700 mb-3">
               {t("sectionPrice")}
             </h2>
-            <SummaryCards
-              summary={summary}
-              hazard={hazard}
-              prefecture={isEn ? area.prefectureEn : area.prefecture}
-              municipality={cityLabel}
-            />
+            <SummaryCards summary={summary} hazard={hazard} />
           </section>
         )}
 

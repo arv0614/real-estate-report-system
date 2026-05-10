@@ -172,12 +172,7 @@ export default async function AreaReportPage({ params }: PageProps) {
             <h2 className="text-base font-semibold text-slate-700 mb-3">
               取引価格サマリー
             </h2>
-            <SummaryCards
-              summary={summary}
-              hazard={hazard}
-              prefecture={area.prefecture}
-              municipality={area.city}
-            />
+            <SummaryCards summary={summary} hazard={hazard} />
           </section>
         )}
 

@@ -211,8 +211,13 @@
     "displayingAll": "全種別 {count} 件の統計",
     "displayingFiltered": "「{type}」{count} 件のみの統計"
   },
+  "DistrictFilter": {
+    "label": "地区名",
+    "all": "すべての地区",
+    "ariaLabel": "地区名を選択"
+  },
   "SummaryCards": {
-    "scopeTransaction": "※ 取引価格データは {prefecture}{municipality}（市区町村単位）の直近5年分を集計しています。",
+    "scopeTransaction": "※ 以下の集計値およびグラフは、地図中心周辺のデータから、選択された「地区名」および「物件種別」に一致する取引のみを抽出して算出しています。",
     "scopeArea": "※ ハザード／生活環境／気象データは地図ピンを中心とした約1.2km四方のタイル区画に基づきます。",
     "dataCount": "データ件数",
     "dataCountValue": "{count} 件",

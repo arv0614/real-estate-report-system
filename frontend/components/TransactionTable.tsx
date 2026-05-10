@@ -14,18 +14,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SourceLink } from "@/components/SourceLink";
 import { formatPrice, formatUnitPrice, parseArea, resolveUnitPrice } from "@/lib/api";
 import type { TransactionRecord } from "@/types/api";
-import { ALL_TYPE, type PropertyTypeValue } from "@/components/PropertyTypeFilter";
 
 const COLUMN_COUNT = 9;
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 type PageSizeOption = (typeof PAGE_SIZE_OPTIONS)[number];
 
 interface Props {
+  /**
+   * 表示するレコード集合。HomeClient で物件種別 + 地区名フィルタを適用済みの
+   * filteredRecords が渡される想定。テーブルは追加の絞り込みを行わずソート／
+   * ページングのみ担当する。
+   */
   records: TransactionRecord[];
-  /** ページ全体のグローバル種別フィルタ。"すべて" のときは全種別を表示。 */
-  propertyTypeFilter: PropertyTypeValue;
   isPdfExporting?: boolean;
-  autoDistrict?: string;
 }
 
 /** "YYYY年第N四半期" → ソートキー（大きい値=新しい） */
@@ -170,28 +171,20 @@ function SortableHead({ label, sortKey, sorts, onClick, align = "left", widthCla
 
 export function TransactionTable({
   records,
-  propertyTypeFilter,
   isPdfExporting = false,
-  autoDistrict,
 }: Props) {
   const t = useTranslations("TransactionTable");
   const locale = useLocale();
-  const [districtFilter, setDistrictFilter] = useState("");
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState<PageSizeOption>(20);
   // マルチソート: 配列の先頭が第一ソート、2要素目が第二ソート。
   // デフォルト: 取引時期 (新しい順) → 築年 (新しい順)
   const [sorts, setSorts] = useState<Sort[]>(DEFAULT_SORTS);
 
-  useEffect(() => {
-    setDistrictFilter(autoDistrict ?? "");
-    setPage(0);
-  }, [autoDistrict]);
-
-  // グローバル種別フィルタが変わったらページもリセット（薄いレイヤだが UX 改善）
+  // 上位フィルタが変わって records が差し替わったらページを 1 ページ目に戻す
   useEffect(() => {
     setPage(0);
-  }, [propertyTypeFilter]);
+  }, [records]);
 
   function handleSort(key: SortKey) {
     setSorts((prev) => {
@@ -210,35 +203,17 @@ export function TransactionTable({
     setPage(0);
   }
 
-  function handleDistrictChange(d: string) {
-    setDistrictFilter(d);
-    setPage(0);
-  }
-
-  const districtOptions = useMemo(() => {
-    const names = Array.from(
-      new Set(records.map((r) => r.districtName).filter((d): d is string => !!d))
-    );
-    return names.sort((a, b) => a.localeCompare(b, "ja"));
-  }, [records]);
-
   const sortedFiltered = useMemo(() => {
-    // ① グローバル種別フィルタ + 地区フィルタ
-    const base = records.filter((r) => {
-      const typeMatch = propertyTypeFilter === ALL_TYPE || r.type === propertyTypeFilter;
-      const districtMatch = districtFilter === "" || r.districtName === districtFilter;
-      return typeMatch && districtMatch;
-    });
-    // ② sorts 配列の順に第一→第二と評価。それでも同値なら period DESC を最終フォールバック。
-    return [...base].sort((a, b) => {
+    // records は上位 (HomeClient) で物件種別 + 地区名のフィルタ適用済み。
+    // ここでは sorts 配列の順に第一→第二と評価し、同値なら period DESC をフォールバック。
+    return [...records].sort((a, b) => {
       for (const s of sorts) {
         const cmp = compareSorted(a, b, s.key, s.dir);
         if (cmp !== 0) return cmp;
       }
-      // ユーザー指定ソートで決着しない場合の暗黙のフォールバック
       return periodSortKey(b.period) - periodSortKey(a.period);
     });
-  }, [records, propertyTypeFilter, districtFilter, sorts]);
+  }, [records, sorts]);
 
   const totalPages = Math.ceil(sortedFiltered.length / pageSize);
   const effectivePage = isPdfExporting ? 0 : page;
@@ -278,17 +253,7 @@ export function TransactionTable({
                 ))}
               </select>
 
-              {/* 地区名フィルター（種別フィルタはページ上部の PropertyTypeFilter に統合済み） */}
-              <select
-                value={districtFilter}
-                onChange={(e) => handleDistrictChange(e.target.value)}
-                className="text-xs px-2 py-1 rounded border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 focus:outline-none focus:ring-1 focus:ring-blue-400"
-              >
-                <option value="">{t("allDistricts")}</option>
-                {districtOptions.map((d) => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
-              </select>
+              {/* 地区名 + 物件種別フィルタはページ上部にグローバル化済み */}
             </div>
           )}
         </div>

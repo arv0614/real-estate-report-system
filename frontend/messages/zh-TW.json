@@ -211,8 +211,13 @@
     "displayingAll": "全部種別共 {count} 筆的統計",
     "displayingFiltered": "僅「{type}」{count} 筆的統計"
   },
+  "DistrictFilter": {
+    "label": "地區",
+    "all": "所有地區",
+    "ariaLabel": "選擇地區"
+  },
   "SummaryCards": {
-    "scopeTransaction": "※ 成交價資料為 {prefecture}{municipality}（行政區單位）近 5 年的全部成交事例彙整。",
+    "scopeTransaction": "※ 以下統計值與圖表，僅從地圖中心周邊資料中抽取符合所選「地區」與「物件種別」的成交案例彙整而成。",
     "scopeArea": "※ 災害／生活環境／氣候資料為以地圖標記為中心約 1.2km 見方的圖磚範圍。",
     "dataCount": "資料筆數",
     "dataCountValue": "{count} 筆",

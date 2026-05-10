@@ -211,8 +211,13 @@
     "displayingAll": "Statistics for all types ({count} records)",
     "displayingFiltered": "{type} only ({count} records)"
   },
+  "DistrictFilter": {
+    "label": "District",
+    "all": "All districts",
+    "ariaLabel": "Select district"
+  },
   "SummaryCards": {
-    "scopeTransaction": "※ Transaction figures cover the last 5 years across {prefecture}{municipality} (municipality-wide).",
+    "scopeTransaction": "* The figures and charts below are computed from transactions around the map centre that match the selected District and Property Type filters.",
     "scopeArea": "※ Hazard / living environment / weather data are pulled from a roughly 1.2 km square tile centred on the map pin.",
     "dataCount": "Records",
     "dataCountValue": "{count}",

@@ -104,6 +104,8 @@ function HomePageContent() {
 
   const [pdfExportOptions, setPdfExportOptions] = useState<PdfExportOptions>(DEFAULT_PDF_OPTIONS);
   const [propertyTypeFilter, setPropertyTypeFilter] = useState<PropertyTypeValue>(ALL_TYPE);
+  /** 地区名フィルタ。"" は全地区。result 取得時 autoDistrict が一致すれば自動選択。 */
+  const [districtFilter, setDistrictFilter] = useState<string>("");
 
   // URLパラメータ (?lat=&lng=) でランディング時の挙動:
   //   - 検索バーの lat / lng と地図ピンに座標を反映するだけに留める
@@ -433,12 +435,30 @@ function HomePageContent() {
     [result]
   );
 
+  // result から取得できる地区名一覧（重複除去 + 五十音順）
+  const districtOptions = useMemo<string[]>(() => {
+    if (!result) return [];
+    const names = Array.from(
+      new Set(
+        result.data.data
+          .map((r) => r.districtName)
+          .filter((d): d is string => typeof d === "string" && d.length > 0)
+      )
+    );
+    return names.sort((a, b) => a.localeCompare(b, "ja"));
+  }, [result]);
+
   // フィルタ適用後のレコード（フロントで再集計するため API は再リクエストしない）
+  // 物件種別 + 地区名の AND 条件で抽出。SummaryCards / PriceTrendChart / TransactionTable
+  // 全てがこの集合を共有する。
   const filteredRecords = useMemo(() => {
     if (!result) return [];
-    if (propertyTypeFilter === ALL_TYPE) return result.data.data;
-    return result.data.data.filter((r) => r.type === propertyTypeFilter);
-  }, [result, propertyTypeFilter]);
+    return result.data.data.filter((r) => {
+      const typeMatch = propertyTypeFilter === ALL_TYPE || r.type === propertyTypeFilter;
+      const districtMatch = districtFilter === "" || r.districtName === districtFilter;
+      return typeMatch && districtMatch;
+    });
+  }, [result, propertyTypeFilter, districtFilter]);
 
   // SummaryCards 表示用: 選択された種別だけで再集計
   const summary = useMemo(
@@ -452,6 +472,18 @@ function HomePageContent() {
   useEffect(() => {
     setPropertyTypeFilter(ALL_TYPE);
   }, [result?.cacheKey, result?.fetchedAt]);
+
+  // 検索結果と autoDistrict が揃ったら、自動検出された地区を初期選択にする。
+  // ただし autoDistrict が実データの districtOptions に含まれていない場合は
+  // "すべて"（"") にフォールバック。
+  useEffect(() => {
+    if (!result) return;
+    if (autoDistrict && districtOptions.includes(autoDistrict)) {
+      setDistrictFilter(autoDistrict);
+    } else {
+      setDistrictFilter("");
+    }
+  }, [result?.cacheKey, result?.fetchedAt, autoDistrict, districtOptions]);
 
   /** OGP用の総合スコアをハザード情報から簡易計算（0-100） */
   const ogScore = useMemo(() => {
@@ -824,9 +856,11 @@ function HomePageContent() {
                 </div>
               )}
 
-              {/* 種別フィルタ（PDF出力時は非表示）*/}
+              {/* 種別 + 地区名フィルタ（PDF出力時は非表示）。
+                  どちらも HomeClient のグローバルステートで、SummaryCards / PriceTrendChart /
+                  TransactionTable はすべて filteredRecords を共有する。 */}
               {unfilteredSummary && unfilteredSummary.totalCount > 0 && (
-                <div className="pdf-hide">
+                <div className="pdf-hide space-y-2">
                   <PropertyTypeFilter
                     selected={propertyTypeFilter}
                     onChange={setPropertyTypeFilter}
@@ -834,21 +868,31 @@ function HomePageContent() {
                     totalCount={unfilteredSummary.totalCount}
                     filteredCount={summary?.totalCount ?? 0}
                   />
+                  {districtOptions.length > 0 && (
+                    <div className="flex items-center gap-2 px-1">
+                      <label htmlFor="districtFilter" className="text-xs font-medium text-slate-600">
+                        {t("DistrictFilter.label")}
+                      </label>
+                      <select
+                        id="districtFilter"
+                        aria-label={t("DistrictFilter.ariaLabel")}
+                        value={districtFilter}
+                        onChange={(e) => setDistrictFilter(e.target.value)}
+                        className="text-xs px-2 py-1 rounded border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                      >
+                        <option value="">{t("DistrictFilter.all")}</option>
+                        {districtOptions.map((d) => (
+                          <option key={d} value={d}>{d}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
               )}
 
               {/* 各セクション: pdfSections の設定に応じて pdf-hide を付与 */}
               <div className={pdfHide(pdfSections.summary)}>
-                <SummaryCards
-                  summary={summary}
-                  hazard={result.hazard}
-                  prefecture={result.data.data[0]?.prefecture ?? ""}
-                  municipality={
-                    result.data.data[0]?.municipality ??
-                    result.data.geocodedDistrict ??
-                    ""
-                  }
-                />
+                <SummaryCards summary={summary} hazard={result.hazard} />
               </div>
 
               {result.environment && (
@@ -891,10 +935,8 @@ function HomePageContent() {
 
               <div className={pdfHide(pdfSections.table)}>
                 <TransactionTable
-                  records={result.data.data}
-                  propertyTypeFilter={propertyTypeFilter}
+                  records={filteredRecords}
                   isPdfExporting={pdfLoading}
-                  autoDistrict={autoDistrict}
                 />
               </div>
 
