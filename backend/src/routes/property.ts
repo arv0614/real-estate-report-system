@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { readCache, writeCache } from "../services/gcsCache";
 import { fetchTransactionPrices, fetchHazardInfo, fetchEnvironmentInfo, type HazardInfo, type EnvironmentInfo } from "../services/mlitApi";
+import { fetchWeatherSummary, type WeatherSummary } from "../services/openMeteo";
 import { generateAreaReport, type AreaReportInput } from "../services/geminiApi";
 import { generateLifestyleImage } from "../services/imagenApi";
 import { config } from "../config";
@@ -23,6 +24,17 @@ const EMPTY_ENVIRONMENT: EnvironmentInfo = {
   medical: { count: 0, facilities: [] },
   station: { name: null, operator: null, dailyPassengers: null },
 };
+
+/** Open-Meteo 取得を堅牢化（失敗・タイムアウトは null にフォールバック） */
+async function safeFetchWeather(lat: number, lng: number): Promise<WeatherSummary | null> {
+  try {
+    return await fetchWeatherSummary(lat, lng);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`[Open-Meteo] fetch failed for (${lat}, ${lng}):`, msg);
+    return null;
+  }
+}
 
 const querySchema = z.object({
   lat: z.coerce.number().min(24).max(46),
@@ -80,10 +92,11 @@ app.get("/transactions", async (c) => {
     // 旧キャッシュ（year: number, 1年分のみ）はスキップして再取得
     const isOldFormat = typeof cachedApiData.year === "number" && !Array.isArray(cachedApiData.years);
     if (!isOldFormat) {
-      // hazard・environment は毎回フレッシュ取得（APIキーなし・失敗時は空データ）
-      const [hazard, environment] = await Promise.all([
+      // hazard・environment・weather は毎回フレッシュ取得（APIキーなし・失敗時は空 / null）
+      const [hazard, environment, weather] = await Promise.all([
         hasApiKey ? fetchHazardInfo(lat, lng).catch(() => EMPTY_HAZARD) : Promise.resolve(EMPTY_HAZARD),
         hasApiKey ? fetchEnvironmentInfo(lat, lng).catch(() => EMPTY_ENVIRONMENT) : Promise.resolve(EMPTY_ENVIRONMENT),
+        safeFetchWeather(lat, lng),
       ]);
 
       // AIレポート: キャッシュにあればそのまま使用、なければ生成してキャッシュを更新
@@ -111,6 +124,7 @@ app.get("/transactions", async (c) => {
           ...summary,
           hazard,
           environment,
+          weather,
           locale,
         };
         aiReport = await generateAreaReport(reportInput).catch((err) => {
@@ -130,6 +144,7 @@ app.get("/transactions", async (c) => {
         expiresAt: cached.expiresAt,
         hazard,
         environment,
+        weather,
         aiReport,
         data: cachedApiData,
       });
@@ -152,10 +167,11 @@ app.get("/transactions", async (c) => {
     return c.json({ error: "Failed to fetch transaction data", details: msg }, 502);
   }
 
-  // 3. ハザード・生活環境情報を並列取得（失敗時は空データ）
-  const [hazard, environment] = await Promise.all([
+  // 3. ハザード・生活環境・気象情報を並列取得（失敗時は空 / null）
+  const [hazard, environment, weather] = await Promise.all([
     fetchHazardInfo(lat, lng).catch((err) => { console.error("[Hazard API] fetch failed:", err); return EMPTY_HAZARD; }),
     fetchEnvironmentInfo(lat, lng).catch((err) => { console.error("[Environment API] fetch failed:", err); return EMPTY_ENVIRONMENT; }),
+    safeFetchWeather(lat, lng),
   ]);
 
   // 4. Gemini AIレポートを生成
@@ -169,6 +185,7 @@ app.get("/transactions", async (c) => {
     ...summary,
     hazard,
     environment,
+    weather,
     locale,
   };
   const aiReport = await generateAreaReport(reportInput).catch((err) => {
@@ -189,6 +206,7 @@ app.get("/transactions", async (c) => {
     expiresAt: null,
     hazard,
     environment,
+    weather,
     aiReport,
     data: apiData,
   });

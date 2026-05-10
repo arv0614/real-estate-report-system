@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { config } from "../config";
+import type { WeatherSummary } from "./openMeteo";
 
 // ============================================================
 // Gemini AIエリアレポート生成
@@ -27,6 +28,8 @@ export interface AreaReportInput {
     medical: { count: number };
     station: { name: string | null; operator: string | null; dailyPassengers: number | null };
   };
+  /** Open-Meteo による気象サマリー。取得失敗時は null */
+  weather?: WeatherSummary | null;
   locale?: string;
 }
 
@@ -41,7 +44,7 @@ function buildPromptJa(input: AreaReportInput): string {
   const {
     lat, lng, prefecture, municipality,
     years, totalCount, avgTradePrice, avgUnitPrice, minTradePrice, maxTradePrice,
-    hazard, environment,
+    hazard, environment, weather,
   } = input;
 
   const yearLabel = years.length === 1
@@ -67,6 +70,12 @@ function buildPromptJa(input: AreaReportInput): string {
 
   const toMan = (yen: number) => Math.round(yen / 10000).toLocaleString();
 
+  const weatherBlock = weather
+    ? `- 年間日照時間: 約${weather.annualSunshineHours.toLocaleString()}時間
+- 夏期（7〜8月）平均最高気温: ${weather.summerAvgMaxTemp}℃
+- 冬期（1〜2月）平均最低気温: ${weather.winterAvgMinTemp}℃`
+    : "- データ取得不可（気象APIから情報を取得できませんでした）";
+
   return `あなたは日本の不動産市場に20年以上携わってきた、経験豊富な不動産鑑定士兼熟練の不動産エージェントです。あなたの仕事は「物件の目利き」——数字だけでなく、街の空気感・歴史・住民層・将来性まで読み解き、顧客が本当に納得できる判断材料を提供することです。
 鑑定士としての客観的な市場分析と、エージェントとしての実務的な知見を兼ね備えた立場から、住宅購入を検討する顧客向けのエリア総合調査レポートをマークダウン形式で作成してください。
 文体は丁寧かつ専門的でありながら、不動産に詳しくない一般消費者にも明確に伝わる「重厚な目利きの見立て」を意識した表現を心がけてください。数字を並べるだけでなく、プロとしての解釈・判断・示唆を積極的に込めてください。
@@ -91,9 +100,17 @@ function buildPromptJa(input: AreaReportInput): string {
 - 洪水浸水想定: ${floodLabel}
 - 土砂災害警戒: ${landslideLabel}
 
+【気象サマリー（2025年・Open-Meteo Historical Weather）】
+${weatherBlock}
+
 ---
 
 以下の10項目を**必ずこの順序・見出しで**記述してください。
+さらに、本文の最後に **\`## 環境・省エネ適性\`** という見出しを追加してください。
+提供された気象サマリー（年間日照時間、夏期の最高気温、冬期の最低気温）を分析し、
+太陽光パネル設置の投資効率（日照時間に基づく）や、推奨される住宅の断熱性能
+（夏冬の気温に基づく冷暖房負荷）について、具体的かつ専門的なアドバイスを記述してください。
+気象データが取得できなかった場合は、その旨を明示し、一般的な留意点に絞って記述してください。
 
 ## 1. エリア総評
 
@@ -157,7 +174,7 @@ function buildPromptEn(input: AreaReportInput): string {
   const {
     lat, lng, prefecture, municipality,
     years, totalCount, avgTradePrice, avgUnitPrice, minTradePrice, maxTradePrice,
-    hazard, environment,
+    hazard, environment, weather,
   } = input;
 
   const yearLabel = years.length === 1
@@ -184,6 +201,12 @@ function buildPromptEn(input: AreaReportInput): string {
   const toM = (yen: number) => `¥${(yen / 1_000_000).toFixed(1)}M`;
   const toMSqm = (yen: number) => `¥${(yen / 1_000_000).toFixed(2)}M/㎡`;
 
+  const weatherBlock = weather
+    ? `- Annual sunshine hours: ~${weather.annualSunshineHours.toLocaleString()} h
+- Summer (Jul–Aug) average daily high: ${weather.summerAvgMaxTemp}°C
+- Winter (Jan–Feb) average daily low: ${weather.winterAvgMinTemp}°C`
+    : "- Weather data unavailable (Open-Meteo fetch failed)";
+
   return `You are an experienced Japanese real estate appraiser and senior property agent with over 20 years of expertise in the Japanese property market. Your role is to provide professional, insightful analysis that goes beyond raw numbers — capturing the character, history, demographics, and future potential of an area so buyers can make truly informed decisions.
 
 Please write a comprehensive area analysis report in Markdown format for a client considering purchasing property in this location. Write in professional yet accessible English for a general audience, including non-Japanese readers unfamiliar with the local market. Support every claim with data and professional judgment.
@@ -207,9 +230,17 @@ Please write a comprehensive area analysis report in Markdown format for a clien
 - Flood risk: ${floodLabel}
 - Landslide risk: ${landslideLabel}
 
+**Weather Summary (2025, Open-Meteo Historical Weather)**
+${weatherBlock}
+
 ---
 
-Write the following **10 sections in this exact order and with these exact headings**:
+Write the following **10 sections in this exact order and with these exact headings**.
+After section 10, append one additional section with the heading **\`## 環境・省エネ適性\`** (use this exact Japanese heading even in the English report).
+Analyze the provided weather summary (annual sunshine hours, summer peak temperatures, winter low temperatures) and give concrete, professional advice on:
+(a) the investment efficiency of installing solar panels (based on sunshine hours), and
+(b) recommended thermal insulation performance for the home (based on summer/winter heating & cooling loads).
+If the weather summary is unavailable, state so explicitly and limit the section to general guidance.
 
 ## 1. Area Overview
 
