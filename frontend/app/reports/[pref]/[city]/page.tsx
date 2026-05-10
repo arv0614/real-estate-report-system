@@ -74,7 +74,10 @@ async function fetchAreaData(
 
   try {
     // Cloud Run コールドスタート + MLIT/Gemini 生成を考慮して 90 秒タイムアウト
-    const res = await fetchWithTimeout(url, { next: { revalidate: 86400 } });
+    // ページレベルで revalidate=86400 が設定されているのでフェッチ単位のキャッシュは不要。
+    // また、市区町村によっては 5–14MB の JSON が返るため Next.js の 2MB キャッシュ上限に
+    // 引っかかってビルド時に大量の警告とメモリ圧迫を招くので明示的に no-store にする。
+    const res = await fetchWithTimeout(url, { cache: "no-store" });
     if (!res.ok) {
       console.warn(`[reports/${cityLabel}] API ${res.status}: ${res.statusText}`);
       return null;
