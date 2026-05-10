@@ -26,8 +26,16 @@ const SECTION_ICONS: Record<string, string> = {
   "7": "🔮",
   "8": "📊",
   "9": "🏠",
-  "10": "🤝",
+  "10": "🌱",
+  "11": "🤝",
 };
+
+/** タイトル文字列から特定セクション（環境・省エネ）を判定してアイコンを切り替える */
+function pickIcon(number: string, title: string): string {
+  if (/環境[・･]?省エネ|energy efficiency|省エネ適性/i.test(title)) return "🌱";
+  if (/不動産プロ|professional['’]?s perspective|professional perspective/i.test(title)) return "🤝";
+  return SECTION_ICONS[number] ?? "📋";
+}
 
 const IMAGE_KEY = "image";
 
@@ -40,23 +48,74 @@ function stripInlineMarkdown(text: string): string {
     .replace(/_([^_]+)_/g, "$1");
 }
 
-/** マークダウンを ## N. タイトル で分割してセクション配列に変換 */
+/**
+ * マークダウンを `## N. タイトル` または `## タイトル` で分割してセクション配列に変換。
+ *
+ * - モデルが先頭にレポート全体のタイトル（番号なし `## ...`）を付けた場合や、
+ *   `## 環境・省エネ適性` のように番号付け忘れが発生した場合でも壊れないよう、
+ *   番号付き見出しを優先して採用する。
+ * - 番号付き見出しが1つでも存在すれば、番号無しは「直前のセクションの本文」として連結する。
+ *   ただし、番号付き見出しがまだ登場していない位置の番号無し見出し（＝レポート冒頭タイトル）は無視する。
+ * - 番号付き見出しが1つも無い場合は、登場順 1..N で全見出しを採番してフォールバック。
+ */
 function parseSections(report: string): Section[] {
-  const sections: Section[] = [];
   const lines = report.split("\n");
-  let current: Section | null = null;
+  const headingRe = /^#{2,3}\s+(?:(\d+)[\.\):]\s+)?(.+?)\s*$/;
+
+  type ParsedHeading = { number: string | null; title: string };
+  const parsedLines: Array<{ kind: "heading"; h: ParsedHeading } | { kind: "text"; text: string }> = [];
+  let hasNumbered = false;
 
   for (const line of lines) {
-    const match = line.match(/^#{2,3} (\d+)\.\s+(.+)$/);
-    if (match) {
+    const m = line.match(headingRe);
+    if (m) {
+      const num = m[1] ?? null;
+      if (num) hasNumbered = true;
+      parsedLines.push({
+        kind: "heading",
+        h: { number: num, title: stripInlineMarkdown(m[2].trim()) },
+      });
+    } else {
+      parsedLines.push({ kind: "text", text: line });
+    }
+  }
+
+  const sections: Section[] = [];
+  let current: Section | null = null;
+  let autoIndex = 0;
+  let seenNumberedYet = false;
+
+  for (const item of parsedLines) {
+    if (item.kind === "heading") {
+      const num = item.h.number;
+      if (hasNumbered && !num && !seenNumberedYet) {
+        // 番号付きセクションがまだ登場していない位置の番号無し見出し ＝ レポート冒頭タイトル → 無視
+        continue;
+      }
       if (current) sections.push(current);
-      current = { number: match[1], title: stripInlineMarkdown(match[2].trim()), content: "" };
+      autoIndex += 1;
+      const assigned = num ?? String(autoIndex);
+      if (num) seenNumberedYet = true;
+      current = {
+        number: assigned,
+        title: item.h.title,
+        content: "",
+      };
     } else if (current) {
-      current.content += line + "\n";
+      current.content += item.text + "\n";
     }
   }
   if (current) sections.push(current);
-  return sections;
+
+  // 念のため重複番号を一意化
+  const seen = new Set<string>();
+  return sections.map((s, idx) => {
+    if (seen.has(s.number)) {
+      s.number = String(idx + 1);
+    }
+    seen.add(s.number);
+    return s;
+  });
 }
 
 /** セクションの本文を ReactMarkdown でレンダリング */
@@ -367,7 +426,7 @@ export function AiReport({
           {sections.map((section) => {
             const isLocked = false;
             const isOpen = openSet.has(section.number);
-            const icon = SECTION_ICONS[section.number] ?? "📋";
+            const icon = pickIcon(section.number, section.title);
 
             return (
               <div key={section.number} className="bg-white/60">
