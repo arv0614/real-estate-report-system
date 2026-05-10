@@ -1,8 +1,6 @@
-import { Storage } from "@google-cloud/storage";
+import type { Storage as StorageType, Bucket } from "@google-cloud/storage";
 import { config } from "../config";
 import { buildCacheKey } from "../utils/tile";
-
-const storage = new Storage({ projectId: config.gcp.projectId });
 
 export interface CachedData {
   cacheKey: string;
@@ -14,6 +12,44 @@ export interface CachedData {
   aiReport?: string;
   fetchedAt: string;
   expiresAt: string;
+}
+
+/**
+ * Storage クライアントを遅延初期化する。
+ * 起動時に new Storage() を呼ぶと、認証ライブラリが credential を解決できない環境
+ * (e.g. Cloud Run の SA に Storage 権限が無い、ADC が見つからない等) で
+ * 初期化エラーが import タイミングで発生し、コンテナ全体が落ちる可能性がある。
+ *
+ * 遅延初期化 + try-catch にすることで、GCS が使えなくても API ハンドラは継続動作し
+ * 「キャッシュなし → 都度 MLIT API から取得」の通常パスにフォールバックできる。
+ */
+let _storage: StorageType | null = null;
+let _storageInitFailed = false;
+
+async function getStorage(): Promise<StorageType | null> {
+  if (_storage) return _storage;
+  if (_storageInitFailed) return null;
+  try {
+    const { Storage } = await import("@google-cloud/storage");
+    _storage = new Storage({ projectId: config.gcp.projectId });
+    return _storage;
+  } catch (err) {
+    _storageInitFailed = true;
+    console.error("[GCS Cache] Storage client init failed; cache disabled:", err);
+    return null;
+  }
+}
+
+async function getBucket(): Promise<Bucket | null> {
+  if (!config.gcs.bucketName) return null;
+  const storage = await getStorage();
+  if (!storage) return null;
+  try {
+    return storage.bucket(config.gcs.bucketName);
+  } catch (err) {
+    console.error("[GCS Cache] bucket() failed; cache disabled:", err);
+    return null;
+  }
 }
 
 /**
@@ -33,7 +69,8 @@ function isValid(cached: CachedData): boolean {
 
 /**
  * GCSからキャッシュを読み込む
- * キャッシュが存在しないか期限切れの場合は null を返す
+ * - キャッシュ無効・期限切れ・GCS エラーいずれの場合も null を返す
+ * - 例外は呼び出し側に伝播させない（API ハンドラを止めないため）
  */
 export async function readCache(
   lat: number,
@@ -46,10 +83,12 @@ export async function readCache(
     return null;
   }
   const cacheKey = buildCacheKey(lat, lng, zoom, locale);
-  const bucket = storage.bucket(config.gcs.bucketName);
-  const file = bucket.file(objectPath(cacheKey));
 
   try {
+    const bucket = await getBucket();
+    if (!bucket) return null;
+    const file = bucket.file(objectPath(cacheKey));
+
     const [exists] = await file.exists();
     if (!exists) return null;
 
@@ -64,13 +103,16 @@ export async function readCache(
     console.log(`[GCS Cache] HIT: ${cacheKey}`);
     return cached;
   } catch (err) {
+    // 権限エラー (403) / バケット未作成 (404) / NW エラー / JSON パース失敗 等を
+    // すべて呑み込んで null を返す。サービス継続を最優先する。
     console.error(`[GCS Cache] Read error for ${cacheKey}:`, err);
     return null;
   }
 }
 
 /**
- * GCSにデータをキャッシュとして保存（非同期・fire-and-forget）
+ * GCSにデータをキャッシュとして保存（fire-and-forget）
+ * 失敗しても呼び出し側に例外を投げない。
  */
 export async function writeCache(
   lat: number,
@@ -100,10 +142,10 @@ export async function writeCache(
     expiresAt: expiresAt.toISOString(),
   };
 
-  const bucket = storage.bucket(config.gcs.bucketName);
-  const file = bucket.file(objectPath(cacheKey));
-
   try {
+    const bucket = await getBucket();
+    if (!bucket) return;
+    const file = bucket.file(objectPath(cacheKey));
     await file.save(JSON.stringify(payload, null, 2), {
       contentType: "application/json",
       metadata: {

@@ -145,7 +145,7 @@
     "badgeMlit": "國土交通省資料",
     "badgeHazard": "災害地圖資訊",
     "badgeDaily": "每日更新",
-    "noDataMsg": "目前正在取得 {city} 的資料,請稍候後再行存取。",
+    "noDataMsg": "目前無法取得 {city} 的資料,請稍候片刻後再試。",
     "sectionPrice": "成交價摘要",
     "sectionTrend": "價格走勢",
     "overviewTitle": "的不動產交易概況",

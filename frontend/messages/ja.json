@@ -145,7 +145,7 @@
     "badgeMlit": "国土交通省データ",
     "badgeHazard": "ハザードマップ情報",
     "badgeDaily": "毎日更新",
-    "noDataMsg": "現在、{city}のデータを取得中です。しばらくしてから再度アクセスしてください。",
+    "noDataMsg": "{city}のデータを取得できませんでした。しばらく時間をおいて再度お試しください。",
     "sectionPrice": "取引価格サマリー",
     "sectionTrend": "価格推移トレンド",
     "overviewTitle": "の不動産取引概要",

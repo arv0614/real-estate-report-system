@@ -145,7 +145,7 @@
     "badgeMlit": "MLIT Gov Data",
     "badgeHazard": "Hazard Map",
     "badgeDaily": "Daily Updated",
-    "noDataMsg": "Data for {city} is currently loading. Please check back shortly.",
+    "noDataMsg": "Could not retrieve data for {city} at this time. Please try again later.",
     "sectionPrice": "Transaction Price Summary",
     "sectionTrend": "Price Trend",
     "overviewTitle": "Property Transaction Overview",

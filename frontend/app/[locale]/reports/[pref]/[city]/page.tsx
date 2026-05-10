@@ -11,7 +11,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { findArea, AREAS, PREF_NAMES, PREF_NAMES_EN } from "@/lib/areas";
-import { calcSummary, formatPrice, formatUnitPrice } from "@/lib/api";
+import { calcSummary, formatPrice, formatUnitPrice, getApiBase, fetchWithTimeout } from "@/lib/api";
 import { SummaryCards } from "@/components/SummaryCards";
 import { PriceTrendChart } from "@/components/PriceTrendChart";
 import type { TransactionApiResponse } from "@/types/api";
@@ -81,23 +81,28 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 // NOTE: サーバーコンポーネントでは相対パス（/api/...）を使わない。
 // Next.js は相対パスを現在のリクエスト URL で解決するため、
 // /en/reports/... ページだと /en/api/... になってしまう（404）。
-// NEXT_PUBLIC_API_URL が未設定なら呼び出しをスキップする。
+// getApiBase() は env 未注入でも本番 Cloud Run の URL にハードコードフォールバックする。
 async function fetchAreaData(
   lat: number,
   lng: number,
-  locale: string
+  locale: string,
+  cityLabel: string,
 ): Promise<TransactionApiResponse | null> {
-  const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
-  if (!API_BASE) {
-    return null;
-  }
-  const url = `${API_BASE}/api/property/transactions?lat=${lat}&lng=${lng}&zoom=15&locale=${locale}`;
+  const url = `${getApiBase()}/api/property/transactions?lat=${lat}&lng=${lng}&zoom=15&locale=${locale}`;
 
   try {
-    const res = await fetch(url, { next: { revalidate: 86400 } });
-    if (!res.ok) return null;
-    return res.json();
-  } catch {
+    // Cloud Run コールドスタート + MLIT/Gemini 生成を考慮して 90 秒タイムアウト
+    const res = await fetchWithTimeout(url, { next: { revalidate: 86400 } });
+    if (!res.ok) {
+      console.warn(`[reports/${cityLabel}] API ${res.status}: ${res.statusText}`);
+      return null;
+    }
+    return await res.json();
+  } catch (err) {
+    const isAbort = err instanceof Error && err.name === "AbortError";
+    console.warn(
+      `[reports/${cityLabel}] fetch failed: ${isAbort ? "TIMEOUT (90s)" : err instanceof Error ? err.message : String(err)}`,
+    );
     return null;
   }
 }
@@ -115,7 +120,8 @@ export default async function LocaleAreaReportPage({ params }: PageProps) {
     process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
     "https://mekiki-research.com";
 
-  const data = await fetchAreaData(area.lat, area.lng, locale);
+  const cityLabelForLog = isEn ? area.cityEn : area.city;
+  const data = await fetchAreaData(area.lat, area.lng, locale, cityLabelForLog);
   const records = data?.data?.data ?? [];
   const summary = records.length > 0 ? calcSummary(records) : null;
   const hazard = data?.hazard ?? undefined;

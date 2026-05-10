@@ -1,17 +1,27 @@
 import type { TransactionApiResponse, TransactionSummary, TransactionRecord } from "@/types/api";
 
 /**
+ * 本番バックエンドの Cloud Run URL（asia-northeast1）。
+ * NEXT_PUBLIC_API_URL が SSR / ISR ビルド時に未注入だった場合の最終フォールバック。
+ * SSR で SITE_URL（mekiki-research.com）にフォールバックすると、フロントドメインに
+ * /api/property/* は存在しないため 404 を返してしまう。それを避けるための定数。
+ */
+const PROD_API_FALLBACK = "https://realestate-api-2hctlfcy6a-an.a.run.app";
+
+/** バックエンド呼び出し時のデフォルトタイムアウト (ms)。Cloud Run のコールドスタート + MLIT/Gemini 生成を許容。 */
+export const DEFAULT_FETCH_TIMEOUT_MS = 90_000;
+
+/**
  * API ベース URL を解決する（クライアント・サーバー両対応）
  *
  * 優先順位:
  *  1. NEXT_PUBLIC_API_URL（バックエンド Cloud Run の URL。本番・開発ともに推奨）
  *  2. クライアントサイド: window.location.origin（ブラウザのオリジン）
- *  3. サーバーサイド: NEXT_PUBLIC_SITE_URL（フロントエンドのベース URL）
- *  4. フォールバック: http://localhost:3000
+ *  3. サーバーサイド: PROD_API_FALLBACK（ハードコードされた本番 Cloud Run URL）
  *
- * 空文字列や相対パスを返さない。
- * サーバーサイドの fetch が現在のリクエスト URL を基準に相対解決し
- * /en/ が混入するのを防ぐ（例: /en/api/... → 404）。
+ * 注意: サーバーサイドで NEXT_PUBLIC_SITE_URL（mekiki-research.com）には絶対に
+ * フォールバックしない。フロントドメインに /api/property/* は存在しないため。
+ * ローカル開発時は `frontend/.env.local` で NEXT_PUBLIC_API_URL=http://localhost:8080 を明示する。
  */
 export function getApiBase(): string {
   const configured = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
@@ -22,10 +32,31 @@ export function getApiBase(): string {
     return window.location.origin;
   }
 
-  // Server-side: need an absolute URL; relative paths in server components are
-  // resolved against the current request URL and would produce /en/api/... on /en/* pages
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
-  return siteUrl || "http://localhost:3000";
+  // Server-side: ハードコードした本番バックエンドにフォールバック
+  // (SITE_URL = mekiki-research.com には /api/property/* が存在しないので使わない)
+  return PROD_API_FALLBACK;
+}
+
+/**
+ * AbortController でタイムアウト付きの fetch を行う薄いラッパ。
+ * 既存の RequestInit と組み合わせ可能（Next.js 16 の `next.revalidate` など）。
+ *
+ * Cloud Run のコールドスタート (≈ 数十秒) と MLIT API + Gemini 生成 (合計 60〜90秒)
+ * を考慮し、デフォルトタイムアウトは 90 秒に設定。これより短い既定では SSR/ISR で
+ * 自動的にアボートされ「データ取得失敗」状態に落ちるリスクがある。
+ */
+export async function fetchWithTimeout(
+  url: string,
+  init: RequestInit = {},
+  timeoutMs: number = DEFAULT_FETCH_TIMEOUT_MS,
+): Promise<Response> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: ctrl.signal });
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export async function fetchTransactions(
@@ -36,7 +67,7 @@ export async function fetchTransactions(
 ): Promise<TransactionApiResponse> {
   const url = `${getApiBase()}/api/property/transactions?lat=${lat}&lng=${lng}&zoom=${zoom}&locale=${locale}`;
 
-  const res = await fetch(url, { cache: "no-store" });
+  const res = await fetchWithTimeout(url, { cache: "no-store" });
   if (!res.ok) {
     if (res.status === 429) {
       throw Object.assign(new Error("RATE_LIMITED"), { code: "RATE_LIMITED" });

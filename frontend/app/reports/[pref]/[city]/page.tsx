@@ -9,7 +9,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { findArea, AREAS, PREF_NAMES } from "@/lib/areas";
-import { calcSummary, formatPrice, formatUnitPrice } from "@/lib/api";
+import { calcSummary, formatPrice, formatUnitPrice, getApiBase, fetchWithTimeout } from "@/lib/api";
 import { SummaryCards } from "@/components/SummaryCards";
 import { PriceTrendChart } from "@/components/PriceTrendChart";
 import type { TransactionApiResponse } from "@/types/api";
@@ -64,26 +64,27 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 // ── データ取得 ────────────────────────────────────────────────────────
 // NOTE: サーバーコンポーネントでは相対パス（/api/...）を使わない。
-// Next.js は相対パスを現在のリクエスト URL で解決するため、
-// /en/reports/... ページだと /en/api/... になってしまう。
+// getApiBase() は env 未注入でも本番 Cloud Run の URL にハードコードフォールバックする。
 async function fetchAreaData(
   lat: number,
-  lng: number
+  lng: number,
+  cityLabel: string,
 ): Promise<TransactionApiResponse | null> {
-  const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
-  if (!API_BASE) {
-    // 絶対 URL が未設定の場合はスキップ（相対パスによる /en/api/... 混入を防ぐ）
-    return null;
-  }
-  const url = `${API_BASE}/api/property/transactions?lat=${lat}&lng=${lng}&zoom=15`;
+  const url = `${getApiBase()}/api/property/transactions?lat=${lat}&lng=${lng}&zoom=15`;
 
   try {
-    const res = await fetch(url, {
-      next: { revalidate: 86400 },
-    });
-    if (!res.ok) return null;
-    return res.json();
-  } catch {
+    // Cloud Run コールドスタート + MLIT/Gemini 生成を考慮して 90 秒タイムアウト
+    const res = await fetchWithTimeout(url, { next: { revalidate: 86400 } });
+    if (!res.ok) {
+      console.warn(`[reports/${cityLabel}] API ${res.status}: ${res.statusText}`);
+      return null;
+    }
+    return await res.json();
+  } catch (err) {
+    const isAbort = err instanceof Error && err.name === "AbortError";
+    console.warn(
+      `[reports/${cityLabel}] fetch failed: ${isAbort ? "TIMEOUT (90s)" : err instanceof Error ? err.message : String(err)}`,
+    );
     return null;
   }
 }
@@ -98,7 +99,7 @@ export default async function AreaReportPage({ params }: PageProps) {
     process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
     "https://mekiki-research.com";
 
-  const data = await fetchAreaData(area.lat, area.lng);
+  const data = await fetchAreaData(area.lat, area.lng, area.city);
   const records = data?.data?.data ?? [];
   const summary = records.length > 0 ? calcSummary(records) : null;
   const hazard = data?.hazard ?? undefined;
@@ -155,7 +156,7 @@ export default async function AreaReportPage({ params }: PageProps) {
         {/* データ取得失敗時 */}
         {!data && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl px-6 py-5 text-amber-800 text-sm">
-            現在、{area.city}のデータを取得中です。しばらくしてから再度アクセスしてください。
+            {area.city}のデータを取得できませんでした。しばらく時間をおいて再度お試しください。
           </div>
         )}
 

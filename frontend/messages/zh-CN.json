@@ -145,7 +145,7 @@
     "badgeMlit": "国土交通省数据",
     "badgeHazard": "灾害地图信息",
     "badgeDaily": "每日更新",
-    "noDataMsg": "目前正在获取 {city} 的数据,请稍候后再访问。",
+    "noDataMsg": "目前无法获取 {city} 的数据,请稍候片刻后再试。",
     "sectionPrice": "成交价摘要",
     "sectionTrend": "价格走势",
     "overviewTitle": "的不动产交易概况",
