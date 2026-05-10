@@ -474,12 +474,17 @@ function HomePageContent() {
   }, [result?.cacheKey, result?.fetchedAt]);
 
   // 検索結果ごとに、自動検出された地区を「初期値」としてだけ適用する。
-  // ユーザーが手動で "すべて" を選び直した後に再適用してしまわないよう、
+  // ただし autoDistrict 該当レコードが少ない（< 10 件）と統計的な意味が薄いので
+  // "すべて"（"") にフォールバック。ユーザーの手動選択を上書きしないよう
   // 依存配列は新しい検索結果（cacheKey / fetchedAt）に限定する。
+  const AUTO_DISTRICT_MIN_RECORDS = 10;
   useEffect(() => {
     if (!result) return;
     if (autoDistrict && districtOptions.includes(autoDistrict)) {
-      setDistrictFilter(autoDistrict);
+      const matched = result.data.data.filter(
+        (r) => r.districtName === autoDistrict
+      ).length;
+      setDistrictFilter(matched >= AUTO_DISTRICT_MIN_RECORDS ? autoDistrict : "");
     } else {
       setDistrictFilter("");
     }

@@ -39,11 +39,18 @@ function pickIcon(number: string, title: string): string {
 
 const IMAGE_KEY = "image";
 
-/** マークダウン装飾（**bold**, __bold__）を除去してプレーンテキストに変換 */
+/**
+ * Gemini が出力する `**bold**` や、対応閉じが欠けた裸の `**` が画面にそのまま
+ * 表示されてしまうのを防ぐため、レポート全体から強調記号を除去する。
+ * `__bold__` も同様に扱う。
+ */
+function stripBoldMarkdown(text: string): string {
+  return text.replace(/\*\*/g, "").replace(/__/g, "");
+}
+
+/** マークダウン装飾（bold/italic）を除去して見出し用のプレーンテキストに変換 */
 function stripInlineMarkdown(text: string): string {
-  return text
-    .replace(/\*\*(.*?)\*\*/g, "$1")
-    .replace(/__(.*?)__/g, "$1")
+  return stripBoldMarkdown(text)
     .replace(/\*(.*?)\*/g, "$1")
     .replace(/_([^_]+)_/g, "$1");
 }
@@ -184,7 +191,10 @@ export function AiReport({
   onPlanModalOpen: _onPlanModalOpen,
 }: Props) {
   const t = useTranslations("AiReport");
-  const sections = parseSections(report);
+  // Gemini 出力の bold 記号 `**` / `__` をパース前に全て除去。閉じタグが欠けた
+  // 裸の `**` が画面にそのまま出る問題を防ぐ。
+  const sanitizedReport = stripBoldMarkdown(report);
+  const sections = parseSections(sanitizedReport);
   const allKeys = [IMAGE_KEY, ...sections.map((s) => s.number)];
 
   const areaFeatures = sections.find((s) => s.number === "1")?.content.trim() || undefined;
@@ -228,7 +238,7 @@ export function AiReport({
   if (sections.length === 0) {
     return (
       <div className="rounded-xl border border-purple-200 bg-purple-50 px-5 py-5">
-        <SectionBody content={report} />
+        <SectionBody content={sanitizedReport} />
       </div>
     );
   }
