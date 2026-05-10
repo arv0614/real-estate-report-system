@@ -62,9 +62,26 @@
   "PdfSections": {
     "summary": "取引価格サマリー＆ハザード",
     "environment": "生活環境情報",
+    "weather": "気象・日照サマリー",
     "chart": "価格推移グラフ",
     "aiReport": "エリア特性調査レポート",
     "table": "取引事例一覧"
+  },
+  "WeatherInfo": {
+    "title": "気象・日照サマリー",
+    "subtitle": "（2025年通年データ）",
+    "annualSunshine": "年間日照時間",
+    "annualSunshineUnit": "時間",
+    "annualSunshineNote": "全国平均: 約1,800〜2,000時間",
+    "summerMax": "夏期 平均最高気温",
+    "summerMaxNote": "7〜8月の日次最高気温の平均",
+    "winterMin": "冬期 平均最低気温",
+    "winterMinNote": "1〜2月の日次最低気温の平均",
+    "tempUnit": "℃",
+    "sourcePrefix": "データ出典:",
+    "sourceLink": "Open-Meteo Historical Weather API",
+    "sourcePeriod": "（対象期間: 2025年通年）",
+    "noData": "気象データを取得できませんでした"
   },
   "Metadata": {
     "homeTitle": "物件目利きリサーチ | 国交省データ×AI分析で相場とリスクを即調査",

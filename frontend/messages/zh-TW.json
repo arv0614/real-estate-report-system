@@ -62,9 +62,26 @@
   "PdfSections": {
     "summary": "成交價摘要與災害",
     "environment": "生活環境資訊",
+    "weather": "氣候與日照摘要",
     "chart": "價格走勢圖",
     "aiReport": "區域特性調查報告",
     "table": "成交案例一覽"
+  },
+  "WeatherInfo": {
+    "title": "氣候與日照摘要",
+    "subtitle": "（2025 年全年資料）",
+    "annualSunshine": "年度日照時數",
+    "annualSunshineUnit": "小時",
+    "annualSunshineNote": "全國平均：約 1,800〜2,000 小時",
+    "summerMax": "夏季 平均最高氣溫",
+    "summerMaxNote": "7〜8 月每日最高氣溫平均",
+    "winterMin": "冬季 平均最低氣溫",
+    "winterMinNote": "1〜2 月每日最低氣溫平均",
+    "tempUnit": "℃",
+    "sourcePrefix": "資料來源：",
+    "sourceLink": "Open-Meteo Historical Weather API",
+    "sourcePeriod": "（期間：2025 年全年）",
+    "noData": "無法取得氣候資料"
   },
   "Metadata": {
     "homeTitle": "物件目利研究 | 以國交省資料 × AI 分析即時掌握行情與風險",

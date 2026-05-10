@@ -77,6 +77,15 @@ export interface EnvironmentInfo {
   };
 }
 
+export interface WeatherSummary {
+  /** 年間累計日照時間（h） */
+  annualSunshineHours: number;
+  /** 夏期（7〜8月）の平均最高気温（℃） */
+  summerAvgMaxTemp: number;
+  /** 冬期（1〜2月）の平均最低気温（℃） */
+  winterAvgMinTemp: number;
+}
+
 export interface TransactionApiResponse {
   source: "api" | "cache" | "mock";
   cacheKey: string | null;
@@ -84,6 +93,8 @@ export interface TransactionApiResponse {
   expiresAt: string | null;
   hazard: HazardInfo;
   environment: EnvironmentInfo | null;
+  /** Open-Meteo Historical Weather サマリー（取得失敗時は null） */
+  weather?: WeatherSummary | null;
   aiReport: string | null;
   data: ApiData;
 }

@@ -40,6 +40,7 @@ import { PropertyTypeFilter, ALL_TYPE, type PropertyTypeValue } from "@/componen
 import { TransactionTable } from "@/components/TransactionTable";
 import { PriceTrendChart } from "@/components/PriceTrendChart";
 import { EnvironmentInfoCard } from "@/components/EnvironmentInfo";
+import { WeatherInfoCard } from "@/components/WeatherInfoCard";
 import { AiReport } from "@/components/AiReport";
 import { ShareActions } from "@/components/ShareActions";
 import { PlanComparisonModal } from "@/components/PlanComparisonModal";
@@ -55,6 +56,7 @@ const ReportMap = nextDynamic(
 interface PdfSections {
   summary: boolean;
   environment: boolean;
+  weather: boolean;
   chart: boolean;
   aiReport: boolean;
   table: boolean;
@@ -63,6 +65,7 @@ interface PdfSections {
 const PDF_SECTION_KEYS: { key: keyof PdfSections; msgKey: string }[] = [
   { key: "summary",     msgKey: "PdfSections.summary" },
   { key: "environment", msgKey: "PdfSections.environment" },
+  { key: "weather",     msgKey: "PdfSections.weather" },
   { key: "chart",       msgKey: "PdfSections.chart" },
   { key: "aiReport",    msgKey: "PdfSections.aiReport" },
   { key: "table",       msgKey: "PdfSections.table" },
@@ -93,7 +96,7 @@ function HomePageContent() {
 
   // PDF出力セクション選択
   const [pdfSections, setPdfSections] = useState<PdfSections>({
-    summary: true, environment: true, chart: true, aiReport: true, table: true,
+    summary: true, environment: true, weather: true, chart: true, aiReport: true, table: true,
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
@@ -848,6 +851,12 @@ function HomePageContent() {
               <div className={pdfHide(pdfSections.chart)}>
                 <PriceTrendChart records={filteredRecords} />
               </div>
+
+              {result.weather && (
+                <div className={pdfHide(pdfSections.weather)}>
+                  <WeatherInfoCard weather={result.weather} />
+                </div>
+              )}
 
               {result.aiReport && (
                 <div className={pdfHide(pdfSections.aiReport)}>

@@ -62,9 +62,26 @@
   "PdfSections": {
     "summary": "Price Summary & Hazard",
     "environment": "Living Environment",
+    "weather": "Climate & Sunshine",
     "chart": "Price Trend Chart",
     "aiReport": "Area Analysis Report",
     "table": "Transaction List"
+  },
+  "WeatherInfo": {
+    "title": "Climate & Sunshine",
+    "subtitle": "(Full year 2025)",
+    "annualSunshine": "Annual sunshine",
+    "annualSunshineUnit": "h",
+    "annualSunshineNote": "Japan average: ~1,800–2,000 h",
+    "summerMax": "Summer avg. high",
+    "summerMaxNote": "Mean daily max for Jul–Aug",
+    "winterMin": "Winter avg. low",
+    "winterMinNote": "Mean daily min for Jan–Feb",
+    "tempUnit": "°C",
+    "sourcePrefix": "Source:",
+    "sourceLink": "Open-Meteo Historical Weather API",
+    "sourcePeriod": "(period: Jan–Dec 2025)",
+    "noData": "Weather data unavailable"
   },
   "Metadata": {
     "homeTitle": "Mekiki Research | Japan Property Analysis — Price & Risk in Seconds",
