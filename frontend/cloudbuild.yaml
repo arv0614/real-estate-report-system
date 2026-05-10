@@ -47,5 +47,7 @@ images:
 
 options:
   logging: CLOUD_LOGGING_ONLY
+  # 既定 (E2_MEDIUM / 4GB) では Next.js の SSG 中に OOM するため拡大
+  machineType: E2_HIGHCPU_8
 
 timeout: '1200s'

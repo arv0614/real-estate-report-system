@@ -43,6 +43,9 @@ ENV NEXT_PUBLIC_POSTHOG_HOST=${NEXT_PUBLIC_POSTHOG_HOST}
 ARG NEXT_PUBLIC_GTM_ID
 ENV NEXT_PUBLIC_GTM_ID=${NEXT_PUBLIC_GTM_ID}
 
+# Cloud Build の標準ノード（4GB RAM）では `next build` のプリレンダリング中に
+# OOM で worker が落ち、空 Error として表面化することがあるため明示的にヒープを拡張。
+ENV NODE_OPTIONS="--max-old-space-size=6144"
 RUN npm run build
 
 # ============================================================
