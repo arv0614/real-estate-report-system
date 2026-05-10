@@ -8,7 +8,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { setRequestLocale } from "next-intl/server";
+import { NextIntlClientProvider } from "next-intl";
+import jaMessages from "@/messages/ja.json";
 import { findArea, AREAS, PREF_NAMES } from "@/lib/areas";
 import { calcSummary, formatPrice, formatUnitPrice, getApiBase, fetchWithTimeout } from "@/lib/api";
 import { SummaryCards } from "@/components/SummaryCards";
@@ -95,11 +96,6 @@ async function fetchAreaData(
 
 // ── ページ本体 ─────────────────────────────────────────────────────────
 export default async function AreaReportPage({ params }: PageProps) {
-  // 非 [locale] ルートのため、useTranslations が正しく messages を解決できるように
-  // 既定ロケール (ja) を明示的にバインド。これがないと SummaryCards 等の useTranslations
-  // が SSR 中に空エラーで落ちる。
-  setRequestLocale("ja");
-
   const { pref, city } = await params;
   const area = findArea(pref, city);
   if (!area) notFound();
@@ -119,6 +115,7 @@ export default async function AreaReportPage({ params }: PageProps) {
   ).slice(0, 6);
 
   return (
+    <NextIntlClientProvider locale="ja" messages={jaMessages} timeZone="Asia/Tokyo">
     <div className="min-h-screen bg-slate-50">
       {/* ヘッダー */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
@@ -280,5 +277,6 @@ export default async function AreaReportPage({ params }: PageProps) {
         </p>
       </footer>
     </div>
+    </NextIntlClientProvider>
   );
 }
