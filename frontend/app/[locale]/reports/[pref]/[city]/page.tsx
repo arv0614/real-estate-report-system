@@ -9,7 +9,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { findArea, AREAS, PREF_NAMES, PREF_NAMES_EN } from "@/lib/areas";
 import { calcSummary, formatPrice, formatUnitPrice, getApiBase, fetchWithTimeout } from "@/lib/api";
 import { SummaryCards } from "@/components/SummaryCards";
@@ -113,6 +113,9 @@ async function fetchAreaData(
 // ── ページ本体 ──────────────────────────────────────────────────
 export default async function LocaleAreaReportPage({ params }: PageProps) {
   const { locale, pref, city } = await params;
+  // useTranslations を呼び出すクライアント／RSC コンポーネント用にロケールをバインド。
+  setRequestLocale(locale);
+
   const area = findArea(pref, city);
   if (!area) notFound();
 
