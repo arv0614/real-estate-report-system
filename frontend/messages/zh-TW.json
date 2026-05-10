@@ -35,7 +35,10 @@
   "Error": {
     "unknown": "發生未知錯誤",
     "retryNote": "請稍候後再試。若問題持續,請更換座標或改用其他區域搜尋。",
-    "rateLimited": "存取流量過大,請稍候後再試。"
+    "rateLimited": "存取流量過大,請稍候後再試。",
+    "rateLimitedTitle": "您已達到每日搜尋上限",
+    "rateLimitedBody": "升級至 Pro 方案,即可無限制地建立所有區域的調查報告。",
+    "rateLimitedCta": "查看 Pro 方案"
   },
   "Empty": {
     "prompt": "輸入您關注的物件地址,立刻開始專業級調查",

@@ -35,7 +35,10 @@
   "Error": {
     "unknown": "An unknown error occurred.",
     "retryNote": "Please wait and try again. If the issue persists, try different coordinates or another area.",
-    "rateLimited": "Too many requests. Please wait a moment and try again."
+    "rateLimited": "Too many requests. Please wait a moment and try again.",
+    "rateLimitedTitle": "You've reached your daily search limit",
+    "rateLimitedBody": "Upgrade to the Pro plan to generate unlimited research reports for any area.",
+    "rateLimitedCta": "View Pro Plan"
   },
   "Empty": {
     "prompt": "Enter a property address and get a pro-grade analysis in seconds",

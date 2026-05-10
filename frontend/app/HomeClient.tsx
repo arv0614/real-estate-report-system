@@ -83,6 +83,8 @@ function HomePageContent() {
   const [progressMessage, setProgressMessage] = useState("");
   const progressTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const [error, setError] = useState<string | null>(null);
+  /** エラー時の付帯コード（例: "RATE_LIMITED"）。リッチ UI に分岐するための判別子。 */
+  const [errorCode, setErrorCode] = useState<string | null>(null);
   const [result, setResult] = useState<TransactionApiResponse | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [autoDistrict, setAutoDistrict] = useState<string>("");
@@ -234,6 +236,7 @@ function HomePageContent() {
 
   async function handleSearch(lat: number, lng: number) {
     setError(null);
+    setErrorCode(null);
     const userPlanDL = !user ? "guest" : (plan ?? "free");
 
     // ── 検索回数制限チェック ──────────────────────────────
@@ -366,11 +369,14 @@ function HomePageContent() {
     } catch (e) {
       stopProgressSimulation();
       const errCode = (e as { code?: string })?.code;
-      setError(
-        errCode === "RATE_LIMITED"
-          ? t("Error.rateLimited")
-          : e instanceof Error ? e.message : t("Error.unknown")
-      );
+      if (errCode === "RATE_LIMITED") {
+        setErrorCode("RATE_LIMITED");
+        // RATE_LIMITED 時は専用バナーで body を出すので error 文字列は短い見出し相当を入れる
+        setError(t("Error.rateLimitedTitle"));
+      } else {
+        setErrorCode(null);
+        setError(e instanceof Error ? e.message : t("Error.unknown"));
+      }
     } finally {
       setLoading(false);
     }
@@ -663,7 +669,33 @@ function HomePageContent() {
           </div>
         )}
 
-        {error && (
+        {error && errorCode === "RATE_LIMITED" && (
+          <div className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 px-5 py-4 shadow-sm">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl shrink-0" aria-hidden>🚀</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-amber-900 leading-snug">
+                  {t("Error.rateLimitedTitle")}
+                </p>
+                <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+                  {t("Error.rateLimitedBody")}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    gtagEvent({ action: "view_plan_modal", category: "conversion_funnel", label: "rate_limit_banner" });
+                    setPlanModalOpen(true);
+                  }}
+                  className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-sm font-semibold shadow-md hover:shadow-lg transition-all"
+                >
+                  ✨ {t("Error.rateLimitedCta")}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {error && errorCode !== "RATE_LIMITED" && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 space-y-1">
             <p>⚠️ {error}</p>
             <p className="text-xs text-red-500">

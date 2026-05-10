@@ -35,7 +35,10 @@
   "Error": {
     "unknown": "发生未知错误",
     "retryNote": "请稍后再试。如问题持续,请更换坐标或改用其他区域搜索。",
-    "rateLimited": "访问流量过大,请稍后再试。"
+    "rateLimited": "访问流量过大,请稍后再试。",
+    "rateLimitedTitle": "您已达到每日搜索上限",
+    "rateLimitedBody": "升级至 Pro 方案,即可无限制地生成所有区域的调查报告。",
+    "rateLimitedCta": "查看 Pro 方案"
   },
   "Empty": {
     "prompt": "输入您关注的物件地址,立刻开始专业级调查",
