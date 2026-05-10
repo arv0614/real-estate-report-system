@@ -473,9 +473,9 @@ function HomePageContent() {
     setPropertyTypeFilter(ALL_TYPE);
   }, [result?.cacheKey, result?.fetchedAt]);
 
-  // 検索結果と autoDistrict が揃ったら、自動検出された地区を初期選択にする。
-  // ただし autoDistrict が実データの districtOptions に含まれていない場合は
-  // "すべて"（"") にフォールバック。
+  // 検索結果ごとに、自動検出された地区を「初期値」としてだけ適用する。
+  // ユーザーが手動で "すべて" を選び直した後に再適用してしまわないよう、
+  // 依存配列は新しい検索結果（cacheKey / fetchedAt）に限定する。
   useEffect(() => {
     if (!result) return;
     if (autoDistrict && districtOptions.includes(autoDistrict)) {
@@ -483,7 +483,8 @@ function HomePageContent() {
     } else {
       setDistrictFilter("");
     }
-  }, [result?.cacheKey, result?.fetchedAt, autoDistrict, districtOptions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result?.cacheKey, result?.fetchedAt]);
 
   /** OGP用の総合スコアをハザード情報から簡易計算（0-100） */
   const ogScore = useMemo(() => {
