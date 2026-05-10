@@ -106,6 +106,14 @@ function HomePageContent() {
   const [propertyTypeFilter, setPropertyTypeFilter] = useState<PropertyTypeValue>(ALL_TYPE);
   /** 地区名フィルタ。"" は全地区。result 取得時 autoDistrict が一致すれば自動選択。 */
   const [districtFilter, setDistrictFilter] = useState<string>("");
+  /**
+   * 初期値セットを完了した result.cacheKey を覚えておくフラグ。
+   * autoDistrict は別ルート (reverseGeocodeDistrict) で非同期に確定するため
+   * effect が「autoDistrict 未取得の状態」「取得完了後の状態」で2回走る可能性がある。
+   * このフラグで「同じ検索結果に対しては最初の有効な評価1回だけ」を保証し、
+   * その後のユーザー操作を上書きしないようにする。
+   */
+  const initializedDistrictKey = useRef<string | null>(null);
 
   // URLパラメータ (?lat=&lng=) でランディング時の挙動:
   //   - 検索バーの lat / lng と地図ピンに座標を反映するだけに留める
@@ -474,22 +482,28 @@ function HomePageContent() {
   }, [result?.cacheKey, result?.fetchedAt]);
 
   // 検索結果ごとに、自動検出された地区を「初期値」としてだけ適用する。
-  // ただし autoDistrict 該当レコードが少ない（< 10 件）と統計的な意味が薄いので
-  // "すべて"（"") にフォールバック。ユーザーの手動選択を上書きしないよう
-  // 依存配列は新しい検索結果（cacheKey / fetchedAt）に限定する。
+  // - autoDistrict (reverseGeocodeDistrict の結果) は result より遅れて入る場合があるため
+  //   `if (!autoDistrict) return;` で「未取得時は何もしない」状態にし、取得完了後の再実行を待つ。
+  // - 既に同じ cacheKey で評価済みなら何もしない（ユーザーの手動操作を上書きしないため）。
+  // - autoDistrict が districtOptions と完全一致しなくても、双方向の部分一致で吸収する
+  //   （MLIT データの「青戸4丁目」と GSI の「青戸」のような表記揺れに対応）。
+  // - 該当レコードが 10 件未満なら統計的意味が薄いので "" (すべて) にフォールバック。
   const AUTO_DISTRICT_MIN_RECORDS = 10;
   useEffect(() => {
-    if (!result) return;
-    if (autoDistrict && districtOptions.includes(autoDistrict)) {
-      const matched = result.data.data.filter(
-        (r) => r.districtName === autoDistrict
-      ).length;
-      setDistrictFilter(matched >= AUTO_DISTRICT_MIN_RECORDS ? autoDistrict : "");
+    if (!result || !autoDistrict) return;
+    if (initializedDistrictKey.current === result.cacheKey) return;
+
+    const match = districtOptions.find(
+      (d) => d === autoDistrict || autoDistrict.includes(d) || d.includes(autoDistrict)
+    );
+    if (match) {
+      const matched = result.data.data.filter((r) => r.districtName === match).length;
+      setDistrictFilter(matched >= AUTO_DISTRICT_MIN_RECORDS ? match : "");
     } else {
       setDistrictFilter("");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [result?.cacheKey, result?.fetchedAt]);
+    initializedDistrictKey.current = result.cacheKey;
+  }, [result, autoDistrict, districtOptions]);
 
   /** OGP用の総合スコアをハザード情報から簡易計算（0-100） */
   const ogScore = useMemo(() => {
