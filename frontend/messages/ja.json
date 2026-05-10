@@ -81,7 +81,14 @@
     "sourcePrefix": "データ出典:",
     "sourceLink": "Open-Meteo Historical Weather API",
     "sourcePeriod": "（対象期間: 2025年通年）",
-    "noData": "気象データを取得できませんでした"
+    "noData": "気象データを取得できませんでした",
+    "trendTitle": "月別 気温・日照時間の推移",
+    "trendNote": "棒グラフ: 月間累計日照時間 / 折れ線: 月平均最高・最低気温"
+  },
+  "Sources": {
+    "prefix": "データ出典:",
+    "mlit": "国土交通省 不動産情報ライブラリ",
+    "openMeteo": "Open-Meteo Historical Weather API"
   },
   "Metadata": {
     "homeTitle": "物件目利きリサーチ | 国交省データ×AI分析で相場とリスクを即調査",

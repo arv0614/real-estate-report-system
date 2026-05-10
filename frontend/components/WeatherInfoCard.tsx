@@ -1,12 +1,12 @@
 import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SourceLink } from "@/components/SourceLink";
+import { WeatherTrendChart } from "@/components/WeatherTrendChart";
 import type { WeatherSummary } from "@/types/api";
 
 interface Props {
   weather: WeatherSummary;
 }
-
-const OPEN_METEO_URL = "https://open-meteo.com/";
 
 function formatNumber(value: number, fractionDigits: number): string {
   return value.toLocaleString(undefined, {
@@ -79,18 +79,11 @@ export function WeatherInfoCard({ weather }: Props) {
         </Card>
       </div>
 
-      <p className="text-[11px] text-slate-500 px-1">
-        {t("sourcePrefix")}{" "}
-        <a
-          href={OPEN_METEO_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-blue-600 hover:underline"
-        >
-          {t("sourceLink")}
-        </a>{" "}
-        {t("sourcePeriod")}
-      </p>
+      {weather.monthly && weather.monthly.length > 0 && (
+        <WeatherTrendChart monthly={weather.monthly} />
+      )}
+
+      <SourceLink source="openMeteo" suffix={t("sourcePeriod")} className="px-1" />
     </div>
   );
 }

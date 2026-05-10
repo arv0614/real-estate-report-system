@@ -77,6 +77,15 @@ export interface EnvironmentInfo {
   };
 }
 
+export interface WeatherMonthly {
+  /** 月（1〜12） */
+  month: number;
+  avgMaxTemp: number;
+  avgMinTemp: number;
+  /** 当該月の累計日照時間（h） */
+  sunshineHours: number;
+}
+
 export interface WeatherSummary {
   /** 年間累計日照時間（h） */
   annualSunshineHours: number;
@@ -84,6 +93,8 @@ export interface WeatherSummary {
   summerAvgMaxTemp: number;
   /** 冬期（1〜2月）の平均最低気温（℃） */
   winterAvgMinTemp: number;
+  /** 月別の気温・日照時間（1月〜12月）。古いキャッシュ等で欠けることがあるためオプショナル */
+  monthly?: WeatherMonthly[];
 }
 
 export interface TransactionApiResponse {

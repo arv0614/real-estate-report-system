@@ -81,7 +81,14 @@
     "sourcePrefix": "Source:",
     "sourceLink": "Open-Meteo Historical Weather API",
     "sourcePeriod": "(period: Jan–Dec 2025)",
-    "noData": "Weather data unavailable"
+    "noData": "Weather data unavailable",
+    "trendTitle": "Monthly temperature & sunshine trend",
+    "trendNote": "Bars: monthly sunshine hours · Lines: monthly avg high / low"
+  },
+  "Sources": {
+    "prefix": "Source:",
+    "mlit": "MLIT Real Estate Information Library",
+    "openMeteo": "Open-Meteo Historical Weather API"
   },
   "Metadata": {
     "homeTitle": "Mekiki Research | Japan Property Analysis — Price & Risk in Seconds",

@@ -13,6 +13,7 @@ import {
   YAxis,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SourceLink } from "@/components/SourceLink";
 import { resolveUnitPrice } from "@/lib/api";
 import type { TransactionRecord } from "@/types/api";
 
@@ -83,6 +84,7 @@ export function PriceTrendChart({ records }: Props) {
   const hasUnitPrice = data.some((d) => d.avgUnitPrice !== null);
 
   return (
+    <div className="space-y-2">
     <Card className="bg-white">
       <CardHeader className="pb-2 pt-4 px-4">
         <CardTitle className="text-base">
@@ -179,5 +181,7 @@ export function PriceTrendChart({ records }: Props) {
         </p>
       </CardContent>
     </Card>
+    <SourceLink source="mlit" className="px-1" />
+    </div>
   );
 }

@@ -1,5 +1,6 @@
 import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SourceLink } from "@/components/SourceLink";
 import type { EnvironmentInfo } from "@/types/api";
 
 interface Props {
@@ -15,7 +16,6 @@ export function EnvironmentInfoCard({ environment }: Props) {
       <h3 className="text-sm font-semibold text-slate-600 px-1 flex items-center gap-2">
         <span>🏙️</span>
         {t("title")}
-        <span className="text-xs text-slate-400 font-normal">{t("source")}</span>
       </h3>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -126,6 +126,8 @@ export function EnvironmentInfoCard({ environment }: Props) {
           </CardContent>
         </Card>
       </div>
+
+      <SourceLink source="mlit" className="px-1" />
     </div>
   );
 }

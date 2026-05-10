@@ -11,6 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SourceLink } from "@/components/SourceLink";
 import { formatPrice, formatUnitPrice, parseArea, resolveUnitPrice } from "@/lib/api";
 import type { TransactionRecord } from "@/types/api";
 import { ALL_TYPE, type PropertyTypeValue } from "@/components/PropertyTypeFilter";
@@ -251,6 +252,7 @@ export function TransactionTable({
   const toIndex = Math.min((effectivePage + 1) * pageSize, sortedFiltered.length);
 
   return (
+    <div className="space-y-2">
     <Card>
       <CardHeader className="pb-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -382,5 +384,7 @@ export function TransactionTable({
         )}
       </CardContent>
     </Card>
+    <SourceLink source="mlit" className="px-1" />
+    </div>
   );
 }

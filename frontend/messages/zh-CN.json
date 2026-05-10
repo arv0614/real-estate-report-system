@@ -81,7 +81,14 @@
     "sourcePrefix": "数据来源：",
     "sourceLink": "Open-Meteo Historical Weather API",
     "sourcePeriod": "（期间：2025 年全年）",
-    "noData": "无法取得气候数据"
+    "noData": "无法取得气候数据",
+    "trendTitle": "月度气温与日照时数趋势",
+    "trendNote": "柱状：月度累计日照时数 · 折线：月平均最高／最低气温"
+  },
+  "Sources": {
+    "prefix": "数据来源：",
+    "mlit": "国土交通省 不动产信息数据库",
+    "openMeteo": "Open-Meteo Historical Weather API"
   },
   "Metadata": {
     "homeTitle": "物件目利研究 | 以国交省数据 × AI 分析即时掌握行情与风险",

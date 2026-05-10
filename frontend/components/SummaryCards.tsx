@@ -1,5 +1,6 @@
 import { useTranslations, useLocale } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SourceLink } from "@/components/SourceLink";
 import { formatPrice, formatUnitPrice } from "@/lib/api";
 import type { HazardInfo, TransactionSummary } from "@/types/api";
 
@@ -119,6 +120,8 @@ export function SummaryCards({ summary, hazard }: Props) {
         </div>
         </>
       ) : null}
+
+      <SourceLink source="mlit" className="px-1" />
     </div>
   );
 }
