@@ -7,6 +7,10 @@ import type { HazardInfo, TransactionSummary } from "@/types/api";
 interface Props {
   summary: TransactionSummary;
   hazard?: HazardInfo;
+  /** 集計対象の都道府県（注釈表示用） */
+  prefecture?: string;
+  /** 集計対象の市区町村（注釈表示用） */
+  municipality?: string;
 }
 
 function floodRiskColor(hasRisk: boolean, rank: number | null) {
@@ -21,9 +25,10 @@ function floodValueColor(hasRisk: boolean, rank: number | null) {
   return "text-amber-700";
 }
 
-export function SummaryCards({ summary, hazard }: Props) {
+export function SummaryCards({ summary, hazard, prefecture, municipality }: Props) {
   const t = useTranslations("SummaryCards");
   const locale = useLocale();
+  const showScope = !!prefecture || !!municipality;
 
   const statsCards = [
     {
@@ -54,6 +59,13 @@ export function SummaryCards({ summary, hazard }: Props) {
 
   return (
     <div className="space-y-3">
+      {showScope && (
+        <div className="rounded-md bg-slate-50 border border-slate-200 px-3 py-2 text-[11px] text-slate-600 leading-relaxed">
+          <p>{t("scopeTransaction", { prefecture: prefecture ?? "", municipality: municipality ?? "" })}</p>
+          <p>{t("scopeArea")}</p>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {statsCards.map((c) => (
           <Card key={c.title} className="bg-white">

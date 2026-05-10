@@ -83,7 +83,10 @@
     "sourcePeriod": "（対象期間: 2025年通年）",
     "noData": "気象データを取得できませんでした",
     "trendTitle": "月別 気温・日照時間の推移",
-    "trendNote": "棒グラフ: 月間累計日照時間 / 折れ線: 月平均最高・最低気温"
+    "trendNote": "棒グラフ: 月間累計日照時間 / 折れ線: 月平均最高・最低気温",
+    "chartMaxTemp": "平均最高気温",
+    "chartMinTemp": "平均最低気温",
+    "chartSunshine": "月間日照時間"
   },
   "Sources": {
     "prefix": "データ出典:",
@@ -209,6 +212,8 @@
     "displayingFiltered": "「{type}」{count} 件のみの統計"
   },
   "SummaryCards": {
+    "scopeTransaction": "※ 取引価格データは {prefecture}{municipality}（市区町村単位）の直近5年分を集計しています。",
+    "scopeArea": "※ ハザード／生活環境／気象データは地図ピンを中心とした約1.2km四方のタイル区画に基づきます。",
     "dataCount": "データ件数",
     "dataCountValue": "{count} 件",
     "dataCountSub": "取得した取引事例数",

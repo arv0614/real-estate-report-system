@@ -839,7 +839,16 @@ function HomePageContent() {
 
               {/* 各セクション: pdfSections の設定に応じて pdf-hide を付与 */}
               <div className={pdfHide(pdfSections.summary)}>
-                <SummaryCards summary={summary} hazard={result.hazard} />
+                <SummaryCards
+                  summary={summary}
+                  hazard={result.hazard}
+                  prefecture={result.data.data[0]?.prefecture ?? ""}
+                  municipality={
+                    result.data.data[0]?.municipality ??
+                    result.data.geocodedDistrict ??
+                    ""
+                  }
+                />
               </div>
 
               {result.environment && (

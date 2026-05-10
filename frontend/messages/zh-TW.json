@@ -83,7 +83,10 @@
     "sourcePeriod": "（期間：2025 年全年）",
     "noData": "無法取得氣候資料",
     "trendTitle": "月度氣溫與日照時數趨勢",
-    "trendNote": "柱狀：月度累計日照時數 · 折線：月平均最高／最低氣溫"
+    "trendNote": "柱狀：月度累計日照時數 · 折線：月平均最高／最低氣溫",
+    "chartMaxTemp": "平均最高氣溫",
+    "chartMinTemp": "平均最低氣溫",
+    "chartSunshine": "月度日照時數"
   },
   "Sources": {
     "prefix": "資料來源：",
@@ -209,6 +212,8 @@
     "displayingFiltered": "僅「{type}」{count} 筆的統計"
   },
   "SummaryCards": {
+    "scopeTransaction": "※ 成交價資料為 {prefecture}{municipality}（行政區單位）近 5 年的全部成交事例彙整。",
+    "scopeArea": "※ 災害／生活環境／氣候資料為以地圖標記為中心約 1.2km 見方的圖磚範圍。",
     "dataCount": "資料筆數",
     "dataCountValue": "{count} 筆",
     "dataCountSub": "已取得的成交案例數",

@@ -27,9 +27,9 @@ export function WeatherTrendChart({ monthly }: Props) {
   const locale = useLocale();
   if (!monthly || monthly.length === 0) return null;
 
-  const labelMax = t("summerMax");
-  const labelMin = t("winterMin");
-  const labelSun = t("annualSunshine");
+  const labelMax = t("chartMaxTemp");
+  const labelMin = t("chartMinTemp");
+  const labelSun = t("chartSunshine");
   const tempUnit = t("tempUnit");
   const hourUnit = t("annualSunshineUnit");
 

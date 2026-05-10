@@ -83,7 +83,10 @@
     "sourcePeriod": "(period: Jan–Dec 2025)",
     "noData": "Weather data unavailable",
     "trendTitle": "Monthly temperature & sunshine trend",
-    "trendNote": "Bars: monthly sunshine hours · Lines: monthly avg high / low"
+    "trendNote": "Bars: monthly sunshine hours · Lines: monthly avg high / low",
+    "chartMaxTemp": "Avg. high",
+    "chartMinTemp": "Avg. low",
+    "chartSunshine": "Monthly sunshine"
   },
   "Sources": {
     "prefix": "Source:",
@@ -209,6 +212,8 @@
     "displayingFiltered": "{type} only ({count} records)"
   },
   "SummaryCards": {
+    "scopeTransaction": "※ Transaction figures cover the last 5 years across {prefecture}{municipality} (municipality-wide).",
+    "scopeArea": "※ Hazard / living environment / weather data are pulled from a roughly 1.2 km square tile centred on the map pin.",
     "dataCount": "Records",
     "dataCountValue": "{count}",
     "dataCountSub": "Transaction records retrieved",
