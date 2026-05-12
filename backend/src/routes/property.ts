@@ -40,7 +40,10 @@ const querySchema = z.object({
   lat: z.coerce.number().min(24).max(46),
   lng: z.coerce.number().min(122).max(154),
   zoom: z.coerce.number().min(10).max(18).default(15),
-  locale: z.enum(["ja", "en"]).default("ja"),
+  // フロントエンドが対応する全ロケール（i18n routing.locales と同期）。
+  // 未対応ロケール（zh-TW / zh-CN）は geminiApi.buildPrompt() 内で
+  // 日本語プロンプトにフォールバックされる。
+  locale: z.enum(["ja", "en", "zh-TW", "zh-CN"]).default("ja"),
 });
 
 /** TransactionRecord の配列から統計サマリーを計算 */
