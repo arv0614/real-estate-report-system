@@ -382,6 +382,12 @@ function summarizeAreaData(raw) {
   };
 }
 
+// AI が意図せず混入させる強調記号 (** / __) を除去する。
+// 画像 ![alt](url) やリンク [text](url) は * / _ を構造に使わないので副作用なし。
+function stripBoldMarkdown(text) {
+  return String(text || "").replace(/\*\*/g, "").replace(/__/g, "");
+}
+
 // ─── ファイル書き出し ─────────────────────────────────────────────────────────
 function writeArticle(filename, meta, body, publishedAt) {
   const fm = buildFrontmatter({
@@ -391,7 +397,7 @@ function writeArticle(filename, meta, body, publishedAt) {
     tags: meta.tags,
     primaryLocation: meta.primaryLocation,
   });
-  const trimmedBody = String(body || "").trim();
+  const trimmedBody = stripBoldMarkdown(body).trim();
   const content = `${fm}\n${trimmedBody}\n`;
   const target = path.join(BLOG_DIR, filename);
   fs.writeFileSync(target, content, "utf8");

@@ -14,24 +14,24 @@ To avoid post-contract regret of "I should have looked into that property…", h
 
 ## Why "property research" matters
 
-A real estate listing price is not necessarily a "fair price." Sellers' wishes are baked in, and prices are not infrequently set above market levels. Even more important than price is **risk**.
+A real estate listing price is not necessarily a "fair price." Sellers' wishes are baked in, and prices are not infrequently set above market levels. Even more important than price is risk.
 
 Here are the three biggest risks that often surface after purchase:
 
-**① Buying above market price**
+① Buying above market price
 Without checking surrounding closing prices (the prices at which transactions actually settled), you can end up paying hundreds of thousands of yen above market. Listing prices are public, but closing prices are only listed in MLIT's "Real Estate Transaction Price Information."
 
-**② Overlooking natural-disaster risk**
+② Overlooking natural-disaster risk
 You cannot tell from sight whether land is in a flood-inundation risk zone or designated as a landslide warning area. Post-purchase, you may face damage from natural disasters or struggle to find buyers when selling.
 
-**③ Insufficient checking of living conditions**
+③ Insufficient checking of living conditions
 School zones, distance to the nearest station, nearby hospitals and supermarkets — these living-condition factors are common blind spots that surface only after you actually move in.
 
 ---
 
 ## What is "Mekiki Research"?
 
-**[Mekiki Research](https://mekiki-research.com)** is a real estate research tool that retrieves the following information in 30 seconds — just from an address.
+[Mekiki Research](https://mekiki-research.com) is a real estate research tool that retrieves the following information in 30 seconds — just from an address.
 
 | Feature | Content |
 |---|---|
@@ -51,19 +51,19 @@ The free plan offers all features with up to 3 searches per day. The Pro plan (�
 
 The price displayed on real estate portals (SUUMO, Homes, etc.) is the "listing price" — the seller's hope, not the price at which a transaction actually closed.
 
-In general, closing prices are typically **a few percent to 10% lower** than listing prices.
+In general, closing prices are typically a few percent to 10% lower than listing prices.
 
 MLIT's "Real Estate Transaction Price Information" is the only public dataset that releases actual closed transactions on a quarterly basis. Mekiki Research automatically aggregates this data and visualises it in an easy-to-read format.
 
 ### Three indicators to check
 
-**① Surrounding median and mean**
+① Surrounding median and mean
 Confirm the distribution of closing prices in the same municipality and same use (residential, commercial, etc.). Comparing against the price of the property under consideration provides input for judging "expensive" or "cheap."
 
-**② ¥/m² trend**
+② ¥/m² trend
 Looking at the past several years' ¥/m² trend reveals whether area asset values are rising or falling. Especially important for purchases with investment intent or future-sale plans.
 
-**③ Number of transactions**
+③ Number of transactions
 Areas with few transactions have low liquidity and may take time to sell. Conversely, areas with many transactions have higher demand and are easier to sell.
 
 ### How to use it (steps)
@@ -94,26 +94,26 @@ Checking each one separately takes substantial effort. Each municipality also ha
 
 The "Hazard Risk" feature in Mekiki Research determines all of the following risks at once, just from an address.
 
-**Flood inundation depth rank**
+Flood inundation depth rank
 Five levels from "0m (no risk)" to "5m+ (severely dangerous)." At 0.5m+ inundation, there's risk of above-floor flooding; at 3m+, water could reach the second floor.
 
-**Landslide warning zones**
+Landslide warning zones
 You can confirm whether the property is in a Landslide Special Warning Zone (Red Zone) or a Landslide Warning Zone (Yellow Zone). Properties in Red Zones are sometimes refused mortgage financing.
 
 ### How to handle high-hazard properties
 
 A property with high hazard risk is not "off-limits." It's important to make a holistic judgement using these lenses:
 
-- It may be **the reason the price is below market**
-- Confirm with the seller / builder the status of **disaster prevention features and ground improvement**
-- With the hazard risk acknowledged, consider **risk hedges (insurance, etc.)**
-- Understand the **potential impact on future resale or rental**
+- It may be the reason the price is below market
+- Confirm with the seller / builder the status of disaster prevention features and ground improvement
+- With the hazard risk acknowledged, consider risk hedges (insurance, etc.)
+- Understand the potential impact on future resale or rental
 
 ---
 
 ## How to use the AI area report
 
-One of Mekiki Research's distinctive features is the AI area report, auto-generated by **Gemini 2.5 Flash**.
+One of Mekiki Research's distinctive features is the AI area report, auto-generated by Gemini 2.5 Flash.
 
 ### 10 analysis items
 
@@ -132,7 +132,7 @@ One of Mekiki Research's distinctive features is the AI area report, auto-genera
 
 ### Caveats on the AI report
 
-The AI report is **reference information**. Final purchase decisions should be made based on site visits and advice from real estate professionals (licensed real estate transaction specialists). Use it with the understanding that AI-generated information may contain errors.
+The AI report is reference information. Final purchase decisions should be made based on site visits and advice from real estate professionals (licensed real estate transaction specialists). Use it with the understanding that AI-generated information may contain errors.
 
 ---
 
@@ -164,17 +164,17 @@ Bring the information from Mekiki Research with you to the viewing. Asking the s
 
 ## Takeaways: home buying in the era of data-based judgement
 
-The single biggest cause of home-buying regret is **"insufficient information."** MLIT's actual transaction data is public, freely accessible information — but the share of individual buyers actually using it remains low.
+The single biggest cause of home-buying regret is "insufficient information." MLIT's actual transaction data is public, freely accessible information — but the share of individual buyers actually using it remains low.
 
 With Mekiki Research, professional-grade research takes 5–10 minutes:
 
-- 📊 **Know the market** → grasp fair pricing through transaction data
-- 🌊 **Know the risk** → confirm natural disaster risk via hazard data
-- 🤖 **Know the area** → get a holistic area evaluation via the AI report
+- 📊 Know the market → grasp fair pricing through transaction data
+- 🌊 Know the risk → confirm natural disaster risk via hazard data
+- 🤖 Know the area → get a holistic area evaluation via the AI report
 
 Before the multi-million-yen decision, take 30 seconds first and try entering an address.
 
-**[Try Mekiki Research for free →](https://mekiki-research.com)**
+[Try Mekiki Research for free →](https://mekiki-research.com)
 
 ---
 

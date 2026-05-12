@@ -13,9 +13,9 @@ secondaryLocations:
     name: "Sakae Station"
 ---
 
-"The intermediate station between Tokyo and Osaka" — that's how Nagoya has often been described in conversations about the Linear Chuo Shinkansen. But as of 2026, **a wave of redevelopment totalling some ¥1 trillion** running in parallel at Nagoya Station and Sakae is fundamentally rewriting that frame.
+"The intermediate station between Tokyo and Osaka" — that's how Nagoya has often been described in conversations about the Linear Chuo Shinkansen. But as of 2026, a wave of redevelopment totalling some ¥1 trillion running in parallel at Nagoya Station and Sakae is fundamentally rewriting that frame.
 
-Meitetsu is investing **¥540 billion** in the Nagoya Station district redevelopment; in Sakae, a **211.7m** landmark tower with **Conrad Nagoya** is set to open within 2026; and once the Linear opens, it will be roughly 40 minutes to Shinagawa. We unpack what's happening in Nagoya's real estate market through the latest data.
+Meitetsu is investing ¥540 billion in the Nagoya Station district redevelopment; in Sakae, a 211.7m landmark tower with Conrad Nagoya is set to open within 2026; and once the Linear opens, it will be roughly 40 minutes to Shinagawa. We unpack what's happening in Nagoya's real estate market through the latest data.
 
 ---
 
@@ -25,31 +25,31 @@ Comparing 2011 — when the Linear Chuo Shinkansen plan was confirmed — with t
 
 | Area | Use | 2011 → 2025 | 2025 YoY |
 |---|---|---|---|
-| Nakamura Ward (Meieki) | Commercial avg | **~2.9×** | +6.8% |
+| Nakamura Ward (Meieki) | Commercial avg | ~2.9× | +6.8% |
 | Naka Ward (Sakae) | Commercial avg | ~2.2× | +6.9% |
-| Higashi Ward | Commercial avg | ~2.4× | **+8.8%** |
+| Higashi Ward | Commercial avg | ~2.4× | +8.8% |
 
-The standout is **Higashi Ward**'s growth. Some residential data points there posted **+14.73% YoY**, evidence that Meieki / Sakae redevelopment effects are spilling into adjacent areas. Nakamura Ward's average land price reached **¥2,220,700/m²**, and Naka Ward **¥1,972,223/m²** — making Nagoya increasingly substantial within Japan's three major metro markets.
+The standout is Higashi Ward's growth. Some residential data points there posted +14.73% YoY, evidence that Meieki / Sakae redevelopment effects are spilling into adjacent areas. Nakamura Ward's average land price reached ¥2,220,700/m², and Naka Ward ¥1,972,223/m² — making Nagoya increasingly substantial within Japan's three major metro markets.
 
 ---
 
 ## Meieki redevelopment: Meitetsu ¥540B × 400m north–south mega-project
 
-The largest project around Nagoya Station is the **"Nagoya Station District Redevelopment Plan"** centred on Nagoya Railroad (Meitetsu).
+The largest project around Nagoya Station is the "Nagoya Station District Redevelopment Plan" centred on Nagoya Railroad (Meitetsu).
 
 ### Project overview
 
-- **Total cost**: ~¥540 billion (initial plan; possible upward revision)
-- **Scale**: two ~170m-tall towers, ~520,000 m² total floor area
-- **Joint developers**: Meitetsu Real Estate, Nippon Life, Kintetsu, Kintetsu Real Estate
-- **Main facilities**: offices, retail, Hyatt Group hotel "Andaz Nagoya," bus terminal
-- **Schedule**: Phase 1 completed FY2033, Phase 2 completed early 2040s
+- Total cost: ~¥540 billion (initial plan; possible upward revision)
+- Scale: two ~170m-tall towers, ~520,000 m² total floor area
+- Joint developers: Meitetsu Real Estate, Nippon Life, Kintetsu, Kintetsu Real Estate
+- Main facilities: offices, retail, Hyatt Group hotel "Andaz Nagoya," bus terminal
+- Schedule: Phase 1 completed FY2033, Phase 2 completed early 2040s
 
-This is **one of Nagoya's largest-ever redevelopments**, integrating the rebuild of six buildings across roughly 400m north-south, immediately south of JR Nagoya Station. It was formally cleared for execution in 2025.
+This is one of Nagoya's largest-ever redevelopments, integrating the rebuild of six buildings across roughly 400m north-south, immediately south of JR Nagoya Station. It was formally cleared for execution in 2025.
 
 ### A "review" worth noting
 
-That said, in December 2025, Meitetsu announced it would re-examine the plan, citing **labour shortages and rising construction costs**. Estimated project costs and construction periods are now expected to substantially exceed initial forecasts. Schedule delays or scaling-back are possible — important to keep in mind for investment decisions.
+That said, in December 2025, Meitetsu announced it would re-examine the plan, citing labour shortages and rising construction costs. Estimated project costs and construction periods are now expected to substantially exceed initial forecasts. Schedule delays or scaling-back are possible — important to keep in mind for investment decisions.
 
 ---
 
@@ -62,12 +62,12 @@ In Sakae — Meieki's twin downtown — large redevelopments are also rolling in
 | Item | Description |
 |---|---|
 | Floors | 41 above, 4 below ground |
-| Height | **211.7m** (tallest in Sakae) |
+| Height | 211.7m (tallest in Sakae) |
 | Main uses | Hotel (Conrad Nagoya), offices, cinema, retail |
 | Completion | March 2026 (planned) |
 | Opening | Summer-Autumn 2026 |
 
-The arrival of Hilton Group's top brand **Conrad** in Nagoya is being read as a signal that lifts Sakae's class one step.
+The arrival of Hilton Group's top brand Conrad in Nagoya is being read as a signal that lifts Sakae's class one step.
 
 ### The new Chunichi Building
 
@@ -75,23 +75,23 @@ The new Chunichi Building, which had its grand opening in April 2024, stands 33 
 
 ### Hisaya-odori Park redevelopment
 
-In addition, the **southern-area redevelopment plan for Hisaya-odori Park** — Sakae's symbolic park — kicked off in 2025. Park-integrated urban development is set to extend, building on the existing northern "Hisaya-odori Park" zone.
+In addition, the southern-area redevelopment plan for Hisaya-odori Park — Sakae's symbolic park — kicked off in 2025. Park-integrated urban development is set to extend, building on the existing northern "Hisaya-odori Park" zone.
 
-While Meieki is being redeveloped as a "transport hub," Sakae is evolving uniquely as a "culture and retail core." **Nagoya retains its bipolar structure, with the entire downtown lifting together** — that's the current pattern.
+While Meieki is being redeveloped as a "transport hub," Sakae is evolving uniquely as a "culture and retail core." Nagoya retains its bipolar structure, with the entire downtown lifting together — that's the current pattern.
 
 ---
 
 ## Linear Chuo Shinkansen: the day "40 minutes to Shinagawa" arrives
 
-Any conversation about Nagoya's real estate market is incomplete without **the Linear Chuo Shinkansen**.
+Any conversation about Nagoya's real estate market is incomplete without the Linear Chuo Shinkansen.
 
 ### What the Linear changes
 
-- **Shinagawa → Nagoya**: about 40 minutes at maximum speed (vs. ~1 hour 40 minutes on the current Tokaido Shinkansen "Nozomi")
+- Shinagawa → Nagoya: about 40 minutes at maximum speed (vs. ~1 hour 40 minutes on the current Tokaido Shinkansen "Nozomi")
 - The psychological distance between Tokyo and Nagoya collapses dramatically — from "day-trip distance" toward "commuting distance"
 - New stations along the route in Kanagawa (Hashimoto), Yamanashi (near Kofu), and Nagano (near Iida)
 
-Once it opens, Tokyo, Nagoya, and Osaka will be linked within a 1-hour belt — the three metropolitan zones effectively becoming a single mega-economy. Nagoya, **sitting at the centre as a hub**, would see its value as a business base and residential location grow substantially.
+Once it opens, Tokyo, Nagoya, and Osaka will be linked within a 1-hour belt — the three metropolitan zones effectively becoming a single mega-economy. Nagoya, sitting at the centre as a hub, would see its value as a business base and residential location grow substantially.
 
 ### Uncertainty around opening timing
 
@@ -110,7 +110,7 @@ A quick organisation of major Nagoya City sub-areas for investment / purchase:
 | Higashi Ward | Spillover from Meieki / Sakae — top growth rate | +14.73% growth | ★★☆ |
 | Atsuta / Nakagawa Wards | South of Meieki / relatively discounted | — | ★★☆ |
 
-**Nakamura and Naka Wards** have already reached high price levels and don't suit yield-focused investments well. Meanwhile, **Higashi Ward** offers good access to both Meieki and Sakae, with growth standing out. As the "next area to rise," capital is starting to flow into the Tokugawa-en area and Otemae.
+Nakamura and Naka Wards have already reached high price levels and don't suit yield-focused investments well. Meanwhile, Higashi Ward offers good access to both Meieki and Sakae, with growth standing out. As the "next area to rise," capital is starting to flow into the Tokugawa-en area and Otemae.
 
 ---
 
@@ -132,15 +132,15 @@ Nagoya's economy is heavily dependent on manufacturing — Toyota Motor in parti
 
 ## Takeaways: Nagoya investment driven by data, not expectation
 
-Nagoya's real estate market carries **two giant catalysts** — the Linear Chuo Shinkansen, and the Meieki / Sakae double redevelopment.
+Nagoya's real estate market carries two giant catalysts — the Linear Chuo Shinkansen, and the Meieki / Sakae double redevelopment.
 
-- Nakamura Ward commercial: ~**2.9×** since the Linear plan was confirmed
+- Nakamura Ward commercial: ~2.9× since the Linear plan was confirmed
 - Meitetsu's ¥540B redevelopment: cleared for execution (currently under review)
 - Conrad Nagoya / Landmark Tower opening in Sakae in 2026
-- Higashi Ward absorbing spillover with **+14.73%** growth
+- Higashi Ward absorbing spillover with +14.73% growth
 
-But three risks coexist: Linear opening delay, redevelopment review, and manufacturing dependency. Moving on "expectation" alone is not enough — **verifying transaction-price trends and hazard data per area** is what separates winning Nagoya investments from losing ones.
+But three risks coexist: Linear opening delay, redevelopment review, and manufacturing dependency. Moving on "expectation" alone is not enough — verifying transaction-price trends and hazard data per area is what separates winning Nagoya investments from losing ones.
 
-The latest data for any area is visualised in 30 seconds with **Mekiki Research** from just an address. As input for purchase or investment decisions, give it a try.
+The latest data for any area is visualised in 30 seconds with Mekiki Research from just an address. As input for purchase or investment decisions, give it a try.
 
 *Data in this article is based on the 2025 published land price and various corporate press releases. For the most accurate latest information, please refer to official announcements.*

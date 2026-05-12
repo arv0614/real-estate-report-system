@@ -21,15 +21,15 @@ Since the Mitsui Fudosan-led consortium was selected as the designated developer
 
 The project's tentative name is "TSUKIJI Next Creation." As the name suggests, it aims to create a district that generates new value by fusing traditional Japanese culture with cutting-edge technology.
 
-**Overview of Key Planned Facilities:**
+Overview of Key Planned Facilities:
 
-*   **Multi-functional Stadium (Centerpiece):** A stadium with a retractable roof and a capacity of approximately 50,000. It will be designed for diverse uses, including professional sports like baseball and soccer, large-scale concerts, and MICE (Meetings, Incentives, Conferences, and Exhibitions).
-*   **Office Tower:** A state-of-the-art, wellness-focused office building with a total floor area of about 250,000 square meters, aimed at attracting global corporations.
-*   **Commercial Facilities:** A mixed-use commercial complex designed to meet diverse needs, from luxury brands that create a sense of continuity with Ginza to a food hall that inherits Tsukiji's culinary culture.
-*   **Hotels:** Plans include two hotels: a top-tier luxury hotel and a lifestyle hotel catering to long-term stays for international visitors.
-*   **Residences:** A super high-rise residential tower with serviced apartments, proposing a new form of urban living.
-*   **Water Transit and Transportation Terminal:** A water transit terminal will be developed to connect with the Sumida River and Tokyo Bay, enhancing access to Haneda Airport and the Tokyo Waterfront City.
-*   **Vast Green Spaces:** Approximately 40% of the site will be dedicated to green space, forming a green network that connects with the nearby Hamarikyu Gardens (Hamarikyu Onshi Teien). It will also serve as a disaster-prevention hub.
+*   Multi-functional Stadium (Centerpiece): A stadium with a retractable roof and a capacity of approximately 50,000. It will be designed for diverse uses, including professional sports like baseball and soccer, large-scale concerts, and MICE (Meetings, Incentives, Conferences, and Exhibitions).
+*   Office Tower: A state-of-the-art, wellness-focused office building with a total floor area of about 250,000 square meters, aimed at attracting global corporations.
+*   Commercial Facilities: A mixed-use commercial complex designed to meet diverse needs, from luxury brands that create a sense of continuity with Ginza to a food hall that inherits Tsukiji's culinary culture.
+*   Hotels: Plans include two hotels: a top-tier luxury hotel and a lifestyle hotel catering to long-term stays for international visitors.
+*   Residences: A super high-rise residential tower with serviced apartments, proposing a new form of urban living.
+*   Water Transit and Transportation Terminal: A water transit terminal will be developed to connect with the Sumida River and Tokyo Bay, enhancing access to Haneda Airport and the Tokyo Waterfront City.
+*   Vast Green Spaces: Approximately 40% of the site will be dedicated to green space, forming a green network that connects with the nearby Hamarikyu Gardens (Hamarikyu Onshi Teien). It will also serve as a disaster-prevention hub.
 
 The core of the plan is to create not just a "collection of buildings," but a "district that is enjoyable to walk through and enriches one's time," where these facilities are organically linked.
 
@@ -39,11 +39,11 @@ The project is being driven by a consortium of 11 leading companies from various
 
 | Company Name | Assumed Primary Role in the Project |
 | :--- | :--- |
-| **Mitsui Fudosan** | Overall developer, planning and operation of commercial and office facilities |
-| **Toyota Fudosan** | Integration of next-generation mobility, implementation of smart city technology |
-| **The Yomiuri Shimbun Group** | Stadium operations, public relations through media collaboration |
-| **Kajima Corp. / Shimizu Corp.** | Design and construction using cutting-edge technology |
-| **The Asahi Shimbun Co. / Nikkan Sports News** | Content planning, event promotion and attraction |
+| Mitsui Fudosan | Overall developer, planning and operation of commercial and office facilities |
+| Toyota Fudosan | Integration of next-generation mobility, implementation of smart city technology |
+| The Yomiuri Shimbun Group | Stadium operations, public relations through media collaboration |
+| Kajima Corp. / Shimizu Corp. | Design and construction using cutting-edge technology |
+| The Asahi Shimbun Co. / Nikkan Sports News | Content planning, event promotion and attraction |
 
 Their guiding concept is "Open-Connect-Inspire." The goal is to create a hub of interaction where people, cultures, information, and businesses from around the world can "Open," "Connect," and "Inspire" new ideas.
 
@@ -55,12 +55,12 @@ From a real estate market perspective, this capacity for sustainable urban manag
 
 The heart of the project is the multi-functional stadium with a capacity of approximately 50,000. It is planned as a facility that far surpasses the conventional concepts of a "baseball park" or "soccer stadium."
 
-**Key Features of the Stadium:**
+Key Features of the Stadium:
 
-*   **Versatility:** With movable seating and a field conversion system, the venue can be transformed into the optimal arena space for various events—baseball, soccer, basketball, concerts, exhibitions—within a matter of hours.
-*   **All-Weather Capability:** A retractable roof ensures that events can be held regardless of the weather.
-*   **Cutting-Edge Spectator Experience:** Equipped with a 5G network, it will offer next-generation viewing styles, such as information provided through AR (Augmented Reality) and food delivery directly to seats.
-*   **Premium Spaces:** A large number of VIP rooms and lounges will be available to cater to diverse needs, attracting MICE events and affluent clientele.
+*   Versatility: With movable seating and a field conversion system, the venue can be transformed into the optimal arena space for various events—baseball, soccer, basketball, concerts, exhibitions—within a matter of hours.
+*   All-Weather Capability: A retractable roof ensures that events can be held regardless of the weather.
+*   Cutting-Edge Spectator Experience: Equipped with a 5G network, it will offer next-generation viewing styles, such as information provided through AR (Augmented Reality) and food delivery directly to seats.
+*   Premium Spaces: A large number of VIP rooms and lounges will be available to cater to diverse needs, attracting MICE events and affluent clientele.
 
 It is strongly anticipated that the stadium will become the new home of the Yomiuri Giants baseball team. If this happens, it would guarantee a stable draw of spectators for over 70 games per year. In addition, a wide variety of events, including concerts by top domestic and international artists, large-scale international conferences, and global esports tournaments, will be held throughout the year.
 
@@ -70,17 +70,17 @@ According to estimates by the Tokyo Metropolitan Government, the redevelopment i
 
 For Ginza, a world-renowned commercial hub, the emergence of a massive visitor-drawing facility within walking distance could be a double-edged sword.
 
-**Impact on Commercial Land Prices:**
+Impact on Commercial Land Prices:
 
-*   **Positive Factors (Upward Pressure on Land Prices):**
-    *   **Improved Pedestrian Flow:** Plans include pedestrian decks and underground passages connecting Tsukiji and Ginza, which will channel a huge number of visitors from the stadium into the Ginza area. In particular, the eastern side of Ginza (3-chome to 8-chome) across Showa-dori Avenue and the Shimbashi area can expect expanded commercial opportunities by attracting new customer segments.
-    *   **Synergy with Inbound Tourism:** A new pattern will emerge where international tourists visiting Japan for events at the stadium will then enjoy shopping and dining in Ginza. The development of luxury hotels and MICE facilities will further enhance Ginza's status as a destination for affluent international travelers.
-    *   **Revitalization of the Nighttime Economy:** After evening baseball games and concerts, spectators are likely to flow into Ginza's restaurants and bars, potentially revitalizing Ginza's relatively underdeveloped "nighttime economy."
+*   Positive Factors (Upward Pressure on Land Prices):
+    *   Improved Pedestrian Flow: Plans include pedestrian decks and underground passages connecting Tsukiji and Ginza, which will channel a huge number of visitors from the stadium into the Ginza area. In particular, the eastern side of Ginza (3-chome to 8-chome) across Showa-dori Avenue and the Shimbashi area can expect expanded commercial opportunities by attracting new customer segments.
+    *   Synergy with Inbound Tourism: A new pattern will emerge where international tourists visiting Japan for events at the stadium will then enjoy shopping and dining in Ginza. The development of luxury hotels and MICE facilities will further enhance Ginza's status as a destination for affluent international travelers.
+    *   Revitalization of the Nighttime Economy: After evening baseball games and concerts, spectators are likely to flow into Ginza's restaurants and bars, potentially revitalizing Ginza's relatively underdeveloped "nighttime economy."
 
-*   **Negative Factors (Potential Concerns):**
-    *   **Competition:** The creation of large, attractive commercial facilities in Tsukiji could draw some customers away from Ginza. Dining and entertainment tenants, in particular, will face direct competition. The challenge for Ginza will be to differentiate itself by leveraging its brand image of "tradition" and "prestige."
+*   Negative Factors (Potential Concerns):
+    *   Competition: The creation of large, attractive commercial facilities in Tsukiji could draw some customers away from Ginza. Dining and entertainment tenants, in particular, will face direct competition. The challenge for Ginza will be to differentiate itself by leveraging its brand image of "tradition" and "prestige."
 
-**Impact on Office Land Prices:**
+Impact on Office Land Prices:
 
 The supply of state-of-the-art office space in Tsukiji will also significantly affect the office market in the Ginza and Higashi-Ginza areas. This area, with its many aging, small-to-medium-sized buildings, faces a "risk of rising vacancy rates" as companies may relocate to Tsukiji.
 
@@ -90,11 +90,11 @@ However, in the long term, I analyze that the positive impact will be greater. I
 
 For those seeking live-work proximity, the Bayside area—especially Harumi, Kachidoki, and Tsukishima—is poised to be the residential area that benefits most directly from the Tsukiji redevelopment.
 
-**Positive Impacts on the High-Rise Condominium Market:**
+Positive Impacts on the High-Rise Condominium Market:
 
-*   **Dramatic Improvement in Lifestyle Convenience:** A traditional weakness of the Bayside area has been the lack of daily shopping facilities and cultural and entertainment venues. With new commercial facilities, green spaces, and entertainment hubs in Tsukiji, Bayside residents will be able to enjoy all aspects of "live, work, and play" in close proximity. This is an extremely important factor in determining a condominium's asset value.
-*   **From "Adjacent to the City Center" to "Part of the City Center":** The Tsukiji redevelopment will serve as a "bridge," connecting the Bayside area with the city center both physically and psychologically. The creation of a green and water network stretching from Hamarikyu Gardens through Tsukiji to Harumi will transform the Bayside area from a "bedroom community adjacent to the city center" into a "mixed-use urban district that complements the functions of the city center."
-*   **Influx of New Residents:** As residents move into the Harumi Flag development in earnest, this redevelopment will further enhance the area's appeal, attracting people with diverse lifestyles, from families with children to active seniors. Stable housing demand is a powerful factor that will provide strong support for prices in the secondary condominium market.
+*   Dramatic Improvement in Lifestyle Convenience: A traditional weakness of the Bayside area has been the lack of daily shopping facilities and cultural and entertainment venues. With new commercial facilities, green spaces, and entertainment hubs in Tsukiji, Bayside residents will be able to enjoy all aspects of "live, work, and play" in close proximity. This is an extremely important factor in determining a condominium's asset value.
+*   From "Adjacent to the City Center" to "Part of the City Center": The Tsukiji redevelopment will serve as a "bridge," connecting the Bayside area with the city center both physically and psychologically. The creation of a green and water network stretching from Hamarikyu Gardens through Tsukiji to Harumi will transform the Bayside area from a "bedroom community adjacent to the city center" into a "mixed-use urban district that complements the functions of the city center."
+*   Influx of New Residents: As residents move into the Harumi Flag development in earnest, this redevelopment will further enhance the area's appeal, attracting people with diverse lifestyles, from families with children to active seniors. Stable housing demand is a powerful factor that will provide strong support for prices in the secondary condominium market.
 
 In particular, the Kachidoki area, located across the Sumida River from Tsukiji, and the western part of the Tsukishima area may gain a new added value: a "stadium view" in addition to their river views.
 
@@ -104,7 +104,7 @@ However, there are also concerns, such as worsening traffic congestion during ev
 
 The biggest key to the project's success lies in the development of transportation infrastructure. The current nearest stations, Tsukiji-shijo Station on the Toei Oedo Line and Tsukiji Station on the Tokyo Metro Hibiya Line, are clearly insufficient to handle the transport demand when tens of thousands of people move at once for an event.
 
-This is where the highly anticipated **"Central Tokyo-Waterfront Area Subway" concept** comes into play. This new subway line is planned to connect the Tokyo Station area with the Tokyo Waterfront City (Ariake/Tokyo Big Sight) in about 10 minutes, and the proposed route includes the establishment of **"Shin-Tsukiji" Station (tentative name)**.
+This is where the highly anticipated "Central Tokyo-Waterfront Area Subway" concept comes into play. This new subway line is planned to connect the Tokyo Station area with the Tokyo Waterfront City (Ariake/Tokyo Big Sight) in about 10 minutes, and the proposed route includes the establishment of "Shin-Tsukiji" Station (tentative name).
 
 The Tsukiji redevelopment is an extremely powerful catalyst for advancing this new subway project. The creation of a massive demand center through private investment on the scale of hundreds of billions of yen dramatically improves the cost-effectiveness of constructing a new line. As of 2026, discussions among the national government, the Tokyo Metropolitan Government, and related wards are in their final stages, and the prospect of construction starting in the early 2030s for an opening around 2040 is becoming increasingly realistic.
 
@@ -121,10 +121,10 @@ A redevelopment project of this magnitude presents both significant opportunitie
 
 | Category | Return (Investment Opportunity) | Risk (Point of Caution) |
 | :--- | :--- | :--- |
-| **Capital Gains** | Price appreciation of surrounding pre-owned condos and land as the development progresses. Higashi-Ginza, Kachidoki, and Tsukishima areas are particularly promising. | Risk of development delays or plan changes. The entire real estate market could see a correction in a rising interest rate environment. |
-| **Income Gains** | Increased demand for rental housing due to the concentration of offices and commercial facilities. Rent increases can be expected. | Temporary deterioration of the living environment due to construction noise and traffic restrictions. Oversupply of rental properties in the surrounding area. |
-| **Business Investment** | Business opportunities such as small-scale hotels, vacation rentals, and restaurants targeting inbound tourists and event attendees. | Risk of stagnant commercial activity if the stadium's occupancy rate falls below expectations. Competition with new facilities. |
-| **Transportation Infrastructure** | Realization of the new "Shin-Tsukiji" subway station. The value of the area around the station would increase dramatically. | Risk that the new station plan is shelved or significantly delayed. Possibility of chronic traffic congestion, worsening the living environment. |
+| Capital Gains | Price appreciation of surrounding pre-owned condos and land as the development progresses. Higashi-Ginza, Kachidoki, and Tsukishima areas are particularly promising. | Risk of development delays or plan changes. The entire real estate market could see a correction in a rising interest rate environment. |
+| Income Gains | Increased demand for rental housing due to the concentration of offices and commercial facilities. Rent increases can be expected. | Temporary deterioration of the living environment due to construction noise and traffic restrictions. Oversupply of rental properties in the surrounding area. |
+| Business Investment | Business opportunities such as small-scale hotels, vacation rentals, and restaurants targeting inbound tourists and event attendees. | Risk of stagnant commercial activity if the stadium's occupancy rate falls below expectations. Competition with new facilities. |
+| Transportation Infrastructure | Realization of the new "Shin-Tsukiji" subway station. The value of the area around the station would increase dramatically. | Risk that the new station plan is shelved or significantly delayed. Possibility of chronic traffic congestion, worsening the living environment. |
 
 When making investment decisions, it is crucial not to jump in simply because a property is "close to Tsukiji." Instead, investors must calmly assess the specifics of the development plan, the progress of transportation infrastructure projects, and macroeconomic trends, including interest rates. A significant rise in land prices is particularly anticipated around 2030, when the stadium's opening and the new station's construction become more certain. For now, it should be considered a time for preparation.
 
@@ -133,9 +133,9 @@ When making investment decisions, it is crucial not to jump in simply because a 
 The redevelopment of the former Tsukiji Market site is more than a project to create a single city block. It is a grand endeavor that could be described as a "re-editing" of the city of Tokyo itself, slightly shifting its center of gravity and creating new flows of people and commerce.
 
 By the 2030s, when this development is complete, Tokyo's real estate map will have been significantly redrawn.
-*   **Ginza** will enhance its function as a hub for entertainment and culture, in addition to being a traditional luxury commercial district.
-*   **The Bayside area** will establish its status as a new urban residential district where living, working, and recreation are highly integrated.
-*   And **Tsukiji** will shine as a new central point that connects these existing areas, encompassing business, culture, tourism, and daily life.
+*   Ginza will enhance its function as a hub for entertainment and culture, in addition to being a traditional luxury commercial district.
+*   The Bayside area will establish its status as a new urban residential district where living, working, and recreation are highly integrated.
+*   And Tsukiji will shine as a new central point that connects these existing areas, encompassing business, culture, tourism, and daily life.
 
 In this era of historic urban transformation, the value of real estate can no longer be measured by traditional metrics like location and age alone. The ability to benefit from the "experiential value" and "interactive value" that the new district will offer is a perspective that will undoubtedly become increasingly important in future property selection and investment strategies.
 

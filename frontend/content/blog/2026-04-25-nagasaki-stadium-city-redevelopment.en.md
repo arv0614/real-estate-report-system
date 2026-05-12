@@ -9,9 +9,9 @@ primaryLocation:
   name: "Nagasaki Station area"
 ---
 
-At the centre of Nagasaki City's "once-in-a-century" wave of redevelopment sits an unusual project: the large mixed-use complex **Nagasaki Stadium City**, built by mail-order leader Japanet Holdings at a **total project cost of about ¥100B**.
+At the centre of Nagasaki City's "once-in-a-century" wave of redevelopment sits an unusual project: the large mixed-use complex Nagasaki Stadium City, built by mail-order leader Japanet Holdings at a total project cost of about ¥100B.
 
-One year after the October 14, 2024 opening, cumulative visitors total **4.85 million** with an economic impact of **about ¥96.3B**. As a fully private-led redevelopment model that took zero government subsidy, the project draws nationwide attention. We verify what kind of impact it has had on Nagasaki's real estate market.
+One year after the October 14, 2024 opening, cumulative visitors total 4.85 million with an economic impact of about ¥96.3B. As a fully private-led redevelopment model that took zero government subsidy, the project draws nationwide attention. We verify what kind of impact it has had on Nagasaki's real estate market.
 
 ---
 
@@ -27,7 +27,7 @@ Built on the former Mitsubishi Heavy Industries shipyard site (about 7.5 hectare
 | Retail | Numerous food, beverage, and merchandise tenants |
 | Office | Includes Japanet Group HQ functions |
 
-The standout point: this project received **zero subsidies from national or local government**. From land acquisition to construction and operations, every yen came from the Japanet Group's own capital — drawing attention from MLIT and the Sports Agency as a new private-sector model for regional revitalisation.
+The standout point: this project received zero subsidies from national or local government. From land acquisition to construction and operations, every yen came from the Japanet Group's own capital — drawing attention from MLIT and the Sports Agency as a new private-sector model for regional revitalisation.
 
 ---
 
@@ -37,13 +37,13 @@ The complex's draw outpaced projections from the very start.
 
 | Elapsed period | Cumulative visitors |
 |---|---|
-| Month 1 (Nov 2024) | **550,000** (avg 30k/day weekends, 13k/day weekdays) |
-| Month 2 (Dec 2024) | **950,000** |
-| Day 100 (Jan 2025) | **1.53M** |
-| Month 3 (end Jan 2025) | **>1.40M** |
-| Year 1 (Oct 2025) | **4.85M** |
+| Month 1 (Nov 2024) | 550,000 (avg 30k/day weekends, 13k/day weekdays) |
+| Month 2 (Dec 2024) | 950,000 |
+| Day 100 (Jan 2025) | 1.53M |
+| Month 3 (end Jan 2025) | >1.40M |
+| Year 1 (Oct 2025) | 4.85M |
 
-The annual economic impact is estimated at **about ¥96.3B**, with about **13,000 jobs** created. In August 2025, the complex achieved its **first single-month profit** post-opening.
+The annual economic impact is estimated at about ¥96.3B, with about 13,000 jobs created. In August 2025, the complex achieved its first single-month profit post-opening.
 
 The original target was 8.5M visitors per year; year one came in at 4.85M. The remaining challenge is "weekday traffic when there are no games or events." Even so, drawing nearly 5 million visitors in a regional city of about 400,000 is a substantial impact.
 
@@ -57,12 +57,12 @@ Nagasaki Stadium City is not standalone — it's the centrepiece of a chain of r
 
 | Year/Month | Project |
 |---|---|
-| Nov 2021 | **Dejima Messe Nagasaki** opens (convention facility, adjoining the Hilton) |
-| Sep 2022 | **Nishi-Kyushu Shinkansen** opens (Takeo Onsen–Nagasaki) |
-| Nov 2023 | **JR Nagasaki Station Building** opens (retail-office complex) |
-| Jan 2024 | **Nagasaki Marriott Hotel** opens (in the station building, the first Marriott in Kyushu) |
-| Oct 2024 | **Nagasaki Stadium City** opens |
-| Ongoing | **Nagasaki Station Land Readjustment** (~19.1 ha) |
+| Nov 2021 | Dejima Messe Nagasaki opens (convention facility, adjoining the Hilton) |
+| Sep 2022 | Nishi-Kyushu Shinkansen opens (Takeo Onsen–Nagasaki) |
+| Nov 2023 | JR Nagasaki Station Building opens (retail-office complex) |
+| Jan 2024 | Nagasaki Marriott Hotel opens (in the station building, the first Marriott in Kyushu) |
+| Oct 2024 | Nagasaki Stadium City opens |
+| Ongoing | Nagasaki Station Land Readjustment (~19.1 ha) |
 
 In just three years: an international convention facility, a Shinkansen, a station building, an international luxury hotel, and a ¥100B sports complex have opened in succession. This density of redevelopment is unusual for a regional city.
 
@@ -78,13 +78,13 @@ The redevelopment surge is clearly reflected in the published land price.
 
 | Use | Average (¥/m²) | YoY change |
 |---|---|---|
-| Commercial | **332,317** | **+2.05%** |
-| Residential | **51,490** | **+0.08%** |
-| All-uses average | **137,100** | **+1.30%** |
+| Commercial | 332,317 | +2.05% |
+| Residential | 51,490 | +0.08% |
+| All-uses average | 137,100 | +1.30% |
 
 The +2.05% commercial growth approaches pre-pandemic uptrend levels. Demand around Stadium City is showing up in land prices, far exceeding Nagasaki Prefecture's overall +1.36% commercial average.
 
-What's especially notable is actual transaction prices. Land transactions in Nagasaki City for Q1–Q3 2025 averaged **¥119,317/m²** (¥394,436/tsubo) — up **+31.74% YoY**. Transactions around redevelopment areas are likely lifting the overall figures.
+What's especially notable is actual transaction prices. Land transactions in Nagasaki City for Q1–Q3 2025 averaged ¥119,317/m² (¥394,436/tsubo) — up +31.74% YoY. Transactions around redevelopment areas are likely lifting the overall figures.
 
 ---
 
@@ -94,10 +94,10 @@ Nagasaki City's population dropped below 400,000 in July 2022 and continues a lo
 
 In Nagasaki City, however, four factors are exerting positive pressure that exceeds the population decline:
 
-1. **Explosive growth in visitor flow**: Stadium City's 4.85M plus tourism and business visitors via Shinkansen and convention facility
-2. **Job creation**: Around 13,000 jobs from Stadium City alone, with substantial spillover effects
-3. **International hotel arrivals**: Successive openings of Hilton and Marriott raise the city's class
-4. **Chain reaction of private investment**: Stadium City's success draws further development investment
+1. Explosive growth in visitor flow: Stadium City's 4.85M plus tourism and business visitors via Shinkansen and convention facility
+2. Job creation: Around 13,000 jobs from Stadium City alone, with substantial spillover effects
+3. International hotel arrivals: Successive openings of Hilton and Marriott raise the city's class
+4. Chain reaction of private investment: Stadium City's success draws further development investment
 
 Land prices rising during a population decline through "visitor flow × private investment" — Nagasaki is becoming the model case.
 
@@ -107,23 +107,23 @@ Land prices rising during a population decline through "visitor flow × private 
 
 ### Positive factors
 
-- **Commercial land price growth accelerating**: Beyond pandemic recovery, into a structural uptrend driven by redevelopment
-- **Hotel demand growth**: Beyond the two international hotels, vacation rental and guesthouse demand is also expanding
-- **Persistent Shinkansen effect**: Fukuoka–Nagasaki cut to ~30 minutes; closer ties to the Fukuoka economic zone
-- **Full-scale condominium supply at the station**: With "The Premium Nagasaki Eki-mae" and others, exit strategy becomes clearer
+- Commercial land price growth accelerating: Beyond pandemic recovery, into a structural uptrend driven by redevelopment
+- Hotel demand growth: Beyond the two international hotels, vacation rental and guesthouse demand is also expanding
+- Persistent Shinkansen effect: Fukuoka–Nagasaki cut to ~30 minutes; closer ties to the Fukuoka economic zone
+- Full-scale condominium supply at the station: With "The Premium Nagasaki Eki-mae" and others, exit strategy becomes clearer
 
 ### Risk factors
 
-- **Continued population decline**: Long-term shrinking of rental demand
-- **Stadium City sustainability**: 4.85M in year one against an 8.5M target. Weekday traffic remains a challenge
-- **Shinkansen "incomplete" issue**: Full-spec line completion timing undecided (Saga Pref. section negotiations difficult)
-- **Low absolute ¥/tsubo levels**: Capital gain ceiling is constrained
+- Continued population decline: Long-term shrinking of rental demand
+- Stadium City sustainability: 4.85M in year one against an 8.5M target. Weekday traffic remains a challenge
+- Shinkansen "incomplete" issue: Full-spec line completion timing undecided (Saga Pref. section negotiations difficult)
+- Low absolute ¥/tsubo levels: Capital gain ceiling is constrained
 
 ### Areas to target
 
-1. **Along the corridor between Nagasaki Station and Stadium City**: Walking-distance commercial and income properties — scarcity may rise
-2. **Urakami / University Hospital-mae area**: Tram-line residential demand robust; new condominium supply is also active
-3. **Isahaya City along the Shinkansen line**: Good access to Nagasaki City; bedroom-town demand at affordable prices
+1. Along the corridor between Nagasaki Station and Stadium City: Walking-distance commercial and income properties — scarcity may rise
+2. Urakami / University Hospital-mae area: Tram-line residential demand robust; new condominium supply is also active
+3. Isahaya City along the Shinkansen line: Good access to Nagasaki City; bedroom-town demand at affordable prices
 
 ---
 
