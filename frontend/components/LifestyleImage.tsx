@@ -85,6 +85,7 @@ export function LifestyleImage({
             <img
               src={cachedImage}
               alt={`${municipality}の暮らしイメージ`}
+              crossOrigin="anonymous"
               className="w-full rounded-lg shadow-md"
             />
             <p className="text-xs text-slate-400 mt-2 text-center">

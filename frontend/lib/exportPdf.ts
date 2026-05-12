@@ -53,6 +53,30 @@ export const DEFAULT_PDF_OPTIONS: PdfExportOptions = {
 const WHITE_LABEL_HEADER_ID = "pdf-white-label-header";
 
 /**
+ * 指定要素配下の `<img>` がすべて読み込み完了するまで待機する。
+ * 各画像ごとに最大 5 秒、要素全体としても最大 10 秒で打ち切る。
+ * 失敗・タイムアウトしても resolve するので、キャプチャ自体は必ず走る。
+ */
+async function waitForImagesToLoad(root: HTMLElement, perImageTimeoutMs = 5000, overallTimeoutMs = 10000): Promise<void> {
+  const imgs = Array.from(root.querySelectorAll("img"));
+  if (imgs.length === 0) return;
+  const tasks = imgs.map(
+    (img) =>
+      new Promise<void>((resolve) => {
+        if (img.complete && img.naturalHeight !== 0) return resolve();
+        const finish = () => resolve();
+        img.addEventListener("load", finish, { once: true });
+        img.addEventListener("error", finish, { once: true });
+        setTimeout(finish, perImageTimeoutMs);
+      })
+  );
+  await Promise.race([
+    Promise.all(tasks).then(() => undefined),
+    new Promise<void>((r) => setTimeout(r, overallTimeoutMs)),
+  ]);
+}
+
+/**
  * ホワイトラベルヘッダー DOM を生成して `element` の先頭に挿入する。
  * 戻り値はクリーンアップ用。
  *
@@ -153,13 +177,23 @@ export async function exportToPdf(
     ? await injectWhiteLabelHeader(element, options.whiteLabel)
     : () => {};
 
+  // キャプチャ対象内の <img> がすべて読み込み完了するまで待機。
+  // Firebase Storage 等の外部画像が遅延読み込み中だとキャプチャが空になるため。
+  await waitForImagesToLoad(element);
+  // レンダリング/レイアウト確定のための猶予（lifestyle画像のフェードインアニメ等）
+  await new Promise((r) => setTimeout(r, 1000));
+
   let canvas: HTMLCanvasElement;
   try {
     canvas = await html2canvas(element, {
       scale: 2,
       useCORS: true,
+      // CORS 取得に失敗した cross-origin 画像も描画する（タイント canvas を許容）。
+      // useCORS が成功すれば tainted にならず toDataURL も問題なし。
+      allowTaint: true,
       backgroundColor: "#ffffff",
       logging: false,
+      imageTimeout: 15000,
       ignoreElements: (el: Element) => {
         if (!options.includeLifestyleImage && el.hasAttribute("data-pdf-lifestyle-image")) return true;
         if (!options.includeMap && el.hasAttribute("data-pdf-map")) return true;

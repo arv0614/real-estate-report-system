@@ -261,6 +261,7 @@ export function AiReport({
             <img
               src={defaultLifestyleImage}
               alt={t("lifestyleAlt", { municipality: municipality ?? "" })}
+              crossOrigin="anonymous"
               className="w-full h-40 object-cover opacity-60"
             />
             <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/80" />
@@ -306,6 +307,7 @@ export function AiReport({
           <img
             src={lifestyleImage}
             alt={t("lifestyleAltExpanded")}
+            crossOrigin="anonymous"
             className="max-w-full max-h-full rounded-xl shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           />
@@ -383,6 +385,7 @@ export function AiReport({
                       <img
                         src={lifestyleImage}
                         alt={t("lifestyleAlt", { municipality: municipality ?? "" })}
+                        crossOrigin="anonymous"
                         className="w-full h-48 object-cover rounded-lg shadow-sm group-hover:opacity-90 transition-opacity"
                       />
                       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
