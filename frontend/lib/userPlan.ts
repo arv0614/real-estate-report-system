@@ -11,6 +11,63 @@ import { db } from "@/lib/firebase";
 
 export type UserPlan = "free" | "pro";
 
+/**
+ * Pro プラン向けホワイトラベル設定（PDFヘッダーの社名・ロゴ差し替え）
+ * Firestore の users/{uid} ドキュメントに直接保存される。
+ */
+export interface WhiteLabelConfig {
+  companyName: string;
+  companyLogoUrl: string;
+}
+
+export const EMPTY_WHITE_LABEL: WhiteLabelConfig = {
+  companyName: "",
+  companyLogoUrl: "",
+};
+
+/** users/{uid} からホワイトラベル設定を取得。未設定なら空文字を返す。 */
+export async function getWhiteLabelConfig(uid: string): Promise<WhiteLabelConfig> {
+  try {
+    const ref = doc(db, "users", uid);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return EMPTY_WHITE_LABEL;
+    const data = snap.data();
+    return {
+      companyName: typeof data.companyName === "string" ? data.companyName : "",
+      companyLogoUrl: typeof data.companyLogoUrl === "string" ? data.companyLogoUrl : "",
+    };
+  } catch (err) {
+    console.error("[userPlan] getWhiteLabelConfig failed:", err);
+    return EMPTY_WHITE_LABEL;
+  }
+}
+
+/**
+ * users/{uid} にホワイトラベル設定を書き込む。
+ * Firestore ルール上、plan / lemonSqueezy 系以外のフィールドは本人のみ書き込み可能。
+ */
+export async function saveWhiteLabelConfig(
+  uid: string,
+  config: WhiteLabelConfig
+): Promise<void> {
+  const ref = doc(db, "users", uid);
+  const snap = await getDoc(ref);
+  if (snap.exists()) {
+    await updateDoc(ref, {
+      companyName: config.companyName,
+      companyLogoUrl: config.companyLogoUrl,
+    });
+  } else {
+    await setDoc(ref, {
+      plan: "free",
+      dailySearchCount: 0,
+      lastSearchDate: getTodayString(),
+      companyName: config.companyName,
+      companyLogoUrl: config.companyLogoUrl,
+    });
+  }
+}
+
 /** 無料プランの1日の検索上限（通常時） */
 export const FREE_DAILY_LIMIT = 3;
 /** 未ログインの1日の検索上限 */

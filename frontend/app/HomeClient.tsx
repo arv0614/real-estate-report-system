@@ -15,6 +15,7 @@ import {
   recordGuestSearch,
   getGuestSearchCountToday,
   checkAndIncrementFreeSearch,
+  getWhiteLabelConfig,
   FREE_DAILY_LIMIT,
   GUEST_DAILY_LIMIT,
   IS_FREE_UNLIMITED_CAMPAIGN,
@@ -398,7 +399,14 @@ function HomePageContent() {
     flushSync(() => setPdfLoading(true));
     let result: { blobUrl: string; filename: string } | null = null;
     try {
-      result = await exportToPdf("report-content", firstRecord.municipality, pdfExportOptions);
+      // Pro ユーザーのみ、ホワイトラベル設定（社名・ロゴ）を取得して PDF ヘッダーに反映
+      const whiteLabel = user ? await getWhiteLabelConfig(user.uid) : null;
+      result = await exportToPdf("report-content", firstRecord.municipality, {
+        ...pdfExportOptions,
+        whiteLabel: whiteLabel && (whiteLabel.companyName || whiteLabel.companyLogoUrl)
+          ? whiteLabel
+          : undefined,
+      });
     } catch (e) {
       console.error("[PDF] export error:", e);
     } finally {
@@ -612,6 +620,12 @@ function HomePageContent() {
                     {plan === "pro" ? "Pro" : "Free"}
                   </span>
                 )}
+                <Link
+                  href="/profile"
+                  className="hidden sm:inline-flex text-xs px-3 py-1.5 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
+                >
+                  {t("Header.profileLink")}
+                </Link>
                 <button
                   onClick={handleLogout}
                   className="text-xs px-3 py-1.5 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"

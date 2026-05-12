@@ -34,12 +34,90 @@ export interface PdfExportOptions {
   includeLifestyleImage: boolean;
   /** 地図を含める（data-pdf-map 属性を持つ要素） */
   includeMap: boolean;
+  /**
+   * Pro プラン向けホワイトラベル設定。
+   * companyName または companyLogoUrl が指定されると、PDF の先頭にブランドヘッダーを描画する。
+   * 未指定の場合はデフォルトのヘッダー（物件目利きリサーチ）を使用。
+   */
+  whiteLabel?: {
+    companyName?: string;
+    companyLogoUrl?: string;
+  };
 }
 
 export const DEFAULT_PDF_OPTIONS: PdfExportOptions = {
   includeLifestyleImage: true,
   includeMap: false,
 };
+
+const WHITE_LABEL_HEADER_ID = "pdf-white-label-header";
+
+/**
+ * ホワイトラベルヘッダー DOM を生成して `element` の先頭に挿入する。
+ * 戻り値はクリーンアップ用。
+ *
+ * 注意: html2canvas は CORS タグなしの cross-origin 画像を tainted canvas として
+ * 描画失敗にする。Firebase Storage のダウンロード URL は CORS 設定済みなので
+ * crossOrigin="anonymous" + useCORS:true で取り込める。
+ */
+async function injectWhiteLabelHeader(
+  element: HTMLElement,
+  whiteLabel: NonNullable<PdfExportOptions["whiteLabel"]>
+): Promise<() => void> {
+  const companyName = whiteLabel.companyName?.trim() ?? "";
+  const companyLogoUrl = whiteLabel.companyLogoUrl?.trim() ?? "";
+  if (!companyName && !companyLogoUrl) return () => {};
+
+  const header = document.createElement("div");
+  header.id = WHITE_LABEL_HEADER_ID;
+  header.style.cssText = [
+    "display:flex",
+    "align-items:center",
+    "gap:16px",
+    "padding:14px 20px",
+    "margin-bottom:12px",
+    "background:#ffffff",
+    "border:1px solid #e2e8f0",
+    "border-radius:12px",
+    "border-left:6px solid #2563eb",
+  ].join(";");
+
+  if (companyLogoUrl) {
+    const img = document.createElement("img");
+    img.src = companyLogoUrl;
+    img.alt = companyName || "logo";
+    img.crossOrigin = "anonymous";
+    img.style.cssText = "height:44px;width:auto;max-width:180px;object-fit:contain";
+    header.appendChild(img);
+    // 画像読み込みを待つ（タイムアウト 3 秒）。失敗時は img を残したまま続行。
+    await new Promise<void>((resolve) => {
+      if (img.complete && img.naturalHeight !== 0) return resolve();
+      const finish = () => resolve();
+      img.addEventListener("load", finish, { once: true });
+      img.addEventListener("error", finish, { once: true });
+      setTimeout(finish, 3000);
+    });
+  }
+
+  if (companyName) {
+    const name = document.createElement("div");
+    name.textContent = companyName;
+    name.style.cssText = "font-size:18px;font-weight:700;color:#0f172a;letter-spacing:0.01em";
+    header.appendChild(name);
+  }
+
+  const label = document.createElement("div");
+  label.textContent = "Property Report";
+  label.style.cssText = "margin-left:auto;font-size:11px;color:#94a3b8;letter-spacing:0.12em;text-transform:uppercase";
+  header.appendChild(label);
+
+  element.insertBefore(header, element.firstChild);
+  return () => {
+    if (header.parentNode === element) {
+      element.removeChild(header);
+    }
+  };
+}
 
 /**
  * PDF を生成して Blob URL を返す。
@@ -70,6 +148,11 @@ export async function exportToPdf(
   // body.pdf-export クラスを付与して pdf-hide 要素を非表示にする
   document.body.classList.add("pdf-export");
 
+  // Pro ホワイトラベルヘッダーを差し込む（画像ロードを await）
+  const removeHeader = options.whiteLabel
+    ? await injectWhiteLabelHeader(element, options.whiteLabel)
+    : () => {};
+
   let canvas: HTMLCanvasElement;
   try {
     canvas = await html2canvas(element, {
@@ -84,6 +167,7 @@ export async function exportToPdf(
       },
     });
   } finally {
+    removeHeader();
     document.body.classList.remove("pdf-export");
     document.head.removeChild(styleEl);
   }
