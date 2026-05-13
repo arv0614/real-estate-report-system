@@ -9,6 +9,7 @@ import propertyRoutes from "./routes/property";
 import lemonSqueezyRoutes from "./routes/lemonsqueezy";
 import posthogRoutes from "./routes/posthog";
 import waitlistRoutes from "./routes/waitlist";
+import feedbackRoutes from "./routes/feedback";
 
 const app = new Hono();
 
@@ -61,6 +62,7 @@ app.route("/api/property", propertyRoutes);
 app.route("/api/lemonsqueezy", lemonSqueezyRoutes);
 app.route("/api/posthog", posthogRoutes);
 app.route("/api/waitlist", waitlistRoutes);
+app.route("/api/feedback", feedbackRoutes);
 
 // 404
 app.notFound((c) => c.json({ error: "Not Found" }, 404));

@@ -372,6 +372,28 @@
     "errorInvalidEmail": "请输入有效的电子邮件。",
     "errorSave": "登录失败,请稍后再试。"
   },
+  "FeedbackWidget": {
+    "buttonLabel": "发送意见反馈",
+    "title": "意见与需求",
+    "subtitle": "您的声音将直接帮助我们改进产品。",
+    "typeLabel": "类别",
+    "typeBug": "错误报告",
+    "typeFeature": "功能需求",
+    "typeOther": "其他",
+    "messageLabel": "消息",
+    "messagePlaceholder": "请自由分享您发现的问题、期望的功能或任何建议(最多 2000 字)",
+    "submitBtn": "发送",
+    "submitting": "发送中...",
+    "cancelBtn": "取消",
+    "loginRequired": "发送意见反馈前请先登录。",
+    "successTitle": "感谢您的反馈!",
+    "successDesc": "我们会仔细审阅您的意见,并用于产品改进。感谢您的支持。",
+    "closeBtn": "关闭",
+    "errorEmpty": "请输入消息。",
+    "errorTooLong": "消息请控制在 2000 字以内。",
+    "errorSubmit": "发送失败,请稍后再试。",
+    "errorRateLimit": "发送次数已达上限,请于 1 小时后再试。"
+  },
   "AboutPage": {
     "navAppLink": "打开应用",
     "navFeatures": "功能",

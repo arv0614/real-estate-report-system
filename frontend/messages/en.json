@@ -372,6 +372,28 @@
     "errorInvalidEmail": "Please enter a valid email address.",
     "errorSave": "Registration failed. Please try again later."
   },
+  "FeedbackWidget": {
+    "buttonLabel": "Send feedback",
+    "title": "Feedback & Requests",
+    "subtitle": "Help us improve — your voice goes directly to the product team.",
+    "typeLabel": "Type",
+    "typeBug": "Bug report",
+    "typeFeature": "Feature request",
+    "typeOther": "Other",
+    "messageLabel": "Message",
+    "messagePlaceholder": "Tell us what's not working, what you'd love to see, or any other thoughts (up to 2000 characters)",
+    "submitBtn": "Send",
+    "submitting": "Sending...",
+    "cancelBtn": "Cancel",
+    "loginRequired": "Please sign in to send feedback.",
+    "successTitle": "Thank you for your feedback!",
+    "successDesc": "Your input will be reviewed and used to improve the product. We appreciate your support.",
+    "closeBtn": "Close",
+    "errorEmpty": "Please enter a message.",
+    "errorTooLong": "Message must be 2000 characters or less.",
+    "errorSubmit": "Failed to send. Please try again later.",
+    "errorRateLimit": "You have reached the submission limit. Please try again in an hour."
+  },
   "AboutPage": {
     "navAppLink": "Open App",
     "navFeatures": "Features",

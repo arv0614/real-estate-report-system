@@ -329,6 +329,80 @@ export async function generateAreaReport(input: AreaReportInput): Promise<string
   return text;
 }
 
+// ============================================================
+// ユーザーフィードバック → Claude Code 向け要件定義書プロンプト生成
+// ============================================================
+
+export type FeedbackType = "bug" | "feature" | "other";
+
+const FEEDBACK_TYPE_LABEL: Record<FeedbackType, string> = {
+  bug: "バグ報告",
+  feature: "機能要望",
+  other: "その他のフィードバック",
+};
+
+function buildFeedbackPrompt(type: FeedbackType, message: string): string {
+  const typeLabel = FEEDBACK_TYPE_LABEL[type];
+  return `あなたは経験豊富なプロダクトマネージャー兼テクニカルリードです。
+以下はエンドユーザーから寄せられた「${typeLabel}」です。
+このユーザーの声をエンジニア（Claude Code）が即座に着手できる「プロンプト指示書（要件定義書）」に整理してください。
+
+【ユーザーの声】
+${message}
+
+【出力フォーマット（必ずこの順序・見出しで Markdown 出力すること）】
+
+## 概要
+ユーザーの要望・問題の本質を1〜2文で要約。
+
+## 背景・課題
+ユーザーが直面している具体的な状況・痛みを推察して言語化。なぜこの要望が生まれたのかを補足する。
+
+## 想定されるユーザーストーリー
+「〇〇な状況で、△△したいので、□□できるようにしたい」という形式で1〜3項目記述。
+
+## 改修方針（Claude Code への指示）
+エンジニア視点で、具体的な実装ステップを **番号付きリスト** で5〜10項目記述すること。
+- フロントエンド（React / Next.js / Tailwind）・バックエンド（Hono / Firestore / GCP）・i18n の観点を含める
+- 影響しそうなファイルパスや関数名が推察できる場合は明記する
+- 既存実装との整合性に注意すべき点があれば指摘する
+
+## 受け入れ条件 (Acceptance Criteria)
+チェックリスト形式で、実装完了とみなすための具体的条件を3〜6項目記述。
+
+## 補足事項
+将来拡張・関連機能・テスト観点など、エンジニアが知っておくと良い情報があれば記述（なければ「特になし」）。
+
+---
+※ 推測で補完する場合は「（推測）」と明示すること。
+※ ユーザーの原文の意図を歪めないこと。`;
+}
+
+/**
+ * ユーザーからのフィードバック（バグ報告・機能要望）をもとに、
+ * Claude Code 向けの「要件定義書プロンプト」を Gemini で生成する。
+ */
+export async function generateFeedbackPrompt(
+  type: FeedbackType,
+  message: string
+): Promise<string> {
+  if (!config.gemini.apiKey) {
+    throw new Error("[Gemini] APIキー未設定");
+  }
+
+  const genAI = new GoogleGenerativeAI(config.gemini.apiKey);
+  const model = genAI.getGenerativeModel({ model: config.gemini.model });
+
+  const prompt = buildFeedbackPrompt(type, message);
+  console.log(`[Gemini] フィードバック要件定義生成開始: type=${type}, msgLen=${message.length}`);
+
+  const result = await model.generateContent(prompt);
+  const text = result.response.text();
+
+  console.log(`[Gemini] フィードバック要件定義生成完了 (${text.length}文字)`);
+  return text;
+}
+
 export function getMockAiReport(prefecture: string, municipality: string): string {
   return `## 1. エリア総評
 

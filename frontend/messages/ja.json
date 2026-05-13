@@ -372,6 +372,28 @@
     "errorInvalidEmail": "有効なメールアドレスを入力してください。",
     "errorSave": "登録に失敗しました。しばらく後にお試しください。"
   },
+  "FeedbackWidget": {
+    "buttonLabel": "ご意見・要望を送る",
+    "title": "ご意見・ご要望",
+    "subtitle": "プロダクト改善のために、皆さまの声を直接お聞かせください。",
+    "typeLabel": "種別",
+    "typeBug": "バグ報告",
+    "typeFeature": "機能要望",
+    "typeOther": "その他",
+    "messageLabel": "メッセージ",
+    "messagePlaceholder": "気になった点・欲しい機能・改善案など、自由にお書きください（最大2000文字）",
+    "submitBtn": "送信する",
+    "submitting": "送信中...",
+    "cancelBtn": "キャンセル",
+    "loginRequired": "フィードバックの送信にはログインが必要です。",
+    "successTitle": "ご意見ありがとうございます！",
+    "successDesc": "いただいた内容はプロダクト改善の検討に活用させていただきます。今後ともよろしくお願いいたします。",
+    "closeBtn": "閉じる",
+    "errorEmpty": "メッセージを入力してください。",
+    "errorTooLong": "メッセージは2000文字以内で入力してください。",
+    "errorSubmit": "送信に失敗しました。しばらく後にお試しください。",
+    "errorRateLimit": "送信回数が上限に達しました。1時間後に再度お試しください。"
+  },
   "AboutPage": {
     "navAppLink": "アプリを開く",
     "navFeatures": "機能",

@@ -372,6 +372,28 @@
     "errorInvalidEmail": "請輸入有效的電子郵件。",
     "errorSave": "登錄失敗,請稍後再試。"
   },
+  "FeedbackWidget": {
+    "buttonLabel": "傳送意見回饋",
+    "title": "意見與需求",
+    "subtitle": "您的聲音將直接幫助我們改善產品。",
+    "typeLabel": "類別",
+    "typeBug": "錯誤回報",
+    "typeFeature": "功能需求",
+    "typeOther": "其他",
+    "messageLabel": "訊息",
+    "messagePlaceholder": "請自由分享您發現的問題、期望的功能或任何建議(最多 2000 字)",
+    "submitBtn": "送出",
+    "submitting": "傳送中...",
+    "cancelBtn": "取消",
+    "loginRequired": "傳送意見回饋前請先登入。",
+    "successTitle": "感謝您的回饋!",
+    "successDesc": "我們會仔細審視您的意見,並運用於產品改進。感謝您的支持。",
+    "closeBtn": "關閉",
+    "errorEmpty": "請輸入訊息。",
+    "errorTooLong": "訊息請控制在 2000 字以內。",
+    "errorSubmit": "傳送失敗,請稍後再試。",
+    "errorRateLimit": "傳送次數已達上限,請於 1 小時後再試。"
+  },
   "AboutPage": {
     "navAppLink": "開啟應用程式",
     "navFeatures": "功能",
