@@ -59,7 +59,16 @@ app.post("/", async (c) => {
     uid = decoded.uid;
     email = decoded.email;
   } catch (err) {
-    console.warn("[Feedback] ID token verification failed:", err instanceof Error ? err.message : err);
+    // 検証失敗の原因（aud 不一致・トークン期限切れ・projectId 未設定など）を
+    // すべて Cloud Run のログに残す。FirebaseAuthError は code/message を持つので
+    // 両方を出力し、それ以外の場合は素直に文字列化する。
+    const e = err as { code?: string; message?: string; errorInfo?: { code?: string; message?: string } };
+    const appProjectId = admin.apps[0]?.options?.projectId ?? "(unknown)";
+    console.error("[Feedback] ID token verification failed", {
+      code: e.code ?? e.errorInfo?.code ?? null,
+      message: e.message ?? e.errorInfo?.message ?? String(err),
+      adminAppProjectId: appProjectId,
+    });
     return c.json({ error: "Unauthorized: Invalid or expired token" }, 401);
   }
 
