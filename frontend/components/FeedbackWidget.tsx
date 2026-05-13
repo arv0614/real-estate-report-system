@@ -96,7 +96,7 @@ export function FeedbackWidget() {
           aria-label={t("buttonLabel")}
           title={t("buttonLabel")}
           onClick={() => setOpen(true)}
-          className="fixed bottom-5 right-5 z-[9998] flex items-center justify-center w-12 h-12 rounded-full bg-slate-800 text-white shadow-lg hover:bg-slate-700 hover:scale-105 transition-all"
+          className="fixed bottom-24 right-6 z-[9998] flex items-center justify-center w-12 h-12 rounded-full bg-slate-800 text-white shadow-lg hover:bg-slate-700 hover:scale-105 transition-all"
         >
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -106,7 +106,7 @@ export function FeedbackWidget() {
 
       {/* ── パネル（右下固定・チャットウィンドウ風） ── */}
       {open && (
-        <div className="fixed bottom-5 right-5 z-[9998] w-[calc(100vw-2.5rem)] max-w-sm bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col">
+        <div className="fixed bottom-24 right-6 z-[9998] w-[calc(100vw-3rem)] max-w-sm bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col">
           {/* ヘッダー */}
           <div className="bg-gradient-to-br from-slate-800 to-slate-700 px-4 py-3 text-white flex items-center justify-between">
             <div>
