@@ -61,4 +61,18 @@ export const config = {
       ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
       : [],
   },
+
+  admin: {
+    // ADMIN_EMAILS=foo@example.com,bar@example.com 形式。カンマ区切り、空白除去、小文字化。
+    emails: (process.env.ADMIN_EMAILS ?? "")
+      .split(",")
+      .map((e) => e.trim().toLowerCase())
+      .filter((e) => e.length > 0),
+  },
 } as const;
+
+/** メールアドレスが管理者として登録されているか判定する（大文字小文字非区別） */
+export function isAdminEmail(email: string | undefined | null): boolean {
+  if (!email) return false;
+  return config.admin.emails.includes(email.toLowerCase());
+}

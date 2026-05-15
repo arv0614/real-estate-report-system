@@ -676,5 +676,30 @@
     "floodRisk": "flood risk present",
     "floodSafe": "low flood risk",
     "nativeTitle": "{area} — Mekiki Research"
+  },
+  "Admin": {
+    "pageTitle": "Admin Dashboard",
+    "pageSubtitle": "View user feedback and AI-generated prompts.",
+    "loading": "Loading...",
+    "refresh": "Refresh",
+    "retry": "Retry",
+    "empty": "No feedback yet.",
+    "countLabel": "{count} feedback items",
+    "messageLabel": "User message",
+    "aiPromptLabel": "AI-generated prompt",
+    "aiPromptMissing": "No AI prompt was generated.",
+    "expand": "Expand",
+    "collapse": "Collapse",
+    "copy": "Copy",
+    "copied": "Copied",
+    "copyFailed": "Failed to copy to clipboard.",
+    "anonymous": "(no email)",
+    "typeBug": "Bug",
+    "typeFeature": "Feature",
+    "typeOther": "Other",
+    "forbiddenTitle": "Access denied",
+    "forbiddenBody": "This page is for admins only.",
+    "backHome": "Back to home",
+    "errorTitle": "Failed to load"
   }
 }

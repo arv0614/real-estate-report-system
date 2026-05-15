@@ -676,5 +676,30 @@
     "floodRisk": "洪水リスクあり",
     "floodSafe": "洪水リスク低",
     "nativeTitle": "{area} 物件目利きリサーチ"
+  },
+  "Admin": {
+    "pageTitle": "管理者ダッシュボード",
+    "pageSubtitle": "ユーザーから届いたフィードバックとAI生成プロンプトを閲覧します。",
+    "loading": "読み込み中...",
+    "refresh": "再読み込み",
+    "retry": "再試行",
+    "empty": "まだフィードバックはありません。",
+    "countLabel": "{count} 件のフィードバック",
+    "messageLabel": "ユーザーのメッセージ",
+    "aiPromptLabel": "AIが生成したプロンプト",
+    "aiPromptMissing": "AI プロンプトは生成されていません。",
+    "expand": "開く",
+    "collapse": "閉じる",
+    "copy": "コピー",
+    "copied": "コピーしました",
+    "copyFailed": "クリップボードへのコピーに失敗しました。",
+    "anonymous": "(メール未登録)",
+    "typeBug": "バグ",
+    "typeFeature": "要望",
+    "typeOther": "その他",
+    "forbiddenTitle": "アクセス権限がありません",
+    "forbiddenBody": "このページは管理者専用です。トップへ戻ります。",
+    "backHome": "トップへ戻る",
+    "errorTitle": "読み込みに失敗しました"
   }
 }

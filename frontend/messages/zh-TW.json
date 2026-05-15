@@ -676,5 +676,30 @@
     "floodRisk": "有洪水風險",
     "floodSafe": "洪水風險低",
     "nativeTitle": "{area} 物件目利研究"
+  },
+  "Admin": {
+    "pageTitle": "管理員儀表板",
+    "pageSubtitle": "查看使用者回饋與 AI 生成的提示詞。",
+    "loading": "載入中...",
+    "refresh": "重新整理",
+    "retry": "重試",
+    "empty": "尚無回饋。",
+    "countLabel": "{count} 筆回饋",
+    "messageLabel": "使用者訊息",
+    "aiPromptLabel": "AI 生成的提示詞",
+    "aiPromptMissing": "未生成 AI 提示詞。",
+    "expand": "展開",
+    "collapse": "收合",
+    "copy": "複製",
+    "copied": "已複製",
+    "copyFailed": "複製到剪貼簿失敗。",
+    "anonymous": "(未提供電子郵件)",
+    "typeBug": "錯誤",
+    "typeFeature": "建議",
+    "typeOther": "其他",
+    "forbiddenTitle": "無存取權限",
+    "forbiddenBody": "此頁面僅供管理員使用。",
+    "backHome": "返回首頁",
+    "errorTitle": "載入失敗"
   }
 }

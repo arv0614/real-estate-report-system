@@ -676,5 +676,30 @@
     "floodRisk": "有洪水风险",
     "floodSafe": "洪水风险低",
     "nativeTitle": "{area} 物件目利研究"
+  },
+  "Admin": {
+    "pageTitle": "管理员仪表板",
+    "pageSubtitle": "查看用户反馈和 AI 生成的提示词。",
+    "loading": "加载中...",
+    "refresh": "刷新",
+    "retry": "重试",
+    "empty": "暂无反馈。",
+    "countLabel": "{count} 条反馈",
+    "messageLabel": "用户消息",
+    "aiPromptLabel": "AI 生成的提示词",
+    "aiPromptMissing": "未生成 AI 提示词。",
+    "expand": "展开",
+    "collapse": "收起",
+    "copy": "复制",
+    "copied": "已复制",
+    "copyFailed": "复制到剪贴板失败。",
+    "anonymous": "(无邮箱)",
+    "typeBug": "缺陷",
+    "typeFeature": "建议",
+    "typeOther": "其他",
+    "forbiddenTitle": "无访问权限",
+    "forbiddenBody": "此页面仅供管理员使用。",
+    "backHome": "返回首页",
+    "errorTitle": "加载失败"
   }
 }
