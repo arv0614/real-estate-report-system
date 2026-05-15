@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { getMessages } from "next-intl/server";
 import { routing } from "@/i18n/routing";
 import { FeedbackWidget } from "@/components/FeedbackWidget";
+import { AuthModalProvider } from "@/components/AuthModalContext";
 
 type Props = {
   children: React.ReactNode;
@@ -293,8 +294,10 @@ export default async function LocaleLayout({ children, params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <NextIntlClientProvider messages={messages}>
-        {children}
-        <FeedbackWidget />
+        <AuthModalProvider>
+          {children}
+          <FeedbackWidget />
+        </AuthModalProvider>
       </NextIntlClientProvider>
     </>
   );

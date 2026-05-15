@@ -1,5 +1,13 @@
 import { initializeApp, getApps } from "firebase/app";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInWithEmailAndPassword as fbSignInWithEmailAndPassword,
+  createUserWithEmailAndPassword as fbCreateUserWithEmailAndPassword,
+  sendPasswordResetEmail as fbSendPasswordResetEmail,
+  type UserCredential,
+} from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
@@ -19,3 +27,20 @@ export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+
+// ── Auth helpers ─────────────────────────────────────────────
+export function signInWithGoogle(): Promise<UserCredential> {
+  return signInWithPopup(auth, googleProvider);
+}
+
+export function signInWithEmail(email: string, password: string): Promise<UserCredential> {
+  return fbSignInWithEmailAndPassword(auth, email, password);
+}
+
+export function signUpWithEmail(email: string, password: string): Promise<UserCredential> {
+  return fbCreateUserWithEmailAndPassword(auth, email, password);
+}
+
+export function sendPasswordReset(email: string): Promise<void> {
+  return fbSendPasswordResetEmail(auth, email);
+}
