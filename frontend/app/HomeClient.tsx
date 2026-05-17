@@ -111,6 +111,8 @@ function HomePageContent() {
   const [propertyTypeFilter, setPropertyTypeFilter] = useState<PropertyTypeValue>(ALL_TYPE);
   /** 地区名フィルタ。"" は全地区。result 取得時 autoDistrict が一致すれば自動選択。 */
   const [districtFilter, setDistrictFilter] = useState<string>("");
+  /** 徒歩時間フィルタ（最寄り駅から、分）。0 は「すべて」、5/10/15/20 が選択可能。Proプラン限定。 */
+  const [walkTimeFilter, setWalkTimeFilter] = useState<0 | 5 | 10 | 15 | 20>(0);
   /**
    * 初期値セットを完了した result.cacheKey を覚えておくフラグ。
    * autoDistrict は別ルート (reverseGeocodeDistrict) で非同期に確定するため
@@ -457,16 +459,29 @@ function HomePageContent() {
   }, [result]);
 
   // フィルタ適用後のレコード（フロントで再集計するため API は再リクエストしない）
-  // 物件種別 + 地区名の AND 条件で抽出。SummaryCards / PriceTrendChart / TransactionTable
-  // 全てがこの集合を共有する。
+  // 物件種別 + 地区名 + 徒歩時間の AND 条件で抽出。SummaryCards / PriceTrendChart /
+  // TransactionTable 全てがこの集合を共有する。
+  // 徒歩時間は Pro プランのみ。それ以外は walkTimeFilter=0 のままなので素通りする。
+  // timeToNearestStation は MLIT が文字列で返すため、parseInt で先頭の整数のみ抽出して比較する
+  // （"30分?60分" のようなレンジ表現は下限の 30 として扱う = 保守的な絞り込み）。
   const filteredRecords = useMemo(() => {
     if (!result) return [];
     return result.data.data.filter((r) => {
       const typeMatch = propertyTypeFilter === ALL_TYPE || r.type === propertyTypeFilter;
       const districtMatch = districtFilter === "" || r.districtName === districtFilter;
-      return typeMatch && districtMatch;
+      let walkMatch = true;
+      if (walkTimeFilter > 0) {
+        const raw = r.timeToNearestStation;
+        if (!raw) {
+          walkMatch = false; // データなしの取引はフィルタ有効時は除外
+        } else {
+          const minutes = parseInt(String(raw), 10);
+          walkMatch = Number.isFinite(minutes) && minutes <= walkTimeFilter;
+        }
+      }
+      return typeMatch && districtMatch && walkMatch;
     });
-  }, [result, propertyTypeFilter, districtFilter]);
+  }, [result, propertyTypeFilter, districtFilter, walkTimeFilter]);
 
   // SummaryCards 表示用: 選択された種別だけで再集計
   const summary = useMemo(
@@ -475,10 +490,11 @@ function HomePageContent() {
   );
   const firstRecord = result?.data.data[0];
 
-  // 新しい検索結果が来たら種別フィルタは「すべて」に戻す
-  // （新エリアでは旧種別の取引が0件のことがあるため）
+  // 新しい検索結果が来たら種別フィルタと徒歩時間フィルタを「すべて」に戻す
+  // （新エリアでは旧条件の取引が0件のことがあるため）
   useEffect(() => {
     setPropertyTypeFilter(ALL_TYPE);
+    setWalkTimeFilter(0);
   }, [result?.cacheKey, result?.fetchedAt]);
 
   // 検索結果ごとに、自動検出された地区を「初期値」としてだけ適用する。
@@ -907,9 +923,10 @@ function HomePageContent() {
                 </div>
               )}
 
-              {/* 種別 + 地区名フィルタ（PDF出力時は非表示）。
-                  どちらも HomeClient のグローバルステートで、SummaryCards / PriceTrendChart /
-                  TransactionTable はすべて filteredRecords を共有する。 */}
+              {/* 種別 + 地区名 + 徒歩時間フィルタ（PDF出力時は非表示）。
+                  HomeClient のグローバルステートで、SummaryCards / PriceTrendChart /
+                  TransactionTable はすべて filteredRecords を共有する。
+                  徒歩時間は Pro 限定 — Free/Guest はロックし、クリックでプラン比較モーダルへ。 */}
               {unfilteredSummary && unfilteredSummary.totalCount > 0 && (
                 <div className="pdf-hide space-y-2">
                   <PropertyTypeFilter
@@ -919,25 +936,75 @@ function HomePageContent() {
                     totalCount={unfilteredSummary.totalCount}
                     filteredCount={summary?.totalCount ?? 0}
                   />
-                  {districtOptions.length > 0 && (
-                    <div className="flex items-center gap-2 px-1">
-                      <label htmlFor="districtFilter" className="text-xs font-medium text-slate-600">
-                        {t("DistrictFilter.label")}
-                      </label>
-                      <select
-                        id="districtFilter"
-                        aria-label={t("DistrictFilter.ariaLabel")}
-                        value={districtFilter}
-                        onChange={(e) => setDistrictFilter(e.target.value)}
-                        className="text-xs px-2 py-1 rounded border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 focus:outline-none focus:ring-1 focus:ring-blue-400"
-                      >
-                        <option value="">{t("DistrictFilter.all")}</option>
-                        {districtOptions.map((d) => (
-                          <option key={d} value={d}>{d}</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-1">
+                    {districtOptions.length > 0 && (
+                      <div className="flex items-center gap-2">
+                        <label htmlFor="districtFilter" className="text-xs font-medium text-slate-600">
+                          {t("DistrictFilter.label")}
+                        </label>
+                        <select
+                          id="districtFilter"
+                          aria-label={t("DistrictFilter.ariaLabel")}
+                          value={districtFilter}
+                          onChange={(e) => setDistrictFilter(e.target.value)}
+                          className="text-xs px-2 py-1 rounded border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                        >
+                          <option value="">{t("DistrictFilter.all")}</option>
+                          {districtOptions.map((d) => (
+                            <option key={d} value={d}>{d}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                    {(() => {
+                      const isPro = plan === "pro";
+                      return (
+                        <div className="flex items-center gap-2">
+                          <label htmlFor="walkTimeFilter" className="text-xs font-medium text-slate-600">
+                            {t("WalkTimeFilter.label")}
+                          </label>
+                          <select
+                            id="walkTimeFilter"
+                            aria-label={t("WalkTimeFilter.label")}
+                            value={walkTimeFilter}
+                            disabled={!isPro}
+                            title={!isPro ? t("WalkTimeFilter.lockedHint") : undefined}
+                            onChange={(e) => {
+                              const v = parseInt(e.target.value, 10);
+                              if (v === 0 || v === 5 || v === 10 || v === 15 || v === 20) {
+                                setWalkTimeFilter(v);
+                              }
+                            }}
+                            className={`text-xs px-2 py-1 rounded border focus:outline-none focus:ring-1 focus:ring-blue-400 ${
+                              isPro
+                                ? "border-slate-200 text-slate-600 bg-white hover:bg-slate-50 cursor-pointer"
+                                : "border-slate-200 text-slate-400 bg-slate-50 cursor-not-allowed"
+                            }`}
+                          >
+                            <option value={0}>{t("WalkTimeFilter.all")}</option>
+                            <option value={5}>{t("WalkTimeFilter.min5")}</option>
+                            <option value={10}>{t("WalkTimeFilter.min10")}</option>
+                            <option value={15}>{t("WalkTimeFilter.min15")}</option>
+                            <option value={20}>{t("WalkTimeFilter.min20")}</option>
+                          </select>
+                          {!isPro && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                gtagEvent({ action: "view_plan_modal", category: "conversion_funnel", label: "walk_time_filter" });
+                                setPlanModalOpen(true);
+                              }}
+                              title={t("WalkTimeFilter.lockedHint")}
+                              aria-label={t("WalkTimeFilter.lockedHint")}
+                              className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 text-amber-700 border border-amber-300 hover:from-amber-200 hover:to-orange-200 transition-colors cursor-pointer"
+                            >
+                              🔒 Pro
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
                 </div>
               )}
 

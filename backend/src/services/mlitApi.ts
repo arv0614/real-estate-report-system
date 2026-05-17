@@ -37,6 +37,7 @@ interface MlitRawRecord {
   Period: string;               // 取引時期
   Renovation: string;           // 改装
   Remarks: string;              // 取引の事情等
+  TimeToNearestStation: string; // 最寄り駅までの徒歩分（"5" 等の整数文字列、または "30分?60分" のレンジ表現）
 }
 
 // アプリ内で使う正規化済み型
@@ -69,6 +70,8 @@ export interface TransactionRecord {
   period: string;
   renovation: string | null;
   remarks: string | null;
+  /** 最寄り駅までの徒歩時間。MLIT API は文字列で返す（例: "5", "10", "30分?60分"）。欠損時は null */
+  timeToNearestStation: string | null;
 }
 
 export interface MlitApiResponse {
@@ -143,6 +146,7 @@ function normalize(raw: MlitRawRecord): TransactionRecord {
     period: raw.Period,
     renovation: nullify(raw.Renovation),
     remarks: nullify(raw.Remarks),
+    timeToNearestStation: nullify(raw.TimeToNearestStation),
   };
 }
 
@@ -487,6 +491,7 @@ export function getMockTransactionData(_lat: number, _lng: number): MlitApiRespo
         period: "2024年第1四半期",
         renovation: "改築済み",
         remarks: null,
+        timeToNearestStation: "8",
       },
       {
         priceCategory: "不動産取引価格情報",
@@ -517,6 +522,7 @@ export function getMockTransactionData(_lat: number, _lng: number): MlitApiRespo
         period: "2024年第1四半期",
         renovation: null,
         remarks: null,
+        timeToNearestStation: "3",
       },
     ],
   };

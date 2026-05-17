@@ -43,6 +43,8 @@ export interface TransactionRecord {
   period: string;
   renovation: string | null;
   remarks: string | null;
+  /** 最寄り駅までの徒歩時間（分）。MLIT API は文字列で返す（例: "5", "10", "30分?60分"）。古いキャッシュには欠損あり */
+  timeToNearestStation?: string | null;
 }
 
 export interface ApiData {

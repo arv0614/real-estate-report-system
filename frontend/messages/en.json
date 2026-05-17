@@ -249,6 +249,15 @@
     "all": "All districts",
     "ariaLabel": "Select district"
   },
+  "WalkTimeFilter": {
+    "label": "Walk time",
+    "all": "Any",
+    "min5": "Within 5 min",
+    "min10": "Within 10 min",
+    "min15": "Within 15 min",
+    "min20": "Within 20 min",
+    "lockedHint": "Walk-time filter is available on the Pro plan"
+  },
   "SummaryCards": {
     "scopeTransaction": "* The figures and charts below are computed from transactions around the map centre that match the selected District and Property Type filters.",
     "scopeArea": "※ Hazard / living environment / weather data are pulled from a roughly 1.2 km square tile centred on the map pin.",
