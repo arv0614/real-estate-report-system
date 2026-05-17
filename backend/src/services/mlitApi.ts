@@ -259,9 +259,23 @@ const LANDSLIDE_PHENOMENA_LABELS: Record<number, string> = {
   3: "地すべり",
 };
 
+/** GeoJSON 座標値の再帰型。Point=[lng,lat], LineString=[Point,...], Polygon=[Ring,...], 等 */
+type GeoJsonCoordinates = number[] | number[][] | number[][][] | number[][][][];
+
+interface GeoJsonGeometry {
+  type: string;
+  coordinates: GeoJsonCoordinates;
+}
+
+interface GeoJsonFeature {
+  properties: Record<string, unknown>;
+  /** features によっては geometry が undefined のことがある */
+  geometry?: GeoJsonGeometry;
+}
+
 interface GeoJsonFeatureCollection {
   type: string;
-  features: Array<{ properties: Record<string, unknown> }>;
+  features: GeoJsonFeature[];
 }
 
 async function fetchTileGeojson(endpoint: string, x: number, y: number, z: number): Promise<GeoJsonFeatureCollection> {
@@ -449,6 +463,178 @@ export function getMockEnvironmentData(): EnvironmentInfo {
       { name: "△△病院", type: "病院" },
     ]},
     station: { name: "××駅", operator: "○○電鉄", dailyPassengers: 45000 },
+  };
+}
+
+// ============================================================
+// 駅情報 (XKT015) と徒歩時間計算
+// ────────────────────────────────────────────────────────────
+// MLIT 不動産情報ライブラリ XIT001 は最寄り駅情報を返さない。
+// XKT015 (鉄道_駅別乗降客数) のタイルベース GeoJSON で駅座標を取得し、
+// 検索中心から最寄り駅までを Haversine 距離で計算 → 不動産公正取引基準
+// (直線距離 × 1.3 / 80m/min) で徒歩時間を算出する。
+// ============================================================
+
+export interface Station {
+  name: string;
+  operator: string | null;
+  lat: number;
+  lng: number;
+  /** 1日あたり乗降客数 (S12_009)。最寄り駅が複数候補のときは無視するが、参考値として保持 */
+  dailyPassengers: number | null;
+}
+
+/** タイルごとの駅キャッシュ。Cloud Run インスタンス寿命の範囲で有効（再起動でリセット） */
+const STATION_TILE_CACHE = new Map<string, { stations: Station[]; expiresAt: number }>();
+const STATION_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24h
+/** XKT015 のタイル取得ズーム。z=13 で 1 タイル ≈ 5km 四方。3×3 = 15km 四方をカバー */
+const STATION_TILE_ZOOM = 13;
+
+function tileCacheKey(z: number, x: number, y: number): string {
+  return `${z}/${x}/${y}`;
+}
+
+/** GeoJSON geometry → 代表座標 (lat, lng)。LineString は中点、Polygon は最初の頂点 */
+function geometryToLatLng(geom: GeoJsonGeometry | undefined): { lat: number; lng: number } | null {
+  if (!geom) return null;
+  const c = geom.coordinates;
+  // Point: [lng, lat]
+  if (geom.type === "Point" && Array.isArray(c) && typeof c[0] === "number" && typeof c[1] === "number") {
+    return { lng: c[0] as number, lat: c[1] as number };
+  }
+  // LineString: [[lng,lat], ...]
+  if (geom.type === "LineString" && Array.isArray(c) && Array.isArray(c[0])) {
+    const line = c as number[][];
+    const mid = line[Math.floor(line.length / 2)];
+    if (mid && typeof mid[0] === "number" && typeof mid[1] === "number") {
+      return { lng: mid[0], lat: mid[1] };
+    }
+  }
+  // MultiLineString: [[[lng,lat],...], ...]
+  if (geom.type === "MultiLineString" && Array.isArray(c) && Array.isArray(c[0])) {
+    const first = (c as number[][][])[0]?.[0];
+    if (first && typeof first[0] === "number" && typeof first[1] === "number") {
+      return { lng: first[0], lat: first[1] };
+    }
+  }
+  // Polygon: [[[lng,lat],...], ...]
+  if (geom.type === "Polygon" && Array.isArray(c) && Array.isArray(c[0])) {
+    const first = (c as number[][][])[0]?.[0];
+    if (first && typeof first[0] === "number" && typeof first[1] === "number") {
+      return { lng: first[0], lat: first[1] };
+    }
+  }
+  return null;
+}
+
+async function fetchStationsByTile(x: number, y: number, z: number): Promise<Station[]> {
+  const key = tileCacheKey(z, x, y);
+  const cached = STATION_TILE_CACHE.get(key);
+  if (cached && cached.expiresAt > Date.now()) return cached.stations;
+
+  const data = await fetchTileGeojson("XKT015", x, y, z);
+  const stations: Station[] = [];
+  for (const f of data.features) {
+    const coord = geometryToLatLng(f.geometry);
+    if (!coord) continue;
+    const name = String(f.properties["S12_001_ja"] ?? "").trim();
+    if (!name) continue;
+    stations.push({
+      name,
+      operator: String(f.properties["S12_002_ja"] ?? "").trim() || null,
+      lat: coord.lat,
+      lng: coord.lng,
+      dailyPassengers: Number(f.properties["S12_009"]) || null,
+    });
+  }
+  STATION_TILE_CACHE.set(key, { stations, expiresAt: Date.now() + STATION_CACHE_TTL_MS });
+  return stations;
+}
+
+/**
+ * 指定緯度経度の周辺 3×3 タイル (z=13、約 15km 四方) から駅一覧を取得する。
+ * 同名駅はキャッシュ済みフラグで重複排除。各タイルは個別エラー耐性を持つ。
+ *
+ * 注意: ユーザー指示の `fetchStations(prefectureCode, cityCode)` は MLIT XKT006 を
+ * 想定したものだが、XKT006 は実際には学校 (school) を返す。駅データを返す
+ * 公式エンドポイントはタイルベースの XKT015 (鉄道_駅別乗降客数) のみのため、
+ * シグネチャを lat/lng ベースに変更している。
+ */
+export async function fetchStations(lat: number, lng: number): Promise<Station[]> {
+  const center = latLngToTile(lat, lng, STATION_TILE_ZOOM);
+  const offsets = [-1, 0, 1];
+  const tiles: Array<{ x: number; y: number; z: number }> = [];
+  for (const dx of offsets) for (const dy of offsets) {
+    tiles.push({ x: center.x + dx, y: center.y + dy, z: STATION_TILE_ZOOM });
+  }
+  const lists = await Promise.all(
+    tiles.map((t) =>
+      fetchStationsByTile(t.x, t.y, t.z).catch((err) => {
+        console.warn(`[XKT015] tile ${t.z}/${t.x}/${t.y} fetch failed:`, err instanceof Error ? err.message : err);
+        return [] as Station[];
+      })
+    )
+  );
+  const seen = new Set<string>();
+  const result: Station[] = [];
+  for (const list of lists) {
+    for (const s of list) {
+      if (seen.has(s.name)) continue;
+      seen.add(s.name);
+      result.push(s);
+    }
+  }
+  return result;
+}
+
+/** 2点間の Haversine 距離 (メートル) */
+export function haversineDistanceMeters(
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number
+): number {
+  const R = 6371000; // 地球の半径 (m)
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+/**
+ * 不動産公正取引協議会の表示基準に準拠した徒歩分計算:
+ *   ceil(直線距離(m) × 1.3 / 80)
+ * 1.3 = 道のり補正係数、80 m/min = 徒歩速度の基準
+ * 切り上げにすることで「N分以内」と表示できる最大値を返す。
+ */
+export function estimateWalkMinutes(distanceMeters: number): number {
+  if (!Number.isFinite(distanceMeters) || distanceMeters < 0) return 0;
+  return Math.max(1, Math.ceil((distanceMeters * 1.3) / 80));
+}
+
+/**
+ * (lat, lng) から最寄り駅と徒歩分を返す。駅が見つからない場合は null。
+ * 内部で fetchStations を呼ぶため、in-memory タイルキャッシュの恩恵を受ける。
+ */
+export async function findNearestStationWalkTime(
+  lat: number,
+  lng: number
+): Promise<{ station: Station; distanceMeters: number; minutes: number } | null> {
+  const stations = await fetchStations(lat, lng).catch(() => [] as Station[]);
+  if (stations.length === 0) return null;
+  let best: { station: Station; dist: number } | null = null;
+  for (const s of stations) {
+    const d = haversineDistanceMeters(lat, lng, s.lat, s.lng);
+    if (!best || d < best.dist) best = { station: s, dist: d };
+  }
+  if (!best) return null;
+  return {
+    station: best.station,
+    distanceMeters: Math.round(best.dist),
+    minutes: estimateWalkMinutes(best.dist),
   };
 }
 

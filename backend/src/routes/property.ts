@@ -1,7 +1,14 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { readCache, writeCache } from "../services/gcsCache";
-import { fetchTransactionPrices, fetchHazardInfo, fetchEnvironmentInfo, type HazardInfo, type EnvironmentInfo } from "../services/mlitApi";
+import {
+  fetchTransactionPrices,
+  fetchHazardInfo,
+  fetchEnvironmentInfo,
+  findNearestStationWalkTime,
+  type HazardInfo,
+  type EnvironmentInfo,
+} from "../services/mlitApi";
 import { fetchWeatherSummary, type WeatherSummary } from "../services/openMeteo";
 import { generateAreaReport, type AreaReportInput } from "../services/geminiApi";
 import { generateLifestyleImage } from "../services/imagenApi";
@@ -45,6 +52,37 @@ const querySchema = z.object({
   // 日本語プロンプトにフォールバックされる。
   locale: z.enum(["ja", "en", "zh-TW", "zh-CN"]).default("ja"),
 });
+
+/**
+ * 検索中心 (lat, lng) から最寄り駅までの徒歩分を計算し、各取引レコードに timeToNearestStation を付与する。
+ * 失敗時はレコードを変更しない。MLIT XIT001 は駅情報を返さないため、XKT015 ベースの自前計算で補う。
+ * 取引データに緯度経度は無いので「検索中心の最寄り駅」を全レコードに一様に付与する MVP 実装。
+ */
+async function attachWalkTimeToRecords(
+  records: TransactionRecord[],
+  lat: number,
+  lng: number,
+): Promise<{ stationName: string | null; minutes: number | null }> {
+  if (records.length === 0) return { stationName: null, minutes: null };
+  try {
+    const nearest = await findNearestStationWalkTime(lat, lng);
+    if (!nearest) {
+      console.log(`[WalkTime] no station found near (${lat}, ${lng})`);
+      return { stationName: null, minutes: null };
+    }
+    const minutesStr = String(nearest.minutes);
+    for (const r of records) {
+      r.timeToNearestStation = minutesStr;
+    }
+    console.log(
+      `[WalkTime] nearest=${nearest.station.name} dist=${nearest.distanceMeters}m → ${nearest.minutes}min (stamped on ${records.length} records)`
+    );
+    return { stationName: nearest.station.name, minutes: nearest.minutes };
+  } catch (err) {
+    console.error("[WalkTime] failed:", err instanceof Error ? err.message : err);
+    return { stationName: null, minutes: null };
+  }
+}
 
 /** TransactionRecord の配列から統計サマリーを計算 */
 function calcSummary(records: TransactionRecord[]) {
@@ -95,11 +133,16 @@ app.get("/transactions", async (c) => {
     // 旧キャッシュ（year: number, 1年分のみ）はスキップして再取得
     const isOldFormat = typeof cachedApiData.year === "number" && !Array.isArray(cachedApiData.years);
     if (!isOldFormat) {
-      // hazard・environment・weather は毎回フレッシュ取得（APIキーなし・失敗時は空 / null）
+      // hazard・environment・weather は毎回フレッシュ取得（APIキーなし・失敗時は空 / null）。
+      // 同時に検索中心の最寄り駅・徒歩分も再計算してキャッシュレコードに上書き付与する
+      // (キャッシュ時点では timeToNearestStation が null のため毎回付け直す)。
+      const cachedRecords = (cachedApiData.data ?? []) as TransactionRecord[];
       const [hazard, environment, weather] = await Promise.all([
         hasApiKey ? fetchHazardInfo(lat, lng).catch(() => EMPTY_HAZARD) : Promise.resolve(EMPTY_HAZARD),
         hasApiKey ? fetchEnvironmentInfo(lat, lng).catch(() => EMPTY_ENVIRONMENT) : Promise.resolve(EMPTY_ENVIRONMENT),
         safeFetchWeather(lat, lng),
+        // attachWalkTimeToRecords は cachedRecords を mutating する副作用関数（戻り値は捨てる）
+        hasApiKey ? attachWalkTimeToRecords(cachedRecords, lat, lng) : Promise.resolve(null),
       ]);
 
       // AIレポート: キャッシュにあればそのまま使用、なければ生成してキャッシュを更新
@@ -170,11 +213,13 @@ app.get("/transactions", async (c) => {
     return c.json({ error: "Failed to fetch transaction data", details: msg }, 502);
   }
 
-  // 3. ハザード・生活環境・気象情報を並列取得（失敗時は空 / null）
+  // 3. ハザード・生活環境・気象情報・徒歩時間を並列取得（失敗時は空 / null）。
+  // attachWalkTimeToRecords は apiData.data を mutating で書き換える副作用関数。
   const [hazard, environment, weather] = await Promise.all([
     fetchHazardInfo(lat, lng).catch((err) => { console.error("[Hazard API] fetch failed:", err); return EMPTY_HAZARD; }),
     fetchEnvironmentInfo(lat, lng).catch((err) => { console.error("[Environment API] fetch failed:", err); return EMPTY_ENVIRONMENT; }),
     safeFetchWeather(lat, lng),
+    attachWalkTimeToRecords(apiData.data, lat, lng),
   ]);
 
   // 4. Gemini AIレポートを生成
