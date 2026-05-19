@@ -856,6 +856,13 @@ function TemplateRow({
   };
 
   const intentUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(template.text)}`;
+  const threadsUrl = `https://www.threads.net/intent/post?text=${encodeURIComponent(template.text)}`;
+  // Facebook Sharer は基本 URL 単位の共有。本文中の最初の URL を抽出して渡す。
+  const urlMatch = template.text.match(/https?:\/\/[^\s]+/);
+  const firstUrl = urlMatch ? urlMatch[0] : null;
+  const facebookUrl = firstUrl
+    ? `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(firstUrl)}&quote=${encodeURIComponent(template.text)}`
+    : null;
 
   return (
     <li className="bg-white border border-slate-200 rounded-xl p-4">
@@ -890,10 +897,35 @@ function TemplateRow({
           href={intentUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-xs px-2.5 py-1 rounded border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100"
+          className="text-xs px-2.5 py-1 rounded border border-slate-700 bg-slate-900 text-white hover:bg-slate-800"
         >
-          {t("openOnX")} ↗
+          𝕏 {t("openOnX")} ↗
         </a>
+        <a
+          href={threadsUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs px-2.5 py-1 rounded border border-slate-800 bg-white text-slate-800 hover:bg-slate-50"
+        >
+          @ {t("openOnThreads")} ↗
+        </a>
+        {facebookUrl ? (
+          <a
+            href={facebookUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs px-2.5 py-1 rounded border border-blue-600 bg-blue-600 text-white hover:bg-blue-700"
+          >
+            f {t("openOnFacebook")} ↗
+          </a>
+        ) : (
+          <span
+            title={t("facebookNoUrl")}
+            className="text-xs px-2.5 py-1 rounded border border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed"
+          >
+            f {t("openOnFacebook")}
+          </span>
+        )}
         <button
           type="button"
           onClick={saveDraft}
