@@ -184,4 +184,141 @@ app.get("/social-posts", async (c) => {
   }
 });
 
+// ── 編集系エンドポイント ─────────────────────────────────────
+// 各 PATCH は許可フィールドのみを受け付ける allowlist 方式。
+// クライアントが想定外のキーを送ってきても無視される。
+
+const FEEDBACK_TYPES = new Set(["bug", "feature", "other"]);
+const FEEDBACK_STATUSES = new Set(["pending", "reviewed", "done", "wontfix"]);
+const USER_PLANS = new Set(["free", "pro"]);
+const POST_STATUSES = new Set(["pending", "published", "error"]);
+
+/**
+ * PATCH /api/admin/feedbacks/:id
+ * 編集可: message, type, status, aiPrompt
+ */
+app.patch("/feedbacks/:id", async (c) => {
+  const id = c.req.param("id");
+  let body: Record<string, unknown>;
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "Invalid JSON body" }, 400);
+  }
+
+  const update: Record<string, unknown> = {};
+  if (typeof body.message === "string") update.message = body.message;
+  if (typeof body.type === "string") {
+    if (!FEEDBACK_TYPES.has(body.type)) return c.json({ error: "Invalid type" }, 400);
+    update.type = body.type;
+  }
+  if (typeof body.status === "string") {
+    if (!FEEDBACK_STATUSES.has(body.status)) return c.json({ error: "Invalid status" }, 400);
+    update.status = body.status;
+  }
+  if (typeof body.aiPrompt === "string" || body.aiPrompt === null) {
+    update.aiPrompt = body.aiPrompt;
+  }
+
+  if (Object.keys(update).length === 0) {
+    return c.json({ error: "No editable fields provided" }, 400);
+  }
+
+  try {
+    const ref = db.collection("feedbacks").doc(id);
+    const snap = await ref.get();
+    if (!snap.exists) return c.json({ error: "Feedback not found" }, 404);
+    await ref.update({ ...update, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+    return c.json({ ok: true, id });
+  } catch (err) {
+    console.error("[Admin] feedback 更新失敗:", err);
+    return c.json({ error: "Failed to update feedback" }, 500);
+  }
+});
+
+/**
+ * PATCH /api/admin/users/:uid
+ * 編集可: plan, dailySearchCount
+ */
+app.patch("/users/:uid", async (c) => {
+  const uid = c.req.param("uid");
+  let body: Record<string, unknown>;
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "Invalid JSON body" }, 400);
+  }
+
+  const update: Record<string, unknown> = {};
+  if (typeof body.plan === "string") {
+    if (!USER_PLANS.has(body.plan)) return c.json({ error: "Invalid plan" }, 400);
+    update.plan = body.plan;
+  }
+  if (typeof body.dailySearchCount === "number") {
+    if (!Number.isInteger(body.dailySearchCount) || body.dailySearchCount < 0) {
+      return c.json({ error: "Invalid dailySearchCount" }, 400);
+    }
+    update.dailySearchCount = body.dailySearchCount;
+  }
+
+  if (Object.keys(update).length === 0) {
+    return c.json({ error: "No editable fields provided" }, 400);
+  }
+
+  try {
+    const ref = db.collection("users").doc(uid);
+    const snap = await ref.get();
+    if (!snap.exists) return c.json({ error: "User not found" }, 404);
+    await ref.update({ ...update, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+    return c.json({ ok: true, uid });
+  } catch (err) {
+    console.error("[Admin] user 更新失敗:", err);
+    return c.json({ error: "Failed to update user" }, 500);
+  }
+});
+
+/**
+ * PATCH /api/admin/social-posts/:id
+ * 編集可: content, status
+ * - status が "published" に切り替わった場合は publishedAt をサーバ時刻でセット
+ * - 新規作成は upsert: true で許可（コレクションが存在しない場合の初投稿用）
+ */
+app.patch("/social-posts/:id", async (c) => {
+  const id = c.req.param("id");
+  let body: Record<string, unknown>;
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "Invalid JSON body" }, 400);
+  }
+
+  const update: Record<string, unknown> = {};
+  if (typeof body.content === "string") update.content = body.content;
+  if (typeof body.status === "string") {
+    if (!POST_STATUSES.has(body.status)) return c.json({ error: "Invalid status" }, 400);
+    update.status = body.status;
+  }
+
+  if (Object.keys(update).length === 0) {
+    return c.json({ error: "No editable fields provided" }, 400);
+  }
+
+  try {
+    const ref = db.collection("social_posts").doc(id);
+    const snap = await ref.get();
+    if (!snap.exists) return c.json({ error: "Social post not found" }, 404);
+
+    // published に切り替わったら publishedAt を埋める
+    if (update.status === "published" && snap.data()?.status !== "published") {
+      update.publishedAt = admin.firestore.FieldValue.serverTimestamp();
+    }
+
+    await ref.update({ ...update, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+    return c.json({ ok: true, id });
+  } catch (err) {
+    console.error("[Admin] social_post 更新失敗:", err);
+    return c.json({ error: "Failed to update social post" }, 500);
+  }
+});
+
 export default app;

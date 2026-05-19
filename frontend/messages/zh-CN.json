@@ -731,7 +731,16 @@
     "statusPublished": "已发布",
     "statusError": "错误",
     "statusUnknown": "未知",
-    "viewPost": "查看帖子"
+    "viewPost": "查看帖子",
+    "edit": "编辑",
+    "save": "保存",
+    "cancel": "取消",
+    "saving": "保存中...",
+    "saved": "已保存",
+    "saveFailed": "保存失败",
+    "statusWontfix": "不处理",
+    "statusReviewed": "已审阅",
+    "statusDone": "已完成"
   },
   "LandingPage": {
     "navAppLink": "打开应用",

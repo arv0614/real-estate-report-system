@@ -731,7 +731,16 @@
     "statusPublished": "Published",
     "statusError": "Error",
     "statusUnknown": "Unknown",
-    "viewPost": "View post"
+    "viewPost": "View post",
+    "edit": "Edit",
+    "save": "Save",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "saved": "Saved",
+    "saveFailed": "Failed to save",
+    "statusWontfix": "Won't fix",
+    "statusReviewed": "Reviewed",
+    "statusDone": "Done"
   },
   "LandingPage": {
     "navAppLink": "Open app",

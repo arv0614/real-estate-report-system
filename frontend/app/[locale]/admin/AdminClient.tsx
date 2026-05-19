@@ -48,6 +48,11 @@ type LoadState<T> =
   | { kind: "forbidden" }
   | { kind: "error"; message: string };
 
+const FEEDBACK_TYPE_OPTIONS = ["bug", "feature", "other"] as const;
+const FEEDBACK_STATUS_OPTIONS = ["pending", "reviewed", "done", "wontfix"] as const;
+const USER_PLAN_OPTIONS = ["free", "pro"] as const;
+const POST_STATUS_OPTIONS = ["pending", "published", "error"] as const;
+
 async function fetchAdmin<T>(path: string, key: string): Promise<LoadState<T>> {
   const idToken = await auth.currentUser?.getIdToken().catch(() => null);
   if (!idToken) return { kind: "forbidden" };
@@ -68,6 +73,25 @@ async function fetchAdmin<T>(path: string, key: string): Promise<LoadState<T>> {
   }
 }
 
+async function patchAdmin(path: string, payload: Record<string, unknown>): Promise<string | null> {
+  const idToken = await auth.currentUser?.getIdToken().catch(() => null);
+  if (!idToken) return "Not authenticated";
+  try {
+    const res = await fetch(`${getApiBase()}${path}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      return `${res.status} ${body}`;
+    }
+    return null;
+  } catch (err) {
+    return err instanceof Error ? err.message : String(err);
+  }
+}
+
 export default function AdminClient() {
   const t = useTranslations("Admin");
   const router = useRouter();
@@ -77,19 +101,15 @@ export default function AdminClient() {
   const [feedbackState, setFeedbackState] = useState<LoadState<FeedbackItem>>({ kind: "loading" });
   const [usersState, setUsersState] = useState<LoadState<UserItem>>({ kind: "loading" });
   const [postsState, setPostsState] = useState<LoadState<SocialPostItem>>({ kind: "loading" });
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const loadFeedbacks = useCallback(async () => {
     setFeedbackState({ kind: "loading" });
     setFeedbackState(await fetchAdmin<FeedbackItem>("/api/admin/feedbacks", "feedbacks"));
   }, []);
-
   const loadUsers = useCallback(async () => {
     setUsersState({ kind: "loading" });
     setUsersState(await fetchAdmin<UserItem>("/api/admin/users", "users"));
   }, []);
-
   const loadPosts = useCallback(async () => {
     setPostsState({ kind: "loading" });
     setPostsState(await fetchAdmin<SocialPostItem>("/api/admin/social-posts", "posts"));
@@ -116,21 +136,29 @@ export default function AdminClient() {
     else loadPosts();
   };
 
-  function toggle(id: string) {
-    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
-  }
+  // 保存後に親 state を更新するためのコールバック
+  const patchFeedback = (id: string, patch: Partial<FeedbackItem>) => {
+    setFeedbackState((s) =>
+      s.kind === "ok"
+        ? { kind: "ok", items: s.items.map((it) => (it.id === id ? { ...it, ...patch } : it)) }
+        : s
+    );
+  };
+  const patchUser = (uid: string, patch: Partial<UserItem>) => {
+    setUsersState((s) =>
+      s.kind === "ok"
+        ? { kind: "ok", items: s.items.map((it) => (it.uid === uid ? { ...it, ...patch } : it)) }
+        : s
+    );
+  };
+  const patchPost = (id: string, patch: Partial<SocialPostItem>) => {
+    setPostsState((s) =>
+      s.kind === "ok"
+        ? { kind: "ok", items: s.items.map((it) => (it.id === id ? { ...it, ...patch } : it)) }
+        : s
+    );
+  };
 
-  async function copyToClipboard(text: string, id: string) {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedId(id);
-      setTimeout(() => setCopiedId((cur) => (cur === id ? null : cur)), 1500);
-    } catch {
-      alert(t("copyFailed"));
-    }
-  }
-
-  // 認証ローディング中 or サインアウト直後
   if (authLoading || !user) {
     return (
       <main className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -142,7 +170,6 @@ export default function AdminClient() {
     );
   }
 
-  // 現在のタブの state をベースに表示判定
   const activeState =
     tab === "feedbacks" ? feedbackState : tab === "users" ? usersState : postsState;
 
@@ -179,7 +206,6 @@ export default function AdminClient() {
           </button>
         </header>
 
-        {/* タブメニュー */}
         <div role="tablist" className="mb-6 flex flex-wrap gap-1 border-b border-slate-200">
           <TabButton current={tab} value="feedbacks" onClick={setTab} label={t("tabFeedbacks")} />
           <TabButton current={tab} value="users" onClick={setTab} label={t("tabUsers")} />
@@ -207,21 +233,13 @@ export default function AdminClient() {
         )}
 
         {activeState.kind === "ok" && tab === "feedbacks" && (
-          <FeedbackList
-            items={activeState.items as FeedbackItem[]}
-            expanded={expanded}
-            onToggle={toggle}
-            onCopy={copyToClipboard}
-            copiedId={copiedId}
-          />
+          <FeedbackList items={feedbackState.kind === "ok" ? feedbackState.items : []} onPatched={patchFeedback} />
         )}
-
         {activeState.kind === "ok" && tab === "users" && (
-          <UsersTable items={activeState.items as UserItem[]} />
+          <UsersTable items={usersState.kind === "ok" ? usersState.items : []} onPatched={patchUser} />
         )}
-
         {activeState.kind === "ok" && tab === "social" && (
-          <SocialPostsList items={activeState.items as SocialPostItem[]} />
+          <SocialPostsList items={postsState.kind === "ok" ? postsState.items : []} onPatched={patchPost} />
         )}
       </div>
     </main>
@@ -256,19 +274,13 @@ function TabButton({
   );
 }
 
-// ─── フィードバック一覧 ─────────────────────────────────────────
+// ─── フィードバック ───────────────────────────────────────────
 function FeedbackList({
   items,
-  expanded,
-  onToggle,
-  onCopy,
-  copiedId,
+  onPatched,
 }: {
   items: FeedbackItem[];
-  expanded: Record<string, boolean>;
-  onToggle: (id: string) => void;
-  onCopy: (text: string, id: string) => void;
-  copiedId: string | null;
+  onPatched: (id: string, patch: Partial<FeedbackItem>) => void;
 }) {
   const t = useTranslations("Admin");
   if (items.length === 0) {
@@ -283,83 +295,220 @@ function FeedbackList({
       <div className="mb-4 text-xs text-slate-500">{t("countLabel", { count: items.length })}</div>
       <ul className="space-y-3">
         {items.map((item) => (
-          <li key={item.id} className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5">
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              <div className="flex items-center gap-2 flex-wrap">
-                <TypeBadge type={item.type} />
-                {item.status && (
-                  <span className="text-[10px] uppercase tracking-wide font-semibold text-slate-500 border border-slate-200 px-2 py-0.5 rounded">
-                    {item.status}
-                  </span>
-                )}
-              </div>
-              <time className="text-xs text-slate-500" suppressHydrationWarning>
-                {formatDate(item.createdAt)}
-              </time>
-            </div>
-            <div className="mt-2 text-xs text-slate-500">
-              {item.email ?? t("anonymous")}
-              {item.uid && (
-                <span className="ml-2 text-slate-400">uid: {item.uid.slice(0, 8)}…</span>
-              )}
-            </div>
-            <div className="mt-3">
-              <p className="text-xs font-semibold text-slate-600 mb-1">{t("messageLabel")}</p>
-              <p className="text-sm text-slate-800 whitespace-pre-wrap leading-relaxed bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
-                {item.message}
-              </p>
-            </div>
-            <div className="mt-3">
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <p className="text-xs font-semibold text-slate-600">{t("aiPromptLabel")}</p>
-                <div className="flex items-center gap-2">
-                  {item.aiPrompt && (
-                    <button
-                      type="button"
-                      onClick={() => onCopy(item.aiPrompt!, item.id)}
-                      className="text-xs px-2.5 py-1 rounded border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 transition-colors"
-                    >
-                      {copiedId === item.id ? `✓ ${t("copied")}` : `📋 ${t("copy")}`}
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => onToggle(item.id)}
-                    className="text-xs px-2.5 py-1 rounded border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 transition-colors"
-                    disabled={!item.aiPrompt && !item.aiError}
-                  >
-                    {expanded[item.id] ? t("collapse") : t("expand")}
-                  </button>
-                </div>
-              </div>
-              {expanded[item.id] && (
-                <div className="mt-2">
-                  {item.aiPrompt ? (
-                    <pre className="text-xs text-slate-700 whitespace-pre-wrap break-words bg-slate-900 text-slate-100 rounded-lg px-3 py-3 border border-slate-800 max-h-96 overflow-y-auto font-mono leading-relaxed">
-                      {item.aiPrompt}
-                    </pre>
-                  ) : (
-                    <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                      {t("aiPromptMissing")}
-                      {item.aiError && (
-                        <div className="mt-1 text-amber-600 font-mono break-words">
-                          {item.aiError}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </li>
+          <FeedbackRow key={item.id} item={item} onPatched={onPatched} />
         ))}
       </ul>
     </>
   );
 }
 
+function FeedbackRow({
+  item,
+  onPatched,
+}: {
+  item: FeedbackItem;
+  onPatched: (id: string, patch: Partial<FeedbackItem>) => void;
+}) {
+  const t = useTranslations("Admin");
+  const [editing, setEditing] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [message, setMessage] = useState(item.message);
+  const [type, setType] = useState<string>(item.type ?? "other");
+  const [status, setStatus] = useState<string>(item.status ?? "pending");
+  const [aiPrompt, setAiPrompt] = useState<string>(item.aiPrompt ?? "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const startEdit = () => {
+    setMessage(item.message);
+    setType(item.type ?? "other");
+    setStatus(item.status ?? "pending");
+    setAiPrompt(item.aiPrompt ?? "");
+    setError(null);
+    setEditing(true);
+  };
+
+  const save = async () => {
+    setSaving(true);
+    setError(null);
+    const payload: Partial<FeedbackItem> = {
+      message,
+      type,
+      status,
+      aiPrompt: aiPrompt.trim() === "" ? null : aiPrompt,
+    };
+    const err = await patchAdmin(`/api/admin/feedbacks/${item.id}`, payload);
+    setSaving(false);
+    if (err) {
+      setError(err);
+      return;
+    }
+    onPatched(item.id, payload);
+    setEditing(false);
+  };
+
+  const copyPrompt = async () => {
+    if (!item.aiPrompt) return;
+    try {
+      await navigator.clipboard.writeText(item.aiPrompt);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      alert(t("copyFailed"));
+    }
+  };
+
+  return (
+    <li className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
+          <TypeBadge type={item.type} />
+          {item.status && (
+            <span className="text-[10px] uppercase tracking-wide font-semibold text-slate-500 border border-slate-200 px-2 py-0.5 rounded">
+              {feedbackStatusLabel(item.status, t)}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <time className="text-xs text-slate-500" suppressHydrationWarning>
+            {formatDate(item.createdAt)}
+          </time>
+          {!editing && (
+            <button
+              onClick={startEdit}
+              className="text-xs px-2.5 py-1 rounded border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+            >
+              {t("edit")}
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-2 text-xs text-slate-500">
+        {item.email ?? t("anonymous")}
+        {item.uid && <span className="ml-2 text-slate-400">uid: {item.uid.slice(0, 8)}…</span>}
+      </div>
+
+      {!editing ? (
+        <>
+          <div className="mt-3">
+            <p className="text-xs font-semibold text-slate-600 mb-1">{t("messageLabel")}</p>
+            <p className="text-sm text-slate-800 whitespace-pre-wrap leading-relaxed bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
+              {item.message}
+            </p>
+          </div>
+          <div className="mt-3">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <p className="text-xs font-semibold text-slate-600">{t("aiPromptLabel")}</p>
+              <div className="flex items-center gap-2">
+                {item.aiPrompt && (
+                  <button
+                    type="button"
+                    onClick={copyPrompt}
+                    className="text-xs px-2.5 py-1 rounded border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+                  >
+                    {copied ? `✓ ${t("copied")}` : `📋 ${t("copy")}`}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setExpanded((v) => !v)}
+                  className="text-xs px-2.5 py-1 rounded border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+                  disabled={!item.aiPrompt && !item.aiError}
+                >
+                  {expanded ? t("collapse") : t("expand")}
+                </button>
+              </div>
+            </div>
+            {expanded && (
+              <div className="mt-2">
+                {item.aiPrompt ? (
+                  <pre className="text-xs text-slate-700 whitespace-pre-wrap break-words bg-slate-900 text-slate-100 rounded-lg px-3 py-3 border border-slate-800 max-h-96 overflow-y-auto font-mono leading-relaxed">
+                    {item.aiPrompt}
+                  </pre>
+                ) : (
+                  <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                    {t("aiPromptMissing")}
+                    {item.aiError && (
+                      <div className="mt-1 text-amber-600 font-mono break-words">{item.aiError}</div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </>
+      ) : (
+        <div className="mt-3 space-y-3">
+          <div className="grid sm:grid-cols-2 gap-3">
+            <label className="block text-xs">
+              <span className="block text-slate-600 font-semibold mb-1">{t("colStatus")}</span>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                className="w-full border border-slate-300 rounded px-2 py-1.5 bg-white"
+              >
+                {FEEDBACK_STATUS_OPTIONS.map((s) => (
+                  <option key={s} value={s}>
+                    {feedbackStatusLabel(s, t)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block text-xs">
+              <span className="block text-slate-600 font-semibold mb-1">{t("colContent")}</span>
+              <select
+                value={type}
+                onChange={(e) => setType(e.target.value)}
+                className="w-full border border-slate-300 rounded px-2 py-1.5 bg-white"
+              >
+                {FEEDBACK_TYPE_OPTIONS.map((s) => (
+                  <option key={s} value={s}>
+                    {s === "bug" ? t("typeBug") : s === "feature" ? t("typeFeature") : t("typeOther")}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <label className="block text-xs">
+            <span className="block text-slate-600 font-semibold mb-1">{t("messageLabel")}</span>
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              rows={4}
+              className="w-full border border-slate-300 rounded px-2 py-1.5 bg-white text-sm"
+            />
+          </label>
+          <label className="block text-xs">
+            <span className="block text-slate-600 font-semibold mb-1">{t("aiPromptLabel")}</span>
+            <textarea
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              rows={6}
+              className="w-full border border-slate-300 rounded px-2 py-1.5 bg-white text-xs font-mono"
+            />
+          </label>
+          {error && (
+            <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2 break-words">
+              {t("saveFailed")}: {error}
+            </div>
+          )}
+          <EditActions saving={saving} onSave={save} onCancel={() => setEditing(false)} />
+        </div>
+      )}
+    </li>
+  );
+}
+
 // ─── ユーザー一覧 ─────────────────────────────────────────────
-function UsersTable({ items }: { items: UserItem[] }) {
+function UsersTable({
+  items,
+  onPatched,
+}: {
+  items: UserItem[];
+  onPatched: (uid: string, patch: Partial<UserItem>) => void;
+}) {
   const t = useTranslations("Admin");
   if (items.length === 0) {
     return (
@@ -370,9 +519,7 @@ function UsersTable({ items }: { items: UserItem[] }) {
   }
   return (
     <>
-      <div className="mb-4 text-xs text-slate-500">
-        {t("usersCountLabel", { count: items.length })}
-      </div>
+      <div className="mb-4 text-xs text-slate-500">{t("usersCountLabel", { count: items.length })}</div>
       <div className="bg-white border border-slate-200 rounded-xl overflow-x-auto">
         <table className="min-w-full text-sm">
           <thead className="bg-slate-50 text-slate-600 text-xs uppercase tracking-wide">
@@ -382,28 +529,12 @@ function UsersTable({ items }: { items: UserItem[] }) {
               <th className="px-4 py-3 text-right font-semibold">{t("colSearchCount")}</th>
               <th className="px-4 py-3 text-left font-semibold">{t("colLastSearch")}</th>
               <th className="px-4 py-3 text-left font-semibold">{t("colCreatedAt")}</th>
+              <th className="px-4 py-3 text-right font-semibold"> </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {items.map((u) => (
-              <tr key={u.uid} className="hover:bg-slate-50">
-                <td className="px-4 py-3 text-slate-800">
-                  <div>{u.email ?? <span className="text-slate-400">{t("anonymous")}</span>}</div>
-                  <div className="text-[10px] text-slate-400 font-mono">{u.uid.slice(0, 12)}…</div>
-                </td>
-                <td className="px-4 py-3">
-                  <PlanBadge plan={u.plan} />
-                </td>
-                <td className="px-4 py-3 text-right text-slate-700 font-mono">
-                  {u.dailySearchCount}
-                </td>
-                <td className="px-4 py-3 text-slate-700" suppressHydrationWarning>
-                  {u.lastSearchDate ?? "—"}
-                </td>
-                <td className="px-4 py-3 text-slate-500 text-xs" suppressHydrationWarning>
-                  {formatDate(u.createdAt)}
-                </td>
-              </tr>
+              <UserRow key={u.uid} user={u} onPatched={onPatched} />
             ))}
           </tbody>
         </table>
@@ -412,8 +543,119 @@ function UsersTable({ items }: { items: UserItem[] }) {
   );
 }
 
+function UserRow({
+  user,
+  onPatched,
+}: {
+  user: UserItem;
+  onPatched: (uid: string, patch: Partial<UserItem>) => void;
+}) {
+  const t = useTranslations("Admin");
+  const [editing, setEditing] = useState(false);
+  const [plan, setPlan] = useState<string>(user.plan);
+  const [searchCount, setSearchCount] = useState<string>(String(user.dailySearchCount));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const startEdit = () => {
+    setPlan(user.plan);
+    setSearchCount(String(user.dailySearchCount));
+    setError(null);
+    setEditing(true);
+  };
+
+  const save = async () => {
+    const parsed = Number(searchCount);
+    if (!Number.isInteger(parsed) || parsed < 0) {
+      setError(t("saveFailed") + ": invalid count");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    const payload = { plan, dailySearchCount: parsed };
+    const err = await patchAdmin(`/api/admin/users/${user.uid}`, payload);
+    setSaving(false);
+    if (err) {
+      setError(err);
+      return;
+    }
+    onPatched(user.uid, payload);
+    setEditing(false);
+  };
+
+  return (
+    <tr className="hover:bg-slate-50 align-top">
+      <td className="px-4 py-3 text-slate-800">
+        <div>{user.email ?? <span className="text-slate-400">{t("anonymous")}</span>}</div>
+        <div className="text-[10px] text-slate-400 font-mono">{user.uid.slice(0, 12)}…</div>
+      </td>
+      <td className="px-4 py-3">
+        {editing ? (
+          <select
+            value={plan}
+            onChange={(e) => setPlan(e.target.value)}
+            className="border border-slate-300 rounded px-2 py-1 bg-white text-xs"
+          >
+            {USER_PLAN_OPTIONS.map((p) => (
+              <option key={p} value={p}>
+                {p === "pro" ? t("planPro") : t("planFree")}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <PlanBadge plan={user.plan} />
+        )}
+      </td>
+      <td className="px-4 py-3 text-right text-slate-700 font-mono">
+        {editing ? (
+          <input
+            type="number"
+            min={0}
+            value={searchCount}
+            onChange={(e) => setSearchCount(e.target.value)}
+            className="w-20 border border-slate-300 rounded px-2 py-1 bg-white text-right text-xs"
+          />
+        ) : (
+          user.dailySearchCount
+        )}
+      </td>
+      <td className="px-4 py-3 text-slate-700" suppressHydrationWarning>
+        {user.lastSearchDate ?? "—"}
+      </td>
+      <td className="px-4 py-3 text-slate-500 text-xs" suppressHydrationWarning>
+        {formatDate(user.createdAt)}
+      </td>
+      <td className="px-4 py-3 text-right whitespace-nowrap">
+        {editing ? (
+          <div className="flex flex-col items-end gap-1">
+            <EditActions saving={saving} onSave={save} onCancel={() => setEditing(false)} compact />
+            {error && (
+              <div className="text-[10px] text-red-700 max-w-[200px] break-words text-right">
+                {t("saveFailed")}: {error}
+              </div>
+            )}
+          </div>
+        ) : (
+          <button
+            onClick={startEdit}
+            className="text-xs px-2.5 py-1 rounded border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+          >
+            {t("edit")}
+          </button>
+        )}
+      </td>
+    </tr>
+  );
+}
+
 // ─── X 投稿管理 ───────────────────────────────────────────────
-function SocialPostsList({ items }: { items: SocialPostItem[] }) {
+function SocialPostsList({
+  items,
+  onPatched,
+}: {
+  items: SocialPostItem[];
+  onPatched: (id: string, patch: Partial<SocialPostItem>) => void;
+}) {
   const t = useTranslations("Admin");
   if (items.length === 0) {
     return (
@@ -429,38 +671,165 @@ function SocialPostsList({ items }: { items: SocialPostItem[] }) {
       </div>
       <ul className="space-y-3">
         {items.map((p) => (
-          <li key={p.id} className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5">
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              <StatusBadge status={p.status} />
-              <time className="text-xs text-slate-500" suppressHydrationWarning>
-                {formatDate(p.scheduledAt ?? p.publishedAt ?? p.createdAt)}
-              </time>
-            </div>
-            <p className="mt-3 text-sm text-slate-800 whitespace-pre-wrap leading-relaxed bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
-              {p.content}
-            </p>
-            {p.error && (
-              <div className="mt-2 text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 font-mono break-words">
-                {p.error}
-              </div>
-            )}
-            {p.url && (
-              <a
-                href={p.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-2 inline-block text-xs text-blue-600 hover:underline"
-              >
-                {t("viewPost")} →
-              </a>
-            )}
-          </li>
+          <SocialPostRow key={p.id} post={p} onPatched={onPatched} />
         ))}
       </ul>
     </>
   );
 }
 
+function SocialPostRow({
+  post,
+  onPatched,
+}: {
+  post: SocialPostItem;
+  onPatched: (id: string, patch: Partial<SocialPostItem>) => void;
+}) {
+  const t = useTranslations("Admin");
+  const [editing, setEditing] = useState(false);
+  const [content, setContent] = useState(post.content);
+  const [status, setStatus] = useState(post.status);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const startEdit = () => {
+    setContent(post.content);
+    setStatus(post.status);
+    setError(null);
+    setEditing(true);
+  };
+
+  const save = async () => {
+    setSaving(true);
+    setError(null);
+    const payload = { content, status };
+    const err = await patchAdmin(`/api/admin/social-posts/${post.id}`, payload);
+    setSaving(false);
+    if (err) {
+      setError(err);
+      return;
+    }
+    onPatched(post.id, payload);
+    setEditing(false);
+  };
+
+  return (
+    <li className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <StatusBadge status={post.status} />
+        <div className="flex items-center gap-2">
+          <time className="text-xs text-slate-500" suppressHydrationWarning>
+            {formatDate(post.scheduledAt ?? post.publishedAt ?? post.createdAt)}
+          </time>
+          {!editing && (
+            <button
+              onClick={startEdit}
+              className="text-xs px-2.5 py-1 rounded border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+            >
+              {t("edit")}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {!editing ? (
+        <>
+          <p className="mt-3 text-sm text-slate-800 whitespace-pre-wrap leading-relaxed bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
+            {post.content}
+          </p>
+          {post.error && (
+            <div className="mt-2 text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 font-mono break-words">
+              {post.error}
+            </div>
+          )}
+          {post.url && (
+            <a
+              href={post.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-block text-xs text-blue-600 hover:underline"
+            >
+              {t("viewPost")} →
+            </a>
+          )}
+        </>
+      ) : (
+        <div className="mt-3 space-y-3">
+          <label className="block text-xs">
+            <span className="block text-slate-600 font-semibold mb-1">{t("colStatus")}</span>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              className="w-full sm:w-48 border border-slate-300 rounded px-2 py-1.5 bg-white"
+            >
+              {POST_STATUS_OPTIONS.map((s) => (
+                <option key={s} value={s}>
+                  {postStatusLabel(s, t)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-xs">
+            <span className="block text-slate-600 font-semibold mb-1">{t("colContent")}</span>
+            <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              rows={6}
+              className="w-full border border-slate-300 rounded px-2 py-1.5 bg-white text-sm"
+            />
+            <span className="block text-[10px] text-slate-400 mt-1">{content.length} chars</span>
+          </label>
+          {error && (
+            <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2 break-words">
+              {t("saveFailed")}: {error}
+            </div>
+          )}
+          <EditActions saving={saving} onSave={save} onCancel={() => setEditing(false)} />
+        </div>
+      )}
+    </li>
+  );
+}
+
+// ─── 共通: 保存/キャンセルボタン ───────────────────────────────
+function EditActions({
+  saving,
+  onSave,
+  onCancel,
+  compact = false,
+}: {
+  saving: boolean;
+  onSave: () => void;
+  onCancel: () => void;
+  compact?: boolean;
+}) {
+  const t = useTranslations("Admin");
+  const btn = compact
+    ? "text-[11px] px-2 py-1 rounded font-semibold"
+    : "text-xs px-3 py-1.5 rounded font-semibold";
+  return (
+    <div className="flex items-center gap-2">
+      <button
+        type="button"
+        onClick={onCancel}
+        disabled={saving}
+        className={`${btn} border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50`}
+      >
+        {t("cancel")}
+      </button>
+      <button
+        type="button"
+        onClick={onSave}
+        disabled={saving}
+        className={`${btn} bg-slate-800 text-white hover:bg-slate-700 disabled:opacity-50`}
+      >
+        {saving ? t("saving") : t("save")}
+      </button>
+    </div>
+  );
+}
+
+// ─── バッジ / 表示ヘルパー ────────────────────────────────────
 function TypeBadge({ type }: { type: string | null }) {
   const t = useTranslations("Admin");
   const label =
@@ -494,14 +863,7 @@ function PlanBadge({ plan }: { plan: string }) {
 
 function StatusBadge({ status }: { status: string }) {
   const t = useTranslations("Admin");
-  const label =
-    status === "pending"
-      ? t("statusPending")
-      : status === "published"
-        ? t("statusPublished")
-        : status === "error"
-          ? t("statusError")
-          : t("statusUnknown");
+  const label = postStatusLabel(status, t);
   const cls =
     status === "published"
       ? "bg-green-100 text-green-700 border-green-200"
@@ -513,6 +875,28 @@ function StatusBadge({ status }: { status: string }) {
   return (
     <span className={`text-[11px] font-semibold px-2 py-0.5 rounded border ${cls}`}>{label}</span>
   );
+}
+
+function postStatusLabel(status: string, t: (k: string) => string): string {
+  return status === "pending"
+    ? t("statusPending")
+    : status === "published"
+      ? t("statusPublished")
+      : status === "error"
+        ? t("statusError")
+        : t("statusUnknown");
+}
+
+function feedbackStatusLabel(status: string, t: (k: string) => string): string {
+  return status === "pending"
+    ? t("statusPending")
+    : status === "reviewed"
+      ? t("statusReviewed")
+      : status === "done"
+        ? t("statusDone")
+        : status === "wontfix"
+          ? t("statusWontfix")
+          : status;
 }
 
 function formatDate(iso: string | null): string {
