@@ -89,4 +89,99 @@ app.get("/feedbacks", async (c) => {
   }
 });
 
+/**
+ * GET /api/admin/users
+ * Firestore `users` コレクションを返す。email は Firebase Auth から補完する。
+ */
+app.get("/users", async (c) => {
+  const LIMIT = 500;
+  try {
+    const snap = await db.collection("users").limit(LIMIT).get();
+
+    const users = await Promise.all(
+      snap.docs.map(async (doc) => {
+        const data = doc.data();
+        const uid = doc.id;
+        let email: string | null = (data.email as string | undefined) ?? null;
+        if (!email) {
+          try {
+            const userRecord = await admin.auth().getUser(uid);
+            email = userRecord.email ?? null;
+          } catch {
+            // ユーザーが Auth に存在しない（削除済み等）。null のままで OK
+          }
+        }
+        const createdAt = data.createdAt as admin.firestore.Timestamp | undefined;
+        const planActivatedAt = data.planActivatedAt as admin.firestore.Timestamp | undefined;
+        return {
+          uid,
+          email,
+          plan: (data.plan as string | undefined) ?? "free",
+          dailySearchCount: (data.dailySearchCount as number | undefined) ?? 0,
+          lastSearchDate: (data.lastSearchDate as string | undefined) ?? null,
+          createdAt: createdAt ? createdAt.toDate().toISOString() : null,
+          planActivatedAt: planActivatedAt ? planActivatedAt.toDate().toISOString() : null,
+        };
+      })
+    );
+
+    // 最終検索日の降順でソート（未設定は末尾）
+    users.sort((a, b) => {
+      if (!a.lastSearchDate && !b.lastSearchDate) return 0;
+      if (!a.lastSearchDate) return 1;
+      if (!b.lastSearchDate) return -1;
+      return b.lastSearchDate.localeCompare(a.lastSearchDate);
+    });
+
+    return c.json({ users, count: users.length });
+  } catch (err) {
+    console.error("[Admin] users 読み取り失敗:", err);
+    return c.json({ error: "Failed to load users" }, 500);
+  }
+});
+
+/**
+ * GET /api/admin/social-posts
+ * Firestore `social_posts` コレクションを返す。
+ * フィールド: content, status ("pending" | "published" | "error"), scheduledAt または createdAt
+ */
+app.get("/social-posts", async (c) => {
+  const LIMIT = 500;
+  try {
+    // scheduledAt / createdAt のどちらか一方でソートしたいが、orderBy を厳格にすると
+    // フィールド欠落ドキュメントが除外されるため、createdAt でソートする運用にする。
+    const snap = await db
+      .collection("social_posts")
+      .orderBy("createdAt", "desc")
+      .limit(LIMIT)
+      .get()
+      .catch(() => null);
+
+    // コレクション未作成 or インデックス未準備でも 500 を返さないようフォールバック
+    const docs = snap ? snap.docs : [];
+
+    const posts = docs.map((doc) => {
+      const data = doc.data();
+      const scheduledAt = data.scheduledAt as admin.firestore.Timestamp | undefined;
+      const createdAt = data.createdAt as admin.firestore.Timestamp | undefined;
+      const publishedAt = data.publishedAt as admin.firestore.Timestamp | undefined;
+      return {
+        id: doc.id,
+        content: (data.content as string | undefined) ?? "",
+        status: (data.status as string | undefined) ?? "pending",
+        error: (data.error as string | undefined) ?? null,
+        url: (data.url as string | undefined) ?? null,
+        scheduledAt: scheduledAt ? scheduledAt.toDate().toISOString() : null,
+        createdAt: createdAt ? createdAt.toDate().toISOString() : null,
+        publishedAt: publishedAt ? publishedAt.toDate().toISOString() : null,
+      };
+    });
+
+    return c.json({ posts, count: posts.length });
+  } catch (err) {
+    console.error("[Admin] social_posts 読み取り失敗:", err);
+    return c.json({ error: "Failed to load social posts" }, 500);
+  }
+});
+
 export default app;
