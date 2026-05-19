@@ -740,7 +740,18 @@
     "saveFailed": "保存に失敗しました",
     "statusWontfix": "対応しない",
     "statusReviewed": "確認済",
-    "statusDone": "完了"
+    "statusDone": "完了",
+    "templatesTitle": "投稿テンプレート (自動投稿用文言)",
+    "templatesSubtitle": "post_to_x.js が参照する backend/data/x_promotions.json の文言。コピーや下書き作成に利用できます。",
+    "templatesEmpty": "テンプレートはありません。",
+    "templatesCountLabel": "{count} 件のテンプレート",
+    "templatesShow": "テンプレートを表示",
+    "templatesHide": "テンプレートを隠す",
+    "openOnX": "X で投稿",
+    "saveAsDraft": "下書きに追加",
+    "draftSaved": "下書きを追加しました",
+    "postsHistory": "投稿履歴",
+    "charCount": "{count} 文字"
   },
   "LandingPage": {
     "navAppLink": "アプリを開く",

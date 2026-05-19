@@ -740,7 +740,18 @@
     "saveFailed": "Failed to save",
     "statusWontfix": "Won't fix",
     "statusReviewed": "Reviewed",
-    "statusDone": "Done"
+    "statusDone": "Done",
+    "templatesTitle": "Post templates (auto-post source)",
+    "templatesSubtitle": "Text used by post_to_x.js from backend/data/x_promotions.json. Copy or save as draft.",
+    "templatesEmpty": "No templates available.",
+    "templatesCountLabel": "{count} templates",
+    "templatesShow": "Show templates",
+    "templatesHide": "Hide templates",
+    "openOnX": "Post on X",
+    "saveAsDraft": "Save as draft",
+    "draftSaved": "Draft saved",
+    "postsHistory": "Post history",
+    "charCount": "{count} chars"
   },
   "LandingPage": {
     "navAppLink": "Open app",

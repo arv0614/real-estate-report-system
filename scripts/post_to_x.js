@@ -31,7 +31,7 @@ if (!DRY_RUN) {
 }
 
 // ─── ツイート候補を読み込む ────────────────────────────────────────────────────
-const promotionsPath = path.resolve(__dirname, "../marketing/x_promotions.json");
+const promotionsPath = path.resolve(__dirname, "../backend/data/x_promotions.json");
 let promotions;
 try {
   promotions = JSON.parse(fs.readFileSync(promotionsPath, "utf8"));

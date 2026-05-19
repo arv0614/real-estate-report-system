@@ -740,7 +740,18 @@
     "saveFailed": "儲存失敗",
     "statusWontfix": "不處理",
     "statusReviewed": "已審閱",
-    "statusDone": "已完成"
+    "statusDone": "已完成",
+    "templatesTitle": "貼文範本 (自動發文文案)",
+    "templatesSubtitle": "post_to_x.js 引用的 backend/data/x_promotions.json 文案。可複製或儲存為草稿。",
+    "templatesEmpty": "尚無範本。",
+    "templatesCountLabel": "{count} 個範本",
+    "templatesShow": "顯示範本",
+    "templatesHide": "隱藏範本",
+    "openOnX": "在 X 發布",
+    "saveAsDraft": "儲存為草稿",
+    "draftSaved": "草稿已儲存",
+    "postsHistory": "發文歷史",
+    "charCount": "{count} 字"
   },
   "LandingPage": {
     "navAppLink": "開啟應用",

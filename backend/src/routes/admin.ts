@@ -1,5 +1,7 @@
 import { Hono } from "hono";
 import * as admin from "firebase-admin";
+import * as fs from "fs";
+import * as path from "path";
 import { config, isAdminEmail } from "../config";
 
 // ── Firebase Admin 初期化（冪等） ─────────────────────────────
@@ -184,6 +186,45 @@ app.get("/social-posts", async (c) => {
   }
 });
 
+/**
+ * GET /api/admin/x-promotions
+ * `backend/data/x_promotions.json`（自動投稿スクリプト post_to_x.js の参照元）を返す。
+ * Cloud Run 上では Dockerfile が data/ を /app/data/ にコピーしているので
+ * process.cwd() (/app) からの相対で読み取れる。
+ */
+app.get("/x-promotions", async (c) => {
+  const candidates = [
+    path.resolve(process.cwd(), "data/x_promotions.json"),
+    path.resolve(__dirname, "../../data/x_promotions.json"),
+  ];
+  let raw: string | null = null;
+  for (const p of candidates) {
+    try {
+      raw = await fs.promises.readFile(p, "utf8");
+      break;
+    } catch {
+      // 次の候補へ
+    }
+  }
+  if (raw === null) {
+    console.error("[Admin] x_promotions.json を読み込めませんでした。候補:", candidates);
+    return c.json({ error: "x_promotions.json not found" }, 500);
+  }
+  try {
+    const data = JSON.parse(raw) as {
+      meta?: Record<string, unknown>;
+      tweets?: Array<Record<string, unknown>>;
+    };
+    return c.json({
+      meta: data.meta ?? {},
+      tweets: Array.isArray(data.tweets) ? data.tweets : [],
+    });
+  } catch (err) {
+    console.error("[Admin] x_promotions.json のパースに失敗:", err);
+    return c.json({ error: "Failed to parse x_promotions.json" }, 500);
+  }
+});
+
 // ── 編集系エンドポイント ─────────────────────────────────────
 // 各 PATCH は許可フィールドのみを受け付ける allowlist 方式。
 // クライアントが想定外のキーを送ってきても無視される。
@@ -274,6 +315,45 @@ app.patch("/users/:uid", async (c) => {
   } catch (err) {
     console.error("[Admin] user 更新失敗:", err);
     return c.json({ error: "Failed to update user" }, 500);
+  }
+});
+
+/**
+ * POST /api/admin/social-posts
+ * 新しい X 投稿下書きを Firestore に作成する。
+ * Body: { content: string, status?: "pending" | "published" | "error", templateId?: number }
+ */
+app.post("/social-posts", async (c) => {
+  let body: Record<string, unknown>;
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "Invalid JSON body" }, 400);
+  }
+
+  const content = typeof body.content === "string" ? body.content.trim() : "";
+  if (!content) return c.json({ error: "content is required" }, 400);
+
+  const status = typeof body.status === "string" ? body.status : "pending";
+  if (!POST_STATUSES.has(status)) return c.json({ error: "Invalid status" }, 400);
+
+  const doc: Record<string, unknown> = {
+    content,
+    status,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    createdBy: c.get("adminEmail"),
+  };
+  if (typeof body.templateId === "number") doc.templateId = body.templateId;
+  if (status === "published") {
+    doc.publishedAt = admin.firestore.FieldValue.serverTimestamp();
+  }
+
+  try {
+    const ref = await db.collection("social_posts").add(doc);
+    return c.json({ ok: true, id: ref.id }, 201);
+  } catch (err) {
+    console.error("[Admin] social_post 作成失敗:", err);
+    return c.json({ error: "Failed to create social post" }, 500);
   }
 });
 

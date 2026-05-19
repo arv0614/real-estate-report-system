@@ -740,7 +740,18 @@
     "saveFailed": "保存失败",
     "statusWontfix": "不处理",
     "statusReviewed": "已审阅",
-    "statusDone": "已完成"
+    "statusDone": "已完成",
+    "templatesTitle": "帖子模板 (自动发帖文案)",
+    "templatesSubtitle": "post_to_x.js 引用的 backend/data/x_promotions.json 文案。可复制或保存为草稿。",
+    "templatesEmpty": "暂无模板。",
+    "templatesCountLabel": "{count} 个模板",
+    "templatesShow": "显示模板",
+    "templatesHide": "隐藏模板",
+    "openOnX": "在 X 发布",
+    "saveAsDraft": "保存为草稿",
+    "draftSaved": "草稿已保存",
+    "postsHistory": "发帖历史",
+    "charCount": "{count} 字"
   },
   "LandingPage": {
     "navAppLink": "打开应用",

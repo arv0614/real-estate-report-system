@@ -40,6 +40,14 @@ type SocialPostItem = {
   publishedAt: string | null;
 };
 
+type PromotionTemplate = {
+  id: number;
+  type?: string;
+  target?: string;
+  lang?: string;
+  text: string;
+};
+
 type TabKey = "feedbacks" | "users" | "social";
 
 type LoadState<T> =
@@ -92,6 +100,29 @@ async function patchAdmin(path: string, payload: Record<string, unknown>): Promi
   }
 }
 
+async function postAdmin<T = unknown>(
+  path: string,
+  payload: Record<string, unknown>
+): Promise<{ ok: true; data: T } | { ok: false; error: string }> {
+  const idToken = await auth.currentUser?.getIdToken().catch(() => null);
+  if (!idToken) return { ok: false, error: "Not authenticated" };
+  try {
+    const res = await fetch(`${getApiBase()}${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      return { ok: false, error: `${res.status} ${body}` };
+    }
+    const data = (await res.json()) as T;
+    return { ok: true, data };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
 export default function AdminClient() {
   const t = useTranslations("Admin");
   const router = useRouter();
@@ -101,6 +132,9 @@ export default function AdminClient() {
   const [feedbackState, setFeedbackState] = useState<LoadState<FeedbackItem>>({ kind: "loading" });
   const [usersState, setUsersState] = useState<LoadState<UserItem>>({ kind: "loading" });
   const [postsState, setPostsState] = useState<LoadState<SocialPostItem>>({ kind: "loading" });
+  const [templatesState, setTemplatesState] = useState<LoadState<PromotionTemplate>>({
+    kind: "loading",
+  });
 
   const loadFeedbacks = useCallback(async () => {
     setFeedbackState({ kind: "loading" });
@@ -113,6 +147,10 @@ export default function AdminClient() {
   const loadPosts = useCallback(async () => {
     setPostsState({ kind: "loading" });
     setPostsState(await fetchAdmin<SocialPostItem>("/api/admin/social-posts", "posts"));
+  }, []);
+  const loadTemplates = useCallback(async () => {
+    setTemplatesState({ kind: "loading" });
+    setTemplatesState(await fetchAdmin<PromotionTemplate>("/api/admin/x-promotions", "tweets"));
   }, []);
 
   useEffect(() => {
@@ -128,12 +166,32 @@ export default function AdminClient() {
     if (!user) return;
     if (tab === "users" && usersState.kind === "loading") loadUsers();
     if (tab === "social" && postsState.kind === "loading") loadPosts();
-  }, [tab, user, usersState.kind, postsState.kind, loadUsers, loadPosts]);
+    if (tab === "social" && templatesState.kind === "loading") loadTemplates();
+  }, [
+    tab,
+    user,
+    usersState.kind,
+    postsState.kind,
+    templatesState.kind,
+    loadUsers,
+    loadPosts,
+    loadTemplates,
+  ]);
 
   const refresh = () => {
     if (tab === "feedbacks") loadFeedbacks();
     else if (tab === "users") loadUsers();
-    else loadPosts();
+    else {
+      loadPosts();
+      loadTemplates();
+    }
+  };
+
+  // 下書き作成（テンプレートから） → 投稿履歴の先頭に挿入する
+  const prependPost = (post: SocialPostItem) => {
+    setPostsState((s) =>
+      s.kind === "ok" ? { kind: "ok", items: [post, ...s.items] } : { kind: "ok", items: [post] }
+    );
   };
 
   // 保存後に親 state を更新するためのコールバック
@@ -239,7 +297,12 @@ export default function AdminClient() {
           <UsersTable items={usersState.kind === "ok" ? usersState.items : []} onPatched={patchUser} />
         )}
         {activeState.kind === "ok" && tab === "social" && (
-          <SocialPostsList items={postsState.kind === "ok" ? postsState.items : []} onPatched={patchPost} />
+          <SocialPostsList
+            items={postsState.kind === "ok" ? postsState.items : []}
+            templatesState={templatesState}
+            onPatched={patchPost}
+            onDraftCreated={prependPost}
+          />
         )}
       </div>
     </main>
@@ -651,30 +714,201 @@ function UserRow({
 // ─── X 投稿管理 ───────────────────────────────────────────────
 function SocialPostsList({
   items,
+  templatesState,
   onPatched,
+  onDraftCreated,
 }: {
   items: SocialPostItem[];
+  templatesState: LoadState<PromotionTemplate>;
   onPatched: (id: string, patch: Partial<SocialPostItem>) => void;
+  onDraftCreated: (post: SocialPostItem) => void;
 }) {
   const t = useTranslations("Admin");
-  if (items.length === 0) {
-    return (
-      <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-sm text-slate-500">
-        {t("socialPostsEmpty")}
-      </div>
-    );
-  }
   return (
     <>
-      <div className="mb-4 text-xs text-slate-500">
-        {t("socialPostsCountLabel", { count: items.length })}
-      </div>
-      <ul className="space-y-3">
-        {items.map((p) => (
-          <SocialPostRow key={p.id} post={p} onPatched={onPatched} />
-        ))}
-      </ul>
+      <TemplatesSection state={templatesState} onDraftCreated={onDraftCreated} />
+
+      <h2 className="text-base font-bold text-slate-800 mt-8 mb-3">{t("postsHistory")}</h2>
+      {items.length === 0 ? (
+        <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-sm text-slate-500">
+          {t("socialPostsEmpty")}
+        </div>
+      ) : (
+        <>
+          <div className="mb-4 text-xs text-slate-500">
+            {t("socialPostsCountLabel", { count: items.length })}
+          </div>
+          <ul className="space-y-3">
+            {items.map((p) => (
+              <SocialPostRow key={p.id} post={p} onPatched={onPatched} />
+            ))}
+          </ul>
+        </>
+      )}
     </>
+  );
+}
+
+function TemplatesSection({
+  state,
+  onDraftCreated,
+}: {
+  state: LoadState<PromotionTemplate>;
+  onDraftCreated: (post: SocialPostItem) => void;
+}) {
+  const t = useTranslations("Admin");
+  const [open, setOpen] = useState(true);
+
+  return (
+    <section>
+      <div className="flex items-center justify-between gap-3 flex-wrap mb-2">
+        <div>
+          <h2 className="text-base font-bold text-slate-800">{t("templatesTitle")}</h2>
+          <p className="text-xs text-slate-500">{t("templatesSubtitle")}</p>
+        </div>
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className="text-xs px-2.5 py-1 rounded border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+        >
+          {open ? t("templatesHide") : t("templatesShow")}
+        </button>
+      </div>
+
+      {open && state.kind === "loading" && (
+        <div className="bg-white rounded-xl border border-slate-200 p-6 text-center text-sm text-slate-500">
+          {t("loading")}
+        </div>
+      )}
+      {open && state.kind === "error" && (
+        <div className="bg-white border border-amber-200 rounded-xl p-4 text-xs text-amber-700">
+          {state.message}
+        </div>
+      )}
+      {open && state.kind === "ok" && state.items.length === 0 && (
+        <div className="bg-white rounded-xl border border-slate-200 p-6 text-center text-sm text-slate-500">
+          {t("templatesEmpty")}
+        </div>
+      )}
+      {open && state.kind === "ok" && state.items.length > 0 && (
+        <>
+          <div className="mb-2 text-xs text-slate-500">
+            {t("templatesCountLabel", { count: state.items.length })}
+          </div>
+          <ul className="space-y-2">
+            {state.items.map((tpl) => (
+              <TemplateRow key={tpl.id} template={tpl} onDraftCreated={onDraftCreated} />
+            ))}
+          </ul>
+        </>
+      )}
+    </section>
+  );
+}
+
+function TemplateRow({
+  template,
+  onDraftCreated,
+}: {
+  template: PromotionTemplate;
+  onDraftCreated: (post: SocialPostItem) => void;
+}) {
+  const t = useTranslations("Admin");
+  const [copied, setCopied] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [savedFlash, setSavedFlash] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(template.text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      alert(t("copyFailed"));
+    }
+  };
+
+  const saveDraft = async () => {
+    setSaving(true);
+    setError(null);
+    const result = await postAdmin<{ id: string }>("/api/admin/social-posts", {
+      content: template.text,
+      status: "pending",
+      templateId: template.id,
+    });
+    setSaving(false);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    onDraftCreated({
+      id: result.data.id,
+      content: template.text,
+      status: "pending",
+      error: null,
+      url: null,
+      scheduledAt: null,
+      createdAt: new Date().toISOString(),
+      publishedAt: null,
+    });
+    setSavedFlash(true);
+    setTimeout(() => setSavedFlash(false), 1500);
+  };
+
+  const intentUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(template.text)}`;
+
+  return (
+    <li className="bg-white border border-slate-200 rounded-xl p-4">
+      <div className="flex items-center gap-2 flex-wrap mb-2">
+        <span className="text-[10px] font-mono text-slate-400">#{template.id}</span>
+        {template.lang && (
+          <span className="text-[10px] uppercase font-semibold text-slate-500 border border-slate-200 px-1.5 py-0.5 rounded">
+            {template.lang}
+          </span>
+        )}
+        {template.type && (
+          <span className="text-[10px] text-slate-600 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded truncate max-w-[280px]">
+            {template.type}
+          </span>
+        )}
+      </div>
+      <p className="text-sm text-slate-800 whitespace-pre-wrap leading-relaxed bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
+        {template.text}
+      </p>
+      <div className="mt-2 flex items-center gap-2 flex-wrap">
+        <span className="text-[10px] text-slate-400">
+          {t("charCount", { count: Array.from(template.text).length })}
+        </span>
+        <button
+          type="button"
+          onClick={copy}
+          className="text-xs px-2.5 py-1 rounded border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+        >
+          {copied ? `✓ ${t("copied")}` : `📋 ${t("copy")}`}
+        </button>
+        <a
+          href={intentUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs px-2.5 py-1 rounded border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100"
+        >
+          {t("openOnX")} ↗
+        </a>
+        <button
+          type="button"
+          onClick={saveDraft}
+          disabled={saving}
+          className="text-xs px-2.5 py-1 rounded border border-slate-800 bg-slate-800 text-white hover:bg-slate-700 disabled:opacity-50"
+        >
+          {saving ? t("saving") : savedFlash ? `✓ ${t("draftSaved")}` : t("saveAsDraft")}
+        </button>
+        {error && (
+          <span className="text-[10px] text-red-700 max-w-[200px] break-words">
+            {t("saveFailed")}: {error}
+          </span>
+        )}
+      </div>
+    </li>
   );
 }
 

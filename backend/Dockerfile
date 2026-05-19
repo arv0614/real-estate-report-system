@@ -25,6 +25,9 @@ RUN npm ci --only=production && npm cache clean --force
 # ビルド成果物をコピー
 COPY --from=builder /app/dist ./dist
 
+# 自動投稿用テンプレートをイメージに同梱（X投稿管理画面と post_to_x.js の参照元）
+COPY data/ ./data/
+
 # 非rootユーザーで実行
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 USER appuser
