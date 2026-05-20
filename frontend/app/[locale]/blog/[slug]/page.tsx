@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ALL_LOCALES, getAllPostMeta, getAvailableLocales, getPostBySlug, type Locale } from "@/lib/blog";
 import BlogMiniMapWrapper from "@/components/blog/BlogMiniMapWrapper";
+import BlogShareButtons from "@/components/blog/BlogShareButtons";
 import LanguageToggle from "@/components/LanguageToggle";
 
 const SITE_URL =
@@ -333,6 +334,9 @@ export default async function BlogPostPage({ params }: Props) {
             {post.content}
           </ReactMarkdown>
         </article>
+
+        {/* Share buttons */}
+        <BlogShareButtons title={post.title} url={blogPathFor(locale, slug)} />
 
         {/* CTA */}
         <div className="mt-12 bg-blue-50 border border-blue-100 rounded-xl px-6 py-6 text-center">

@@ -794,5 +794,14 @@
     "bottomCtaDesc": "No signup, no credit card. Just enter coordinates or an address, and the report is ready instantly.",
     "bottomCta": "Try it free now",
     "bottomCtaNote": "3 reports/day free · No login required"
+  },
+  "Blog": {
+    "shareThisArticle": "Share this article",
+    "shareOnX": "Share on X",
+    "shareOnThreads": "Share on Threads",
+    "shareOnFacebook": "Share on Facebook",
+    "copyLink": "Copy link",
+    "copied": "Copied",
+    "copyFailed": "Failed to copy"
   }
 }

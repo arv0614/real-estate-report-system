@@ -794,5 +794,14 @@
     "bottomCtaDesc": "登録不要・クレジットカード不要。緯度経度や住所を入力するだけで、すぐにレポートが生成されます。",
     "bottomCta": "無料で今すぐ試す",
     "bottomCtaNote": "1 日 3 件まで無料 · ログイン不要"
+  },
+  "Blog": {
+    "shareThisArticle": "この記事をシェアする",
+    "shareOnX": "X でシェア",
+    "shareOnThreads": "Threads でシェア",
+    "shareOnFacebook": "Facebook でシェア",
+    "copyLink": "リンクをコピー",
+    "copied": "コピーしました",
+    "copyFailed": "コピーに失敗しました"
   }
 }
