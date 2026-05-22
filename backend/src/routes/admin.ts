@@ -192,6 +192,8 @@ app.get("/social-posts", async (c) => {
  *   page    — 1-indexed, default 1
  *   limit   — 1〜100, default 10
  *   search  — オプション。text/type/target/lang/slug に対する大文字小文字無視の部分一致
+ *   sort    — "newest" (default) | "oldest"。createdAt 昇降。
+ *             createdAt 未設定ドキュメントは常に末尾に回す。
  *
  * 実装方針: Firestore の全文検索は制約があるため、コレクション全件を取得して
  * バックエンドのメモリ上でフィルタ・ソート・ページングする。
@@ -203,6 +205,8 @@ app.get("/x-promotions", async (c) => {
   const limitRaw = parseInt(url.searchParams.get("limit") || "10", 10) || 10;
   const limit = Math.min(100, Math.max(1, limitRaw));
   const search = (url.searchParams.get("search") || "").trim();
+  const sortParam = (url.searchParams.get("sort") || "newest").toLowerCase();
+  const sort: "newest" | "oldest" = sortParam === "oldest" ? "oldest" : "newest";
 
   try {
     // コレクション未作成やインデックス未準備でも 500 にならないようフォールバック
@@ -225,8 +229,15 @@ app.get("/x-promotions", async (c) => {
       };
     });
 
-    // createdAt 降順（未設定は末尾）
-    all.sort((a, b) => b._sortKey - a._sortKey);
+    // createdAt 未設定は常に末尾。それ以外は sort パラメータに従って並び替え。
+    all.sort((a, b) => {
+      const aMissing = a._sortKey === 0;
+      const bMissing = b._sortKey === 0;
+      if (aMissing && bMissing) return 0;
+      if (aMissing) return 1;
+      if (bMissing) return -1;
+      return sort === "oldest" ? a._sortKey - b._sortKey : b._sortKey - a._sortKey;
+    });
 
     const needle = search.toLowerCase();
     const filtered = needle
@@ -250,6 +261,7 @@ app.get("/x-promotions", async (c) => {
       page: safePage,
       limit,
       totalPages,
+      sort,
     });
   } catch (err) {
     console.error("[Admin] social_templates 読み取り失敗:", err);

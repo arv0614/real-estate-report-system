@@ -712,7 +712,7 @@
     "errorTitle": "加载失败",
     "tabFeedbacks": "反馈",
     "tabUsers": "用户列表",
-    "tabSocialPosts": "X 帖子管理",
+    "tabSocialPosts": "社交媒体管理",
     "usersCountLabel": "{count} 位用户",
     "usersEmpty": "暂无注册用户。",
     "colEmail": "邮箱",
@@ -741,8 +741,8 @@
     "statusWontfix": "不处理",
     "statusReviewed": "已审阅",
     "statusDone": "已完成",
-    "templatesTitle": "帖子模板 (自动发帖文案)",
-    "templatesSubtitle": "post_to_x.js 引用的 backend/data/x_promotions.json 文案。可复制或保存为草稿。",
+    "templatesTitle": "社交媒体帖子模板",
+    "templatesSubtitle": "保存于 Firestore 的 X / Threads / Facebook 通用文案。可搜索、排序、复制或保存为草稿。",
     "templatesEmpty": "暂无模板。",
     "templatesCountLabel": "{count} 个模板",
     "templatesShow": "显示模板",
@@ -760,7 +760,10 @@
     "templatesNoMatch": "没有匹配的模板。",
     "prevPage": "上一页",
     "nextPage": "下一页",
-    "pageInfo": "第 {page} / {total} 页"
+    "pageInfo": "第 {page} / {total} 页",
+    "sortLabel": "排序",
+    "sortNewest": "最新优先",
+    "sortOldest": "最早优先"
   },
   "LandingPage": {
     "navAppLink": "打开应用",
@@ -808,6 +811,8 @@
     "shareOnFacebook": "在 Facebook 分享",
     "copyLink": "复制链接",
     "copied": "已复制",
-    "copyFailed": "复制失败"
+    "copyFailed": "复制失败",
+    "ogPreviewTitle": "社交媒体分享预览",
+    "ogPreviewHint": "在 X、Threads、Facebook 等平台分享时将显示为以下样式。"
   }
 }

@@ -712,7 +712,7 @@
     "errorTitle": "Failed to load",
     "tabFeedbacks": "Feedback",
     "tabUsers": "Users",
-    "tabSocialPosts": "Social Posts",
+    "tabSocialPosts": "Social Post Management",
     "usersCountLabel": "{count} users",
     "usersEmpty": "No registered users yet.",
     "colEmail": "Email",
@@ -741,8 +741,8 @@
     "statusWontfix": "Won't fix",
     "statusReviewed": "Reviewed",
     "statusDone": "Done",
-    "templatesTitle": "Post templates (auto-post source)",
-    "templatesSubtitle": "Text used by post_to_x.js from backend/data/x_promotions.json. Copy or save as draft.",
+    "templatesTitle": "Social post templates",
+    "templatesSubtitle": "Reusable copy stored in Firestore for X / Threads / Facebook. Search, sort, copy, or save as draft.",
     "templatesEmpty": "No templates available.",
     "templatesCountLabel": "{count} templates",
     "templatesShow": "Show templates",
@@ -760,7 +760,10 @@
     "templatesNoMatch": "No templates match your search.",
     "prevPage": "Prev",
     "nextPage": "Next",
-    "pageInfo": "Page {page} / {total}"
+    "pageInfo": "Page {page} / {total}",
+    "sortLabel": "Sort",
+    "sortNewest": "Newest first",
+    "sortOldest": "Oldest first"
   },
   "LandingPage": {
     "navAppLink": "Open app",
@@ -808,6 +811,8 @@
     "shareOnFacebook": "Share on Facebook",
     "copyLink": "Copy link",
     "copied": "Copied",
-    "copyFailed": "Failed to copy"
+    "copyFailed": "Failed to copy",
+    "ogPreviewTitle": "Preview when shared on social media",
+    "ogPreviewHint": "This is how the article will appear when shared on X, Threads, Facebook, and other platforms."
   }
 }

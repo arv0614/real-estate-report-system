@@ -66,6 +66,9 @@ type TemplatesState =
 
 const TEMPLATES_PAGE_SIZE = 10;
 
+type TemplatesSort = "newest" | "oldest";
+const TEMPLATES_SORT_OPTIONS: TemplatesSort[] = ["newest", "oldest"];
+
 type TabKey = "feedbacks" | "users" | "social";
 
 type LoadState<T> =
@@ -153,6 +156,7 @@ export default function AdminClient() {
   const [templatesState, setTemplatesState] = useState<TemplatesState>({ kind: "loading" });
   const [templatesPage, setTemplatesPage] = useState(1);
   const [templatesSearch, setTemplatesSearch] = useState("");
+  const [templatesSort, setTemplatesSort] = useState<TemplatesSort>("newest");
 
   const loadFeedbacks = useCallback(async () => {
     setFeedbackState({ kind: "loading" });
@@ -166,7 +170,7 @@ export default function AdminClient() {
     setPostsState({ kind: "loading" });
     setPostsState(await fetchAdmin<SocialPostItem>("/api/admin/social-posts", "posts"));
   }, []);
-  const loadTemplates = useCallback(async (page: number, search: string) => {
+  const loadTemplates = useCallback(async (page: number, search: string, sort: TemplatesSort) => {
     setTemplatesState({ kind: "loading" });
     const idToken = await auth.currentUser?.getIdToken().catch(() => null);
     if (!idToken) {
@@ -176,6 +180,7 @@ export default function AdminClient() {
     const params = new URLSearchParams({
       page: String(page),
       limit: String(TEMPLATES_PAGE_SIZE),
+      sort,
     });
     if (search.trim()) params.set("search", search.trim());
     try {
@@ -232,22 +237,22 @@ export default function AdminClient() {
     if (tab === "social" && postsState.kind === "loading") loadPosts();
   }, [tab, user, usersState.kind, postsState.kind, loadUsers, loadPosts]);
 
-  // テンプレートはページ/検索が変わったときに再取得（デバウンス）
+  // テンプレートはページ/検索/ソートが変わったときに再取得（デバウンス）
   useEffect(() => {
     if (!user) return;
     if (tab !== "social") return;
     const handle = setTimeout(() => {
-      loadTemplates(templatesPage, templatesSearch);
+      loadTemplates(templatesPage, templatesSearch, templatesSort);
     }, 250);
     return () => clearTimeout(handle);
-  }, [tab, user, templatesPage, templatesSearch, loadTemplates]);
+  }, [tab, user, templatesPage, templatesSearch, templatesSort, loadTemplates]);
 
   const refresh = () => {
     if (tab === "feedbacks") loadFeedbacks();
     else if (tab === "users") loadUsers();
     else {
       loadPosts();
-      loadTemplates(templatesPage, templatesSearch);
+      loadTemplates(templatesPage, templatesSearch, templatesSort);
     }
   };
 
@@ -366,11 +371,16 @@ export default function AdminClient() {
             templatesState={templatesState}
             templatesSearch={templatesSearch}
             templatesPage={templatesPage}
+            templatesSort={templatesSort}
             onTemplatesSearchChange={(v) => {
               setTemplatesPage(1);
               setTemplatesSearch(v);
             }}
             onTemplatesPageChange={setTemplatesPage}
+            onTemplatesSortChange={(s) => {
+              setTemplatesPage(1);
+              setTemplatesSort(s);
+            }}
             onPatched={patchPost}
             onDraftCreated={prependPost}
           />
@@ -782,14 +792,16 @@ function UserRow({
   );
 }
 
-// ─── X 投稿管理 ───────────────────────────────────────────────
+// ─── SNS 投稿管理 ─────────────────────────────────────────────
 function SocialPostsList({
   items,
   templatesState,
   templatesSearch,
   templatesPage,
+  templatesSort,
   onTemplatesSearchChange,
   onTemplatesPageChange,
+  onTemplatesSortChange,
   onPatched,
   onDraftCreated,
 }: {
@@ -797,18 +809,25 @@ function SocialPostsList({
   templatesState: TemplatesState;
   templatesSearch: string;
   templatesPage: number;
+  templatesSort: TemplatesSort;
   onTemplatesSearchChange: (v: string) => void;
   onTemplatesPageChange: (page: number) => void;
+  onTemplatesSortChange: (s: TemplatesSort) => void;
   onPatched: (id: string, patch: Partial<SocialPostItem>) => void;
   onDraftCreated: (post: SocialPostItem) => void;
 }) {
   const t = useTranslations("Admin");
+  // templatesPage は親で current page を保持しているが、TemplatesSection 側は
+  // state.page.page を信頼するので props で渡す必要はない（明示的に未使用扱い）。
+  void templatesPage;
   return (
     <>
       <TemplatesSection
         state={templatesState}
         search={templatesSearch}
+        sort={templatesSort}
         onSearchChange={onTemplatesSearchChange}
+        onSortChange={onTemplatesSortChange}
         onPageChange={onTemplatesPageChange}
         onDraftCreated={onDraftCreated}
       />
@@ -837,13 +856,17 @@ function SocialPostsList({
 function TemplatesSection({
   state,
   search,
+  sort,
   onSearchChange,
+  onSortChange,
   onPageChange,
   onDraftCreated,
 }: {
   state: TemplatesState;
   search: string;
+  sort: TemplatesSort;
   onSearchChange: (v: string) => void;
+  onSortChange: (s: TemplatesSort) => void;
   onPageChange: (page: number) => void;
   onDraftCreated: (post: SocialPostItem) => void;
 }) {
@@ -900,6 +923,21 @@ function TemplatesSection({
               {t("clearSearch")}
             </button>
           )}
+          <label className="inline-flex items-center gap-2 text-xs text-slate-600">
+            <span className="font-semibold whitespace-nowrap">{t("sortLabel")}</span>
+            <select
+              value={sort}
+              onChange={(e) => onSortChange(e.target.value as TemplatesSort)}
+              className="border border-slate-300 rounded-lg px-2 py-2 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+              aria-label={t("sortLabel")}
+            >
+              {TEMPLATES_SORT_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt === "newest" ? t("sortNewest") : t("sortOldest")}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
       )}
 

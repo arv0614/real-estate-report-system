@@ -712,7 +712,7 @@
     "errorTitle": "載入失敗",
     "tabFeedbacks": "回饋",
     "tabUsers": "使用者列表",
-    "tabSocialPosts": "X 貼文管理",
+    "tabSocialPosts": "社群貼文管理",
     "usersCountLabel": "{count} 位使用者",
     "usersEmpty": "尚無註冊使用者。",
     "colEmail": "電子郵件",
@@ -741,8 +741,8 @@
     "statusWontfix": "不處理",
     "statusReviewed": "已審閱",
     "statusDone": "已完成",
-    "templatesTitle": "貼文範本 (自動發文文案)",
-    "templatesSubtitle": "post_to_x.js 引用的 backend/data/x_promotions.json 文案。可複製或儲存為草稿。",
+    "templatesTitle": "社群貼文範本",
+    "templatesSubtitle": "儲存於 Firestore 的 X / Threads / Facebook 通用文案。可搜尋、排序、複製或儲存為草稿。",
     "templatesEmpty": "尚無範本。",
     "templatesCountLabel": "{count} 個範本",
     "templatesShow": "顯示範本",
@@ -760,7 +760,10 @@
     "templatesNoMatch": "沒有符合條件的範本。",
     "prevPage": "上一頁",
     "nextPage": "下一頁",
-    "pageInfo": "第 {page} / {total} 頁"
+    "pageInfo": "第 {page} / {total} 頁",
+    "sortLabel": "排序",
+    "sortNewest": "最新優先",
+    "sortOldest": "最早優先"
   },
   "LandingPage": {
     "navAppLink": "開啟應用",
@@ -808,6 +811,8 @@
     "shareOnFacebook": "在 Facebook 分享",
     "copyLink": "複製連結",
     "copied": "已複製",
-    "copyFailed": "複製失敗"
+    "copyFailed": "複製失敗",
+    "ogPreviewTitle": "社群分享預覽",
+    "ogPreviewHint": "於 X、Threads、Facebook 等平台分享時將顯示為下方樣式。"
   }
 }

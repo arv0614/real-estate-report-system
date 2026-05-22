@@ -6,6 +6,7 @@ import remarkGfm from "remark-gfm";
 import { ALL_LOCALES, getAllPostMeta, getAvailableLocales, getPostBySlug, type Locale } from "@/lib/blog";
 import BlogMiniMapWrapper from "@/components/blog/BlogMiniMapWrapper";
 import BlogShareButtons from "@/components/blog/BlogShareButtons";
+import BlogOgpPreview from "@/components/blog/BlogOgpPreview";
 import LanguageToggle from "@/components/LanguageToggle";
 
 const SITE_URL =
@@ -22,6 +23,17 @@ function blogPathFor(locale: Locale, slug: string): string {
   return locale === "ja"
     ? `${SITE_URL}/blog/${slug}`
     : `${SITE_URL}/${locale}/blog/${slug}`;
+}
+
+// 共有時の OGP 画像 URL を生成する。/api/og/blog は 1200x630 の動的画像を返す。
+// generateMetadata と同じロジック (OGP プレビュー UI と SNS で同じ画像を出す)。
+function buildOgImageUrl(post: { title: string; description: string; tags: string[]; publishedAt: string }): string {
+  const ogImage = new URL(`${SITE_URL}/api/og/blog`);
+  ogImage.searchParams.set("title", post.title);
+  if (post.description) ogImage.searchParams.set("description", post.description);
+  if (post.tags.length > 0) ogImage.searchParams.set("tags", post.tags.slice(0, 4).join(","));
+  if (post.publishedAt) ogImage.searchParams.set("date", post.publishedAt);
+  return ogImage.toString();
 }
 
 const SLUG_LABELS: Record<
@@ -122,12 +134,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // X / Slack / Facebook の OGP scraper はクロスオリジン取得を行うため、
   // 必ず絶対 URL を返す必要がある (相対パスだとデフォルトのサイトロゴに
   // フォールバックして「グレーアイコン」になる)。
-  const ogImage = new URL(`${SITE_URL}/api/og/blog`);
-  ogImage.searchParams.set("title", post.title);
-  if (post.description) ogImage.searchParams.set("description", post.description);
-  if (post.tags.length > 0) ogImage.searchParams.set("tags", post.tags.slice(0, 4).join(","));
-  if (post.publishedAt) ogImage.searchParams.set("date", post.publishedAt);
-  const ogImageUrl = ogImage.toString();
+  const ogImageUrl = buildOgImageUrl(post);
 
   // 翻訳済み記事のみ hreflang alternate を出す (未翻訳の言語は alternate に含めない)
   const available = getAvailableLocales(slug);
@@ -334,6 +341,14 @@ export default async function BlogPostPage({ params }: Props) {
             {post.content}
           </ReactMarkdown>
         </article>
+
+        {/* SNS シェア時のプレビュー (記事本文末尾 → シェアボタンの直前) */}
+        <BlogOgpPreview
+          title={post.title}
+          description={post.description}
+          imageUrl={buildOgImageUrl(post)}
+          pageUrl={blogPathFor(locale, slug)}
+        />
 
         {/* Share buttons */}
         <BlogShareButtons title={post.title} url={blogPathFor(locale, slug)} />

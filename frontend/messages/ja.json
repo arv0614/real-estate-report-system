@@ -712,7 +712,7 @@
     "errorTitle": "読み込みに失敗しました",
     "tabFeedbacks": "フィードバック",
     "tabUsers": "ユーザー一覧",
-    "tabSocialPosts": "X投稿管理",
+    "tabSocialPosts": "SNS投稿管理",
     "usersCountLabel": "{count} 件のユーザー",
     "usersEmpty": "登録ユーザーはまだありません。",
     "colEmail": "メールアドレス",
@@ -741,8 +741,8 @@
     "statusWontfix": "対応しない",
     "statusReviewed": "確認済",
     "statusDone": "完了",
-    "templatesTitle": "投稿テンプレート (自動投稿用文言)",
-    "templatesSubtitle": "post_to_x.js が参照する backend/data/x_promotions.json の文言。コピーや下書き作成に利用できます。",
+    "templatesTitle": "SNS投稿テンプレート",
+    "templatesSubtitle": "Firestore に蓄積された SNS 投稿用の文言。コピーや下書き作成、検索・並び替えに利用できます。",
     "templatesEmpty": "テンプレートはありません。",
     "templatesCountLabel": "{count} 件のテンプレート",
     "templatesShow": "テンプレートを表示",
@@ -760,7 +760,10 @@
     "templatesNoMatch": "条件に一致するテンプレートがありません。",
     "prevPage": "前へ",
     "nextPage": "次へ",
-    "pageInfo": "{page} / {total} ページ"
+    "pageInfo": "{page} / {total} ページ",
+    "sortLabel": "並び替え",
+    "sortNewest": "新しい順",
+    "sortOldest": "古い順"
   },
   "LandingPage": {
     "navAppLink": "アプリを開く",
@@ -808,6 +811,8 @@
     "shareOnFacebook": "Facebook でシェア",
     "copyLink": "リンクをコピー",
     "copied": "コピーしました",
-    "copyFailed": "コピーに失敗しました"
+    "copyFailed": "コピーに失敗しました",
+    "ogPreviewTitle": "SNS シェア時のプレビュー",
+    "ogPreviewHint": "X / Threads / Facebook などでシェアされると、このように表示されます。"
   }
 }
