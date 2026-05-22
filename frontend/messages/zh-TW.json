@@ -98,7 +98,12 @@
     "errorUpload": "上傳失敗",
     "errorFileSize": "檔案需小於 2MB",
     "errorFileType": "支援格式:PNG / JPG / SVG",
-    "backHome": "← 返回首頁"
+    "backHome": "← 返回首頁",
+    "subscriptionTitle": "訂閱",
+    "subscriptionBody": "可在 Lemon Squeezy 客戶中心查看帳單、更新付款方式或取消訂閱。",
+    "manageSubscription": "管理訂閱",
+    "manageSubscriptionLoading": "正在開啟客戶中心...",
+    "manageSubscriptionError": "無法開啟客戶中心,請稍後再試。"
   },
   "WeatherInfo": {
     "title": "氣候與日照摘要",

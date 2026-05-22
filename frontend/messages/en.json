@@ -98,7 +98,12 @@
     "errorUpload": "Upload failed",
     "errorFileSize": "File must be under 2MB",
     "errorFileType": "Allowed formats: PNG / JPG / SVG",
-    "backHome": "← Back to home"
+    "backHome": "← Back to home",
+    "subscriptionTitle": "Subscription",
+    "subscriptionBody": "View invoices, update payment method, or cancel your plan in the Lemon Squeezy customer portal.",
+    "manageSubscription": "Manage Subscription",
+    "manageSubscriptionLoading": "Opening portal...",
+    "manageSubscriptionError": "Failed to open the customer portal. Please try again."
   },
   "WeatherInfo": {
     "title": "Climate & Sunshine",

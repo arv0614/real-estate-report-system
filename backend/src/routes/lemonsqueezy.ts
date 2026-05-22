@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import * as crypto from "crypto";
 import * as admin from "firebase-admin";
-import { lemonSqueezySetup, createCheckout } from "@lemonsqueezy/lemonsqueezy.js";
+import { lemonSqueezySetup, createCheckout, getCustomer } from "@lemonsqueezy/lemonsqueezy.js";
 import { config } from "../config";
 
 // ── Firebase Admin 初期化（冪等） ─────────────────────────────
@@ -75,6 +75,77 @@ app.post("/create-checkout", async (c) => {
   } catch (err) {
     console.error("[LS] create-checkout error:", err);
     return c.json({ error: "決済セッションの作成に失敗しました" }, 500);
+  }
+});
+
+/**
+ * 指定された Lemon Squeezy 顧客の Customer Portal URL を取得する。
+ * Lemon Squeezy は customer.urls.customer_portal として 24 時間有効な
+ * pre-signed URL を返す。サブスクリプション未購入の顧客は null となる。
+ */
+export async function createCustomerPortalSession(
+  customerId: string | number
+): Promise<string> {
+  if (!config.lemonSqueezy.apiKey) {
+    throw new Error("LEMONSQUEEZY_API_KEY is not configured");
+  }
+  lemonSqueezySetup({ apiKey: config.lemonSqueezy.apiKey });
+
+  const { data, error } = await getCustomer(customerId);
+  if (error) {
+    throw new Error(`Lemon Squeezy getCustomer failed: ${error.message}`);
+  }
+  const portalUrl = data?.data?.attributes?.urls?.customer_portal;
+  if (!portalUrl) {
+    throw new Error("Customer portal URL is not available for this customer");
+  }
+  return portalUrl;
+}
+
+// ──────────────────────────────────────────────────────────────
+// POST /api/lemonsqueezy/portal
+// Header: Authorization: Bearer <Firebase ID Token>
+// Returns: { url: string }
+// ──────────────────────────────────────────────────────────────
+app.post("/portal", async (c) => {
+  if (!config.lemonSqueezy.apiKey) {
+    return c.json({ error: "LEMONSQUEEZY_API_KEY が設定されていません" }, 503);
+  }
+
+  const authHeader = c.req.header("authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    return c.json({ error: "Unauthorized: Firebase auth required" }, 401);
+  }
+  const idToken = authHeader.slice(7);
+  let uid: string;
+  try {
+    const decoded = await admin.auth().verifyIdToken(idToken);
+    uid = decoded.uid;
+  } catch (err) {
+    console.warn("[LS] portal: ID token verification failed:", err instanceof Error ? err.message : err);
+    return c.json({ error: "Unauthorized: Invalid or expired token" }, 401);
+  }
+
+  let customerId: string | number | undefined;
+  try {
+    const snap = await db.collection("users").doc(uid).get();
+    const data = snap.data();
+    customerId = data?.lemonSqueezyCustomerId as string | number | undefined;
+  } catch (err) {
+    console.error("[LS] portal: Firestore lookup failed:", err);
+    return c.json({ error: "ユーザー情報の取得に失敗しました" }, 500);
+  }
+
+  if (!customerId) {
+    return c.json({ error: "アクティブなサブスクリプションが見つかりません" }, 404);
+  }
+
+  try {
+    const url = await createCustomerPortalSession(customerId);
+    return c.json({ url });
+  } catch (err) {
+    console.error("[LS] portal error:", err);
+    return c.json({ error: "カスタマーポータルURLの取得に失敗しました" }, 500);
   }
 });
 

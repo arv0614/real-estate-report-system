@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
-import { storage } from "@/lib/firebase";
+import { auth, storage } from "@/lib/firebase";
+import { getApiBase } from "@/lib/api";
 import { useAuth } from "@/lib/useAuth";
 import { useAuthModal } from "@/components/AuthModalContext";
 import {
@@ -32,6 +33,8 @@ export default function ProfileClient() {
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [planModalOpen, setPlanModalOpen] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [portalError, setPortalError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -100,6 +103,43 @@ export default function ProfileClient() {
     } catch (err) {
       // Storage 削除失敗は致命的ではない（古いファイルが残るだけ）
       console.warn("[profile] logo delete failed (non-fatal):", err);
+    }
+  }
+
+  async function handleManageSubscription() {
+    if (!user) return;
+    setPortalError(null);
+    setPortalLoading(true);
+    try {
+      const idToken = await auth.currentUser?.getIdToken();
+      if (!idToken) {
+        setPortalError(t("manageSubscriptionError"));
+        return;
+      }
+      const res = await fetch(`${getApiBase()}/api/lemonsqueezy/portal`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        console.error("[profile] portal request failed:", body);
+        setPortalError(body.error ?? t("manageSubscriptionError"));
+        return;
+      }
+      const { url } = await res.json();
+      if (!url) {
+        setPortalError(t("manageSubscriptionError"));
+        return;
+      }
+      window.location.href = url;
+    } catch (err) {
+      console.error("[profile] portal error:", err);
+      setPortalError(t("manageSubscriptionError"));
+    } finally {
+      setPortalLoading(false);
     }
   }
 
@@ -177,6 +217,28 @@ export default function ProfileClient() {
 
         {!showLoadingState && user && isPro && (
           <div className="space-y-6">
+            <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-3">
+              <div>
+                <h2 className="text-lg font-semibold text-slate-800">{t("subscriptionTitle")}</h2>
+                <p className="mt-1 text-sm text-slate-600">{t("subscriptionBody")}</p>
+              </div>
+              <div>
+                <button
+                  onClick={handleManageSubscription}
+                  disabled={portalLoading}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-slate-300 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50 disabled:opacity-60 transition-colors shadow-sm"
+                >
+                  {portalLoading && (
+                    <span className="inline-block w-4 h-4 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
+                  )}
+                  {portalLoading ? t("manageSubscriptionLoading") : t("manageSubscription")}
+                </button>
+                {portalError && (
+                  <p className="mt-2 text-sm text-red-600">{portalError}</p>
+                )}
+              </div>
+            </div>
+
             <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-5">
               <div>
                 <label htmlFor="companyName" className="block text-sm font-medium text-slate-700 mb-1">

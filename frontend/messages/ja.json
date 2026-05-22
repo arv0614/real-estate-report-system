@@ -98,7 +98,12 @@
     "errorUpload": "アップロードに失敗しました",
     "errorFileSize": "ファイルサイズは2MB以下にしてください",
     "errorFileType": "対応形式は PNG / JPG / SVG です",
-    "backHome": "← ホームに戻る"
+    "backHome": "← ホームに戻る",
+    "subscriptionTitle": "サブスクリプション",
+    "subscriptionBody": "Lemon Squeezy のカスタマーポータルから、請求履歴の確認・支払い方法の更新・解約ができます。",
+    "manageSubscription": "プランを管理する",
+    "manageSubscriptionLoading": "ポータルを開いています...",
+    "manageSubscriptionError": "カスタマーポータルを開けませんでした。もう一度お試しください。"
   },
   "WeatherInfo": {
     "title": "気象・日照サマリー",
