@@ -754,7 +754,13 @@
     "saveAsDraft": "下書きに追加",
     "draftSaved": "下書きを追加しました",
     "postsHistory": "投稿履歴",
-    "charCount": "{count} 文字"
+    "charCount": "{count} 文字",
+    "searchTemplates": "テンプレートを検索...",
+    "clearSearch": "クリア",
+    "templatesNoMatch": "条件に一致するテンプレートがありません。",
+    "prevPage": "前へ",
+    "nextPage": "次へ",
+    "pageInfo": "{page} / {total} ページ"
   },
   "LandingPage": {
     "navAppLink": "アプリを開く",

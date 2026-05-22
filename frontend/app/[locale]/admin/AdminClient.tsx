@@ -41,12 +41,30 @@ type SocialPostItem = {
 };
 
 type PromotionTemplate = {
-  id: number;
-  type?: string;
-  target?: string;
-  lang?: string;
+  id: string;
+  type?: string | null;
+  target?: string | null;
+  lang?: string | null;
+  slug?: string | null;
   text: string;
+  createdAt?: string | null;
 };
+
+type TemplatesPage = {
+  items: PromotionTemplate[];
+  page: number;
+  limit: number;
+  totalCount: number;
+  totalPages: number;
+};
+
+type TemplatesState =
+  | { kind: "loading" }
+  | { kind: "ok"; page: TemplatesPage }
+  | { kind: "forbidden" }
+  | { kind: "error"; message: string };
+
+const TEMPLATES_PAGE_SIZE = 10;
 
 type TabKey = "feedbacks" | "users" | "social";
 
@@ -132,9 +150,9 @@ export default function AdminClient() {
   const [feedbackState, setFeedbackState] = useState<LoadState<FeedbackItem>>({ kind: "loading" });
   const [usersState, setUsersState] = useState<LoadState<UserItem>>({ kind: "loading" });
   const [postsState, setPostsState] = useState<LoadState<SocialPostItem>>({ kind: "loading" });
-  const [templatesState, setTemplatesState] = useState<LoadState<PromotionTemplate>>({
-    kind: "loading",
-  });
+  const [templatesState, setTemplatesState] = useState<TemplatesState>({ kind: "loading" });
+  const [templatesPage, setTemplatesPage] = useState(1);
+  const [templatesSearch, setTemplatesSearch] = useState("");
 
   const loadFeedbacks = useCallback(async () => {
     setFeedbackState({ kind: "loading" });
@@ -148,9 +166,55 @@ export default function AdminClient() {
     setPostsState({ kind: "loading" });
     setPostsState(await fetchAdmin<SocialPostItem>("/api/admin/social-posts", "posts"));
   }, []);
-  const loadTemplates = useCallback(async () => {
+  const loadTemplates = useCallback(async (page: number, search: string) => {
     setTemplatesState({ kind: "loading" });
-    setTemplatesState(await fetchAdmin<PromotionTemplate>("/api/admin/x-promotions", "tweets"));
+    const idToken = await auth.currentUser?.getIdToken().catch(() => null);
+    if (!idToken) {
+      setTemplatesState({ kind: "forbidden" });
+      return;
+    }
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(TEMPLATES_PAGE_SIZE),
+    });
+    if (search.trim()) params.set("search", search.trim());
+    try {
+      const res = await fetch(`${getApiBase()}/api/admin/x-promotions?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${idToken}` },
+        cache: "no-store",
+      });
+      if (res.status === 401 || res.status === 403) {
+        setTemplatesState({ kind: "forbidden" });
+        return;
+      }
+      if (!res.ok) {
+        const body = await res.text().catch(() => "");
+        setTemplatesState({ kind: "error", message: `${res.status} ${body}` });
+        return;
+      }
+      const data = (await res.json()) as {
+        tweets: PromotionTemplate[];
+        page: number;
+        limit: number;
+        totalCount: number;
+        totalPages: number;
+      };
+      setTemplatesState({
+        kind: "ok",
+        page: {
+          items: data.tweets ?? [],
+          page: data.page ?? page,
+          limit: data.limit ?? TEMPLATES_PAGE_SIZE,
+          totalCount: data.totalCount ?? 0,
+          totalPages: data.totalPages ?? 1,
+        },
+      });
+    } catch (err) {
+      setTemplatesState({
+        kind: "error",
+        message: err instanceof Error ? err.message : String(err),
+      });
+    }
   }, []);
 
   useEffect(() => {
@@ -166,24 +230,24 @@ export default function AdminClient() {
     if (!user) return;
     if (tab === "users" && usersState.kind === "loading") loadUsers();
     if (tab === "social" && postsState.kind === "loading") loadPosts();
-    if (tab === "social" && templatesState.kind === "loading") loadTemplates();
-  }, [
-    tab,
-    user,
-    usersState.kind,
-    postsState.kind,
-    templatesState.kind,
-    loadUsers,
-    loadPosts,
-    loadTemplates,
-  ]);
+  }, [tab, user, usersState.kind, postsState.kind, loadUsers, loadPosts]);
+
+  // テンプレートはページ/検索が変わったときに再取得（デバウンス）
+  useEffect(() => {
+    if (!user) return;
+    if (tab !== "social") return;
+    const handle = setTimeout(() => {
+      loadTemplates(templatesPage, templatesSearch);
+    }, 250);
+    return () => clearTimeout(handle);
+  }, [tab, user, templatesPage, templatesSearch, loadTemplates]);
 
   const refresh = () => {
     if (tab === "feedbacks") loadFeedbacks();
     else if (tab === "users") loadUsers();
     else {
       loadPosts();
-      loadTemplates();
+      loadTemplates(templatesPage, templatesSearch);
     }
   };
 
@@ -300,6 +364,13 @@ export default function AdminClient() {
           <SocialPostsList
             items={postsState.kind === "ok" ? postsState.items : []}
             templatesState={templatesState}
+            templatesSearch={templatesSearch}
+            templatesPage={templatesPage}
+            onTemplatesSearchChange={(v) => {
+              setTemplatesPage(1);
+              setTemplatesSearch(v);
+            }}
+            onTemplatesPageChange={setTemplatesPage}
             onPatched={patchPost}
             onDraftCreated={prependPost}
           />
@@ -715,18 +786,32 @@ function UserRow({
 function SocialPostsList({
   items,
   templatesState,
+  templatesSearch,
+  templatesPage,
+  onTemplatesSearchChange,
+  onTemplatesPageChange,
   onPatched,
   onDraftCreated,
 }: {
   items: SocialPostItem[];
-  templatesState: LoadState<PromotionTemplate>;
+  templatesState: TemplatesState;
+  templatesSearch: string;
+  templatesPage: number;
+  onTemplatesSearchChange: (v: string) => void;
+  onTemplatesPageChange: (page: number) => void;
   onPatched: (id: string, patch: Partial<SocialPostItem>) => void;
   onDraftCreated: (post: SocialPostItem) => void;
 }) {
   const t = useTranslations("Admin");
   return (
     <>
-      <TemplatesSection state={templatesState} onDraftCreated={onDraftCreated} />
+      <TemplatesSection
+        state={templatesState}
+        search={templatesSearch}
+        onSearchChange={onTemplatesSearchChange}
+        onPageChange={onTemplatesPageChange}
+        onDraftCreated={onDraftCreated}
+      />
 
       <h2 className="text-base font-bold text-slate-800 mt-8 mb-3">{t("postsHistory")}</h2>
       {items.length === 0 ? (
@@ -751,13 +836,36 @@ function SocialPostsList({
 
 function TemplatesSection({
   state,
+  search,
+  onSearchChange,
+  onPageChange,
   onDraftCreated,
 }: {
-  state: LoadState<PromotionTemplate>;
+  state: TemplatesState;
+  search: string;
+  onSearchChange: (v: string) => void;
+  onPageChange: (page: number) => void;
   onDraftCreated: (post: SocialPostItem) => void;
 }) {
   const t = useTranslations("Admin");
   const [open, setOpen] = useState(true);
+  // 入力中は表示だけ追従し、debounce 経由で parent state に反映する
+  const [searchDraft, setSearchDraft] = useState(search);
+
+  // 親 state が外部要因で変わった場合 (リフレッシュ等) は draft も同期する
+  useEffect(() => {
+    setSearchDraft(search);
+  }, [search]);
+
+  // デバウンス: 入力停止後 350ms で親へ通知（親側でも 250ms デバウンスして API 呼び出し）
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      if (searchDraft !== search) onSearchChange(searchDraft);
+    }, 350);
+    return () => clearTimeout(handle);
+    // onSearchChange を依存に入れると親の再 render で都度走るので意図的に除外
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchDraft, search]);
 
   return (
     <section>
@@ -774,9 +882,35 @@ function TemplatesSection({
         </button>
       </div>
 
+      {open && (
+        <div className="mb-3 flex items-center gap-2 flex-wrap">
+          <input
+            type="search"
+            value={searchDraft}
+            onChange={(e) => setSearchDraft(e.target.value)}
+            placeholder={t("searchTemplates")}
+            className="flex-1 min-w-[200px] border border-slate-300 rounded-lg px-3 py-2 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+          />
+          {searchDraft && (
+            <button
+              type="button"
+              onClick={() => setSearchDraft("")}
+              className="text-xs px-2.5 py-2 rounded border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+            >
+              {t("clearSearch")}
+            </button>
+          )}
+        </div>
+      )}
+
       {open && state.kind === "loading" && (
         <div className="bg-white rounded-xl border border-slate-200 p-6 text-center text-sm text-slate-500">
           {t("loading")}
+        </div>
+      )}
+      {open && state.kind === "forbidden" && (
+        <div className="bg-white border border-amber-200 rounded-xl p-4 text-xs text-amber-700">
+          {t("forbiddenBody")}
         </div>
       )}
       {open && state.kind === "error" && (
@@ -784,24 +918,65 @@ function TemplatesSection({
           {state.message}
         </div>
       )}
-      {open && state.kind === "ok" && state.items.length === 0 && (
+      {open && state.kind === "ok" && state.page.items.length === 0 && (
         <div className="bg-white rounded-xl border border-slate-200 p-6 text-center text-sm text-slate-500">
-          {t("templatesEmpty")}
+          {search ? t("templatesNoMatch") : t("templatesEmpty")}
         </div>
       )}
-      {open && state.kind === "ok" && state.items.length > 0 && (
+      {open && state.kind === "ok" && state.page.items.length > 0 && (
         <>
           <div className="mb-2 text-xs text-slate-500">
-            {t("templatesCountLabel", { count: state.items.length })}
+            {t("templatesCountLabel", { count: state.page.totalCount })}
           </div>
           <ul className="space-y-2">
-            {state.items.map((tpl) => (
+            {state.page.items.map((tpl) => (
               <TemplateRow key={tpl.id} template={tpl} onDraftCreated={onDraftCreated} />
             ))}
           </ul>
+          <Pagination
+            page={state.page.page}
+            totalPages={state.page.totalPages}
+            onPageChange={onPageChange}
+          />
         </>
       )}
     </section>
+  );
+}
+
+function Pagination({
+  page,
+  totalPages,
+  onPageChange,
+}: {
+  page: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+}) {
+  const t = useTranslations("Admin");
+  if (totalPages <= 1) return null;
+  return (
+    <div className="mt-4 flex items-center justify-center gap-3 text-sm">
+      <button
+        type="button"
+        onClick={() => onPageChange(page - 1)}
+        disabled={page <= 1}
+        className="px-3 py-1.5 rounded border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+      >
+        ← {t("prevPage")}
+      </button>
+      <span className="text-xs text-slate-600 font-mono">
+        {t("pageInfo", { page, total: totalPages })}
+      </span>
+      <button
+        type="button"
+        onClick={() => onPageChange(page + 1)}
+        disabled={page >= totalPages}
+        className="px-3 py-1.5 rounded border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+      >
+        {t("nextPage")} →
+      </button>
+    </div>
   );
 }
 
@@ -867,7 +1042,9 @@ function TemplateRow({
   return (
     <li className="bg-white border border-slate-200 rounded-xl p-4">
       <div className="flex items-center gap-2 flex-wrap mb-2">
-        <span className="text-[10px] font-mono text-slate-400">#{template.id}</span>
+        <span className="text-[10px] font-mono text-slate-400" title={template.id}>
+          #{template.id.slice(0, 8)}
+        </span>
         {template.lang && (
           <span className="text-[10px] uppercase font-semibold text-slate-500 border border-slate-200 px-1.5 py-0.5 rounded">
             {template.lang}

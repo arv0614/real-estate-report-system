@@ -754,7 +754,13 @@
     "saveAsDraft": "Save as draft",
     "draftSaved": "Draft saved",
     "postsHistory": "Post history",
-    "charCount": "{count} chars"
+    "charCount": "{count} chars",
+    "searchTemplates": "Search templates...",
+    "clearSearch": "Clear",
+    "templatesNoMatch": "No templates match your search.",
+    "prevPage": "Prev",
+    "nextPage": "Next",
+    "pageInfo": "Page {page} / {total}"
   },
   "LandingPage": {
     "navAppLink": "Open app",

@@ -20,6 +20,10 @@
  *                          既定: https://realestate-api-2hctlfcy6a-an.a.run.app
  *   BLOG_SITE_BASE_URL  — 末尾CTAリンクの本番トップページ URL
  *                          既定: https://mekiki-research.com
+ *   GCP_PROJECT_ID / FIREBASE_PROJECT_ID — Firestore への X 投稿テンプレート
+ *                          書き込みを有効化するための GCP プロジェクト ID。
+ *                          未設定 / Admin SDK 初期化失敗時は Firestore 書き込みを
+ *                          スキップしてブログ生成自体は成功させる。
  */
 
 const fs = require("fs");
@@ -388,6 +392,70 @@ function stripBoldMarkdown(text) {
   return String(text || "").replace(/\*\*/g, "").replace(/__/g, "");
 }
 
+// ─── Firestore への X 投稿テンプレート書き込み ──────────────────────────────
+// admin ダッシュボード（/admin → X投稿管理タブ）が `social_templates` を参照する。
+// ブログ記事が増えるたびに「記事紹介ツイート」テンプレートを自動で蓄積する。
+//
+// 初期化に失敗した場合（GCP 認証情報なし等）は警告ログのみ吐いて Skip する。
+// ブログ生成は他経路のためのアーティファクトなので、Firestore 書き込みで失敗
+// させたくない。
+async function tryWriteSocialTemplate({ jaMeta, baseName }) {
+  // Firestore は通常 Firebase プロジェクト ID で動いている（GCP プロジェクト ID と
+  // 別物の場合あり）。FIREBASE_PROJECT_ID を優先して参照する。
+  const projectId = process.env.FIREBASE_PROJECT_ID || process.env.GCP_PROJECT_ID;
+  if (!projectId) {
+    console.warn("[WARN] GCP_PROJECT_ID 未設定のため social_templates への書き込みをスキップします。");
+    return;
+  }
+
+  let adminMod;
+  try {
+    adminMod = require("firebase-admin");
+  } catch (err) {
+    console.warn(`[WARN] firebase-admin ロード失敗のため social_templates への書き込みをスキップ: ${err.message}`);
+    return;
+  }
+
+  try {
+    if (!adminMod.apps.length) {
+      adminMod.initializeApp({ projectId });
+    }
+    const db = adminMod.firestore();
+
+    const url = `${SITE_BASE_URL}/blog/${baseName}`;
+    const description = String(jaMeta.description || jaMeta.title || "").trim();
+    // 280 字以内に収める: 説明 + 改行 + URL + 改行 + ハッシュタグ
+    const hashtags = (Array.isArray(jaMeta.tags) ? jaMeta.tags : [])
+      .slice(0, 3)
+      .map((tag) => "#" + String(tag).replace(/[\s#]/g, ""))
+      .join(" ");
+    const tail = `👇\n${url}${hashtags ? "\n" + hashtags : ""}`;
+    const tailLen = Array.from(tail).length;
+    const MAX = 280;
+    const allowedDesc = Math.max(0, MAX - tailLen);
+    const descChars = Array.from(description);
+    const trimmedDesc =
+      descChars.length <= allowedDesc
+        ? description
+        : descChars.slice(0, Math.max(0, allowedDesc - 1)).join("") + "…";
+    const text = trimmedDesc + tail;
+
+    await db.collection("social_templates").add({
+      text,
+      type: `ブログ記事紹介 — ${jaMeta.title || baseName}`,
+      target: "不動産ブログ読者",
+      lang: "ja",
+      slug: baseName,
+      url,
+      createdAt: adminMod.firestore.FieldValue.serverTimestamp(),
+      source: "generate_daily_blog",
+    });
+    console.log(`[INFO] social_templates に X 投稿テンプレートを追加しました (slug=${baseName}, ${Array.from(text).length} chars)`);
+  } catch (err) {
+    console.warn(`[WARN] social_templates 書き込み失敗 (継続): ${err.message}`);
+  }
+}
+
 // ─── ファイル書き出し ─────────────────────────────────────────────────────────
 function writeArticle(filename, meta, body, publishedAt) {
   const fm = buildFrontmatter({
@@ -488,6 +556,10 @@ async function main() {
   }
 
   console.log(`\n[SUCCESS] 4 言語のブログ記事を生成しました: ${baseName}`);
+
+  // Firestore (social_templates) への X 投稿テンプレート保存。
+  // 失敗してもブログ生成自体は成功扱いのため await のみ（throw しない）。
+  await tryWriteSocialTemplate({ jaMeta, baseName });
 }
 
 main().catch((err) => {

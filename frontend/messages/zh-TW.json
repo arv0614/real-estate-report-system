@@ -754,7 +754,13 @@
     "saveAsDraft": "儲存為草稿",
     "draftSaved": "草稿已儲存",
     "postsHistory": "發文歷史",
-    "charCount": "{count} 字"
+    "charCount": "{count} 字",
+    "searchTemplates": "搜尋範本...",
+    "clearSearch": "清除",
+    "templatesNoMatch": "沒有符合條件的範本。",
+    "prevPage": "上一頁",
+    "nextPage": "下一頁",
+    "pageInfo": "第 {page} / {total} 頁"
   },
   "LandingPage": {
     "navAppLink": "開啟應用",

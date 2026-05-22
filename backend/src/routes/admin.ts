@@ -1,7 +1,5 @@
 import { Hono } from "hono";
 import * as admin from "firebase-admin";
-import * as fs from "fs";
-import * as path from "path";
 import { config, isAdminEmail } from "../config";
 
 // ── Firebase Admin 初期化（冪等） ─────────────────────────────
@@ -188,40 +186,74 @@ app.get("/social-posts", async (c) => {
 
 /**
  * GET /api/admin/x-promotions
- * `backend/data/x_promotions.json`（自動投稿スクリプト post_to_x.js の参照元）を返す。
- * Cloud Run 上では Dockerfile が data/ を /app/data/ にコピーしているので
- * process.cwd() (/app) からの相対で読み取れる。
+ * Firestore `social_templates` コレクションから X 投稿テンプレートを返す。
+ *
+ * クエリパラメータ:
+ *   page    — 1-indexed, default 1
+ *   limit   — 1〜100, default 10
+ *   search  — オプション。text/type/target/lang/slug に対する大文字小文字無視の部分一致
+ *
+ * 実装方針: Firestore の全文検索は制約があるため、コレクション全件を取得して
+ * バックエンドのメモリ上でフィルタ・ソート・ページングする。
+ * 件数が数千件規模になるまではこのアプローチで十分。
  */
 app.get("/x-promotions", async (c) => {
-  const candidates = [
-    path.resolve(process.cwd(), "data/x_promotions.json"),
-    path.resolve(__dirname, "../../data/x_promotions.json"),
-  ];
-  let raw: string | null = null;
-  for (const p of candidates) {
-    try {
-      raw = await fs.promises.readFile(p, "utf8");
-      break;
-    } catch {
-      // 次の候補へ
-    }
-  }
-  if (raw === null) {
-    console.error("[Admin] x_promotions.json を読み込めませんでした。候補:", candidates);
-    return c.json({ error: "x_promotions.json not found" }, 500);
-  }
+  const url = new URL(c.req.url);
+  const page = Math.max(1, parseInt(url.searchParams.get("page") || "1", 10) || 1);
+  const limitRaw = parseInt(url.searchParams.get("limit") || "10", 10) || 10;
+  const limit = Math.min(100, Math.max(1, limitRaw));
+  const search = (url.searchParams.get("search") || "").trim();
+
   try {
-    const data = JSON.parse(raw) as {
-      meta?: Record<string, unknown>;
-      tweets?: Array<Record<string, unknown>>;
-    };
+    // コレクション未作成やインデックス未準備でも 500 にならないようフォールバック
+    const snap = await db.collection("social_templates").get().catch(() => null);
+    const docs = snap ? snap.docs : [];
+
+    const all = docs.map((doc) => {
+      const data = doc.data();
+      const createdAt = data.createdAt as admin.firestore.Timestamp | undefined;
+      return {
+        id: doc.id,
+        text: (data.text as string | undefined) ?? "",
+        type: (data.type as string | undefined) ?? null,
+        target: (data.target as string | undefined) ?? null,
+        lang: (data.lang as string | undefined) ?? null,
+        slug: (data.slug as string | undefined) ?? null,
+        createdAt: createdAt ? createdAt.toDate().toISOString() : null,
+        // ソート用の数値タイムスタンプ（createdAt なしのレガシー seed は 0 扱い）
+        _sortKey: createdAt ? createdAt.toMillis() : 0,
+      };
+    });
+
+    // createdAt 降順（未設定は末尾）
+    all.sort((a, b) => b._sortKey - a._sortKey);
+
+    const needle = search.toLowerCase();
+    const filtered = needle
+      ? all.filter((t) => {
+          const haystack = [t.text, t.type ?? "", t.target ?? "", t.lang ?? "", t.slug ?? ""]
+            .join("\n")
+            .toLowerCase();
+          return haystack.includes(needle);
+        })
+      : all;
+
+    const totalCount = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(totalCount / limit));
+    const safePage = Math.min(page, totalPages);
+    const start = (safePage - 1) * limit;
+    const tweets = filtered.slice(start, start + limit).map(({ _sortKey: _omit, ...rest }) => rest);
+
     return c.json({
-      meta: data.meta ?? {},
-      tweets: Array.isArray(data.tweets) ? data.tweets : [],
+      tweets,
+      totalCount,
+      page: safePage,
+      limit,
+      totalPages,
     });
   } catch (err) {
-    console.error("[Admin] x_promotions.json のパースに失敗:", err);
-    return c.json({ error: "Failed to parse x_promotions.json" }, 500);
+    console.error("[Admin] social_templates 読み取り失敗:", err);
+    return c.json({ error: "Failed to load templates" }, 500);
   }
 });
 
@@ -343,7 +375,9 @@ app.post("/social-posts", async (c) => {
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
     createdBy: c.get("adminEmail"),
   };
-  if (typeof body.templateId === "number") doc.templateId = body.templateId;
+  if (typeof body.templateId === "number" || typeof body.templateId === "string") {
+    doc.templateId = body.templateId;
+  }
   if (status === "published") {
     doc.publishedAt = admin.firestore.FieldValue.serverTimestamp();
   }
