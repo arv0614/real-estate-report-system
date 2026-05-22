@@ -32,6 +32,7 @@ import { getLifestyleCache, saveLifestyleCache } from "@/lib/lifestyleCache";
 import { generateLifestyleImage } from "@/lib/api";
 import { geocodeAddress, reverseGeocodeDistrict, matchDistrictName } from "@/lib/geocode";
 import { saveSearchHistory } from "@/lib/history";
+import { useBookmarks, sameCoords } from "@/lib/bookmarks";
 import type { TransactionApiResponse } from "@/types/api";
 import { SearchForm } from "@/components/SearchForm";
 import type { DistrictMarker } from "@/components/SearchForm";
@@ -104,6 +105,8 @@ function HomePageContent() {
   const [searchCoords, setSearchCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [planModalOpen, setPlanModalOpen] = useState(false);
   const [searchCountToday, setSearchCountToday] = useState(0);
+  const bookmarks = useBookmarks(user?.uid ?? null);
+  const [bookmarkBusy, setBookmarkBusy] = useState(false);
 
   // PDF出力セクション選択
   const [pdfSections, setPdfSections] = useState<PdfSections>({
@@ -549,6 +552,35 @@ function HomePageContent() {
     initializedDistrictKey.current = result.cacheKey;
   }, [result, autoDistrict, districtOptions]);
 
+  // 現在の検索座標が既にブックマーク済みかを判定
+  const currentBookmark = useMemo(() => {
+    if (!searchCoords) return null;
+    return bookmarks.items.find((b) => sameCoords(b, searchCoords)) ?? null;
+  }, [bookmarks.items, searchCoords]);
+
+  async function handleToggleBookmark() {
+    if (!user) {
+      openAuthModal("signin");
+      return;
+    }
+    if (!searchCoords || !firstRecord) return;
+    setBookmarkBusy(true);
+    try {
+      if (currentBookmark) {
+        await bookmarks.remove(currentBookmark.id);
+        gtagEvent({ action: "bookmark_remove", category: "engagement", label: currentBookmark.title });
+      } else {
+        const title = `${firstRecord.prefecture ?? ""}${firstRecord.municipality ?? ""}`.trim() || t("Bookmarks.untitled");
+        await bookmarks.add({ lat: searchCoords.lat, lng: searchCoords.lng, zoom: 15, title });
+        gtagEvent({ action: "bookmark_add", category: "engagement", label: title });
+      }
+    } catch (err) {
+      console.error("[HomeClient] bookmark toggle failed:", err);
+    } finally {
+      setBookmarkBusy(false);
+    }
+  }
+
   /** OGP用の総合スコアをハザード情報から簡易計算（0-100） */
   const ogScore = useMemo(() => {
     if (!result) return null;
@@ -800,6 +832,22 @@ function HomePageContent() {
           <>
             {/* PDF操作バー */}
             <div className="flex items-center justify-end gap-2 pdf-hide">
+              {/* ブックマーク（お気に入り）トグル */}
+              <button
+                onClick={handleToggleBookmark}
+                disabled={bookmarkBusy || !searchCoords || !firstRecord}
+                aria-pressed={!!currentBookmark}
+                title={currentBookmark ? t("Bookmarks.saved") : t("Bookmarks.save")}
+                className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed ${
+                  currentBookmark
+                    ? "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                <span aria-hidden>{currentBookmark ? "★" : "☆"}</span>
+                {currentBookmark ? t("Bookmarks.saved") : t("Bookmarks.save")}
+              </button>
+
               {/* 出力設定ポップオーバー */}
               <div className="relative" ref={settingsRef}>
                 <button

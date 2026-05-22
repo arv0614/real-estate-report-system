@@ -12,6 +12,18 @@
     "langSwitch": "EN",
     "upgradeBtn": "升级至 Pro"
   },
+  "Bookmarks": {
+    "save": "收藏(☆)",
+    "saved": "已收藏(★)",
+    "untitled": "已保存的区域",
+    "sectionTitle": "已保存的区域",
+    "sectionDescription": "可快速跳转回收藏过的区域。",
+    "loading": "正在加载...",
+    "loadError": "加载已保存的区域失败。",
+    "empty": "暂无已保存的区域。在搜索结果中点击☆即可收藏。",
+    "delete": "删除",
+    "deleting": "删除中..."
+  },
   "Progress": {
     "connecting": "正在连线至国土交通省 API...",
     "fetching": "正在收集成交数据...",

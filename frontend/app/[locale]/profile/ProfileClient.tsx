@@ -7,6 +7,7 @@ import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "fi
 import { auth, storage } from "@/lib/firebase";
 import { getApiBase } from "@/lib/api";
 import { useAuth } from "@/lib/useAuth";
+import { useBookmarks, type Bookmark } from "@/lib/bookmarks";
 import { useAuthModal } from "@/components/AuthModalContext";
 import {
   getWhiteLabelConfig,
@@ -333,6 +334,13 @@ export default function ProfileClient() {
             </div>
           </div>
         )}
+
+        {/* 保存したエリア（プランに関係なくログインユーザーに表示） */}
+        {!showLoadingState && user && (
+          <div className="mt-6">
+            <BookmarksSection uid={user.uid} />
+          </div>
+        )}
       </div>
 
       <PlanComparisonModal
@@ -397,6 +405,87 @@ function FreeLockedCard({ onUpgrade }: { onUpgrade: () => void }) {
         </div>
       </div>
     </div>
+  );
+}
+
+function BookmarksSection({ uid }: { uid: string }) {
+  const t = useTranslations("Bookmarks");
+  const { items, loading, error, remove } = useBookmarks(uid);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  async function handleDelete(id: string) {
+    setDeletingId(id);
+    try {
+      await remove(id);
+    } catch (err) {
+      console.error("[profile] bookmark delete failed:", err);
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  return (
+    <section className="bg-white rounded-xl border border-slate-200 p-6">
+      <h2 className="text-lg font-semibold text-slate-800">{t("sectionTitle")}</h2>
+      <p className="mt-1 text-sm text-slate-600">{t("sectionDescription")}</p>
+
+      {loading && (
+        <p className="mt-4 text-sm text-slate-500">{t("loading")}</p>
+      )}
+      {error && !loading && (
+        <p className="mt-4 text-sm text-red-600">{t("loadError")}</p>
+      )}
+      {!loading && !error && items.length === 0 && (
+        <p className="mt-4 text-sm text-slate-500">{t("empty")}</p>
+      )}
+      {!loading && !error && items.length > 0 && (
+        <ul className="mt-4 divide-y divide-slate-100 border border-slate-100 rounded-lg overflow-hidden">
+          {items.map((b) => (
+            <BookmarkRow
+              key={b.id}
+              bookmark={b}
+              deleting={deletingId === b.id}
+              onDelete={() => handleDelete(b.id)}
+            />
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function BookmarkRow({
+  bookmark,
+  deleting,
+  onDelete,
+}: {
+  bookmark: Bookmark;
+  deleting: boolean;
+  onDelete: () => void;
+}) {
+  const t = useTranslations("Bookmarks");
+  const href = `/?lat=${bookmark.lat}&lng=${bookmark.lng}&zoom=${bookmark.zoom}`;
+  return (
+    <li className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors">
+      <Link href={href} className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-slate-800 truncate">{bookmark.title}</p>
+        <p className="text-xs text-slate-500">
+          {bookmark.lat.toFixed(4)}, {bookmark.lng.toFixed(4)}
+          {bookmark.createdAt
+            ? ` · ${new Date(bookmark.createdAt).toLocaleDateString()}`
+            : ""}
+        </p>
+      </Link>
+      <button
+        type="button"
+        onClick={onDelete}
+        disabled={deleting}
+        aria-label={t("delete")}
+        className="text-xs px-2.5 py-1.5 rounded border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-60 transition-colors"
+      >
+        {deleting ? t("deleting") : t("delete")}
+      </button>
+    </li>
   );
 }
 

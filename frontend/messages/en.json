@@ -12,6 +12,18 @@
     "langSwitch": "日本語",
     "upgradeBtn": "Upgrade to Pro"
   },
+  "Bookmarks": {
+    "save": "Save (☆)",
+    "saved": "Saved (★)",
+    "untitled": "Saved area",
+    "sectionTitle": "Saved areas",
+    "sectionDescription": "Quickly jump back to areas you've bookmarked.",
+    "loading": "Loading saved areas...",
+    "loadError": "Failed to load saved areas.",
+    "empty": "No saved areas yet. Tap ☆ on a search result to save it.",
+    "delete": "Delete",
+    "deleting": "Deleting..."
+  },
   "Progress": {
     "connecting": "Connecting to MLIT API...",
     "fetching": "Collecting transaction data...",

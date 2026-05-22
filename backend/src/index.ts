@@ -11,6 +11,7 @@ import posthogRoutes from "./routes/posthog";
 import waitlistRoutes from "./routes/waitlist";
 import feedbackRoutes from "./routes/feedback";
 import adminRoutes from "./routes/admin";
+import bookmarksRoutes from "./routes/bookmarks";
 
 const app = new Hono();
 
@@ -30,7 +31,7 @@ app.use(
   cors({
     // ALLOWED_ORIGINS が設定されていれば許可リスト（localhost含む）を使用、未設定時は全許可（開発用のみ）
     origin: effectiveOrigins.length > 0 ? effectiveOrigins : "*",
-    allowMethods: ["GET", "POST", "OPTIONS"],
+    allowMethods: ["GET", "POST", "DELETE", "OPTIONS"],
   })
 );
 
@@ -65,6 +66,7 @@ app.route("/api/posthog", posthogRoutes);
 app.route("/api/waitlist", waitlistRoutes);
 app.route("/api/feedback", feedbackRoutes);
 app.route("/api/admin", adminRoutes);
+app.route("/api/bookmarks", bookmarksRoutes);
 
 // 404
 app.notFound((c) => c.json({ error: "Not Found" }, 404));
