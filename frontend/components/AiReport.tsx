@@ -163,6 +163,10 @@ function SectionBody({ content }: { content: string }) {
 
 interface Props {
   report: string;
+  /** AI レポート取得中（report 未到着）。true の場合スケルトンを表示する。 */
+  loading?: boolean;
+  /** AI レポート取得が失敗したときのエラーメッセージ。 */
+  loadError?: string | null;
   user?: User | null;
   plan?: UserPlan | null;
   cityCode?: string;
@@ -178,6 +182,8 @@ interface Props {
 
 export function AiReport({
   report,
+  loading = false,
+  loadError = null,
   user,
   plan,
   cityCode,
@@ -191,6 +197,28 @@ export function AiReport({
   onPlanModalOpen: _onPlanModalOpen,
 }: Props) {
   const t = useTranslations("AiReport");
+
+  // ── ローディング: スケルトン表示 ─────────────────────────────
+  // 「軽量データは表示済み・AIレポートは生成中」状態で呼ばれる。
+  if (loading) {
+    return <AiReportSkeleton t={t} />;
+  }
+
+  // ── 取得失敗 ─────────────────────────────────────────────────
+  // 取引データは取れたが Gemini 生成だけ失敗したケース。
+  if (!report && loadError) {
+    return (
+      <div className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-5">
+        <div className="flex items-start gap-3">
+          <span className="text-xl shrink-0">⚠️</span>
+          <div>
+            <h3 className="text-sm font-semibold text-amber-800 mb-1">{t("loadErrorTitle")}</h3>
+            <p className="text-xs text-amber-700 break-words">{loadError}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
   // Gemini 出力の bold 記号 `**` / `__` をパース前に全て除去。閉じタグが欠けた
   // 裸の `**` が画面にそのまま出る問題を防ぐ。
   const sanitizedReport = stripBoldMarkdown(report);
@@ -503,5 +531,59 @@ export function AiReport({
         </div>
       </div>
     </>
+  );
+}
+
+/**
+ * AI レポート生成中のスケルトン UI。
+ *
+ * 段階的ローディング (progressive loading) の文脈で表示される:
+ *  - 取引データ・ハザード・グラフは既に表示済み
+ *  - Gemini レポートは別エンドポイントで生成中
+ *
+ * 骨組みのアニメーションと「AIが分析中…」のテキストで、待機状態であることを
+ * ユーザーに明示する。
+ */
+function AiReportSkeleton({ t }: { t: (k: string) => string }) {
+  return (
+    <div
+      className="rounded-xl border border-purple-200 bg-gradient-to-br from-purple-50 to-indigo-50 overflow-hidden"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      {/* ヘッダー (実コンポーネントと同じ見た目で「AI分析中」を示す) */}
+      <div className="px-5 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 flex items-center gap-3">
+        <span className="text-2xl animate-pulse">✨</span>
+        <div className="flex-1">
+          <h2 className="text-white font-bold text-base leading-tight">{t("title")}</h2>
+          <p className="text-purple-200 text-xs mt-0.5 flex items-center gap-2">
+            <span className="inline-block w-3 h-3 rounded-full border-2 border-purple-200 border-t-transparent animate-spin" />
+            {t("analyzing")}
+          </p>
+        </div>
+      </div>
+
+      {/* セクション風スケルトン × 4 (実際のレポート構造を模倣) */}
+      <div className="divide-y divide-purple-100">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="bg-white/60 px-5 py-4">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-5 h-5 rounded bg-purple-200/70 animate-pulse" />
+              <div className="h-3.5 w-1/3 rounded bg-purple-200/70 animate-pulse" />
+            </div>
+            <div className="space-y-2 pl-8">
+              <div className="h-3 w-full rounded bg-slate-200 animate-pulse" />
+              <div className="h-3 w-11/12 rounded bg-slate-200 animate-pulse" />
+              <div className="h-3 w-9/12 rounded bg-slate-200 animate-pulse" />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="px-5 py-3 bg-purple-50/80 border-t border-purple-100">
+        <p className="text-[10px] text-slate-400">{t("analyzingNote")}</p>
+      </div>
+    </div>
   );
 }

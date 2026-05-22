@@ -327,7 +327,10 @@
     "disclaimer": "※ 本レポートは国土交通省データをもとに専門家の見立てを参考情報として提供するものです。補助金・開発計画・人口予測等は変更される場合があります。投資判断の際は必ず最新の公式情報をご確認ください。",
     "genError": "生成に失敗しました",
     "lifestyleAlt": "{municipality}の暮らしイメージ",
-    "lifestyleAltExpanded": "暮らしイメージ 拡大"
+    "lifestyleAltExpanded": "暮らしイメージ 拡大",
+    "analyzing": "AI がこのエリアを分析中…",
+    "analyzingNote": "全10セクションのプロ向けレポートを生成しています。通常 20〜60 秒ほどかかります。",
+    "loadErrorTitle": "AI レポートの生成に失敗しました"
   },
   "HistoryList": {
     "title": "検索履歴",

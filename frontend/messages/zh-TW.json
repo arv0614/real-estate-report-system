@@ -327,7 +327,10 @@
     "disclaimer": "※ 本報告以國土交通省資料為基礎,提供專家見解作為參考。補助、開發計畫、人口預測等可能變動,進行投資判斷前請務必確認最新官方資訊。",
     "genError": "生成失敗",
     "lifestyleAlt": "{municipality} 的生活意象",
-    "lifestyleAltExpanded": "生活意象 放大圖"
+    "lifestyleAltExpanded": "生活意象 放大圖",
+    "analyzing": "AI 正在分析該區域…",
+    "analyzingNote": "正在生成 10 個章節的專業報告，通常需要 20–60 秒。",
+    "loadErrorTitle": "AI 報告生成失敗"
   },
   "HistoryList": {
     "title": "搜尋紀錄",

@@ -22,7 +22,7 @@ import {
   IS_FREE_UNLIMITED_CAMPAIGN,
 } from "@/lib/userPlan";
 import { dataLayerPush } from "@/lib/analytics";
-import { fetchTransactions, calcSummary } from "@/lib/api";
+import { fetchTransactions, fetchAiReport, calcSummary } from "@/lib/api";
 import { TOKYO_23_WARDS } from "@/lib/areas";
 import { trackLimitReached } from "@/lib/posthog";
 import { gtagEvent, gtagPurchase } from "@/lib/gtag";
@@ -89,6 +89,12 @@ function HomePageContent() {
   /** エラー時の付帯コード（例: "RATE_LIMITED"）。リッチ UI に分岐するための判別子。 */
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [result, setResult] = useState<TransactionApiResponse | null>(null);
+  // AIレポートだけは別エンドポイントで後追い取得するため、専用のローディング・エラー状態を持つ。
+  const [aiReportLoading, setAiReportLoading] = useState(false);
+  const [aiReportError, setAiReportError] = useState<string | null>(null);
+  // 並列実行された /ai-report が、別検索の結果に上書きしてしまわないよう
+  // 直前のリクエスト ID を保持して照合する。
+  const aiReportRequestRef = useRef(0);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [autoDistrict, setAutoDistrict] = useState<string>("");
   const [districtMarkers, setDistrictMarkers] = useState<DistrictMarker[]>([]);
@@ -271,12 +277,31 @@ function HomePageContent() {
     setSearchCoords({ lat, lng });
     setLifestyleImage(undefined);
     setLifestyleImageLoading(false);
+    setAiReportError(null);
+    // 新しい検索 → 進行中の前 AI 取得を無効化
+    const aiReqId = ++aiReportRequestRef.current;
+    setAiReportLoading(true);
     try {
-      const data = await fetchTransactions(lat, lng, 15, locale);
+      // ① 軽量データ（取引・ハザード・環境・気象）だけ先に取得し、即画面に反映する
+      const data = await fetchTransactions(lat, lng, 15, locale, { omitAiReport: true });
       stopProgressSimulation();
       setProgressPercent(100);
       setProgressMessage(t("Progress.displaying"));
       setResult(data);
+
+      // ② AIレポートは別エンドポイントで非同期に取得し、届いたら result に merge する
+      fetchAiReport(lat, lng, 15, locale)
+        .then((rep) => {
+          if (aiReqId !== aiReportRequestRef.current) return; // 別検索に上書きされた
+          setResult((prev) => (prev ? { ...prev, aiReport: rep.aiReport } : prev));
+          setAiReportLoading(false);
+        })
+        .catch((err) => {
+          if (aiReqId !== aiReportRequestRef.current) return;
+          console.error("[HomeClient] AI report fetch failed:", err);
+          setAiReportError(err instanceof Error ? err.message : String(err));
+          setAiReportLoading(false);
+        });
       setSearchCountToday(todayCount);
       dataLayerPush({ event: "generate_report", user_plan: userPlanDL, search_count_today: todayCount });
       const locationName = data.data.data[0]
@@ -357,6 +382,9 @@ function HomePageContent() {
       }
     } catch (e) {
       stopProgressSimulation();
+      // 取引データ取得自体が失敗 → AI レポート取得は無効化する
+      aiReportRequestRef.current++;
+      setAiReportLoading(false);
       const errCode = (e as { code?: string })?.code;
       if (errCode === "RATE_LIMITED") {
         setErrorCode("RATE_LIMITED");
@@ -1029,10 +1057,12 @@ function HomePageContent() {
                 </div>
               )}
 
-              {result.aiReport && (
+              {(result.aiReport || aiReportLoading || aiReportError) && (
                 <div className={pdfHide(pdfSections.aiReport)}>
                   <AiReport
-                    report={result.aiReport}
+                    report={result.aiReport ?? ""}
+                    loading={aiReportLoading && !result.aiReport}
+                    loadError={!result.aiReport ? aiReportError : null}
                     user={user}
                     plan={plan}
                     cityCode={result.data.cityCode}

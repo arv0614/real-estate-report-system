@@ -327,7 +327,10 @@
     "disclaimer": "※ This report provides expert insights based on MLIT data for reference only. Subsidies, development plans, and population projections may change. Always verify official sources before making investment decisions.",
     "genError": "Image generation failed",
     "lifestyleAlt": "{municipality} lifestyle image",
-    "lifestyleAltExpanded": "Lifestyle image — enlarged"
+    "lifestyleAltExpanded": "Lifestyle image — enlarged",
+    "analyzing": "AI is analyzing this area…",
+    "analyzingNote": "Generating the 10-section expert report. This usually takes 20–60 seconds.",
+    "loadErrorTitle": "Failed to generate AI report"
   },
   "HistoryList": {
     "title": "Search History",

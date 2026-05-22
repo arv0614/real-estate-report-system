@@ -51,7 +51,25 @@ const querySchema = z.object({
   // 未対応ロケール（zh-TW / zh-CN）は geminiApi.buildPrompt() 内で
   // 日本語プロンプトにフォールバックされる。
   locale: z.enum(["ja", "en", "zh-TW", "zh-CN"]).default("ja"),
+  // ?omitAiReport=true でAIレポート生成をスキップする (プログレッシブロード対応)。
+  // フロント側は /transactions で先に軽量データを取得 → 別途 /ai-report で AI を取得。
+  omitAiReport: z
+    .union([z.literal("true"), z.literal("false"), z.literal("1"), z.literal("0")])
+    .optional()
+    .transform((v) => v === "true" || v === "1"),
 });
+
+/**
+ * 言語ミスマッチ検出: locale=en なのに日本語レポートがキャッシュされている等。
+ * ヒューリスティック: 先頭80文字内の日本語文字数が10以上なら日本語レポートと判断。
+ */
+function isAiReportLangMismatch(report: string, locale: string): boolean {
+  const countJa = (text: string) =>
+    (text.slice(0, 80).match(/[぀-龯]/g) ?? []).length;
+  if (locale === "en") return countJa(report) >= 10;
+  if (locale === "ja") return countJa(report) === 0;
+  return false;
+}
 
 /**
  * 検索中心 (lat, lng) から最寄り駅までの徒歩分を計算し、各取引レコードに timeToNearestStation を付与する。
@@ -114,6 +132,7 @@ app.get("/transactions", async (c) => {
     lng: c.req.query("lng"),
     zoom: c.req.query("zoom"),
     locale: c.req.query("locale"),
+    omitAiReport: c.req.query("omitAiReport"),
   });
 
   if (!parsed.success) {
@@ -123,7 +142,7 @@ app.get("/transactions", async (c) => {
     );
   }
 
-  const { lat, lng, zoom, locale } = parsed.data;
+  const { lat, lng, zoom, locale, omitAiReport } = parsed.data;
   const hasApiKey = !!config.mlit.apiKey;
 
   // 1. GCSキャッシュを確認
@@ -145,18 +164,13 @@ app.get("/transactions", async (c) => {
         hasApiKey ? attachWalkTimeToRecords(cachedRecords, lat, lng) : Promise.resolve(null),
       ]);
 
-      // AIレポート: キャッシュにあればそのまま使用、なければ生成してキャッシュを更新
-      // 言語ミスマッチ検出: locale=en なのに日本語レポートがキャッシュされている場合は再生成
-      // ヒューリスティック: 先頭80文字内の日本語文字数が10以上なら日本語レポートと判断
-      const countJaCharsInPrefix = (text: string) =>
-        (text.slice(0, 80).match(/[\u3040-\u9FAF]/g) ?? []).length;
-      const isLangMismatch = cached.aiReport
-        ? (locale === "en" && countJaCharsInPrefix(cached.aiReport) >= 10)
-          || (locale === "ja" && countJaCharsInPrefix(cached.aiReport) === 0)
-        : false;
+      // AIレポート: キャッシュにあればそのまま使用、なければ生成してキャッシュを更新。
+      // 言語ミスマッチがあれば再生成扱い (isAiReportLangMismatch)。
+      // ?omitAiReport=true の場合は生成をスキップ（呼び出し側が別途 /ai-report を叩く）。
+      const isLangMismatch = cached.aiReport ? isAiReportLangMismatch(cached.aiReport, locale) : false;
 
       let aiReport = isLangMismatch ? undefined : cached.aiReport;
-      if (!aiReport) {
+      if (!aiReport && !omitAiReport) {
         const reason = isLangMismatch ? "言語ミスマッチ（再生成）" : "aiReportなし";
         console.log(`[Gemini] ${reason}。新規生成します (${lat}, ${lng}, locale=${locale})`);
         const records = (cachedApiData.data ?? []) as TransactionRecord[];
@@ -222,30 +236,35 @@ app.get("/transactions", async (c) => {
     attachWalkTimeToRecords(apiData.data, lat, lng),
   ]);
 
-  // 4. Gemini AIレポートを生成
-  const summary = calcSummary(apiData.data);
-  const reportInput: AreaReportInput = {
-    lat, lng,
-    prefecture: apiData.data[0]?.prefecture ?? "",
-    municipality: apiData.data[0]?.municipality ?? apiData.geocodedDistrict ?? "",
-    cityCode: apiData.cityCode,
-    years: apiData.years,
-    ...summary,
-    hazard,
-    environment,
-    weather,
-    locale,
-  };
-  const aiReport = await generateAreaReport(reportInput).catch((err) => {
-    console.error("[Gemini] 生成失敗:", err);
-    return undefined;
-  });
+  // 4. Gemini AIレポートを生成（?omitAiReport=true のときはスキップ）
+  let aiReport: string | undefined;
+  if (!omitAiReport) {
+    const summary = calcSummary(apiData.data);
+    const reportInput: AreaReportInput = {
+      lat, lng,
+      prefecture: apiData.data[0]?.prefecture ?? "",
+      municipality: apiData.data[0]?.municipality ?? apiData.geocodedDistrict ?? "",
+      cityCode: apiData.cityCode,
+      years: apiData.years,
+      ...summary,
+      hazard,
+      environment,
+      weather,
+      locale,
+    };
+    aiReport = await generateAreaReport(reportInput).catch((err) => {
+      console.error("[Gemini] 生成失敗:", err);
+      return undefined;
+    });
+  }
 
-  // 5. 非同期でGCS保存（aiReport も一緒に保存）
+  // 5. GCS保存。omitAiReport の場合、後続の /ai-report がキャッシュを読めるよう
+  //    レース回避のため await する。通常パスは従来通りバックグラウンド書き込み。
   const cacheKey = buildCacheKey(lat, lng, zoom, locale);
-  writeCache(lat, lng, zoom, apiData, aiReport, locale).catch((err) =>
+  const writePromise = writeCache(lat, lng, zoom, apiData, aiReport, locale).catch((err) =>
     console.error("[GCS Cache] Background write failed:", err)
   );
+  if (omitAiReport) await writePromise;
 
   return c.json({
     source: "api",
@@ -292,6 +311,102 @@ app.post("/generate-image", async (c) => {
     console.error("[/generate-image] 生成失敗:", msg);
     return c.json({ error: "画像生成に失敗しました", details: msg }, 500);
   }
+});
+
+/**
+ * GET /api/property/ai-report
+ * AIレポートのみを取得する軽量エンドポイント（プログレッシブロード用）。
+ *
+ * 想定フロー:
+ *   1. フロントが /transactions?omitAiReport=true で素早く取引・ハザード等を取得
+ *   2. その完了後に /ai-report を叩いて AI レポートだけを後追いで取得
+ *
+ * 動作:
+ *   - GCSキャッシュに aiReport が既にあれば即返却（言語ミスマッチでなければ）
+ *   - aiReport が無ければ、キャッシュ済みの取引データから Gemini で生成し、
+ *     キャッシュを更新してから返却
+ *   - キャッシュ自体が無い場合は MLIT API から取引データを取り直して生成
+ */
+app.get("/ai-report", async (c) => {
+  const parsed = querySchema.safeParse({
+    lat: c.req.query("lat"),
+    lng: c.req.query("lng"),
+    zoom: c.req.query("zoom"),
+    locale: c.req.query("locale"),
+  });
+
+  if (!parsed.success) {
+    return c.json({ error: "Invalid parameters", details: parsed.error.flatten() }, 400);
+  }
+  const { lat, lng, zoom, locale } = parsed.data;
+  const hasApiKey = !!config.mlit.apiKey;
+
+  // 1. キャッシュチェック
+  const cached = await readCache(lat, lng, zoom, locale);
+
+  // 1-a. 既存の有効な aiReport があれば即返却
+  if (cached?.aiReport && !isAiReportLangMismatch(cached.aiReport, locale)) {
+    return c.json({ source: "cache", aiReport: cached.aiReport });
+  }
+
+  // 2. ベースとなる取引データを揃える（キャッシュ済みのものを優先）
+  type CachedApi = { data?: TransactionRecord[]; cityCode?: string; years?: number[]; geocodedDistrict?: string };
+  let apiData: CachedApi | null = null;
+  if (cached) {
+    const c0 = cached.data as Record<string, unknown>;
+    const isOldFormat = typeof c0.year === "number" && !Array.isArray(c0.years);
+    if (!isOldFormat) apiData = c0 as CachedApi;
+  }
+  if (!apiData) {
+    if (!hasApiKey) {
+      return c.json({ error: "Service unavailable: API key not configured" }, 503);
+    }
+    try {
+      apiData = (await fetchTransactionPrices(lat, lng)) as CachedApi;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[MLIT API] fetch failed:", msg);
+      return c.json({ error: "Failed to fetch transaction data", details: msg }, 502);
+    }
+  }
+
+  // 3. hazard / environment / weather を並列取得（Gemini プロンプトの入力に使う）
+  const [hazard, environment, weather] = await Promise.all([
+    hasApiKey ? fetchHazardInfo(lat, lng).catch(() => EMPTY_HAZARD) : Promise.resolve(EMPTY_HAZARD),
+    hasApiKey ? fetchEnvironmentInfo(lat, lng).catch(() => EMPTY_ENVIRONMENT) : Promise.resolve(EMPTY_ENVIRONMENT),
+    safeFetchWeather(lat, lng),
+  ]);
+
+  // 4. Gemini 生成
+  const records = apiData.data ?? [];
+  const summary = calcSummary(records);
+  const reportInput: AreaReportInput = {
+    lat, lng,
+    prefecture: records[0]?.prefecture ?? "",
+    municipality: records[0]?.municipality ?? apiData.geocodedDistrict ?? "",
+    cityCode: apiData.cityCode ?? "",
+    years: apiData.years ?? [],
+    ...summary,
+    hazard,
+    environment,
+    weather,
+    locale,
+  };
+  const aiReport = await generateAreaReport(reportInput).catch((err) => {
+    console.error("[Gemini] 生成失敗:", err);
+    return undefined;
+  });
+
+  if (!aiReport) {
+    return c.json({ error: "Failed to generate AI report" }, 502);
+  }
+
+  // 5. キャッシュ更新（既存の取引データに aiReport をマージ）
+  writeCache(lat, lng, zoom, apiData, aiReport, locale).catch((err) =>
+    console.error("[GCS Cache] aiReport update failed:", err)
+  );
+
+  return c.json({ source: "api", aiReport });
 });
 
 export default app;

@@ -327,7 +327,10 @@
     "disclaimer": "※ 本报告以国土交通省数据为基础,提供专家见解作为参考。补助、开发计划、人口预测等可能变动,进行投资判断前请务必确认最新官方信息。",
     "genError": "生成失败",
     "lifestyleAlt": "{municipality} 的生活意象",
-    "lifestyleAltExpanded": "生活意象 放大图"
+    "lifestyleAltExpanded": "生活意象 放大图",
+    "analyzing": "AI 正在分析该区域…",
+    "analyzingNote": "正在生成 10 个章节的专业报告，通常需要 20–60 秒。",
+    "loadErrorTitle": "AI 报告生成失败"
   },
   "HistoryList": {
     "title": "搜索记录",

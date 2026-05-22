@@ -63,9 +63,17 @@ export async function fetchTransactions(
   lat: number,
   lng: number,
   zoom = 15,
-  locale = "ja"
+  locale = "ja",
+  options: { omitAiReport?: boolean } = {},
 ): Promise<TransactionApiResponse> {
-  const url = `${getApiBase()}/api/property/transactions?lat=${lat}&lng=${lng}&zoom=${zoom}&locale=${locale}`;
+  const params = new URLSearchParams({
+    lat: String(lat),
+    lng: String(lng),
+    zoom: String(zoom),
+    locale,
+  });
+  if (options.omitAiReport) params.set("omitAiReport", "true");
+  const url = `${getApiBase()}/api/property/transactions?${params.toString()}`;
 
   const res = await fetchWithTimeout(url, { cache: "no-store" });
   if (!res.ok) {
@@ -74,6 +82,29 @@ export async function fetchTransactions(
     }
     const body = await res.text();
     throw new Error(`API error ${res.status}: ${body}`);
+  }
+  return res.json();
+}
+
+/**
+ * AIエリアレポートだけを取得する軽量エンドポイント (プログレッシブロード用)。
+ * バックエンド側で取引データのキャッシュを再利用するため、/transactions より先に
+ * 呼ぶと MLIT を二度叩く点に注意。通常は /transactions の応答後に呼ぶ。
+ */
+export async function fetchAiReport(
+  lat: number,
+  lng: number,
+  zoom = 15,
+  locale = "ja",
+): Promise<{ source: string; aiReport: string }> {
+  const url = `${getApiBase()}/api/property/ai-report?lat=${lat}&lng=${lng}&zoom=${zoom}&locale=${locale}`;
+  const res = await fetchWithTimeout(url, { cache: "no-store" });
+  if (!res.ok) {
+    if (res.status === 429) {
+      throw Object.assign(new Error("RATE_LIMITED"), { code: "RATE_LIMITED" });
+    }
+    const body = await res.text();
+    throw new Error(`AI report error ${res.status}: ${body}`);
   }
   return res.json();
 }
