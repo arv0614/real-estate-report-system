@@ -6,7 +6,6 @@ import remarkGfm from "remark-gfm";
 import { ALL_LOCALES, getAllPostMeta, getAvailableLocales, getPostBySlug, type Locale } from "@/lib/blog";
 import BlogMiniMapWrapper from "@/components/blog/BlogMiniMapWrapper";
 import BlogShareButtons from "@/components/blog/BlogShareButtons";
-import BlogOgpPreview from "@/components/blog/BlogOgpPreview";
 import LanguageToggle from "@/components/LanguageToggle";
 
 const SITE_URL =
@@ -341,14 +340,6 @@ export default async function BlogPostPage({ params }: Props) {
             {post.content}
           </ReactMarkdown>
         </article>
-
-        {/* SNS シェア時のプレビュー (記事本文末尾 → シェアボタンの直前) */}
-        <BlogOgpPreview
-          title={post.title}
-          description={post.description}
-          imageUrl={buildOgImageUrl(post)}
-          pageUrl={blogPathFor(locale, slug)}
-        />
 
         {/* Share buttons */}
         <BlogShareButtons title={post.title} url={blogPathFor(locale, slug)} />

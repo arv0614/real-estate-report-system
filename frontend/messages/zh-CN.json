@@ -831,8 +831,6 @@
     "shareOnFacebook": "在 Facebook 分享",
     "copyLink": "复制链接",
     "copied": "已复制",
-    "copyFailed": "复制失败",
-    "ogPreviewTitle": "社交媒体分享预览",
-    "ogPreviewHint": "在 X、Threads、Facebook 等平台分享时将显示为以下样式。"
+    "copyFailed": "复制失败"
   }
 }

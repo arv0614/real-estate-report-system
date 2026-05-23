@@ -831,8 +831,6 @@
     "shareOnFacebook": "Facebook でシェア",
     "copyLink": "リンクをコピー",
     "copied": "コピーしました",
-    "copyFailed": "コピーに失敗しました",
-    "ogPreviewTitle": "SNS シェア時のプレビュー",
-    "ogPreviewHint": "X / Threads / Facebook などでシェアされると、このように表示されます。"
+    "copyFailed": "コピーに失敗しました"
   }
 }

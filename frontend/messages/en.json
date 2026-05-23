@@ -831,8 +831,6 @@
     "shareOnFacebook": "Share on Facebook",
     "copyLink": "Copy link",
     "copied": "Copied",
-    "copyFailed": "Failed to copy",
-    "ogPreviewTitle": "Preview when shared on social media",
-    "ogPreviewHint": "This is how the article will appear when shared on X, Threads, Facebook, and other platforms."
+    "copyFailed": "Failed to copy"
   }
 }
