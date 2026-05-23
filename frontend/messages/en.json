@@ -7,7 +7,7 @@
     "betaLink": "View Plans",
     "loginButton": "Sign in",
     "logoutButton": "Sign out",
-    "profileLink": "Profile",
+    "profileLink": "My Page",
     "guestBadge": "Guest",
     "langSwitch": "日本語",
     "upgradeBtn": "Upgrade to Pro"
@@ -84,7 +84,7 @@
     "table": "Transaction List"
   },
   "Profile": {
-    "pageTitle": "White-Label Settings",
+    "pageTitle": "White-label Settings (for PDF)",
     "pageSubtitle": "Customize the header of your PDF reports with your own branding",
     "loginRequiredTitle": "Login required",
     "loginRequiredBody": "You must be logged in to access profile settings.",

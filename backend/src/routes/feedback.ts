@@ -38,38 +38,32 @@ const bodySchema = z.object({
 
 /**
  * POST /api/feedback
- * 認証必須: Authorization: Bearer <Firebase ID Token>
+ * 認証任意: Authorization: Bearer <Firebase ID Token>（ゲスト送信可）
  * Body: { message: string, type: "bug"|"feature"|"other" }
  *
- * 1. Firebase ID トークンで認証
+ * 1. Firebase ID トークンが付いていれば検証して uid/email を記録（未認証でも送信可）
  * 2. Gemini で「Claude Code 向け要件定義書プロンプト」を生成
  * 3. Firestore `feedbacks` コレクションに保存
  */
 app.post("/", async (c) => {
-  // ── 認証チェック ─────────────────────────────────────
+  // ── 任意の認証チェック（ゲスト送信を許可） ───────────
   const authHeader = c.req.header("authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    return c.json({ error: "Unauthorized: Firebase auth required" }, 401);
-  }
-  const idToken = authHeader.slice(7);
-  let uid: string;
-  let email: string | undefined;
-  try {
-    const decoded = await admin.auth().verifyIdToken(idToken);
-    uid = decoded.uid;
-    email = decoded.email;
-  } catch (err) {
-    // 検証失敗の原因（aud 不一致・トークン期限切れ・projectId 未設定など）を
-    // すべて Cloud Run のログに残す。FirebaseAuthError は code/message を持つので
-    // 両方を出力し、それ以外の場合は素直に文字列化する。
-    const e = err as { code?: string; message?: string; errorInfo?: { code?: string; message?: string } };
-    const appProjectId = admin.apps[0]?.options?.projectId ?? "(unknown)";
-    console.error("[Feedback] ID token verification failed", {
-      code: e.code ?? e.errorInfo?.code ?? null,
-      message: e.message ?? e.errorInfo?.message ?? String(err),
-      adminAppProjectId: appProjectId,
-    });
-    return c.json({ error: "Unauthorized: Invalid or expired token" }, 401);
+  let uid: string | null = null;
+  let email: string | null = null;
+  if (authHeader?.startsWith("Bearer ")) {
+    const idToken = authHeader.slice(7);
+    try {
+      const decoded = await admin.auth().verifyIdToken(idToken);
+      uid = decoded.uid;
+      email = decoded.email ?? null;
+    } catch (err) {
+      // ゲスト送信を許可するため検証失敗は致命的にせず、警告ログにとどめる。
+      const e = err as { code?: string; message?: string; errorInfo?: { code?: string; message?: string } };
+      console.warn("[Feedback] ID token verification failed (continuing as guest)", {
+        code: e.code ?? e.errorInfo?.code ?? null,
+        message: e.message ?? e.errorInfo?.message ?? String(err),
+      });
+    }
   }
 
   // ── 入力バリデーション ────────────────────────────────
@@ -100,7 +94,7 @@ app.post("/", async (c) => {
   try {
     const docRef = await db.collection("feedbacks").add({
       uid,
-      email: email ?? null,
+      email,
       type,
       message,
       aiPrompt,
@@ -108,7 +102,7 @@ app.post("/", async (c) => {
       status: "new",
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
-    console.log(`[Feedback] 保存完了: docId=${docRef.id}, uid=${uid}, type=${type}`);
+    console.log(`[Feedback] 保存完了: docId=${docRef.id}, uid=${uid ?? "(guest)"}, type=${type}`);
     return c.json({ ok: true, id: docRef.id });
   } catch (err) {
     console.error("[Feedback] Firestore 書き込みエラー:", err);

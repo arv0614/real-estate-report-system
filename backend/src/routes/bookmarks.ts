@@ -62,10 +62,11 @@ app.get("/", async (c) => {
   if (!auth.ok) return auth.response;
 
   try {
+    // 複合インデックス (uid + createdAt desc) が未作成だとクエリ失敗するため、
+    // Firestore 側ではソートせずメモリ上で createdAt 降順に並べ替える。
     const snap = await db
       .collection("bookmarks")
       .where("uid", "==", auth.uid)
-      .orderBy("createdAt", "desc")
       .limit(100)
       .get();
 
@@ -81,6 +82,7 @@ app.get("/", async (c) => {
         createdAt: createdAt ? createdAt.toMillis() : null,
       };
     });
+    items.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
     return c.json({ items });
   } catch (err) {
     console.error("[Bookmarks] list error:", err);

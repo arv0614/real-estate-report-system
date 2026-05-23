@@ -7,7 +7,7 @@
     "betaLink": "查看方案",
     "loginButton": "登入",
     "logoutButton": "登出",
-    "profileLink": "個人設定",
+    "profileLink": "我的頁面",
     "guestBadge": "訪客",
     "langSwitch": "EN",
     "upgradeBtn": "升級至 Pro"
@@ -84,7 +84,7 @@
     "table": "成交案例一覽"
   },
   "Profile": {
-    "pageTitle": "白標設定",
+    "pageTitle": "白標設定（PDF輸出用）",
     "pageSubtitle": "設定 PDF 報告書頁首顯示的公司資訊",
     "loginRequiredTitle": "需要登入",
     "loginRequiredBody": "請先登入後再使用個人設定。",

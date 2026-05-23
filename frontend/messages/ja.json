@@ -7,7 +7,7 @@
     "betaLink": "料金プランを見る",
     "loginButton": "ログイン",
     "logoutButton": "ログアウト",
-    "profileLink": "プロフィール",
+    "profileLink": "マイページ",
     "guestBadge": "Guest",
     "langSwitch": "EN",
     "upgradeBtn": "Pro にアップグレード"
@@ -84,7 +84,7 @@
     "table": "取引事例一覧"
   },
   "Profile": {
-    "pageTitle": "ホワイトラベル設定",
+    "pageTitle": "ホワイトラベル設定（PDF出力用）",
     "pageSubtitle": "PDFレポートのヘッダーに表示する自社情報を設定します",
     "loginRequiredTitle": "ログインが必要です",
     "loginRequiredBody": "プロフィール設定にはログインが必要です。",
