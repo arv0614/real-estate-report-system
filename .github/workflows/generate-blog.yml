@@ -77,6 +77,19 @@ jobs:
           TZ: Asia/Tokyo
         run: node scripts/generate_daily_blog.js
 
+      # 全 ja 記事を Firestore `social_templates` と突き合わせ、未登録の
+      # X 投稿テンプレートを一括追加する（idempotent）。
+      # generate_daily_blog.js 内のインライン書き込みが失敗していた過去分も
+      # ここでまとめて補填される。Firestore 認証が設定されていない場合は
+      # ステップ自体をスキップ（記事生成はすでに成功している前提）。
+      - name: Sync blog social templates to Firestore
+        if: steps.gcp_creds.outputs.has_key == 'true'
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+          TZ: Asia/Tokyo
+        run: node scripts/sync_blog_social_templates.js
+
       - name: Commit and push generated articles
         env:
           TZ: Asia/Tokyo
