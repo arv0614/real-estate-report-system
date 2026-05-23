@@ -688,6 +688,28 @@ function HomePageContent() {
                 >
                   {t("Header.profileLink")}
                 </Link>
+                {/* モバイル用: アバター / 人型アイコンのみの控えめなマイページ導線 */}
+                <Link
+                  href="/profile"
+                  aria-label={t("Header.profileLink")}
+                  title={t("Header.profileLink")}
+                  className="sm:hidden inline-flex items-center justify-center w-8 h-8 rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors overflow-hidden"
+                >
+                  {user.photoURL ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={user.photoURL}
+                      alt=""
+                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
+                  )}
+                </Link>
                 <button
                   onClick={handleLogout}
                   className="text-xs px-3 py-1.5 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
