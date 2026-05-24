@@ -64,12 +64,21 @@ type TemplatesState =
   | { kind: "forbidden" }
   | { kind: "error"; message: string };
 
+type AdReportItem = {
+  id: string;
+  date: string;
+  summary: string;
+  chartUrl: string | null;
+  metrics: Record<string, number>;
+  createdAt: string | null;
+};
+
 const TEMPLATES_PAGE_SIZE = 10;
 
 type TemplatesSort = "newest" | "oldest";
 const TEMPLATES_SORT_OPTIONS: TemplatesSort[] = ["newest", "oldest"];
 
-type TabKey = "feedbacks" | "users" | "social";
+type TabKey = "feedbacks" | "users" | "social" | "ad-reports";
 
 type LoadState<T> =
   | { kind: "loading" }
@@ -153,6 +162,7 @@ export default function AdminClient() {
   const [feedbackState, setFeedbackState] = useState<LoadState<FeedbackItem>>({ kind: "loading" });
   const [usersState, setUsersState] = useState<LoadState<UserItem>>({ kind: "loading" });
   const [postsState, setPostsState] = useState<LoadState<SocialPostItem>>({ kind: "loading" });
+  const [adReportsState, setAdReportsState] = useState<LoadState<AdReportItem>>({ kind: "loading" });
   const [templatesState, setTemplatesState] = useState<TemplatesState>({ kind: "loading" });
   const [templatesPage, setTemplatesPage] = useState(1);
   const [templatesSearch, setTemplatesSearch] = useState("");
@@ -169,6 +179,10 @@ export default function AdminClient() {
   const loadPosts = useCallback(async () => {
     setPostsState({ kind: "loading" });
     setPostsState(await fetchAdmin<SocialPostItem>("/api/admin/social-posts", "posts"));
+  }, []);
+  const loadAdReports = useCallback(async () => {
+    setAdReportsState({ kind: "loading" });
+    setAdReportsState(await fetchAdmin<AdReportItem>("/api/admin/ad-reports", "reports"));
   }, []);
   const loadTemplates = useCallback(async (page: number, search: string, sort: TemplatesSort) => {
     setTemplatesState({ kind: "loading" });
@@ -235,7 +249,8 @@ export default function AdminClient() {
     if (!user) return;
     if (tab === "users" && usersState.kind === "loading") loadUsers();
     if (tab === "social" && postsState.kind === "loading") loadPosts();
-  }, [tab, user, usersState.kind, postsState.kind, loadUsers, loadPosts]);
+    if (tab === "ad-reports" && adReportsState.kind === "loading") loadAdReports();
+  }, [tab, user, usersState.kind, postsState.kind, adReportsState.kind, loadUsers, loadPosts, loadAdReports]);
 
   // テンプレートはページ/検索/ソートが変わったときに再取得（デバウンス）
   useEffect(() => {
@@ -250,6 +265,7 @@ export default function AdminClient() {
   const refresh = () => {
     if (tab === "feedbacks") loadFeedbacks();
     else if (tab === "users") loadUsers();
+    else if (tab === "ad-reports") loadAdReports();
     else {
       loadPosts();
       loadTemplates(templatesPage, templatesSearch, templatesSort);
@@ -298,7 +314,13 @@ export default function AdminClient() {
   }
 
   const activeState =
-    tab === "feedbacks" ? feedbackState : tab === "users" ? usersState : postsState;
+    tab === "feedbacks"
+      ? feedbackState
+      : tab === "users"
+        ? usersState
+        : tab === "ad-reports"
+          ? adReportsState
+          : postsState;
 
   if (activeState.kind === "forbidden") {
     return (
@@ -337,6 +359,7 @@ export default function AdminClient() {
           <TabButton current={tab} value="feedbacks" onClick={setTab} label={t("tabFeedbacks")} />
           <TabButton current={tab} value="users" onClick={setTab} label={t("tabUsers")} />
           <TabButton current={tab} value="social" onClick={setTab} label={t("tabSocialPosts")} />
+          <TabButton current={tab} value="ad-reports" onClick={setTab} label={t("tabAdReports")} />
         </div>
 
         {activeState.kind === "loading" && (
@@ -364,6 +387,9 @@ export default function AdminClient() {
         )}
         {activeState.kind === "ok" && tab === "users" && (
           <UsersTable items={usersState.kind === "ok" ? usersState.items : []} onPatched={patchUser} />
+        )}
+        {activeState.kind === "ok" && tab === "ad-reports" && (
+          <AdReportsList items={adReportsState.kind === "ok" ? adReportsState.items : []} />
         )}
         {activeState.kind === "ok" && tab === "social" && (
           <SocialPostsList
@@ -415,6 +441,85 @@ function TabButton({
     >
       {label}
     </button>
+  );
+}
+
+// ─── 広告レポート ─────────────────────────────────────────────
+function formatPct(ratio: number | undefined): string {
+  if (typeof ratio !== "number" || Number.isNaN(ratio)) return "—";
+  return `${(ratio * 100).toFixed(1)}%`;
+}
+
+function AdReportsList({ items }: { items: AdReportItem[] }) {
+  const t = useTranslations("Admin");
+  if (items.length === 0) {
+    return (
+      <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-sm text-slate-500">
+        {t("adReportsEmpty")}
+      </div>
+    );
+  }
+  return (
+    <>
+      <div className="mb-4 text-xs text-slate-500">{t("adReportsCountLabel", { count: items.length })}</div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {items.map((r) => (
+          <AdReportCard key={r.id} report={r} />
+        ))}
+      </div>
+    </>
+  );
+}
+
+function AdReportCard({ report }: { report: AdReportItem }) {
+  const t = useTranslations("Admin");
+  const m = report.metrics ?? {};
+  const chips: { label: string; value: string }[] = [
+    { label: t("adImpressions"), value: String(m.impressions ?? 0) },
+    { label: t("adClicks"), value: String(m.clicks ?? 0) },
+    { label: t("adSignups"), value: String(m.signups ?? 0) },
+    { label: t("adCtr"), value: formatPct(m.ctr) },
+    { label: t("adCvr"), value: formatPct(m.cvr) },
+  ];
+  return (
+    <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 flex flex-col">
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <h3 className="text-sm font-bold text-slate-800 font-mono">{report.date}</h3>
+        {report.createdAt && (
+          <time className="text-[10px] text-slate-400" suppressHydrationWarning>
+            {formatDate(report.createdAt)}
+          </time>
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-1.5 mb-3">
+        {chips.map((c) => (
+          <span
+            key={c.label}
+            className="inline-flex items-baseline gap-1 text-[11px] bg-slate-50 border border-slate-200 rounded px-2 py-0.5"
+          >
+            <span className="text-slate-500">{c.label}</span>
+            <span className="font-semibold text-slate-800">{c.value}</span>
+          </span>
+        ))}
+      </div>
+
+      {report.chartUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={report.chartUrl}
+          alt={t("adChartAlt")}
+          loading="lazy"
+          className="w-full rounded-lg border border-slate-100 bg-white mb-3"
+        />
+      )}
+
+      {report.summary && (
+        <pre className="text-xs text-slate-700 whitespace-pre-wrap break-words bg-slate-50 rounded-lg px-3 py-2 border border-slate-100 leading-relaxed font-sans">
+          {report.summary}
+        </pre>
+      )}
+    </div>
   );
 }
 

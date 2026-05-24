@@ -185,6 +185,45 @@ app.get("/social-posts", async (c) => {
 });
 
 /**
+ * GET /api/admin/ad-reports
+ * Firestore `ad_reports` コレクションを date 降順で直近 N 件返す。
+ * 各ドキュメントは scripts/summarize_ad_performance.js が日次で保存する。
+ * フィールド: date (string "YYYY-MM-DD"), summary (string), chartUrl (string),
+ *            metrics (map), createdAt (Timestamp)
+ * コレクション未作成でも 500 を返さずフォールバック（空配列）。
+ */
+app.get("/ad-reports", async (c) => {
+  const LIMIT = 30;
+  try {
+    const snap = await db
+      .collection("ad_reports")
+      .orderBy("date", "desc")
+      .limit(LIMIT)
+      .get()
+      .catch(() => null);
+
+    const docs = snap ? snap.docs : [];
+    const reports = docs.map((doc) => {
+      const data = doc.data();
+      const createdAt = data.createdAt as admin.firestore.Timestamp | undefined;
+      return {
+        id: doc.id,
+        date: (data.date as string | undefined) ?? doc.id,
+        summary: (data.summary as string | undefined) ?? "",
+        chartUrl: (data.chartUrl as string | undefined) ?? null,
+        metrics: (data.metrics as Record<string, number> | undefined) ?? {},
+        createdAt: createdAt ? createdAt.toDate().toISOString() : null,
+      };
+    });
+
+    return c.json({ reports, count: reports.length });
+  } catch (err) {
+    console.error("[Admin] ad_reports 読み取り失敗:", err);
+    return c.json({ error: "Failed to load ad reports" }, 500);
+  }
+});
+
+/**
  * GET /api/admin/x-promotions
  * Firestore `social_templates` コレクションから X 投稿テンプレートを返す。
  *
