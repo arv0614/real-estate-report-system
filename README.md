@@ -117,11 +117,31 @@ Google アカウントでログイン後、AI レポート内の **「✨ 暮ら
 
 | イベント名 | 発火タイミング | 主なパラメータ |
 |---|---|---|
+| `click_lp_cta` | LP の「無料で試す」CTA クリック | `event_category`: "acquisition", `event_label`: "heroCta" / "bottomCta" |
+| `sign_up` | 新規サインアップ完了直後 | `event_category`: "engagement", `event_label`: "email" / "google" |
 | `generate_report` | 検索APIが成功し結果が表示された瞬間 | `event_label`: 都道府県＋市区町村名 |
 | `reach_limit` | 日次検索上限に達してプランモーダルが開く直前 | `event_label`: "guest" / "free" |
 | `view_plan_modal` | 料金モーダルが表示される直前 | `event_label`: "header" / "limit_modal" / "pdf" |
 | `begin_checkout` | 決済ボタンクリック → Lemon Squeezy API 呼び出し前 | `event_label`: "Pro" |
 | `purchase` | `?payment=success` リダイレクト検知時（初回のみ） | `value`: 980, `currency`: "JPY" |
+
+---
+
+## 📈 広告運用モニタリング（無料ダッシュボード基盤）
+
+Web 広告の出稿効果を **無料**（Looker Studio + GA4 標準）で可視化・監視する自動化スイート。
+
+| スクリプト | 役割 | 実行 |
+|---|---|---|
+| `scripts/setup_marketing_dashboard.js` | Looker Studio + GA4 接続手順 / インプレッション・CTR・CVR の指標定義を `docs/marketing_dashboard.md` に生成 | 手動 (`npm run dashboard:setup`) |
+| `scripts/monitor_traffic_anomalies.js` | Cloud Run ログを解析し、同一IPから 1分あたり閾値（既定10）以上のアクセスを検知 → Bot 不正クリック監視 | `monitor_traffic.yml`（30分毎 cron） |
+| `scripts/summarize_ad_performance.js` | GA4 Data API から前日の広告指標を取得しテキスト要約を Slack 送信 | `ad_daily_report.yml`（毎朝 JST 09:00 cron） |
+
+**アラート経路**: 異常検知時、監視スクリプトは終了コード1で失敗し、GitHub のジョブ失敗通知（メール）がそのままアラートになります。`SLACK_WEBHOOK_URL` を設定すれば Slack 通知も飛びます。
+
+**必要な Secrets / 環境変数**: `GCP_SA_KEY`, `GCP_PROJECT_ID`, `GA4_PROPERTY_ID`, `SLACK_WEBHOOK_URL`（任意）, `FRONTEND_CLOUD_RUN_SERVICE_NAME`（任意）。SA には対象 GA4 プロパティの「閲覧者」権限と Analytics Data API の有効化が必要。詳細は `.env.example` 参照。
+
+各スクリプトは `--dry-run` / `--input <file>` でローカル検証可能（GCP/GA4 認証なしでロジック確認）。
 
 ---
 
@@ -175,11 +195,14 @@ Google アカウントでログイン後、AI レポート内の **「✨ 暮ら
 │       → 加重ランダムで全国の都市を選定（首都圏偏重を回避）          │
 │       → ?lat=&lng= 形式で① のトップページにCTAリンク                │
 │     - post_to_x.js: 旧 X 自動投稿（現在は無効化）                    │
+│     - monitor_traffic_anomalies.js: 30分毎に不正クリック監視         │
+│     - summarize_ad_performance.js: 毎朝 GA4 日次広告レポート → Slack │
+│     - setup_marketing_dashboard.js: Looker Studio 手順書を生成       │
 │     - deploy.sh / deploy_frontend.sh: Cloud Run 手動デプロイ         │
 └─────────────────────────────────────────────────────────────────────┘
 
 [Firebase]  Authentication / Firestore (users, history) / Storage (images)
-[GA4 + GTM] generate_report / reach_limit / view_plan_modal / begin_checkout / purchase
+[GA4 + GTM] click_lp_cta / sign_up / generate_report / view_plan_modal / begin_checkout / purchase
 [PostHog]   行動ログ計測（Webhook 署名検証付き）
 [Terraform] Cloud Run / Artifact Registry / GCS / IAM の IaC 管理
 ```

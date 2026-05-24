@@ -1,0 +1,83 @@
+name: Monitor Traffic Anomalies
+
+# 広告出稿中の Bot による不正クリックを監視する。
+# 30分ごとに直近30分の Cloud Run リクエストログを解析し、同一IPから
+# 1分あたり閾値 (既定10) 以上のアクセスがあれば検知する。
+#
+# アラート経路:
+#   - 異常検知時、スクリプトが終了コード1で失敗 → GitHub がジョブ失敗を
+#     リポジトリ管理者にメール通知する (= 無料のメールアラート)。
+#   - SLACK_WEBHOOK_URL を Secrets に設定すれば Slack 通知も飛ぶ。
+
+on:
+  schedule:
+    - cron: "0,30 * * * *"   # 30分ごと
+  workflow_dispatch:
+    inputs:
+      threshold:
+        description: "1分あたりの異常閾値"
+        required: false
+        default: "10"
+      window_minutes:
+        description: "監視窓 (分)"
+        required: false
+        default: "30"
+
+concurrency:
+  group: monitor-traffic-anomalies
+  cancel-in-progress: true
+
+jobs:
+  monitor:
+    name: Detect bot click anomalies
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Check if GCP credentials are configured
+        id: gcp_creds
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+        run: |
+          if [ -n "$GCP_SA_KEY" ]; then
+            echo "has_key=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_key=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::GCP_SA_KEY 未設定のため監視をスキップします"
+          fi
+
+      - name: Authenticate to Google Cloud
+        if: steps.gcp_creds.outputs.has_key == 'true'
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up gcloud CLI
+        if: steps.gcp_creds.outputs.has_key == 'true'
+        uses: google-github-actions/setup-gcloud@v3
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Set up Node.js
+        if: steps.gcp_creds.outputs.has_key == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+
+      - name: Run anomaly monitor
+        if: steps.gcp_creds.outputs.has_key == 'true'
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          FRONTEND_CLOUD_RUN_SERVICE_NAME: ${{ secrets.FRONTEND_CLOUD_RUN_SERVICE_NAME }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          TZ: Asia/Tokyo
+        run: |
+          node scripts/monitor_traffic_anomalies.js \
+            --window-minutes "${{ github.event.inputs.window_minutes || '30' }}" \
+            --threshold "${{ github.event.inputs.threshold || '10' }}"

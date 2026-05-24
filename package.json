@@ -5,7 +5,10 @@
   "description": "Root package for automation scripts (X auto-post, etc.)",
   "scripts": {
     "post:x": "node scripts/post_to_x.js",
-    "generate:blog": "node scripts/generate_daily_blog.js"
+    "generate:blog": "node scripts/generate_daily_blog.js",
+    "dashboard:setup": "node scripts/setup_marketing_dashboard.js",
+    "monitor:traffic": "node scripts/monitor_traffic_anomalies.js",
+    "report:ads": "node scripts/summarize_ad_performance.js"
   },
   "dependencies": {
     "@google/genai": "^1.52.0",
