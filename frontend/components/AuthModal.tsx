@@ -3,12 +3,14 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { FirebaseError } from "firebase/app";
+import { getAdditionalUserInfo } from "firebase/auth";
 import {
   signInWithEmail,
   signUpWithEmail,
   signInWithGoogle,
   sendPasswordReset,
 } from "@/lib/firebase";
+import { gtagEvent } from "@/lib/gtag";
 import type { AuthModalMode } from "./AuthModalContext";
 
 interface Props {
@@ -112,6 +114,8 @@ export function AuthModal({ open, mode, onModeChange, onClose }: Props) {
     try {
       if (mode === "signup") {
         await signUpWithEmail(trimmedEmail, password);
+        // createUserWithEmailAndPassword は常に新規ユーザー作成なので無条件で計測
+        gtagEvent({ action: "sign_up", category: "engagement", label: "email" });
       } else {
         await signInWithEmail(trimmedEmail, password);
       }
@@ -128,7 +132,11 @@ export function AuthModal({ open, mode, onModeChange, onClose }: Props) {
     setError(null);
     setSubmitting(true);
     try {
-      await signInWithGoogle();
+      const cred = await signInWithGoogle();
+      // 既存ユーザーのログインは除外し、新規サインアップ時のみ計測する
+      if (getAdditionalUserInfo(cred)?.isNewUser) {
+        gtagEvent({ action: "sign_up", category: "engagement", label: "google" });
+      }
       onClose();
     } catch (err) {
       const code = err instanceof FirebaseError ? err.code : "";

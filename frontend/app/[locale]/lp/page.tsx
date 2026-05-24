@@ -6,6 +6,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { LpCtaLink } from "./LpCtaLink";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
@@ -118,8 +119,9 @@ export default async function LandingPage({ params }: PageProps) {
             {t("heroDesc")}
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
+            <LpCtaLink
               href={homeHref}
+              label="heroCta"
               className="group inline-flex items-center gap-2 px-9 py-4 rounded-xl bg-white text-slate-900 font-bold text-base hover:bg-slate-100 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-0.5"
             >
               {t("heroCta")}
@@ -133,7 +135,7 @@ export default async function LandingPage({ params }: PageProps) {
               >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7-7 7M3 12h18" />
               </svg>
-            </Link>
+            </LpCtaLink>
           </div>
           <p className="mt-5 text-xs text-slate-400">{t("heroNote")}</p>
         </div>
@@ -210,8 +212,9 @@ export default async function LandingPage({ params }: PageProps) {
           <p className="text-base sm:text-lg text-blue-100 mb-9 leading-relaxed max-w-xl mx-auto">
             {t("bottomCtaDesc")}
           </p>
-          <Link
+          <LpCtaLink
             href={homeHref}
+            label="bottomCta"
             className="group inline-flex items-center gap-2 px-10 py-4 rounded-xl bg-white text-blue-700 font-bold text-base sm:text-lg hover:bg-blue-50 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-0.5"
           >
             {t("bottomCta")}
@@ -225,7 +228,7 @@ export default async function LandingPage({ params }: PageProps) {
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7-7 7M3 12h18" />
             </svg>
-          </Link>
+          </LpCtaLink>
           <p className="mt-5 text-xs text-blue-200">{t("bottomCtaNote")}</p>
         </div>
       </section>
