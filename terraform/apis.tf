@@ -9,6 +9,7 @@ locals {
     "cloudbuild.googleapis.com",
     "iam.googleapis.com",
     "cloudresourcemanager.googleapis.com",
+    "analyticsdata.googleapis.com", # GA4 Data API (日次広告レポート summarize_ad_performance.js)
   ]
 }
 
