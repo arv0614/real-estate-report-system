@@ -1,17 +1,21 @@
 name: Monitor Traffic Anomalies
 
 # 広告出稿中の Bot による不正クリックを監視する。
-# 30分ごとに直近30分の Cloud Run リクエストログを解析し、同一IPから
+# 直近 N 分の Cloud Run リクエストログを解析し、同一IPから
 # 1分あたり閾値 (既定10) 以上のアクセスがあれば検知する。
 #
 # アラート経路:
 #   - 異常検知時、スクリプトが終了コード1で失敗 → GitHub がジョブ失敗を
 #     リポジトリ管理者にメール通知する (= 無料のメールアラート)。
 #   - SLACK_WEBHOOK_URL を Secrets に設定すれば Slack 通知も飛ぶ。
+#
+# ⛔ 定時実行 (30分毎 cron) は Cloud Logging 取得のコスト影響を避けるため
+#    2026-05-24 に停止しました。必要になったら下記 schedule のコメントを
+#    外して再開してください。現状は手動実行 (workflow_dispatch) のみ。
 
 on:
-  schedule:
-    - cron: "0,30 * * * *"   # 30分ごと
+  # schedule:
+  #   - cron: "0,30 * * * *"   # 30分ごと（再開時はこの2行のコメントを外す）
   workflow_dispatch:
     inputs:
       threshold:
