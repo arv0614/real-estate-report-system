@@ -133,7 +133,7 @@ Web 広告の出稿効果を **無料**（Looker Studio + GA4 標準）で可視
 
 | スクリプト | 役割 | 実行 |
 |---|---|---|
-| `scripts/setup_marketing_dashboard.js` | Looker Studio + GA4 接続手順 / インプレッション・CTR・CVR の指標定義を `docs/marketing_dashboard.md` に生成 | 手動 (`npm run dashboard:setup`) |
+| `scripts/setup_marketing_dashboard.js` | Looker Studio + GA4 のセットアップ手順を生成: `docs/marketing_dashboard.md`（概念編：接続手順・指標定義）と `docs/looker_studio_setup_guide.md`（実装編：各グラフの具体設定・計算フィールドのコピペ集・GA4 探索での計測確認手順） | 手動 (`npm run dashboard:setup`) |
 | `scripts/monitor_traffic_anomalies.js` | Cloud Run ログを解析し、同一IPから 1分あたり閾値（既定10）以上のアクセスを検知 → Bot 不正クリック監視 | `monitor_traffic.yml`（30分毎 cron） |
 | `scripts/summarize_ad_performance.js` | GA4 Data API から前日の広告指標を取得しテキスト要約を Slack 送信 | `ad_daily_report.yml`（毎朝 JST 09:00 cron） |
 

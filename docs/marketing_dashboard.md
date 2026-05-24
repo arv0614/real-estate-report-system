@@ -2,7 +2,7 @@
 
 > このファイルは `scripts/setup_marketing_dashboard.js` により自動生成されています。
 > 直接編集せず、スクリプト側を更新して再生成してください。
-> 生成日時: 2026-05-24T05:09:10.062Z
+> 生成日時: 2026-05-24T11:34:18.543Z
 
 Web 広告の出稿効果を **無料** (Looker Studio + GA4 標準) で可視化するためのテンプレート構成です。
 GA4 の測定ID `G-MF8SLJ81D2` / プロパティ `<GA4_PROPERTY_ID>` を前提とします。
@@ -139,15 +139,17 @@ CASE WHEN eventName = 'begin_checkout' THEN eventCount ELSE 0 END
 ### 4-5. CTR (クリック率)
 
 ```
-CTR = SUM(LP CTA Clicks) / NARY_MAX(SUM(Ad Impressions), 1)
+CTR = LP CTA Clicks / NARY_MAX(Ad Impressions, 1)
 ```
 
-※ `NARY_MAX(..., 1)` でゼロ除算を回避。表示形式は「パーセント」。
+※ `LP CTA Clicks` / `Ad Impressions` は既に集計済みの指標なので **`SUM()` で再集計しない**
+   (Looker Studio で「集計の中に集計」エラーになる)。`NARY_MAX(..., 1)` でゼロ除算を回避。
+   表示形式は「パーセント」。
 
 ### 4-6. CVR (コンバージョン率)
 
 ```
-CVR = SUM(Sign Ups) / NARY_MAX(SUM(LP CTA Clicks), 1)
+CVR = Sign Ups / NARY_MAX(LP CTA Clicks, 1)
 ```
 
 ---
@@ -195,8 +197,10 @@ ORDER BY date DESC;
 
 ---
 
-## 7. 関連自動化
+## 7. 関連ドキュメント・自動化
 
+- **実装編**: 各グラフの具体的な設定値と計算フィールドのコピペ集、GA4「探索」での
+  計測確認手順は `docs/looker_studio_setup_guide.md` を参照。
 - 日次のテキスト要約は `scripts/summarize_ad_performance.js` が GA4 Data API から取得し
   Slack / メールに送信します (毎朝定時、Looker Studio を見に行かなくても届く)。
 - 不正クリック監視は `scripts/monitor_traffic_anomalies.js` が Cloud Run ログを解析します。
