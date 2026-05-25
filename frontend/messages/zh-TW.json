@@ -742,6 +742,7 @@
     "adCtr": "CTR",
     "adCvr": "CVR",
     "adChartAlt": "廣告漏斗圖表",
+    "adTrendTitle": "近30天趨勢（{days}天）",
     "usersCountLabel": "{count} 位使用者",
     "usersEmpty": "尚無註冊使用者。",
     "colEmail": "電子郵件",

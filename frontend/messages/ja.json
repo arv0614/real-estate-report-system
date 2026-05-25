@@ -742,6 +742,7 @@
     "adCtr": "CTR",
     "adCvr": "CVR",
     "adChartAlt": "広告ファネルのグラフ",
+    "adTrendTitle": "直近30日間の推移（{days}日分）",
     "usersCountLabel": "{count} 件のユーザー",
     "usersEmpty": "登録ユーザーはまだありません。",
     "colEmail": "メールアドレス",

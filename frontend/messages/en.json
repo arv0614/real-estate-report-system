@@ -742,6 +742,7 @@
     "adCtr": "CTR",
     "adCvr": "CVR",
     "adChartAlt": "Ad funnel chart",
+    "adTrendTitle": "30-Day Trend ({days} days)",
     "usersCountLabel": "{count} users",
     "usersEmpty": "No registered users yet.",
     "colEmail": "Email",

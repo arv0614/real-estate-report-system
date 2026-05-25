@@ -6,6 +6,7 @@ import { useRouter } from "@/i18n/navigation";
 import { auth } from "@/lib/firebase";
 import { useAuth } from "@/lib/useAuth";
 import { getApiBase } from "@/lib/api";
+import { AdTrendChart } from "@/components/AdTrendChart";
 
 type FeedbackItem = {
   id: string;
@@ -461,6 +462,7 @@ function AdReportsList({ items }: { items: AdReportItem[] }) {
   }
   return (
     <>
+      <AdTrendChart items={items} />
       <div className="mb-4 text-xs text-slate-500">{t("adReportsCountLabel", { count: items.length })}</div>
       <div className="grid gap-4 sm:grid-cols-2">
         {items.map((r) => (
