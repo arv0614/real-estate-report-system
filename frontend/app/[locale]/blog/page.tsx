@@ -87,10 +87,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const locale = asLocale(rawLocale);
   const labels = BLOG_INDEX_LABELS[locale];
   const url = blogIndexUrlFor(locale);
+  // ブログインデックスは全ロケールに存在するため、hreflang を全言語分出力する
+  // (canonical だけだと親 layout の言語マップを引き継がず多言語認識が弱くなる)。
+  const languages: Record<string, string> = {
+    ja: blogIndexUrlFor("ja"),
+    en: blogIndexUrlFor("en"),
+    "zh-TW": blogIndexUrlFor("zh-TW"),
+    "zh-CN": blogIndexUrlFor("zh-CN"),
+    "x-default": blogIndexUrlFor("ja"),
+  };
   return {
     title: labels.title,
     description: labels.description,
-    alternates: { canonical: url },
+    alternates: { canonical: url, languages },
     openGraph: {
       type: "website",
       url,
