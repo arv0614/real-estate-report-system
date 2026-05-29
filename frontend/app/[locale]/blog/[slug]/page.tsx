@@ -50,6 +50,7 @@ const SLUG_LABELS: Record<
     termsLabel: string;
     privacyLabel: string;
     siteLocale: string;
+    latestPostsLabel: string;
   }
 > = {
   ja: {
@@ -66,6 +67,7 @@ const SLUG_LABELS: Record<
     termsLabel: "利用規約",
     privacyLabel: "プライバシーポリシー",
     siteLocale: "ja_JP",
+    latestPostsLabel: "最新の記事",
   },
   en: {
     blogLabel: "Blog",
@@ -81,6 +83,7 @@ const SLUG_LABELS: Record<
     termsLabel: "Terms",
     privacyLabel: "Privacy",
     siteLocale: "en_US",
+    latestPostsLabel: "Latest Posts",
   },
   "zh-TW": {
     blogLabel: "部落格",
@@ -95,6 +98,7 @@ const SLUG_LABELS: Record<
     termsLabel: "服務條款",
     privacyLabel: "隱私權政策",
     siteLocale: "zh_TW",
+    latestPostsLabel: "最新文章",
   },
   "zh-CN": {
     blogLabel: "博客",
@@ -109,6 +113,7 @@ const SLUG_LABELS: Record<
     termsLabel: "服务条款",
     privacyLabel: "隐私政策",
     siteLocale: "zh_CN",
+    latestPostsLabel: "最新文章",
   },
 };
 
@@ -240,6 +245,12 @@ export default async function BlogPostPage({ params }: Props) {
     ? `${localePrefix}/?lat=${loc.lat}&lng=${loc.lng}`
     : homeHref;
 
+  // 内部リンクSEO: 現在の記事を除いた最新4件をサイドナビ的に出す。
+  // getAllPostMeta は publishedAt 降順で返るので、先頭から filter で十分。
+  const recentPosts = getAllPostMeta(locale)
+    .filter((p) => p.slug !== slug)
+    .slice(0, 4);
+
   return (
     <div className="min-h-screen bg-slate-50">
       <script
@@ -343,6 +354,45 @@ export default async function BlogPostPage({ params }: Props) {
 
         {/* Share buttons */}
         <BlogShareButtons title={post.title} url={blogPathFor(locale, slug)} />
+
+        {/* Recent posts (内部リンク強化: クローラビリティ向上 + 回遊率UP) */}
+        {recentPosts.length > 0 && (
+          <section
+            aria-label={labels.latestPostsLabel}
+            className="mt-12 bg-white rounded-xl border border-slate-200 p-6"
+          >
+            <h2 className="text-base font-bold text-slate-900 mb-4">
+              {labels.latestPostsLabel}
+            </h2>
+            <ul className="divide-y divide-slate-100">
+              {recentPosts.map((rp) => (
+                <li key={rp.slug}>
+                  <Link
+                    href={`${localePrefix}/blog/${rp.slug}`}
+                    className="group block py-3 first:pt-0 last:pb-0"
+                  >
+                    <p className="text-sm font-semibold text-slate-800 group-hover:text-blue-600 transition-colors leading-snug">
+                      {rp.title}
+                    </p>
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+                      {rp.publishedAt && (
+                        <time dateTime={rp.publishedAt}>
+                          {formatDate(rp.publishedAt, locale)}
+                        </time>
+                      )}
+                      {rp.primaryLocation?.name && (
+                        <span className="inline-flex items-center gap-1 text-slate-500">
+                          <span aria-hidden>📍</span>
+                          {rp.primaryLocation.name}
+                        </span>
+                      )}
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {/* CTA */}
         <div className="mt-12 bg-blue-50 border border-blue-100 rounded-xl px-6 py-6 text-center">
