@@ -1,15 +1,20 @@
-import axios from "axios";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { config } from "../config";
 
 // ============================================================
 // 暮らしイメージ画像生成
 // Stage1: gemini-2.5-flash でエリア固有の英語プロンプトを生成
-// Stage2: Imagen 4 Fast → gemini-2.5-flash-image → SVG モック
+// Stage2: gemini-3.1-flash-image → gemini-2.5-flash-image → SVG モック
+//
+// 注: 旧 Imagen 4 (imagen-4.0-*-generate-001) は 2026年に廃止予定のため
+//     Gemini 3.1 Flash Image (Nano Banana 2) へ移行。
+//     Gemini 画像モデルは Imagen の :predict REST API ではなく
+//     generateContent + responseModalities=["IMAGE"] で呼び出す。
 // ============================================================
 
-const IMAGEN4_ENDPOINT =
-  "https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-fast-generate-001:predict";
+// 画像生成モデルID（フォールバック順）
+const PRIMARY_IMAGE_MODEL = "gemini-3.1-flash-image";
+const FALLBACK_IMAGE_MODEL = "gemini-2.5-flash-image";
 
 export interface GeneratedImage {
   imageBase64: string;
@@ -121,36 +126,13 @@ function getMockImageBase64(): string {
 // Stage2: 画像生成モデル
 // ============================================================
 
-/** Imagen 4 Fast (REST predict API) で画像生成 */
-async function generateViaImagen4(prompt: string): Promise<GeneratedImage> {
-  const response = await axios.post(
-    `${IMAGEN4_ENDPOINT}?key=${config.gemini.apiKey}`,
-    {
-      instances: [{ prompt }],
-      parameters: {
-        sampleCount: 1,
-        aspectRatio: "16:9",
-        safetyFilterLevel: "block_only_high",
-        personGeneration: "allow_adult",
-      },
-    },
-    { headers: { "Content-Type": "application/json" }, timeout: 60000 }
-  );
-
-  const prediction = response.data?.predictions?.[0];
-  if (!prediction?.bytesBase64Encoded) throw new Error("No image data in Imagen 4 response");
-
-  return {
-    imageBase64: prediction.bytesBase64Encoded,
-    mimeType: prediction.mimeType ?? "image/png",
-    isMock: false,
-  };
-}
-
-/** gemini-2.5-flash-image (generateContent + responseModalities IMAGE) で画像生成 */
-async function generateViaGeminiImage(prompt: string): Promise<GeneratedImage> {
+/** Gemini 画像生成モデル (generateContent + responseModalities IMAGE) で画像生成 */
+async function generateViaGeminiImage(
+  modelId: string,
+  prompt: string
+): Promise<GeneratedImage> {
   const genAI = new GoogleGenerativeAI(config.gemini.apiKey);
-  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-image" });
+  const model = genAI.getGenerativeModel({ model: modelId });
 
   const result = await model.generateContent({
     contents: [{ role: "user", parts: [{ text: prompt }] }],
@@ -166,7 +148,7 @@ async function generateViaGeminiImage(prompt: string): Promise<GeneratedImage> {
       return { imageBase64: inline.data, mimeType: inline.mimeType, isMock: false };
     }
   }
-  throw new Error("No image data in Gemini response");
+  throw new Error(`No image data in ${modelId} response`);
 }
 
 // ============================================================
@@ -176,7 +158,7 @@ async function generateViaGeminiImage(prompt: string): Promise<GeneratedImage> {
 /**
  * 「その街での暮らしイメージ」画像を2段階で生成する。
  * Stage1: gemini-2.5-flash でエリア固有の英語プロンプトを動的生成
- * Stage2: Imagen 4 → gemini-2.5-flash-image → SVG モック
+ * Stage2: gemini-3.1-flash-image → gemini-2.5-flash-image → SVG モック
  */
 export async function generateLifestyleImage(
   prefecture: string,
@@ -203,22 +185,22 @@ export async function generateLifestyleImage(
       `Happy family, 16:9, high-quality photography.`;
   }
 
-  // ── Stage2-a: Imagen 4 ──
+  // ── Stage2-a: gemini-3.1-flash-image (Nano Banana 2) ──
   try {
-    const result = await generateViaImagen4(imagePrompt);
-    console.log(`[ImageGen] Imagen 4 完了 (${result.mimeType})`);
+    const result = await generateViaGeminiImage(PRIMARY_IMAGE_MODEL, imagePrompt);
+    console.log(`[ImageGen] ${PRIMARY_IMAGE_MODEL} 完了 (${result.mimeType})`);
     return result;
   } catch (err1) {
-    console.warn(`[ImageGen] Imagen 4 失敗: ${err1 instanceof Error ? err1.message : err1}`);
+    console.warn(`[ImageGen] ${PRIMARY_IMAGE_MODEL} 失敗: ${err1 instanceof Error ? err1.message : err1}`);
   }
 
   // ── Stage2-b: gemini-2.5-flash-image ──
   try {
-    const result = await generateViaGeminiImage(imagePrompt);
-    console.log(`[ImageGen] gemini-2.5-flash-image 完了 (${result.mimeType})`);
+    const result = await generateViaGeminiImage(FALLBACK_IMAGE_MODEL, imagePrompt);
+    console.log(`[ImageGen] ${FALLBACK_IMAGE_MODEL} 完了 (${result.mimeType})`);
     return result;
   } catch (err2) {
-    console.warn(`[ImageGen] gemini-2.5-flash-image 失敗: ${err2 instanceof Error ? err2.message : err2}`);
+    console.warn(`[ImageGen] ${FALLBACK_IMAGE_MODEL} 失敗: ${err2 instanceof Error ? err2.message : err2}`);
   }
 
   // ── Fallback: 全モデル失敗 → エラーをスロー ──
