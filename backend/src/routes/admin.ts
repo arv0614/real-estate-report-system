@@ -99,20 +99,23 @@ app.get("/users", async (c) => {
     const snap = await db.collection("users").limit(LIMIT).get();
 
     // UID リストを抽出して Auth から一括取得（N+1 回避）
+    // getUsers() は 1 回あたり最大 100 件のため、チャンク分割して処理する
     const uids = snap.docs.map((doc) => doc.id);
-    const identifiers = uids.map((uid) => ({ uid }));
     const authMap = new Map<string, { email: string | null; displayName: string | null }>();
-    if (identifiers.length > 0) {
+    const CHUNK_SIZE = 100;
+    for (let i = 0; i < uids.length; i += CHUNK_SIZE) {
+      const chunk = uids.slice(i, i + CHUNK_SIZE).map((uid) => ({ uid }));
       try {
-        const { users: authUsers } = await admin.auth().getUsers(identifiers);
+        const { users: authUsers } = await admin.auth().getUsers(chunk);
         for (const u of authUsers) {
           authMap.set(u.uid, {
             email: u.email ?? null,
             displayName: u.displayName ?? null,
           });
         }
-      } catch {
-        // Auth 取得失敗時はフォールバック（空の Map のまま）
+      } catch (error) {
+        console.error("[Admin] FirebaseAuth getUsers failed:", error);
+        // Auth 取得失敗時はフォールバック（空の Map のまま継続）
       }
     }
 
