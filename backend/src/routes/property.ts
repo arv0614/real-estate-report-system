@@ -357,6 +357,7 @@ app.get("/seo-image", async (c) => {
     headers: {
       "Content-Type": generated.mimeType,
       "Cache-Control": "public, max-age=2592000",
+      "Cross-Origin-Resource-Policy": "cross-origin",
     },
   });
 });

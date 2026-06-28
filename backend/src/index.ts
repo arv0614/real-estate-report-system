@@ -18,7 +18,10 @@ const app = new Hono();
 // ミドルウェア
 app.use("*", logger());
 // セキュリティヘッダー (X-Content-Type-Options, X-Frame-Options 等)
-app.use("*", secureHeaders());
+// crossOriginResourcePolicy: 'cross-origin' — このバックエンドはフロントエンドと
+// 別オリジン (Cloud Run vs mekiki-research.com) で動作する公開 API サービス。
+// <img> タグからの画像埋め込みも許可する必要があるため cross-origin を設定する。
+app.use("*", secureHeaders({ crossOriginResourcePolicy: "cross-origin" }));
 const allowedOrigins = config.cors.allowedOrigins;
 if (allowedOrigins.length === 0 && config.nodeEnv === "production") {
   console.warn("[Security] ALLOWED_ORIGINS が未設定です。本番環境では必ず設定してください。");
