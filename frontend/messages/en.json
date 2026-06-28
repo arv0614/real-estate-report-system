@@ -746,6 +746,7 @@
     "usersCountLabel": "{count} users",
     "usersEmpty": "No registered users yet.",
     "colEmail": "Email",
+    "colName": "Name",
     "colPlan": "Plan",
     "colSearchCount": "Searches",
     "colLastSearch": "Last search",

@@ -746,6 +746,7 @@
     "usersCountLabel": "{count} 件のユーザー",
     "usersEmpty": "登録ユーザーはまだありません。",
     "colEmail": "メールアドレス",
+    "colName": "名前",
     "colPlan": "プラン",
     "colSearchCount": "検索回数",
     "colLastSearch": "最終検索日",

@@ -746,6 +746,7 @@
     "usersCountLabel": "{count} 位用户",
     "usersEmpty": "暂无注册用户。",
     "colEmail": "邮箱",
+    "colName": "姓名",
     "colPlan": "套餐",
     "colSearchCount": "搜索次数",
     "colLastSearch": "最近搜索",

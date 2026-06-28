@@ -91,39 +91,50 @@ app.get("/feedbacks", async (c) => {
 
 /**
  * GET /api/admin/users
- * Firestore `users` コレクションを返す。email は Firebase Auth から補完する。
+ * Firestore `users` コレクションを返す。email / displayName は Firebase Auth から補完する。
  */
 app.get("/users", async (c) => {
   const LIMIT = 500;
   try {
     const snap = await db.collection("users").limit(LIMIT).get();
 
-    const users = await Promise.all(
-      snap.docs.map(async (doc) => {
-        const data = doc.data();
-        const uid = doc.id;
-        let email: string | null = (data.email as string | undefined) ?? null;
-        if (!email) {
-          try {
-            const userRecord = await admin.auth().getUser(uid);
-            email = userRecord.email ?? null;
-          } catch {
-            // ユーザーが Auth に存在しない（削除済み等）。null のままで OK
-          }
+    // UID リストを抽出して Auth から一括取得（N+1 回避）
+    const uids = snap.docs.map((doc) => doc.id);
+    const identifiers = uids.map((uid) => ({ uid }));
+    const authMap = new Map<string, { email: string | null; displayName: string | null }>();
+    if (identifiers.length > 0) {
+      try {
+        const { users: authUsers } = await admin.auth().getUsers(identifiers);
+        for (const u of authUsers) {
+          authMap.set(u.uid, {
+            email: u.email ?? null,
+            displayName: u.displayName ?? null,
+          });
         }
-        const createdAt = data.createdAt as admin.firestore.Timestamp | undefined;
-        const planActivatedAt = data.planActivatedAt as admin.firestore.Timestamp | undefined;
-        return {
-          uid,
-          email,
-          plan: (data.plan as string | undefined) ?? "free",
-          dailySearchCount: (data.dailySearchCount as number | undefined) ?? 0,
-          lastSearchDate: (data.lastSearchDate as string | undefined) ?? null,
-          createdAt: createdAt ? createdAt.toDate().toISOString() : null,
-          planActivatedAt: planActivatedAt ? planActivatedAt.toDate().toISOString() : null,
-        };
-      })
-    );
+      } catch {
+        // Auth 取得失敗時はフォールバック（空の Map のまま）
+      }
+    }
+
+    const users = snap.docs.map((doc) => {
+      const data = doc.data();
+      const uid = doc.id;
+      const auth = authMap.get(uid);
+      const email: string | null = (data.email as string | undefined) ?? auth?.email ?? null;
+      const displayName: string | null = (data.displayName as string | undefined) ?? auth?.displayName ?? null;
+      const createdAt = data.createdAt as admin.firestore.Timestamp | undefined;
+      const planActivatedAt = data.planActivatedAt as admin.firestore.Timestamp | undefined;
+      return {
+        uid,
+        email,
+        displayName,
+        plan: (data.plan as string | undefined) ?? "free",
+        dailySearchCount: (data.dailySearchCount as number | undefined) ?? 0,
+        lastSearchDate: (data.lastSearchDate as string | undefined) ?? null,
+        createdAt: createdAt ? createdAt.toDate().toISOString() : null,
+        planActivatedAt: planActivatedAt ? planActivatedAt.toDate().toISOString() : null,
+      };
+    });
 
     // 最終検索日の降順でソート（未設定は末尾）
     users.sort((a, b) => {

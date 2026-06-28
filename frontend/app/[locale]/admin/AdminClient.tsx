@@ -23,6 +23,7 @@ type FeedbackItem = {
 type UserItem = {
   uid: string;
   email: string | null;
+  displayName: string | null;
   plan: string;
   dailySearchCount: number;
   lastSearchDate: string | null;
@@ -776,6 +777,7 @@ function UsersTable({
           <thead className="bg-slate-50 text-slate-600 text-xs uppercase tracking-wide">
             <tr>
               <th className="px-4 py-3 text-left font-semibold">{t("colEmail")}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("colName")}</th>
               <th className="px-4 py-3 text-left font-semibold">{t("colPlan")}</th>
               <th className="px-4 py-3 text-right font-semibold">{t("colSearchCount")}</th>
               <th className="px-4 py-3 text-left font-semibold">{t("colLastSearch")}</th>
@@ -839,6 +841,9 @@ function UserRow({
       <td className="px-4 py-3 text-slate-800">
         <div>{user.email ?? <span className="text-slate-400">{t("anonymous")}</span>}</div>
         <div className="text-[10px] text-slate-400 font-mono">{user.uid.slice(0, 12)}…</div>
+      </td>
+      <td className="px-4 py-3 text-slate-700">
+        {user.displayName ?? <span className="text-slate-400">—</span>}
       </td>
       <td className="px-4 py-3">
         {editing ? (

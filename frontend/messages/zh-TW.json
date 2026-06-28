@@ -746,6 +746,7 @@
     "usersCountLabel": "{count} 位使用者",
     "usersEmpty": "尚無註冊使用者。",
     "colEmail": "電子郵件",
+    "colName": "姓名",
     "colPlan": "方案",
     "colSearchCount": "搜尋次數",
     "colLastSearch": "最近搜尋",
