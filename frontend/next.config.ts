@@ -26,8 +26,8 @@ const CSP = [
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.gstatic.com https://us-assets.i.posthog.com https://assets.lemonsqueezy.com https://www.googletagmanager.com https://www.google-analytics.com",
   // Tailwind / CSS-in-JS
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://assets.lemonsqueezy.com",
-  // 画像: Firebase Storage / Google アカウント写真 / 国土地理院タイル / Lemon Squeezy / base64 / GTMピクセル / GA4・Adobe Analytics ビーコン / OSMタイル
-  "img-src 'self' data: blob: https://lh3.googleusercontent.com https://firebasestorage.googleapis.com https://cyberjapandata.gsi.go.jp https://maps.gsi.go.jp https://assets.lemonsqueezy.com https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://analytics.google.com https://www.google.com https://*.omtrdc.net https://*.sc.omtrdc.net https://*.2o7.net https://*.tile.openstreetmap.org",
+  // 画像: Firebase Storage / Google アカウント写真 / 国土地理院タイル / Lemon Squeezy / base64 / GTMピクセル / GA4・Adobe Analytics ビーコン / OSMタイル / Cloud Run (SEO lifestyle image)
+  "img-src 'self' data: blob: https://lh3.googleusercontent.com https://firebasestorage.googleapis.com https://cyberjapandata.gsi.go.jp https://maps.gsi.go.jp https://assets.lemonsqueezy.com https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://analytics.google.com https://www.google.com https://*.omtrdc.net https://*.sc.omtrdc.net https://*.2o7.net https://*.tile.openstreetmap.org https://*.a.run.app",
   // フォント
   "font-src 'self' https://fonts.gstatic.com https://assets.lemonsqueezy.com",
   // API・WebSocket通信 + GA4データ収集 + Adobe Analytics ビーコン + OSMタイル (MapLibre fetch)
