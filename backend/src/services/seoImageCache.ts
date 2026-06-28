@@ -1,7 +1,7 @@
 import * as admin from "firebase-admin";
 import { config } from "../config";
 
-const CACHE_TTL_DAYS = 30;
+const CACHE_TTL_DAYS = 3650; // 10年
 const FIRESTORE_COLLECTION = "seo_lifestyle_cache";
 
 interface SeoImageDoc {
@@ -27,7 +27,7 @@ export function gcsImagePath(prefSlug: string, citySlug: string) {
 
 /**
  * Firestoreキャッシュをチェック。
- * 存在かつ30日以内 → { gcsPath, mimeType } を返す
+ * 存在かつ10年以内 → { gcsPath, mimeType } を返す
  * 存在しないか期限切れ → null
  */
 export async function checkSeoImageCache(
