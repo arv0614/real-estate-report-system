@@ -14,6 +14,7 @@ import { findArea, AREAS, PREF_NAMES, PREF_NAMES_EN } from "@/lib/areas";
 import { calcSummary, formatPrice, formatUnitPrice, getApiBase, fetchWithTimeout } from "@/lib/api";
 import { SummaryCards } from "@/components/SummaryCards";
 import { PriceTrendChart } from "@/components/PriceTrendChart";
+import { SeoLifestyleImage } from "@/components/SeoLifestyleImage";
 import type { TransactionApiResponse } from "@/types/api";
 
 export const revalidate = 86400; // 24h ISR
@@ -242,11 +243,10 @@ export default async function LocaleAreaReportPage({ params }: PageProps) {
             <h2 className="text-base font-semibold text-slate-700">{t("lifestyleTitle")}</h2>
             <p className="text-xs text-slate-400 mt-0.5">{t("lifestyleNote")}</p>
           </div>
-          <img
-            src={`/seo-images/lifestyles/${area.prefSlug}_${area.citySlug}.jpg`}
+          <SeoLifestyleImage
+            src={`${getApiBase()}/api/property/seo-image?prefSlug=${area.prefSlug}&citySlug=${area.citySlug}&prefecture=${encodeURIComponent(area.prefecture)}&municipality=${encodeURIComponent(area.city)}`}
             alt={`${cityLabel} lifestyle`}
-            className="w-full h-56 object-cover"
-            loading="lazy"
+            className="w-full h-56"
           />
         </section>
 

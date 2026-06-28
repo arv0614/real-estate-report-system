@@ -12,6 +12,11 @@ import {
 import { fetchWeatherSummary, type WeatherSummary } from "../services/openMeteo";
 import { generateAreaReport, type AreaReportInput } from "../services/geminiApi";
 import { generateLifestyleImage } from "../services/imagenApi";
+import {
+  checkSeoImageCache,
+  saveSeoImageCache,
+  readSeoImageFromGcs,
+} from "../services/seoImageCache";
 import { config } from "../config";
 import { buildCacheKey } from "../utils/tile";
 import type { TransactionRecord } from "../services/mlitApi";
@@ -276,6 +281,83 @@ app.get("/transactions", async (c) => {
     weather,
     aiReport,
     data: apiData,
+  });
+});
+
+/**
+ * GET /api/property/seo-image
+ * SEOレポートページ用ライフスタイル画像を返す。
+ *
+ * キャッシュ戦略:
+ *   1. Firestore に有効キャッシュ（30日以内）があれば GCS から読んで返す
+ *   2. なければ Gemini で生成 → GCS / Firestore に保存 → 返す
+ *
+ * 認証不要・公開エンドポイント（レート制限はミドルウェアで適用済み）
+ */
+const seoImageSchema = z.object({
+  prefSlug:     z.string().min(1).max(50),
+  citySlug:     z.string().min(1).max(50),
+  prefecture:   z.string().min(1).max(50),
+  municipality: z.string().min(1).max(50),
+});
+
+app.get("/seo-image", async (c) => {
+  const parsed = seoImageSchema.safeParse({
+    prefSlug:     c.req.query("prefSlug"),
+    citySlug:     c.req.query("citySlug"),
+    prefecture:   c.req.query("prefecture"),
+    municipality: c.req.query("municipality"),
+  });
+
+  if (!parsed.success) {
+    return c.json({ error: "Invalid parameters", details: parsed.error.flatten() }, 400);
+  }
+
+  const { prefSlug, citySlug, prefecture, municipality } = parsed.data;
+
+  // 1. キャッシュチェック
+  const cached = await checkSeoImageCache(prefSlug, citySlug);
+  if (cached) {
+    const buf = await readSeoImageFromGcs(cached.gcsPath);
+    if (buf) {
+      return new Response(buf, {
+        headers: {
+          "Content-Type": cached.mimeType,
+          "Cache-Control": "public, max-age=2592000",
+        },
+      });
+    }
+    console.warn(`[SeoImage] Cache HIT but GCS read failed, regenerating: ${prefSlug}_${citySlug}`);
+  }
+
+  // 2. 生成
+  if (!config.gemini.apiKey) {
+    return c.json({ error: "Image generation unavailable: Gemini API key not configured" }, 503);
+  }
+
+  console.log(`[SeoImage] Generating: ${prefecture}${municipality}`);
+
+  let generated;
+  try {
+    generated = await generateLifestyleImage(prefecture, municipality);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[SeoImage] Generation failed:", msg);
+    return c.json({ error: "Image generation failed", details: msg }, 500);
+  }
+
+  // 3. バックグラウンド保存（保存失敗はサービス継続に影響させない）
+  saveSeoImageCache(prefSlug, citySlug, generated.imageBase64, generated.mimeType).catch((err) =>
+    console.error("[SeoImage] Background save failed:", err),
+  );
+
+  // 4. 生成画像をそのまま返す
+  const buf = Buffer.from(generated.imageBase64, "base64");
+  return new Response(buf, {
+    headers: {
+      "Content-Type": generated.mimeType,
+      "Cache-Control": "public, max-age=2592000",
+    },
   });
 });
 
