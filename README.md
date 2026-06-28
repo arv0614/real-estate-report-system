@@ -114,17 +114,53 @@ Google アカウントでログイン後、AI レポート内の **「✨ 暮ら
 - 検索無制限 / PDF レポート出力 / 暮らしのイメージ画像生成
 - Firebase ID Token 認証 + HMAC-SHA256 Webhook 署名検証
 
-### GA4 コンバージョンファネル計測（導入済み）
+### GA4 イベント一覧（全量）
 
-| イベント名 | 発火タイミング | 主なパラメータ |
+GA4 へのイベント送信は `frontend/lib/gtag.ts` の `gtagEvent()` / `gtagPurchase()` と、GTM DataLayer への `dataLayerPush()` (`frontend/lib/analytics.ts`) の 2 経路で行っています。
+
+#### ① カスタムイベント（`gtagEvent` 経由）
+
+| イベント名 | `event_category` | `event_label` の値 | 発火場所 | 発火タイミング |
+|---|---|---|---|---|
+| `click_lp_cta` | acquisition | `"heroCta"` / `"bottomCta"` | `/lp` ページ CTA | LP の「無料で試す」ボタンクリック |
+| `sign_up` | engagement | `"google"` / `"email"` | AuthModal | Google OAuth / メール認証でサインアップ完了直後 |
+| `generate_report` | engagement | 都道府県＋市区町村名（例: `"東京都葛飾区"`） | HomeClient / SearchForm | 検索 API が成功しレポート結果が表示された瞬間。HomeClient は座標検索、SearchForm はフォーム入力検索 |
+| `reach_limit` | conversion_funnel | `"guest"` / `"free"` | HomeClient | 日次検索上限に達したとき（ゲスト1回・Free 3回） |
+| `view_plan_modal` | conversion_funnel | `"limit_modal"` / `"header"` / `"header_upgrade"` / `"pdf"` / `"rate_limit_banner"` / `"walk_time_filter"` / `"profile"` | HomeClient / ProfileClient | 料金モーダルが開く直前。label でどこから開かれたかを区別 |
+| `begin_checkout` | conversion_funnel | `"Pro"` | PlanComparisonModal | 「Pro にアップグレード」ボタンクリック → Lemon Squeezy API 呼び出し前 |
+| `generate_lifestyle_image` | engagement | （なし） | AiReport | 「暮らしのイメージ生成」ボタンクリック |
+| `bookmark_add` | engagement | ブックマークしたエリア名 | HomeClient | ピン留め（ブックマーク追加）操作 |
+| `bookmark_remove` | engagement | 削除したエリア名 | HomeClient | ピン留め解除（ブックマーク削除）操作 |
+| `save_whitelabel` | engagement | `"with_logo"` / `"name_only"` | ProfileClient | プロフィール画面でホワイトラベル設定を保存したとき |
+
+#### ② 標準 purchase イベント（`gtagPurchase` 経由）
+
+| イベント名 | パラメータ | 発火タイミング |
 |---|---|---|
-| `click_lp_cta` | LP の「無料で試す」CTA クリック | `event_category`: "acquisition", `event_label`: "heroCta" / "bottomCta" |
-| `sign_up` | 新規サインアップ完了直後 | `event_category`: "engagement", `event_label`: "email" / "google" |
-| `generate_report` | 検索APIが成功し結果が表示された瞬間 | `event_label`: 都道府県＋市区町村名 |
-| `reach_limit` | 日次検索上限に達してプランモーダルが開く直前 | `event_label`: "guest" / "free" |
-| `view_plan_modal` | 料金モーダルが表示される直前 | `event_label`: "header" / "limit_modal" / "pdf" |
-| `begin_checkout` | 決済ボタンクリック → Lemon Squeezy API 呼び出し前 | `event_label`: "Pro" |
-| `purchase` | `?payment=success` リダイレクト検知時（初回のみ） | `value`: 980, `currency`: "JPY" |
+| `purchase` | `transaction_id`: `ls_<timestamp>`, `value`: 980, `currency`: "JPY" | `?payment=success` クエリ検知時（Pro 決済完了・初回のみ） |
+
+#### ③ GTM DataLayer イベント（`dataLayerPush` 経由）
+
+`window.dataLayer.push()` で GTM に送り、GTM タグ設定次第で GA4 へ転送できるイベント。
+
+| `event` 値 | 追加パラメータ | 発火タイミング |
+|---|---|---|
+| `generate_report` | `user_plan`: "guest"/"free"/"pro", `search_count_today`: 数値 | 検索 API 成功直後（`gtagEvent` の `generate_report` と同時に発火） |
+| `limit_reached` | `user_plan`: "guest"/"free", `search_count_today`: 数値 | 日次上限到達時（`reach_limit` と同時に発火） |
+| `begin_checkout` | `user_plan`: 現在のプラン, `search_count_today`: 数値 | 決済ボタンクリック時（`begin_checkout` と同時に発火） |
+
+#### ④ GA4 自動収集イベント（コードから送信していない）
+
+GA4 の **Enhanced Measurement** が自動的に収集するイベント。コードに `gtagEvent` 等の記述はない。
+
+| イベント名 | GA4 が自動収集する条件 |
+|---|---|
+| `user_engagement` | ユーザーがページにフォーカスした状態で 1 秒以上滞在するたびに GA4 が自動発火。「エンゲージメント時間」の計算に使われる内部イベントであり、手動で制御する必要はない |
+| `page_view` | ページ遷移ごとに自動収集（SPA の History API 変更も追跡） |
+| `session_start` | 新しいセッション開始時 |
+| `first_visit` | 初回訪問時 |
+| `scroll` | ページを 90% スクロールしたとき（Enhanced Measurement） |
+| `click` | 外部リンククリック時（Enhanced Measurement） |
 
 ---
 
