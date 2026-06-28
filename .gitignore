@@ -50,12 +50,18 @@ frontend/node_modules/
 frontend/.next/
 
 # スクリーンショット・一時画像（public/ 以下に置いてしまわないように）
-# 使用中の画像: ogp.png / logo_mekiki_research.png / favicon.ico / seo-images/ は除外対象外
+# 使用中の画像: ogp.png / logo_mekiki_research.png / favicon.ico は除外対象外
 frontend/public/*.png
 !frontend/public/ogp.png
 !frontend/public/logo_mekiki_research.png
 frontend/public/*.jpg
-!frontend/public/seo-images/**
 frontend/public/*.gif
 frontend/public/*.bmp
 frontend/public/*.tiff
+
+# SEO ページ用ライフスタイル画像（スクリプトで動的生成・git 管理外）
+frontend/public/seo-images/
+
+# Terraform プロバイダーバイナリ（サブディレクトリも含む全 .terraform）
+terraform/**/.terraform/
+terraform/**/.terraform.lock.hcl
