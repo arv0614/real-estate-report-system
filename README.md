@@ -32,7 +32,8 @@
 14. [Cloud Run へのデプロイ](#-cloud-run-へのデプロイ)
 15. [Artifact Registry コスト最適化](#-artifact-registry-コスト最適化)
 16. [Lemon Squeezy 決済の運用手順](#-lemon-squeezy-決済の運用手順)
-17. [ディレクトリ構成](#-ディレクトリ構成)
+17. [管理画面 (/admin)](#-管理画面-admin)
+18. [ディレクトリ構成](#-ディレクトリ構成)
 18. [注意事項](#-注意事項)
 19. [ライセンス](#-ライセンス)
 
@@ -900,11 +901,30 @@ npx firebase-tools@latest deploy --only firestore:rules --project your-project-i
 
 ### バックエンド（手動）
 
+**Dev Container（OrbStack）環境ではローカル Docker が使えないため、`gcloud builds submit` でクラウドビルドします。**
+
 ```bash
-bash scripts/deploy.sh
+source .env
+
+IMAGE_REPO="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/realestate-api/backend"
+IMAGE_TAG="${IMAGE_REPO}:latest"
+
+# Cloud Build でイメージビルド & Artifact Registry プッシュ
+cd backend
+gcloud builds submit --project "$GCP_PROJECT_ID" --tag "$IMAGE_TAG" --quiet .
+
+# Cloud Run デプロイ
+gcloud run deploy "$CLOUD_RUN_SERVICE_NAME" \
+  --image "$IMAGE_TAG" \
+  --region "$GCP_REGION" \
+  --project "$GCP_PROJECT_ID" \
+  --platform managed \
+  --allow-unauthenticated \
+  --set-env-vars "^|^GCP_PROJECT_ID=${GCP_PROJECT_ID}|GCP_REGION=${GCP_REGION}|GCS_CACHE_BUCKET=${GCS_CACHE_BUCKET}|..." \
+  --quiet
 ```
 
-`deploy.sh` は `.env` を読み込み、Docker ビルド → Artifact Registry プッシュ → Cloud Run デプロイまで一括。
+> **ローカル Docker が使える環境（macOS ネイティブ等）** では `bash scripts/deploy.sh` で Docker ビルド → プッシュ → デプロイを一括実行できます。
 
 > **環境変数の更新だけ行いたい場合**
 >
@@ -1015,6 +1035,52 @@ curl -X POST http://localhost:8080/api/lemonsqueezy/webhook \
 
 ---
 
+## 🛡 管理画面 (/admin)
+
+`ADMIN_EMAILS` 環境変数に登録されたメールアドレスのみアクセス可能な管理者専用ダッシュボード。
+
+### 機能一覧
+
+| タブ | 内容 |
+|---|---|
+| フィードバック | ユーザーからのフィードバック一覧・ステータス管理・AI プロンプト確認 |
+| ユーザー管理 | 登録ユーザー一覧（メール・名前・プラン・利用回数）・プラン変更 |
+| SNS 投稿 | X 投稿テンプレート一覧・下書き作成・投稿履歴 |
+| 広告レポート | GA4 連携の日次広告パフォーマンスレポート |
+
+### ユーザー管理の仕組み
+
+Firestore `users` コレクションのプラン情報と Firebase Auth のユーザーレコード（email / displayName）を `admin.auth().getUsers()` で一括取得して結合してレスポンスします。
+
+### GCP セットアップ要件（クロスプロジェクト構成）
+
+このプロジェクトは GCP プロジェクトが2つに分かれています：
+
+- `GCP_PROJECT_ID` = `realestate-report-2026` — Cloud Run / Artifact Registry
+- `FIREBASE_PROJECT_ID` = `realestate-report-2026-bf134` — Firebase Auth / Firestore / Storage
+
+バックエンドが Firebase Auth の管理 API を呼び出すには、以下の **両方** が必要です。
+
+**① Identity Toolkit API の有効化**（Cloud Run が動くプロジェクト側）
+
+```bash
+gcloud services enable identitytoolkit.googleapis.com \
+  --project realestate-report-2026
+```
+
+**② Cloud Run サービスアカウントへの Firebase Auth 読み取り権限付与**（Firebase プロジェクト側）
+
+```bash
+gcloud projects add-iam-policy-binding realestate-report-2026-bf134 \
+  --member="serviceAccount:realestate-api-sa@realestate-report-2026.iam.gserviceaccount.com" \
+  --role="roles/firebaseauth.viewer" \
+  --condition=None
+```
+
+> **注意**: Firestore 関連の権限と同様に、Firebase Auth の IAM は `FIREBASE_PROJECT_ID`（bf134）側に付与する必要があります。`GCP_PROJECT_ID` 側に付与しても効果がありません。
+
+---
+
 ## 📁 ディレクトリ構成
 
 ```
@@ -1032,6 +1098,7 @@ real-estate-report-system/
 │       ├── config.ts                   # 環境変数設定
 │       ├── routes/
 │       │   ├── property.ts             # /api/property/* — 取引データ・画像生成
+│       │   ├── admin.ts                # /api/admin/* — 管理画面 API（ADMIN_EMAILS 認可）
 │       │   ├── lemonsqueezy.ts         # Checkout + Webhook（ID Token + HMAC-SHA256）
 │       │   ├── posthog.ts              # PostHog Webhook（署名検証）
 │       │   └── waitlist.ts             # 旧ウェイトリスト（廃止予定）
