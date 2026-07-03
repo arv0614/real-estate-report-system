@@ -29,13 +29,13 @@
     "fetching": "Collecting transaction data...",
     "collectingData": "Aggregating historical transaction records...",
     "analyzingData": "Running statistical analysis on transaction data...",
-    "evaluatingArea": "Evaluating area characteristics & context...",
+    "evaluatingArea": "Aggregating area characteristics data...",
     "assessingHazard": "Fetching hazard & living environment data...",
-    "writingReport": "Writing expert analysis report...",
+    "writingReport": "Organising public data report...",
     "reviewingReport": "Reviewing and verifying report content...",
     "finalizing": "Final adjustments & polish...",
     "analyzing": "Analyzing area with AI...",
-    "generating": "Generating expert report...",
+    "generating": "Generating area data report...",
     "organizing": "Organizing data...",
     "displaying": "Preparing report...",
     "stepConnect": "Connect",
@@ -145,7 +145,7 @@
   },
   "Metadata": {
     "homeTitle": "Mekiki Research | Japan Property Analysis — Price & Risk in Seconds",
-    "homeDescription": "Instantly analyze any property in Japan. Official MLIT transaction data + AI area reports: price trends, flood risk, school zones, and more. Built for home buyers, investors, and agents."
+    "homeDescription": "Instantly analyze any property in Japan. Official MLIT transaction data + AI area reports: price trends, flood risk, school zones, and more. Built for home buyers, property researchers, and real estate agents."
   },
   "SearchForm": {
     "mapLoading": "Loading map...",
@@ -347,7 +347,7 @@
     "lifestyleAlt": "{municipality} lifestyle image",
     "lifestyleAltExpanded": "Lifestyle image — enlarged",
     "analyzing": "AI is analyzing this area…",
-    "analyzingNote": "Generating the 10-section expert report. This usually takes 20–60 seconds.",
+    "analyzingNote": "Generating the 10-section area data report. This usually takes 20–60 seconds.",
     "loadErrorTitle": "Failed to generate AI report"
   },
   "HistoryList": {

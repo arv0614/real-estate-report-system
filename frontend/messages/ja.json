@@ -29,13 +29,13 @@
     "fetching": "取引データを収集中...",
     "collectingData": "過去の取引データを集計中...",
     "analyzingData": "取引データを統計解析中...",
-    "evaluatingArea": "エリアの特性を総合評価中...",
+    "evaluatingArea": "エリアデータを集計中...",
     "assessingHazard": "ハザード・生活環境情報を取得中...",
-    "writingReport": "専門家レポートを執筆中...",
+    "writingReport": "公的データ集計レポートを整理中...",
     "reviewingReport": "レポートの内容を精査・検証中...",
     "finalizing": "最終調整・仕上げ中...",
     "analyzing": "AIでエリアを分析中...",
-    "generating": "専門家視点でレポートを生成中...",
+    "generating": "公的データを集計・整理中...",
     "organizing": "データを整理中...",
     "displaying": "レポートを表示中...",
     "stepConnect": "接続",
@@ -145,7 +145,7 @@
   },
   "Metadata": {
     "homeTitle": "物件目利きリサーチ | 国交省データ×AI分析で相場とリスクを即調査",
-    "homeDescription": "マイホーム・投資物件を検討中の方必見。国土交通省の実取引データとAI分析で相場・ハザードリスク・生活環境を即座にレポート化。購入前の不安をデータで解消します。"
+    "homeDescription": "不動産の購入・調査を検討中の方必見。国土交通省の実取引データとAI分析で相場・ハザードリスク・生活環境を即座にレポート化。購入前の不安を公的データで整理します。"
   },
   "SearchForm": {
     "mapLoading": "地図を読み込み中...",
@@ -347,7 +347,7 @@
     "lifestyleAlt": "{municipality}の暮らしイメージ",
     "lifestyleAltExpanded": "暮らしイメージ 拡大",
     "analyzing": "AI がこのエリアを分析中…",
-    "analyzingNote": "全10セクションのプロ向けレポートを生成しています。通常 20〜60 秒ほどかかります。",
+    "analyzingNote": "全10セクションのエリアデータ集計レポートを生成しています。通常 20〜60 秒ほどかかります。",
     "loadErrorTitle": "AI レポートの生成に失敗しました"
   },
   "HistoryList": {

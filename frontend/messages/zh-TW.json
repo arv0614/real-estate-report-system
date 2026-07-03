@@ -29,13 +29,13 @@
     "fetching": "正在收集成交資料...",
     "collectingData": "正在彙整歷史成交紀錄...",
     "analyzingData": "正在統計分析成交資料...",
-    "evaluatingArea": "正在綜合評估區域特性...",
+    "evaluatingArea": "正在彙整區域資料...",
     "assessingHazard": "正在取得災害風險與生活環境資訊...",
-    "writingReport": "正在撰寫專家分析報告...",
+    "writingReport": "正在整理公開資料報告...",
     "reviewingReport": "正在審視與驗證報告內容...",
     "finalizing": "最終調整與潤飾中...",
     "analyzing": "AI 正在分析區域...",
-    "generating": "正在以專家視角生成報告...",
+    "generating": "正在生成區域資料報告...",
     "organizing": "正在整理資料...",
     "displaying": "正在顯示報告...",
     "stepConnect": "連線",
@@ -145,7 +145,7 @@
   },
   "Metadata": {
     "homeTitle": "物件目利研究 | 以國交省資料 × AI 分析即時掌握行情與風險",
-    "homeDescription": "正在考慮購屋或投資物件的您必看。以國土交通省實際成交資料與 AI 分析,即刻產生行情、災害風險、生活環境的報告。讓資料消除購屋前的不安。"
+    "homeDescription": "正在考慮購屋或調查物件的您必看。以國土交通省實際成交資料與 AI 分析,即刻產生行情、災害風險、生活環境的報告。讓資料消除購屋前的不安。"
   },
   "SearchForm": {
     "mapLoading": "正在載入地圖...",
@@ -347,7 +347,7 @@
     "lifestyleAlt": "{municipality} 的生活意象",
     "lifestyleAltExpanded": "生活意象 放大圖",
     "analyzing": "AI 正在分析該區域…",
-    "analyzingNote": "正在生成 10 個章節的專業報告，通常需要 20–60 秒。",
+    "analyzingNote": "正在生成 10 個章節的區域資料報告，通常需要 20–60 秒。",
     "loadErrorTitle": "AI 報告生成失敗"
   },
   "HistoryList": {

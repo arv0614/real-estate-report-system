@@ -31,7 +31,7 @@ const SITE_META: Record<
     name: "物件目利きリサーチ",
     title: "物件目利きリサーチ | 国交省データ×AI分析で相場とリスクを即調査",
     description:
-      "マイホーム・投資物件を検討中の方必見。国土交通省の実取引データとAI分析で相場・ハザードリスク・生活環境を即座にレポート化。取引価格の推移分析・10項目エリアレポート・PDF出力まで対応。不動産投資家・購入検討者・エージェント向け精密調査ツール。",
+      "不動産の購入・調査を検討中の方必見。国土交通省の実取引データとAI分析で相場・ハザードリスク・生活環境を即座にレポート化。取引価格の推移分析・10項目エリアレポート・PDF出力まで対応。購入検討者・不動産エージェント向け公的データ閲覧ツール。",
     keywords: [
       "不動産調査レポート",
       "不動産 相場",
@@ -39,7 +39,7 @@ const SITE_META: Record<
       "不動産 取引価格",
       "ハザードマップ 不動産",
       "マイホーム 購入",
-      "不動産投資 調査",
+      "不動産 データ調査",
       "国土交通省 不動産情報",
       "不動産 AI分析",
       "物件調査 ツール",
@@ -50,14 +50,14 @@ const SITE_META: Record<
     name: "Mekiki Research",
     title: "Mekiki Research | Japan Property Analysis — Price & Risk in Seconds",
     description:
-      "Instantly analyze any property in Japan. Official MLIT transaction data + AI-powered area reports: price trends, flood & landslide risk, school zones, nearest stations, and more. Built for home buyers, investors, and real estate agents.",
+      "Instantly analyze any property in Japan. Official MLIT transaction data + AI-powered area reports: price trends, flood & landslide risk, school zones, nearest stations, and more. Built for home buyers, property researchers, and real estate agents.",
     keywords: [
       "Japan real estate analysis",
       "property price Japan",
       "MLIT property data",
       "hazard risk Japan",
       "home buying Japan",
-      "real estate investment Japan",
+      "real estate data Japan",
       "property report Japan",
       "AI area analysis",
     ],
@@ -67,14 +67,14 @@ const SITE_META: Record<
     name: "物件目利研究",
     title: "物件目利研究 | 以國交省資料 × AI 分析即時掌握行情與風險",
     description:
-      "正在考慮購屋或投資物件的您必看。以國土交通省實際成交資料與 AI 分析,即刻產生行情、災害風險、生活環境的報告。讓資料消除購屋前的不安。",
+      "正在考慮購屋或調查物件的您必看。以國土交通省實際成交資料與 AI 分析,即刻產生行情、災害風險、生活環境的報告。讓資料消除購屋前的不安。",
     keywords: [
       "日本不動產分析",
       "日本房價",
       "國交省 不動產資料",
       "災害風險 日本",
       "日本購屋",
-      "日本不動產投資",
+      "日本不動產調查",
       "日本物件調查",
       "AI 區域分析",
     ],
@@ -84,14 +84,14 @@ const SITE_META: Record<
     name: "物件目利研究",
     title: "物件目利研究 | 以国交省数据 × AI 分析即时掌握行情与风险",
     description:
-      "正在考虑购房或投资物件的您必看。以国土交通省实际成交数据与 AI 分析,即刻生成行情、灾害风险、生活环境的报告。让数据消除购房前的不安。",
+      "正在考虑购房或调查物件的您必看。以国土交通省实际成交数据与 AI 分析,即刻生成行情、灾害风险、生活环境的报告。让数据消除购房前的不安。",
     keywords: [
       "日本房地产分析",
       "日本房价",
       "国交省 房地产数据",
       "灾害风险 日本",
       "日本购房",
-      "日本房地产投资",
+      "日本房地产调查",
       "日本物件调查",
       "AI 区域分析",
     ],
@@ -157,7 +157,7 @@ export function generateStaticParams() {
 }
 
 const JSONLD_SHORT_DESCRIPTION: Record<SiteLocale, string> = {
-  ja: "国交省の実取引データ × AI分析で物件の相場・ハザードリスク・生活環境を即座にレポート化。マイホーム購入・不動産投資の精密調査ツール。",
+  ja: "国交省の実取引データ × AI分析で物件の相場・ハザードリスク・生活環境を即座にレポート化。マイホーム購入・不動産調査のための公的データ閲覧ツール。",
   en: "Instantly analyze any property in Japan — MLIT price data, hazard risk, neighborhood info, and AI area reports.",
   "zh-TW": "以國交省實際成交資料 × AI 分析,即刻產生物件行情、災害風險、生活環境的調查報告。",
   "zh-CN": "以国交省实际成交数据 × AI 分析,即刻生成物件行情、灾害风险、生活环境的调查报告。",
