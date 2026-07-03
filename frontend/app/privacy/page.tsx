@@ -64,7 +64,7 @@ export default function PrivacyPage() {
                     ["氏名（表示名）", "Googleアカウント連携時（Googleプロフィールより取得）"],
                     ["検索履歴（緯度経度・エリア情報）", "ログイン中ユーザーが不動産調査を実行した際"],
                     ["利用状況・行動ログ", "PostHogによる自動収集（後述）"],
-                    ["決済関連情報", "有料プランご利用時（Stripeによる収集。詳細は後述）"],
+                    ["決済関連情報", "有料プランご利用時（Lemon Squeezyによる収集。詳細は後述）"],
                   ].map(([type, timing]) => (
                     <tr key={type} className="hover:bg-slate-50">
                       <td className="px-4 py-2.5 font-medium text-slate-600">{type}</td>
@@ -122,17 +122,17 @@ export default function PrivacyPage() {
                 </a>
               </div>
 
-              {/* Stripe */}
+              {/* Lemon Squeezy */}
               <div className="border border-slate-200 rounded-xl p-4 bg-white">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-purple-100 text-purple-700">決済</span>
-                  <span className="font-semibold text-slate-800">Stripe（Stripe, Inc.）</span>
+                  <span className="font-semibold text-slate-800">Lemon Squeezy</span>
                 </div>
                 <p className="text-slate-600">
-                  有料プランの決済処理に使用します。クレジットカード番号等の決済情報はStripeが直接取得・管理し、<strong className="text-slate-800">運営者のサーバーには一切保存されません</strong>。
+                  有料プランの決済処理に使用します。クレジットカード番号等の決済情報はLemon Squeezyが直接取得・管理し、<strong className="text-slate-800">運営者のサーバーには一切保存されません</strong>。
                 </p>
                 <a href="https://stripe.com/jp/privacy" target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline mt-1.5 inline-block">
-                  Stripe プライバシーポリシー →
+                  Lemon Squeezy プライバシーポリシー →
                 </a>
               </div>
 
@@ -257,7 +257,7 @@ export default function PrivacyPage() {
                       purpose: "ユーザー認証・データ保管",
                     },
                     {
-                      dest: "Stripe, Inc.\n（米国）",
+                      dest: "Lemon Squeezy\n（米国）",
                       info: "決済フォーム入力情報（カード番号等）・メールアドレス",
                       purpose: "決済処理（当サービスサーバーには保存されません）",
                     },

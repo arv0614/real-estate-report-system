@@ -125,8 +125,8 @@ export default async function LocaleAboutPage({ params }: PageProps) {
     {
       label: t("legalRow8label"),
       value: isEn
-        ? "Credit card via Stripe (Visa / Mastercard / JCB / Amex)"
-        : "クレジットカード決済（Stripe）。Visa / Mastercard / JCB / American Express 対応予定",
+        ? "Credit card via Lemon Squeezy (Visa / Mastercard / JCB / Amex)"
+        : "クレジットカード決済（Lemon Squeezy）。Visa / Mastercard / JCB / American Express 対応",
     },
     {
       label: t("legalRow9label"),

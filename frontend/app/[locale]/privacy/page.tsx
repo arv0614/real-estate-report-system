@@ -76,7 +76,7 @@ export default async function LocalePrivacyPage({ params }: PageProps) {
           purpose: "User authentication & data storage",
         },
         {
-          dest: "Stripe, Inc.\n(USA)",
+          dest: "Lemon Squeezy\n(USA)",
           info: "Payment form input (card number etc.), email address",
           purpose: "Payment processing (not stored on our servers)",
         },
@@ -93,7 +93,7 @@ export default async function LocalePrivacyPage({ params }: PageProps) {
           purpose: "ユーザー認証・データ保管",
         },
         {
-          dest: "Stripe, Inc.\n（米国）",
+          dest: "Lemon Squeezy\n（米国）",
           info: "決済フォーム入力情報（カード番号等）・メールアドレス",
           purpose: "決済処理（当サービスサーバーには保存されません）",
         },
@@ -179,12 +179,12 @@ export default async function LocalePrivacyPage({ params }: PageProps) {
               <ThirdPartyBlock
                 badge={isEn ? "Payments" : "決済"}
                 badgeColor="bg-purple-100 text-purple-700"
-                name="Stripe (Stripe, Inc.)"
+                name="Lemon Squeezy"
                 desc={isEn
-                  ? "Used for paid plan payment processing. Credit card information is managed directly by Stripe and is not stored on Operator servers."
-                  : "有料プランの決済処理に使用します。クレジットカード番号等の決済情報はStripeが直接取得・管理し、運営者のサーバーには一切保存されません。"}
+                  ? "Used for paid plan payment processing. Credit card information is managed directly by Lemon Squeezy and is not stored on Operator servers."
+                  : "有料プランの決済処理に使用します。クレジットカード番号等の決済情報はLemon Squeezyが直接取得・管理し、運営者のサーバーには一切保存されません。"}
                 privacyUrl="https://stripe.com/privacy"
-                privacyLabel={isEn ? "Stripe Privacy Policy" : "Stripe プライバシーポリシー"}
+                privacyLabel={isEn ? "Lemon Squeezy Privacy Policy" : "Lemon Squeezy プライバシーポリシー"}
               />
               <ThirdPartyBlock
                 badge={isEn ? "Analytics" : "アクセス解析"}

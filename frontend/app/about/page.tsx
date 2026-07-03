@@ -318,7 +318,7 @@ export default function AboutPage() {
               label: "販売価格",
               value: "Guestプラン: 無料 / Freeプラン: 無料（Googleアカウント登録必須）/ Proプラン: 月額980円（税込）",
             },
-            { label: "お支払方法", value: "クレジットカード決済（Stripe）。Visa / Mastercard / JCB / American Express 対応予定" },
+            { label: "お支払方法", value: "クレジットカード決済（Lemon Squeezy）。Visa / Mastercard / JCB / American Express 対応" },
             { label: "お支払時期", value: "Proプランへのアップグレード時に課金が発生し、以降は毎月同日に自動更新されます" },
             {
               label: "返金・キャンセルポリシー",
