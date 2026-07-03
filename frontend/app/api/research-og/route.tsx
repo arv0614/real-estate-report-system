@@ -86,12 +86,12 @@ export async function GET(req: NextRequest) {
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               <div style={{ display: "flex", width: "8px", height: "8px", borderRadius: "50%", background: color }} />
               <div style={{ display: "flex", fontSize: "18px", color: "#94a3b8" }}>
-                総合評価 {grade}
+                公的データ集計グレード {grade}
                 {score ? `（${score}点）` : ""}
               </div>
             </div>
             <div style={{ display: "flex", fontSize: "16px", color: "rgba(148,163,184,0.7)" }}>
-              相場・災害リスク・将来性を総合分析
+              公的データの集計結果を表示
             </div>
           </div>
         </div>
