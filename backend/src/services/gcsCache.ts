@@ -68,6 +68,26 @@ function isValid(cached: CachedData): boolean {
 }
 
 /**
+ * GCS から任意パスのオブジェクトを取得して文字列として返す。
+ * ファイルが存在しない / GCS 未設定 / エラー時はすべて null を返す。
+ */
+export async function readGcsObject(objectPath: string): Promise<string | null> {
+  if (!config.gcs.bucketName) return null;
+  try {
+    const bucket = await getBucket();
+    if (!bucket) return null;
+    const file = bucket.file(objectPath);
+    const [exists] = await file.exists();
+    if (!exists) return null;
+    const [contents] = await file.download();
+    return contents.toString("utf-8");
+  } catch (err) {
+    console.error(`[GCS] Read error for ${objectPath}:`, err);
+    return null;
+  }
+}
+
+/**
  * GCSからキャッシュを読み込む
  * - キャッシュ無効・期限切れ・GCS エラーいずれの場合も null を返す
  * - 例外は呼び出し側に伝播させない（API ハンドラを止めないため）

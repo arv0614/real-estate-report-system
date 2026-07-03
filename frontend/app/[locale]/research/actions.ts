@@ -182,20 +182,47 @@ export async function analyzeProperty(input: PropertyInput): Promise<AnalyzeResu
       )
     : undefined;
 
-  // ── Step 4: e-Stat (skipped for forest) ───────────────────────────────────
+  // ── Step 4: hoanrin (forest) + e-Stat (mansion/house) in parallel ─────────
+  // hoanrin needs cityCode (known after MLIT fetch), so runs here rather than step 3.
+  type HoanrinStatus = { status: "inside" | "outside" | "unknown"; refYear: string };
+  let hoanrin: HoanrinStatus | null = null;
   let population = null;
+
+  const [hoanrinResult, populationResult] = await Promise.allSettled([
+    // hoanrin — forest only
+    (isForest && apiBase)
+      ? (() => {
+          const url = `${apiBase}/api/forest/hoanrin?lat=${coords.lat}&lng=${coords.lng}${cityCode ? `&cityCode=${cityCode}` : ""}`;
+          return fetch(url, { signal: AbortSignal.timeout(10000) }).then((r) => r.ok ? r.json() as Promise<HoanrinStatus> : null);
+        })()
+      : Promise.resolve(null),
+    // population — mansion/house only
+    (!isForest && cityCode)
+      ? (() => {
+          const estatKey = process.env.ESTAT_API_KEY ?? "";
+          if (!estatKey) {
+            console.error("[analyzeProperty] ESTAT_API_KEY is not configured");
+            return Promise.resolve(null);
+          }
+          return fetchPopulationTrend(cityCode, estatKey).then((r) => r.data ?? null);
+        })()
+      : Promise.resolve(null),
+  ]);
+
+  if (isForest && hoanrinResult.status === "fulfilled" && hoanrinResult.value) {
+    hoanrin = hoanrinResult.value;
+  } else if (isForest && hoanrinResult.status === "rejected") {
+    console.error("[hoanrin] fetch failed:", hoanrinResult.reason);
+  }
+
   if (!isForest) {
-    const estatKey = process.env.ESTAT_API_KEY ?? "";
+    if (populationResult.status === "fulfilled") {
+      population = populationResult.value;
+    } else {
+      console.error("[population] fetch failed:", populationResult.reason);
+    }
     if (!cityCode) {
       console.error("[analyzeProperty] cityCode is null — cannot fetch population data");
-    } else if (!estatKey) {
-      console.error("[analyzeProperty] ESTAT_API_KEY is not configured");
-    } else {
-      const popResult = await fetchPopulationTrend(cityCode, estatKey);
-      population = popResult.data;
-      if (!population) {
-        console.error(`[analyzeProperty] population fetch failed: ${popResult.failReason} (cityCode=${cityCode})`);
-      }
     }
   }
 
@@ -226,7 +253,7 @@ export async function analyzeProperty(input: PropertyInput): Promise<AnalyzeResu
     ...(isForest && {
       forestTerrain,
       sediment,
-      hoanrin: null, // P2-9 で実装予定
+      hoanrin,
       forestScore,
       forestStage,
       forestStageLabel,

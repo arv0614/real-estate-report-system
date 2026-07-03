@@ -297,7 +297,8 @@ export function UnifiedInputPanel({
         </div>
         <div className="grid grid-cols-2 gap-2">
           {(["mansion", "house", "forest", "farmland"] as const).map((pt) => {
-            const isComingSoon = pt === "forest" || pt === "farmland";
+            // farmland は準備中のまま。forest は本実装済み。
+            const isComingSoon = pt === "farmland";
             const label =
               pt === "mansion"  ? (isEn ? "🏢 Apartment" : "🏢 マンション") :
               pt === "house"    ? (isEn ? "🏠 House"     : "🏠 戸建") :
@@ -317,7 +318,9 @@ export function UnifiedInputPanel({
                   propertyType === pt
                     ? isComingSoon
                       ? "border-slate-400 bg-slate-400 text-white shadow-sm"
-                      : "border-teal-600 bg-teal-600 text-white shadow-sm"
+                      : pt === "forest"
+                        ? "border-green-700 bg-green-700 text-white shadow-sm"
+                        : "border-teal-600 bg-teal-600 text-white shadow-sm"
                     : isComingSoon
                       ? "border-slate-200 bg-slate-50 text-slate-400"
                       : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
@@ -333,8 +336,8 @@ export function UnifiedInputPanel({
         </div>
       </section>
 
-      {/* ── Coming soon panel (forest / farmland) ─────────────────────────────── */}
-      {(propertyType === "forest" || propertyType === "farmland") && (
+      {/* ── Coming soon panel (farmland のみ) ───────────────────────────────── */}
+      {propertyType === "farmland" && (
         <ComingSoonPanel
           type={propertyType}
           onBack={() => { onPropertyTypeChange("mansion"); setTypeSelected(false); }}
@@ -342,8 +345,8 @@ export function UnifiedInputPanel({
         />
       )}
 
-      {/* ── STEP 2〜4: Hidden for coming-soon types ───────────────────────────── */}
-      {propertyType !== "forest" && propertyType !== "farmland" && (<>
+      {/* ── STEP 2〜4: mansion / house / forest で表示 ───────────────────────── */}
+      {propertyType !== "farmland" && (<>
 
       {/* ── STEP 2: Purpose / mode ─────────────────────────────────────────────── */}
       <section>

@@ -415,26 +415,28 @@ export const PropertyForm = forwardRef<PropertyFormHandle, Props>(function Prope
         </div>
       </div>
 
-      {/* Built year */}
-      <div>
-        <label className="block text-xs font-semibold text-slate-600 mb-1">
-          {t.yearLabel}
-          {autoFilled.builtYear    && <AutoBadge />}
-          {fallbackFilled.builtYear && <FallbackBadge />}
-          {defaultsLoading && !builtYear && <Loader2 className="inline w-3 h-3 ml-1 animate-spin text-blue-400" />}
-        </label>
-        <input type="number" inputMode="decimal" value={builtYear}
-          onChange={(e) => { setBuiltYear(e.target.value); setAutoFilled((p) => ({ ...p, builtYear: false })); setFallbackFilled((p) => ({ ...p, builtYear: false })); }}
-          placeholder={defaultsLoading && !builtYear ? t.loadingHint : hasAny ? "" : t.yearPh}
-          min={1900} max={currentYear} step="1"
-          className={inputCls(!!errors.builtYear, autoFilled.builtYear || fallbackFilled.builtYear)} />
-        {autoFilled.builtYear
-          ? <p className="text-xs text-yellow-700 mt-0.5">{t.autoHint}</p>
-          : fallbackFilled.builtYear
-            ? <p className="text-xs text-orange-700 mt-0.5">{t.fallbackHint}</p>
-            : errors.builtYear ? <p className="text-xs text-red-600 mt-0.5">{errors.builtYear}</p>
-            : !builtYear && !defaultsLoading && <p className="text-xs text-slate-400 mt-0.5">{t.optHint}</p>}
-      </div>
+      {/* Built year — 山林(forest)では非表示 */}
+      {propertyType !== "forest" && (
+        <div>
+          <label className="block text-xs font-semibold text-slate-600 mb-1">
+            {t.yearLabel}
+            {autoFilled.builtYear    && <AutoBadge />}
+            {fallbackFilled.builtYear && <FallbackBadge />}
+            {defaultsLoading && !builtYear && <Loader2 className="inline w-3 h-3 ml-1 animate-spin text-blue-400" />}
+          </label>
+          <input type="number" inputMode="decimal" value={builtYear}
+            onChange={(e) => { setBuiltYear(e.target.value); setAutoFilled((p) => ({ ...p, builtYear: false })); setFallbackFilled((p) => ({ ...p, builtYear: false })); }}
+            placeholder={defaultsLoading && !builtYear ? t.loadingHint : hasAny ? "" : t.yearPh}
+            min={1900} max={currentYear} step="1"
+            className={inputCls(!!errors.builtYear, autoFilled.builtYear || fallbackFilled.builtYear)} />
+          {autoFilled.builtYear
+            ? <p className="text-xs text-yellow-700 mt-0.5">{t.autoHint}</p>
+            : fallbackFilled.builtYear
+              ? <p className="text-xs text-orange-700 mt-0.5">{t.fallbackHint}</p>
+              : errors.builtYear ? <p className="text-xs text-red-600 mt-0.5">{errors.builtYear}</p>
+              : !builtYear && !defaultsLoading && <p className="text-xs text-slate-400 mt-0.5">{t.optHint}</p>}
+        </div>
+      )}
 
       {showSubmitButton && (
         <button type="submit" disabled={loading}

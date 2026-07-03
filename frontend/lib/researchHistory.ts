@@ -7,7 +7,7 @@ export interface ResearchSessionData {
   lng: number;
   price: number;
   area: number;
-  builtYear: number;
+  builtYear?: number; // optional — absent for forest/farmland sessions; present in all pre-P2 sessions
   mode: "home" | "investment";
   propertyType?: "house" | "mansion" | "forest" | "farmland"; // optional — absent in sessions saved before U9
 }

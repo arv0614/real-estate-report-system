@@ -12,6 +12,7 @@ import waitlistRoutes from "./routes/waitlist";
 import feedbackRoutes from "./routes/feedback";
 import adminRoutes from "./routes/admin";
 import bookmarksRoutes from "./routes/bookmarks";
+import forestRoutes from "./routes/forest";
 
 const app = new Hono();
 
@@ -70,6 +71,7 @@ app.route("/api/waitlist", waitlistRoutes);
 app.route("/api/feedback", feedbackRoutes);
 app.route("/api/admin", adminRoutes);
 app.route("/api/bookmarks", bookmarksRoutes);
+app.route("/api/forest", forestRoutes);
 
 // 404
 app.notFound((c) => c.json({ error: "Not Found" }, 404));

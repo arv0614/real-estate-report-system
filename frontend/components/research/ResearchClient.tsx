@@ -21,6 +21,7 @@ import { SearchConditionCard } from "./SearchConditionCard";
 import { AreaClient } from "./AreaClient";
 import { UnifiedInputPanel } from "./UnifiedInputPanel";
 import { PopulationChart } from "./PopulationChart";
+import { ForestResultPanel } from "./forest/ForestResultPanel";
 
 const ResearchMap = dynamic(
   () => import("./ResearchMap").then((m) => m.ResearchMap),
@@ -130,13 +131,14 @@ export function ResearchClient({
         setResultKind("property");
         setViewMode("result");
         if (user) {
+          const isForestSession = input.propertyType === "forest" || input.propertyType === "farmland";
           saveResearchSession(user.uid, {
             address: input.address,
             lat: res.coords.lat,
             lng: res.coords.lng,
             price: input.price ?? 0,
             area: input.area ?? 0,
-            builtYear: input.builtYear ?? new Date().getFullYear(),
+            ...(isForestSession ? {} : { builtYear: input.builtYear ?? new Date().getFullYear() }),
             mode: input.mode,
             propertyType: input.propertyType,
           }).catch(() => {});
@@ -243,8 +245,27 @@ export function ResearchClient({
         </div>
       )}
 
-      {/* ── RESULT: property ── */}
-      {viewMode === "result" && resultKind === "property" && propertyResult && propertyResult.ok && !isPending && (
+      {/* ── RESULT: property (forest / farmland) ── */}
+      {viewMode === "result" && resultKind === "property" && propertyResult && propertyResult.ok && !isPending &&
+        (propertyResult.input.propertyType === "forest" || propertyResult.input.propertyType === "farmland") && (
+        <div className="space-y-4">
+          <SearchConditionCard result={propertyResult} isEn={isEn} onReenter={handleBackToInput} />
+          <DataDisclaimer isEn={isEn} />
+          <ForestResultPanel result={propertyResult} />
+          <DataDisclaimer isEn={isEn} />
+          <button
+            type="button"
+            onClick={handleBackToInput}
+            className="w-full py-3 rounded-xl border border-slate-200 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-colors"
+          >
+            {isEn ? "← Search another location" : "← 別の場所を調べる"}
+          </button>
+        </div>
+      )}
+
+      {/* ── RESULT: property (mansion / house) ── */}
+      {viewMode === "result" && resultKind === "property" && propertyResult && propertyResult.ok && !isPending &&
+        propertyResult.input.propertyType !== "forest" && propertyResult.input.propertyType !== "farmland" && (
         <div className="space-y-4">
           {/* Search condition card — topmost */}
           <SearchConditionCard
