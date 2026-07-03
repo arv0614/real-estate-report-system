@@ -529,7 +529,7 @@
     "s4i1": "This service offers a free plan and a paid Pro plan (¥980/month incl. tax). Features and limits follow what is displayed within the service.",
     "s4i2": "Paid plan payments are processed through Lemon Squeezy. Credit card information is managed directly by Lemon Squeezy and is not stored on Operator servers.",
     "s4i3": "The Pro plan may be cancelled at any time. Upon cancellation, access continues until the end of the billing month. No pro-rated refunds are provided, except for service-critical failures.",
-    "s4i4": "Prices may change with advance notice on the service.",
+    "s4i4": "If fees are changed, the Operator will notify Users at least 30 days in advance via the service or email. Users who do not agree to the change may cancel their plan before the change takes effect.",
     "s5title": "Article 5 — Prohibited Activities",
     "s5lead": "Users must not engage in the following activities when using this service:",
     "s5i1": "Automated data collection (scraping, crawling, etc.) of service data or content",
@@ -540,7 +540,7 @@
     "s5i6": "Any activity that violates laws or public order and morals",
     "s5i7": "Any other activity deemed inappropriate by the Operator",
     "s6title": "Article 6 — Disclaimer",
-    "s6i1": "All information provided by this service is for reference only. The Operator makes no guarantees as to accuracy, completeness, or timeliness, and accepts no liability for any damages arising from its use.",
+    "s6i1": "All information provided by this service is for reference only. The Operator makes no guarantees as to accuracy, completeness, or timeliness. In no event shall the Operator's total liability for any damages exceed the monthly subscription fee paid by the User in the month in which the damage occurred, regardless of cause. This limitation does not apply to damages caused by the Operator's wilful misconduct or gross negligence.",
     "s6i2": "The Operator accepts no liability for damages caused by system failures, maintenance, or outages of third-party services (Firebase, Lemon Squeezy, MLIT API, etc.).",
     "s6i3": "The Operator may change or discontinue the service without prior notice.",
     "s62title": "Article 6-2 — AI-Generated Content",
@@ -556,7 +556,7 @@
     "s7title": "Article 7 — Intellectual Property",
     "s7p1": "Copyright and other intellectual property rights in the content (text, design, logos, report text, etc.) included in this service belong to the Operator or the respective rights holders.",
     "s8title": "Article 8 — Amendments to Terms",
-    "s8p1": "The Operator may amend these Terms at any time when deemed necessary. Amended Terms take effect upon publication on the service.",
+    "s8p1": "The Operator may amend these Terms without obtaining individual consent from Users, pursuant to Article 548-4 of the Civil Code of Japan. When making such amendments, the Operator will notify Users of the changes and the amended Terms via the service or email a reasonable period before the amendments take effect.",
     "s9title": "Article 9 — Governing Law & Jurisdiction",
     "s9p1": "These Terms are governed by the laws of Japan. Any disputes shall be subject to the exclusive jurisdiction of the Tokyo District Court as the court of first instance.",
     "contactTitle": "Contact",
@@ -567,7 +567,8 @@
     "footerPrivacy": "Privacy Policy",
     "footerCommercial": "Legal (JP)",
     "footerLicenses": "OSS Licenses",
-    "footerTop": "Back to Top"
+    "footerTop": "Back to Top",
+    "s4i5": "Paid plans may be cancelled through the Lemon Squeezy customer portal. Please visit 'Manage Subscription' on your profile page to cancel. After cancellation, you may continue to use the Pro plan until the end of the current billing period."
   },
   "PrivacyPage": {
     "title": "Privacy Policy",
