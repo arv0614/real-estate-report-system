@@ -33,7 +33,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
     : `${SITE_URL}/api/og?address=${encodeURIComponent(isEn ? "Property Analysis" : "物件リサーチ")}`;
 
   const title = grade && area
-    ? (isEn ? `${area} — Grade ${grade} | Property Research` : `${area} 評価${grade} | 物件リサーチ`)
+    ? (isEn ? `${area} — Public Data Grade ${grade} | Property Research` : `${area} 公的データ集計グレード${grade} | 物件リサーチ`)
     : defaultTitle;
 
   return {
