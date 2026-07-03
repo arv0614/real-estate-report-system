@@ -4,12 +4,17 @@ import { geocodeAddress } from "@/lib/geocode";
 import { fetchSeismicData, fetchTerrainData } from "@/lib/research/seismicApi";
 import { fetchPopulationTrend } from "@/lib/research/populationApi";
 import { PropertyInputSchema } from "@/lib/schemas/propertyInput";
-import { stagedSimilarSearch } from "@/lib/research/similarSearch";
+import { stagedSimilarSearch, forestSimilarSearch } from "@/lib/research/similarSearch";
+import { fetchForestTerrain } from "@/lib/research/forestTerrainApi";
+import { fetchSedimentData } from "@/lib/research/sedimentApi";
+import { calcForestScore } from "@/lib/scoring/forestScore";
 import { fetchAreaDefaults } from "./areaDefaultsActions";
 import type { TransactionRecord } from "@/types/api";
 import type { PropertyInput, AnalyzeResult, SimilarTx, SearchRange } from "@/types/research";
 import { perfLog } from "@/lib/debug/perfLog";
 import { FALLBACK_DEFAULTS } from "@/lib/research/fallbackDefaults";
+
+const IS_FOREST = (t: string) => t === "forest" || t === "farmland";
 
 export async function analyzeProperty(input: PropertyInput): Promise<AnalyzeResult> {
   const _t0 = Date.now();
@@ -45,7 +50,6 @@ export async function analyzeProperty(input: PropertyInput): Promise<AnalyzeResu
   const autoFilledFields: string[]     = [];
   const fallbackFilledFields: string[] = [];
 
-  // Collect what the client already filled (area median or national fallback)
   if (valid.autoFilled?.price)      autoFilledFields.push("price");
   if (valid.autoFilled?.area)       autoFilledFields.push("area");
   if (valid.autoFilled?.builtYear)  autoFilledFields.push("builtYear");
@@ -58,9 +62,10 @@ export async function analyzeProperty(input: PropertyInput): Promise<AnalyzeResu
   let builtYear = valid.builtYear;
 
   const propertyType = valid.propertyType ?? "mansion";
+  const isForest = IS_FOREST(propertyType);
 
-  // Server-side fill for fields still missing after client auto-fill
-  if (price === undefined || area === undefined || builtYear === undefined) {
+  // Server-side fill — forest mode skips builtYear
+  if (price === undefined || area === undefined || (!isForest && builtYear === undefined)) {
     const defaults = await fetchAreaDefaults(coords.lat, coords.lng, propertyType);
     const fb = FALLBACK_DEFAULTS[propertyType];
     const hasSamples = defaults.sampleSize >= 5;
@@ -77,7 +82,7 @@ export async function analyzeProperty(input: PropertyInput): Promise<AnalyzeResu
       if (hasSamples) { if (!autoFilledFields.includes("area"))      autoFilledFields.push("area");      }
       else            { if (!fallbackFilledFields.includes("area"))   fallbackFilledFields.push("area");  }
     }
-    if (builtYear === undefined) {
+    if (!isForest && builtYear === undefined) {
       const val = hasSamples && defaults.builtYearMedian !== null ? defaults.builtYearMedian : fb.builtYearMedian!;
       builtYear = val;
       if (hasSamples) { if (!autoFilledFields.includes("builtYear"))     autoFilledFields.push("builtYear");     }
@@ -87,17 +92,22 @@ export async function analyzeProperty(input: PropertyInput): Promise<AnalyzeResu
 
   const apiBase = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
 
-  // ── Step 3: Parallel fetch (MLIT + J-SHIS + GSI) ──────────────────────────
-  const [mlitResult, seismicResult, terrainResult] = await Promise.allSettled([
-    apiBase
-      ? fetch(
-          `${apiBase}/api/property/transactions?lat=${coords.lat}&lng=${coords.lng}&zoom=14&locale=ja`,
-          { cache: "no-store", signal: AbortSignal.timeout(20000) }
-        ).then((r) => (r.ok ? r.json() : null))
-      : Promise.resolve(null),
-    fetchSeismicData(coords.lat, coords.lng),
-    fetchTerrainData(coords.lat, coords.lng),
-  ]);
+  // ── Step 3: Parallel fetch ─────────────────────────────────────────────────
+  // Forest mode: add forestTerrain + sediment alongside seismic/terrain
+  // Population is NOT fetched for forest.
+  const [mlitResult, seismicResult, terrainResult, forestTerrainResult, sedimentResult] =
+    await Promise.allSettled([
+      apiBase
+        ? fetch(
+            `${apiBase}/api/property/transactions?lat=${coords.lat}&lng=${coords.lng}&zoom=14&locale=ja`,
+            { cache: "no-store", signal: AbortSignal.timeout(20000) }
+          ).then((r) => (r.ok ? r.json() : null))
+        : Promise.resolve(null),
+      fetchSeismicData(coords.lat, coords.lng),
+      fetchTerrainData(coords.lat, coords.lng),
+      isForest ? fetchForestTerrain(coords.lat, coords.lng) : Promise.resolve(null),
+      isForest ? fetchSedimentData(coords.lat, coords.lng) : Promise.resolve(null),
+    ]);
 
   // ── Process MLIT ───────────────────────────────────────────────────────────
   let hazard = null;
@@ -107,6 +117,9 @@ export async function analyzeProperty(input: PropertyInput): Promise<AnalyzeResu
   let searchRange: SearchRange | null = null;
   let searchRangeLabel: string | null = null;
 
+  let forestStage = null;
+  let forestStageLabel = null;
+
   if (mlitResult.status === "fulfilled" && mlitResult.value) {
     const data = mlitResult.value;
     hazard = data.hazard ?? null;
@@ -114,7 +127,19 @@ export async function analyzeProperty(input: PropertyInput): Promise<AnalyzeResu
     const records: TransactionRecord[] = data.data?.data ?? [];
     totalFetched = records.length;
 
-    if (area !== undefined && builtYear !== undefined) {
+    if (isForest) {
+      // Forest: async staged search with prefecture-level fallback
+      const forestResult = await forestSimilarSearch(
+        records,
+        cityCode,
+        currentYear,
+        area,
+        propertyType as "forest" | "farmland"
+      );
+      similar = forestResult.similar;
+      forestStage = forestResult.forestStage;
+      forestStageLabel = forestResult.forestStageLabel;
+    } else if (area !== undefined && builtYear !== undefined) {
       const inputAge = currentYear - builtYear;
       const firstRecord = records[0];
       const districtName: string | null = firstRecord?.districtName ?? null;
@@ -138,22 +163,43 @@ export async function analyzeProperty(input: PropertyInput): Promise<AnalyzeResu
   const seismic = seismicResult.status === "fulfilled" ? seismicResult.value : null;
   const terrain = terrainResult.status === "fulfilled" ? terrainResult.value : null;
 
-  // ── Step 4: e-Stat (sequential — needs cityCode) ───────────────────────────
-  const estatKey = process.env.ESTAT_API_KEY ?? "";
+  // Forest-specific results
+  const forestTerrain = isForest && forestTerrainResult.status === "fulfilled"
+    ? forestTerrainResult.value
+    : undefined;
+  const sediment = isForest && sedimentResult.status === "fulfilled"
+    ? sedimentResult.value
+    : undefined;
+
+  // Forest score
+  const forestScore = isForest
+    ? calcForestScore(
+        forestTerrain ?? null,
+        sediment ?? null,
+        similar.length > 0 || forestStage
+          ? { similar, forestStage, forestStageLabel }
+          : null
+      )
+    : undefined;
+
+  // ── Step 4: e-Stat (skipped for forest) ───────────────────────────────────
   let population = null;
-  if (!cityCode) {
-    console.error("[analyzeProperty] cityCode is null — cannot fetch population data");
-  } else if (!estatKey) {
-    console.error("[analyzeProperty] ESTAT_API_KEY is not configured");
-  } else {
-    const popResult = await fetchPopulationTrend(cityCode, estatKey);
-    population = popResult.data;
-    if (!population) {
-      console.error(`[analyzeProperty] population fetch failed: ${popResult.failReason} (cityCode=${cityCode})`);
+  if (!isForest) {
+    const estatKey = process.env.ESTAT_API_KEY ?? "";
+    if (!cityCode) {
+      console.error("[analyzeProperty] cityCode is null — cannot fetch population data");
+    } else if (!estatKey) {
+      console.error("[analyzeProperty] ESTAT_API_KEY is not configured");
+    } else {
+      const popResult = await fetchPopulationTrend(cityCode, estatKey);
+      population = popResult.data;
+      if (!population) {
+        console.error(`[analyzeProperty] population fetch failed: ${popResult.failReason} (cityCode=${cityCode})`);
+      }
     }
   }
 
-  perfLog("analyzeProperty total", Date.now() - _t0, { address: valid.address });
+  perfLog("analyzeProperty total", Date.now() - _t0, { address: valid.address, propertyType });
   return {
     ok: true,
     coords,
@@ -176,5 +222,14 @@ export async function analyzeProperty(input: PropertyInput): Promise<AnalyzeResu
     totalFetched,
     autoFilledFields,
     fallbackFilledFields,
+    // forest optional fields (undefined for mansion/house)
+    ...(isForest && {
+      forestTerrain,
+      sediment,
+      hoanrin: null, // P2-9 で実装予定
+      forestScore,
+      forestStage,
+      forestStageLabel,
+    }),
   };
 }
