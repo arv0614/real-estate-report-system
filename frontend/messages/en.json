@@ -210,7 +210,8 @@
     "ctaUpgradeTitle": "Upgrade to Pro — Unlock Full Power",
     "ctaUpgradeBody": "Unlimited research, PDF reports for clients, AI lifestyle images — all for ¥980/month. Same tools the pros use.",
     "ctaUpgradeBtn": "Upgrade to Pro Now →",
-    "checkoutLoading": "Processing..."
+    "checkoutLoading": "Processing...",
+    "consentLabel": "I agree to the Terms of Service and Privacy Policy"
   },
   "ReportPage": {
     "backLink": "← Back to Home",
@@ -691,7 +692,14 @@
     "errorInvalidCredential": "Incorrect email or password.",
     "errorTooManyRequests": "Too many attempts. Please wait and try again.",
     "errorNetwork": "Network error. Please check your connection.",
-    "errorUnknown": "Authentication failed. Please try again."
+    "errorUnknown": "Authentication failed. Please try again.",
+    "consentText": "By signing in or registering, you agree to our ",
+    "consentTerms": "Terms of Service",
+    "consentTermsHref": "/en/terms",
+    "consentAnd": " and ",
+    "consentPrivacy": "Privacy Policy",
+    "consentPrivacyHref": "/en/privacy",
+    "consentSuffix": "."
   },
   "ShareActions": {
     "shareTitle": "Share Results",

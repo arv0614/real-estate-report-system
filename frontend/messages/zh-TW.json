@@ -210,7 +210,8 @@
     "ctaUpgradeTitle": "Pro 方案讓調查能力最大化",
     "ctaUpgradeBody": "搜尋次數無限制、商談用 PDF 報告輸出、AI 生活意象生成。每月 ¥980 即可獲得專業同等的調查能力。",
     "ctaUpgradeBtn": "立即升級至 Pro →",
-    "checkoutLoading": "處理中..."
+    "checkoutLoading": "處理中...",
+    "consentLabel": "我同意使用條款及隱私權政策"
   },
   "ReportPage": {
     "backLink": "← 返回首頁",
@@ -691,7 +692,14 @@
     "errorInvalidCredential": "電子郵件或密碼不正確。",
     "errorTooManyRequests": "請求過於頻繁,請稍後再試。",
     "errorNetwork": "網路錯誤,請檢查連線。",
-    "errorUnknown": "認證失敗,請再試一次。"
+    "errorUnknown": "認證失敗,請再試一次。",
+    "consentText": "登入或註冊，即代表您同意我們的",
+    "consentTerms": "使用條款",
+    "consentTermsHref": "/zh-TW/terms",
+    "consentAnd": "及",
+    "consentPrivacy": "隱私權政策",
+    "consentPrivacyHref": "/zh-TW/privacy",
+    "consentSuffix": "。"
   },
   "ShareActions": {
     "shareTitle": "分享診斷結果",

@@ -210,7 +210,8 @@
     "ctaUpgradeTitle": "Pro 方案让调查能力最大化",
     "ctaUpgradeBody": "搜索次数无限制、商谈用 PDF 报告输出、AI 生活意象生成。每月 ¥980 即可获得专业同等的调查能力。",
     "ctaUpgradeBtn": "立即升级至 Pro →",
-    "checkoutLoading": "处理中..."
+    "checkoutLoading": "处理中...",
+    "consentLabel": "我同意使用条款及隐私政策"
   },
   "ReportPage": {
     "backLink": "← 返回首页",
@@ -691,7 +692,14 @@
     "errorInvalidCredential": "邮箱或密码不正确。",
     "errorTooManyRequests": "请求过于频繁,请稍后再试。",
     "errorNetwork": "网络错误,请检查连接。",
-    "errorUnknown": "认证失败,请重试。"
+    "errorUnknown": "认证失败,请重试。",
+    "consentText": "登录或注册，即代表您同意我们的",
+    "consentTerms": "使用条款",
+    "consentTermsHref": "/zh-CN/terms",
+    "consentAnd": "及",
+    "consentPrivacy": "隐私政策",
+    "consentPrivacyHref": "/zh-CN/privacy",
+    "consentSuffix": "。"
   },
   "ShareActions": {
     "shareTitle": "分享诊断结果",

@@ -43,6 +43,7 @@ export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail
   const t = useTranslations("PlanModal");
   const { open: openAuthModal } = useAuthModal();
   const [checkoutLoading, setCheckoutLoading] = React.useState(false);
+  const [consentChecked, setConsentChecked] = React.useState(false);
 
   if (!open) return null;
 
@@ -205,10 +206,19 @@ export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail
               <p className="text-sm text-amber-700 mb-3">
                 {t("ctaUpgradeBody")}
               </p>
+              <label className="flex items-start gap-2 mb-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={consentChecked}
+                  onChange={(e) => setConsentChecked(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-amber-500"
+                />
+                <span className="text-xs text-amber-800 leading-snug">{t("consentLabel")}</span>
+              </label>
               <button
                 onClick={handleUpgrade}
-                disabled={checkoutLoading}
-                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-sm hover:from-amber-600 hover:to-orange-600 transition-all shadow-md disabled:opacity-60"
+                disabled={checkoutLoading || !consentChecked}
+                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-sm hover:from-amber-600 hover:to-orange-600 transition-all shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {checkoutLoading ? t("checkoutLoading") : t("ctaUpgradeBtn")}
               </button>

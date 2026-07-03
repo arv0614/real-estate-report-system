@@ -283,6 +283,16 @@ export function AuthModal({ open, mode, onModeChange, onClose }: Props) {
                   </p>
                 )}
 
+                {mode !== "reset" && (
+                  <p className="text-[11px] text-slate-400 leading-relaxed text-center">
+                    {t("consentText")}
+                    <a href={t("consentTermsHref")} target="_blank" rel="noopener noreferrer" className="underline text-slate-500 hover:text-slate-700">{t("consentTerms")}</a>
+                    {t("consentAnd")}
+                    <a href={t("consentPrivacyHref")} target="_blank" rel="noopener noreferrer" className="underline text-slate-500 hover:text-slate-700">{t("consentPrivacy")}</a>
+                    {t("consentSuffix")}
+                  </p>
+                )}
+
                 <button
                   type="submit"
                   disabled={submitting}

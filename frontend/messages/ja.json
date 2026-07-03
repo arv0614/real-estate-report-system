@@ -210,7 +210,8 @@
     "ctaUpgradeTitle": "Proプランで調査力を最大化",
     "ctaUpgradeBody": "検索回数の制限なし・商談用PDFレポート出力・AI暮らしイメージ生成。プロと同じ調査力を¥980/月で手に入れましょう。",
     "ctaUpgradeBtn": "今すぐ Pro にアップグレード →",
-    "checkoutLoading": "処理中..."
+    "checkoutLoading": "処理中...",
+    "consentLabel": "利用規約とプライバシーポリシーに同意する"
   },
   "ReportPage": {
     "backLink": "← トップへ戻る",
@@ -691,7 +692,14 @@
     "errorInvalidCredential": "メールアドレスまたはパスワードが正しくありません。",
     "errorTooManyRequests": "リクエストが集中しています。しばらく待ってから再度お試しください。",
     "errorNetwork": "ネットワークエラーが発生しました。接続を確認してください。",
-    "errorUnknown": "認証エラーが発生しました。もう一度お試しください。"
+    "errorUnknown": "認証エラーが発生しました。もう一度お試しください。",
+    "consentText": "ログイン・登録することで、当社の",
+    "consentTerms": "利用規約",
+    "consentTermsHref": "/terms",
+    "consentAnd": "および",
+    "consentPrivacy": "プライバシーポリシー",
+    "consentPrivacyHref": "/privacy",
+    "consentSuffix": "に同意したものとみなします。"
   },
   "ShareActions": {
     "shareTitle": "診断結果をシェア",
