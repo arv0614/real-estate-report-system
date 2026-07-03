@@ -272,6 +272,12 @@ function HomePageContent() {
     // plan === "pro" または planLoading 中 → 制限なしで続行
     // ─────────────────────────────────────────────────────
 
+    // 検索座標を URL に反映（リロード時に地点を復元できるようにする）
+    const searchUrl = new URL(window.location.href);
+    searchUrl.searchParams.set("lat", String(lat));
+    searchUrl.searchParams.set("lng", String(lng));
+    window.history.replaceState({}, "", searchUrl.toString());
+
     startProgressSimulation();
     setLoading(true);
     setResult(null);

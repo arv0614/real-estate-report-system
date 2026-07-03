@@ -59,7 +59,6 @@ const BACKEND_LICENSES: LicenseEntry[] = [
   { name: "@google/generative-ai", version: "0.24.x", license: "Apache-2.0", copyright: "Copyright (c) Google LLC", url: "https://github.com/google-gemini/generative-ai-js" },
   { name: "firebase-admin", version: "13.x", license: "Apache-2.0", copyright: "Copyright (c) Google LLC", url: "https://github.com/firebase/firebase-admin-node" },
   { name: "@google-cloud/storage", version: "7.x", license: "Apache-2.0", copyright: "Copyright (c) Google LLC", url: "https://github.com/googleapis/nodejs-storage" },
-  { name: "Stripe Node.js Library", version: "21.x", license: "MIT", copyright: "Copyright (c) Stripe, Inc.", url: "https://github.com/stripe/stripe-node" },
   { name: "Zod", version: "3.x", license: "MIT", copyright: "Copyright (c) 2020 Colin McDonnell", url: "https://github.com/colinhacks/zod" },
   { name: "dotenv", version: "16.x", license: "BSD-2-Clause", copyright: "Copyright (c) 2015, Scott Motte", url: "https://github.com/motdotla/dotenv" },
   { name: "axios", version: "1.x", license: "MIT", copyright: "Copyright (c) 2014-present Matt Zabriskie & Collaborators", url: "https://github.com/axios/axios" },

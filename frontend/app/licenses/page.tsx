@@ -164,13 +164,6 @@ const BACKEND_LICENSES: LicenseEntry[] = [
     url: "https://github.com/googleapis/nodejs-storage",
   },
   {
-    name: "Stripe Node.js Library",
-    version: "21.x",
-    license: "MIT",
-    copyright: "Copyright (c) Stripe, Inc.",
-    url: "https://github.com/stripe/stripe-node",
-  },
-  {
     name: "Zod",
     version: "3.x",
     license: "MIT",
