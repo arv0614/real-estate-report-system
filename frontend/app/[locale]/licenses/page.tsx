@@ -52,6 +52,15 @@ const FRONTEND_LICENSES: LicenseEntry[] = [
   { name: "clsx", version: "2.x", license: "MIT", copyright: "Copyright (c) Luke Edwards", url: "https://github.com/lukeed/clsx" },
   { name: "tailwind-merge", version: "3.x", license: "MIT", copyright: "Copyright (c) 2021 Dany Castillo", url: "https://github.com/dcastil/tailwind-merge" },
   { name: "class-variance-authority", version: "0.7.x", license: "Apache-2.0", copyright: "Copyright (c) Joe Bell", url: "https://github.com/joe-bell/cva" },
+  { name: "maplibre-gl", version: "5.x", license: "BSD-3-Clause", copyright: "Copyright (c) 2023, MapLibre contributors", url: "https://github.com/maplibre/maplibre-gl-js" },
+  { name: "next-intl", version: "4.x", license: "MIT", copyright: "Copyright (c) 2024 Jan Amann", url: "https://github.com/amannn/next-intl" },
+  { name: "@next/third-parties", version: "16.x", license: "MIT", copyright: "Copyright (c) 2025 Vercel, Inc.", url: "https://github.com/vercel/next.js" },
+  { name: "remark-gfm", version: "4.x", license: "MIT", copyright: "Copyright (c) Titus Wormer <tituswormer@gmail.com>", url: "https://github.com/remarkjs/remark-gfm" },
+  { name: "gray-matter", version: "4.x", license: "MIT", copyright: "Copyright (c) 2014-2018, Jon Schlinkert.", url: "https://github.com/jonschlinkert/gray-matter" },
+  { name: "cheerio", version: "1.x", license: "MIT", copyright: "Copyright (c) 2022 The Cheerio contributors", url: "https://github.com/cheeriojs/cheerio" },
+  { name: "@tailwindcss/typography", version: "0.5.x", license: "MIT", copyright: "Copyright (c) Tailwind Labs, Inc.", url: "https://github.com/tailwindlabs/tailwindcss-typography" },
+  { name: "tw-animate-css", version: "1.x", license: "MIT", copyright: "Copyright (c) 2025 Wombosvideo", url: "https://github.com/Wombosvideo/tw-animate-css" },
+  { name: "shadcn", version: "4.x", license: "MIT", copyright: "Copyright (c) 2023 shadcn", url: "https://github.com/shadcn-ui/ui" },
 ];
 
 const BACKEND_LICENSES: LicenseEntry[] = [
@@ -72,6 +81,7 @@ const LICENSE_BADGE_COLOR: Record<string, string> = {
   "MIT": "bg-green-100 text-green-700",
   "Apache-2.0": "bg-blue-100 text-blue-700",
   "BSD-2-Clause": "bg-sky-100 text-sky-700",
+  "BSD-3-Clause": "bg-sky-100 text-sky-700",
   "ISC": "bg-teal-100 text-teal-700",
   "Hippocratic License 2.1": "bg-purple-100 text-purple-700",
 };
