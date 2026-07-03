@@ -110,6 +110,29 @@ Google アカウントでログイン後、AI レポート内の **「✨ 暮ら
 - 洪水浸水想定区域 (XKT026) / 土砂災害警戒区域 (XKT029)
 - 用途地域 (XKT002) / 小中学校区 (XKT004/005) / 医療機関 (XKT010) / 最寄り駅 (XKT015)
 
+### 山林モード（Phase 2 — `/research` β機能）
+
+物件種別に「山林」を選択すると、住宅モードとは完全に独立した分析パイプラインに切り替わります。
+
+| カード | データソース | 内容 |
+|---|---|---|
+| **ForestScore カード** | 複合スコア | 地形・災害・取引の3軸を 0〜100 点でレーダー表示 |
+| **傾斜・方位カード** | 国土地理院 DEM タイル (z=14) | 4近傍中心差分で傾斜角 (°) と8方位を算出。ほぼ平坦 / 緩斜面 / 急斜面 / 険しい急斜面を判定 |
+| **土砂警戒区域カード** | MLIT XKT029 / XKT022 / XKT021 | 土砂災害警戒区域・急傾斜地崩壊危険区域・地すべり防止区域の内部判定 |
+| **保安林カード** | 国土数値情報 A13 (GCS キャッシュ) | 全47都道府県の保安林ポリゴンを GCS に格納し、ray-casting で inside/outside を判定 |
+| **林地取引履歴カード** | MLIT XIT001 | 市→都道府県×5年まで段階的に検索範囲を拡大した類似取引一覧 |
+
+**保安林 GeoJSON の準備**
+
+```bash
+# 国土数値情報 A13（森林地域）から保安林 (LAYER_NO=10) を全国一括処理
+source .env
+node scripts/prepare-hoanrin.mjs --input-dir=/path/to/A13-by-pref/
+# → gs://${GCS_CACHE_BUCKET}/hoanrin/pref{01..47}.geojson にアップロード
+```
+
+`scripts/prepare-hoanrin.mjs` の詳細と、ogr2ogr (GDAL) を使った SHP → GeoJSON 変換手順は同ファイルのコメントを参照してください。
+
 ### Pro プラン（¥980/月）— 商用リリース済み
 - 検索無制限 / PDF レポート出力 / 暮らしのイメージ画像生成
 - Firebase ID Token 認証 + HMAC-SHA256 Webhook 署名検証
@@ -602,6 +625,9 @@ jobs:
 | Imagen 4 Fast | 暮らしのイメージ画像生成（Primary） |
 | Gemini 2.5 Flash Image | 画像生成 Fallback |
 | e-Stat API | 人口動態スコア（オプション） |
+| 国土地理院 DEM タイル (z=14) | 山林モード: 傾斜角・方位算出用の標高ラスタタイル |
+| MLIT XKT021 / XKT022 / XKT029 | 山林モード: 地すべり防止区域 / 急傾斜地崩壊危険区域 / 土砂災害警戒区域 |
+| 国土数値情報 A13（森林地域） | 山林モード: 保安林ポリゴン（LAYER_NO=10、全47都道府県、GCS キャッシュ） |
 
 ---
 
@@ -798,6 +824,24 @@ allow delete : 禁止
 
 ## 🧪 テストと品質保証 (QA)
 
+### Vitest ユニットテスト — 102 件（`frontend/` 配下）
+
+```bash
+cd frontend
+npx vitest run                  # 全テスト実行
+npx vitest run --reporter=verbose   # 詳細出力
+```
+
+| テストファイル | 件数 | 内容 |
+|---|---|---|
+| `lib/research/__tests__/similarSearch.mansion.test.ts` | 6 | mansion/house 類似取引検索 回帰テスト |
+| `lib/research/__tests__/similarSearch.forest.test.ts` | 9 | forest/farmland 類似取引フィルタ + ステージラベル |
+| `lib/research/__tests__/forestTerrainApi.test.ts` | 21 | slopeClass / aspectLabel / solarTerrain 純粋関数 |
+| `lib/research/__tests__/geo.test.ts` | — | latLngToTile / tile 座標変換 |
+| `lib/research/__tests__/defaultsCache.test.ts` | — | デフォルト値フェッチキャッシュ |
+| `lib/scoring/__tests__/forestScore.test.ts` | — | ForestScore 計算・欠損パターン |
+| `lib/__tests__/researchHistory.test.ts` | 6 | builtYear optional 後方互換性（Firestore 旧ドキュメント） |
+
 ### Playwright E2E テスト — 本番ドメイン対象
 
 `frontend/tests/production_e2e.spec.ts` に、本番環境 `https://mekiki-research.com` を対象とした14シナリオを実装。
@@ -856,7 +900,7 @@ BLOG_DATE=2026-12-31 GEMINI_API_KEY=... node scripts/generate_daily_blog.js
 |---|---|---|
 | `GCP_PROJECT_ID` | ✅ | GCP プロジェクト |
 | `GCP_REGION` | ✅ | リージョン |
-| `GCS_CACHE_BUCKET` | ✅ | キャッシュ用バケット |
+| `GCS_CACHE_BUCKET` | ✅ | キャッシュ用バケット（API レスポンス 30日 TTL + `hoanrin/pref{01..47}.geojson` 保安林データ [P2]） |
 | `MLIT_API_KEY` | ✅ | 国交省 不動産情報ライブラリ API |
 | `MLIT_API_BASE_URL` | ✅ | `https://www.reinfolib.mlit.go.jp/ex-api/external` |
 | `GEMINI_API_KEY` | ✅ | エリア分析・画像プロンプト生成 |
@@ -1134,6 +1178,7 @@ real-estate-report-system/
 │       ├── config.ts                   # 環境変数設定
 │       ├── routes/
 │       │   ├── property.ts             # /api/property/* — 取引データ・画像生成
+│       │   ├── forest.ts               # /api/forest/hoanrin — 保安林 point-in-polygon 判定 [P2]
 │       │   ├── admin.ts                # /api/admin/* — 管理画面 API（ADMIN_EMAILS 認可）
 │       │   ├── lemonsqueezy.ts         # Checkout + Webhook（ID Token + HMAC-SHA256）
 │       │   ├── posthog.ts              # PostHog Webhook（署名検証）
@@ -1142,7 +1187,7 @@ real-estate-report-system/
 │       │   ├── mlitApi.ts              # 国交省 API クライアント
 │       │   ├── geminiApi.ts            # Gemini エリア分析レポート生成
 │       │   ├── imagenApi.ts            # 2段階画像生成パイプライン
-│       │   └── gcsCache.ts             # GCS キャッシュ（30日 TTL・ロケール別キー）
+│       │   └── gcsCache.ts             # GCS キャッシュ（30日 TTL）+ readGcsObject [P2]
 │       └── utils/
 │           ├── geocode.ts              # 逆ジオコーディング (GSI)
 │           └── tile.ts                 # タイル座標変換
@@ -1168,11 +1213,24 @@ real-estate-report-system/
 │   │   └── blog/                       # YYYY-MM-DD-<slug>.{,en,zh-TW,zh-CN}.md
 │   ├── components/                     # AiReport / SearchForm / PlanComparisonModal 等
 │   ├── messages/{ja,en,zh-TW,zh-CN}.json   # next-intl 翻訳辞書
+│   ├── components/research/
+│   │   └── forest/
+│   │       └── ForestResultPanel.tsx   # 山林モード専用結果パネル [P2]
 │   ├── lib/
 │   │   ├── api.ts                      # getApiBase() + fetchTransactions() 等
 │   │   ├── blog/                       # ブログ Markdown ローダー + マップスタイル
 │   │   ├── research/                   # 人口動態 / 地震 / 類似検索 (β機能)
-│   │   ├── geo/, links/, parsers/, schemas/, scoring/, debug/
+│   │   │   ├── geo.ts                  # latLngToTile 共通ユーティリティ [P2]
+│   │   │   ├── forestTerrainApi.ts     # DEM タイルから傾斜・方位を算出 [P2]
+│   │   │   ├── sedimentApi.ts          # 土砂警戒区域 XKT029/022/021 判定 [P2]
+│   │   │   ├── similarSearch.ts        # 類似取引検索（mansion/house/forest/farmland）[P2]
+│   │   │   └── __tests__/              # Vitest ユニットテスト群 [P2]
+│   │   ├── scoring/
+│   │   │   ├── forestScore.ts          # 山林スコア計算エンジン [P2]
+│   │   │   └── __tests__/              # ForestScore テスト [P2]
+│   │   ├── __tests__/
+│   │   │   └── researchHistory.test.ts # builtYear optional 後方互換性テスト [P2]
+│   │   ├── geo/, links/, parsers/, schemas/, debug/
 │   │   ├── firebase.ts, gtag.ts, analytics.ts, posthog.ts
 │   │   ├── userPlan.ts                 # プラン判定・ゲスト制限
 │   │   └── exportPdf.ts                # PDF エクスポート
@@ -1182,6 +1240,7 @@ real-estate-report-system/
 │   └── tests/production_e2e.spec.ts    # Playwright E2E（本番ドメイン・14シナリオ）
 ├── scripts/
 │   ├── generate_daily_blog.js          # ブログ自動生成（Gemini + 実データ + 地域分散）
+│   ├── prepare-hoanrin.mjs             # A13 SHP→GeoJSON 変換 & GCS アップロード [P2]
 │   ├── post_to_x.js                    # X 自動投稿（無効化中）
 │   ├── deploy.sh                       # バックエンド手動デプロイ
 │   ├── deploy_frontend.sh              # フロントエンド手動デプロイ
