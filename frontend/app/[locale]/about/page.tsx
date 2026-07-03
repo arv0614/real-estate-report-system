@@ -29,14 +29,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return {
       title: "About & Pricing | Mekiki Research",
       description:
-        "MLIT official data × real estate professional insights. Instantly generate transaction price trends, hazard risk, and 10-section area reports for any location in Japan.",
+        "Japan MLIT official data × AI-aggregated public data. Instantly generate transaction price trends, hazard risk, and 10-section area reports for any location in Japan.",
       alternates: { canonical: `${SITE_URL}/en/about` },
     };
   }
   return {
     title: "サービス紹介・料金プラン | 物件目利きリサーチ",
     description:
-      "国土交通省「不動産情報ライブラリ」の公式データ × 不動産プロフェッショナルの知見を組み合わせた精密調査サービス。",
+      "国土交通省「不動産情報ライブラリ」の公式データ × AIによる公的データ分析を活用した調査サービス。",
     alternates: { canonical: `${SITE_URL}/about` },
   };
 }
@@ -113,8 +113,8 @@ export default async function LocaleAboutPage({ params }: PageProps) {
     {
       label: t("legalRow6label"),
       value: isEn
-        ? "B2B/B2C SaaS combining Japan MLIT open property data and expert real estate insights for area analysis"
-        : "国土交通省「不動産情報ライブラリ」データ及び不動産プロフェッショナルの知見を活用した不動産エリア精密調査SaaSサービス",
+        ? "B2B/B2C SaaS combining Japan MLIT open property data with AI-aggregated public data for area analysis"
+        : "国土交通省「不動産情報ライブラリ」データをAIで集計・分析し表示する不動産エリア調査SaaSサービス",
     },
     {
       label: t("legalRow7label"),
