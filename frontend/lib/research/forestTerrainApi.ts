@@ -146,10 +146,13 @@ async function _fetchForestTerrain(
   const tile = await getTile(tx, ty);
   if (!tile) return null;
 
-  // Latitude correction for pixel size (cos compensation)
+  // Mercator ground pixel size: projected_size * cos(lat)
+  // BASE_PIXEL_M is the equatorial projected pixel size (9.5544m at z=14).
+  // Both E-W and N-S ground distances shrink poleward at the same rate
+  // (conformal projection: scale factor = 1/cos(lat) → ground = projected * cos(lat)).
   const latCos = Math.cos(lat * Math.PI / 180);
-  const pixelM = BASE_PIXEL_M / latCos; // E-W pixel size grows near equator
-  const pixelMns = BASE_PIXEL_M;        // N-S is constant
+  const pixelM   = BASE_PIXEL_M * latCos; // E-W ground metres per pixel
+  const pixelMns = BASE_PIXEL_M * latCos; // N-S ground metres per pixel (same)
 
   // Central difference of 3x3 neighborhood for gradient
   const [e_w, w_w, n_h, s_h] = await Promise.all([
