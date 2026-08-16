@@ -13,7 +13,7 @@
  *   GEMINI_API_KEY      — Gemini API キー
  *
  * 任意環境変数:
- *   GEMINI_MODEL        — 既定: gemini-2.5-pro
+ *   GEMINI_MODEL        — 既定: gemini-3.1-pro-preview
  *   BLOG_DATE           — 上書き YYYY-MM-DD (既定: JST の本日)
  *   BLOG_DRY_RUN        — "1" の場合 API を呼ばず構成のみ確認
  *   BLOG_API_BASE_URL   — 実データ取得用バックエンド URL
@@ -30,7 +30,7 @@ const fs = require("fs");
 const path = require("path");
 
 const BLOG_DIR = path.resolve(__dirname, "../frontend/content/blog");
-const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-pro";
+const MODEL = process.env.GEMINI_MODEL || "gemini-3.1-pro-preview";
 const DRY_RUN = process.env.BLOG_DRY_RUN === "1";
 
 // 実データ取得先: 既定は Cloud Run の本番バックエンド。

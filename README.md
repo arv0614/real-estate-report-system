@@ -7,7 +7,7 @@
 
 🔗 **本番 URL**: https://mekiki-research.com
 🚀 **ステータス**: 商用リリース済み（Lemon Squeezy 決済稼働中・GA4 ファネル計測導入済み）
-📰 **ブログ自動運用**: 毎朝 JST 07:00 に Gemini 2.5 Pro が4言語の日次記事を自動生成 → 自動デプロイ
+📰 **ブログ自動運用**: 毎朝 JST 07:00 に Gemini 3.1 Pro Preview が4言語の日次記事を自動生成 → 自動デプロイ
 
 > **💳 Pro プラン（¥980/月）の決済が本番稼働中です**
 > Free プランでは基本機能を無料でご利用いただけます。検索上限（ゲスト: 1回/日、Free: 3回/日）に達した際は直接プランモーダルに誘導し、Lemon Squeezy でシームレスにアップグレードできます。Pro プランでは検索無制限・PDF 出力・暮らしイメージ生成などすべての機能が利用可能です。
@@ -53,7 +53,7 @@
 - **生活環境情報**: 用途地域・学区（小学校/中学校）・医療機関・最寄り駅
 
 ### Step 3 — AI 公的データ集計レポートを読む
-**10項目にわたる Gemini 2.5 Flash の公的データ集計・整理レポート**をアコーディオンで展開。
+**10項目にわたる Gemini 3.6 Flash の公的データ集計・整理レポート**をアコーディオンで展開。
 
 | # | セクション | Free | Pro |
 |---|---|:---:|:---:|
@@ -89,7 +89,7 @@ Google アカウントでログイン後、AI レポート内の **「✨ 暮ら
 - GCS（Google Cloud Storage）による30日間キャッシュで2回目以降は高速表示
 
 ### AI エリア分析（10項目）
-- **Gemini 2.5 Flash** による自動レポート生成（約1,500〜2,000字）
+- **Gemini 3.6 Flash** による自動レポート生成（約1,500〜2,000字）
 - セクション9「リアルな住環境」ではネガティブ情報も正直に開示
 - セクション10「エリアデータの整理」では公的取引データ・ハザードデータの集計結果と専門家への確認事項を提示
 
@@ -98,7 +98,7 @@ Google アカウントでログイン後、AI レポート内の **「✨ 暮ら
 ```
 [エリア総評テキスト（Section 1）]
          ↓
-[Stage 1]  Gemini 2.5 Flash でエリア固有の英語プロンプトを動的生成
+[Stage 1]  Gemini 3.6 Flash でエリア固有の英語プロンプトを動的生成
            豪雪 / 都市 / 温泉 / 海辺 / 農村 etc. を自動判定
          ↓
 [Stage 2]  Imagen 4 Fast → gemini-2.5-flash-image（fallback）
@@ -243,7 +243,7 @@ Web 広告の出稿効果を **無料**（Looker Studio + GA4 標準）で可視
 │     - fetchTransactionPrices → 国交省 XIT001                         │
 │     - fetchHazardInfo → XKT026 / XKT029                              │
 │     - fetchEnvironmentInfo → XKT002/004/005/010/015                  │
-│     - generateAreaReport → Gemini 2.5 Flash                          │
+│     - generateAreaReport → Gemini 3.6 Flash                          │
 │     - GCS キャッシュ（30日 TTL・ロケール別キー）                    │
 │     - Lemon Squeezy Checkout / Webhook (HMAC-SHA256 署名検証)       │
 └─────────────────────────────────────────────────────────────────────┘
@@ -283,11 +283,11 @@ Web 広告の出稿効果を **無料**（Looker Studio + GA4 標準）で可視
 [Node 20] node scripts/generate_daily_blog.js
       │
       ├─ ① 加重ランダムで地域選定（REGION_POOL）
-      ├─ ② Gemini 2.5 Pro: メタデータ生成（slug/title/desc/tags/primaryLocation/outline）
+      ├─ ② Gemini 3.1 Pro Preview: メタデータ生成（slug/title/desc/tags/primaryLocation/outline）
       ├─ ③ ★ 実データ取得: 本番 API /api/property/transactions?lat=&lng= を叩く
       │     → MLIT 取引データ + 国土地理院ハザード + 周辺環境 を summarize
-      ├─ ④ Gemini 2.5 Pro: 本文生成（実データを引用エビデンスとして注入）
-      ├─ ⑤ Gemini 2.5 Pro: 英 / 繁 / 簡 の3言語にメタ + 本文を翻訳
+      ├─ ④ Gemini 3.1 Pro Preview: 本文生成（実データを引用エビデンスとして注入）
+      ├─ ⑤ Gemini 3.1 Pro Preview: 英 / 繁 / 簡 の3言語にメタ + 本文を翻訳
       └─ ⑥ frontend/content/blog/YYYY-MM-DD-<slug>.{,en,zh-TW,zh-CN}.md として保存
       │
       ▼
@@ -305,12 +305,12 @@ Web 広告の出稿効果を **無料**（Looker Studio + GA4 標準）で可視
 
 | 項目 | 仕様 |
 |---|---|
-| LLM | Google Gemini 2.5 Pro（`gemini-2.5-pro`、`GEMINI_MODEL` で上書き可） |
+| LLM | Google Gemini 3.1 Pro Preview（`gemini-3.1-pro-preview`、`GEMINI_MODEL` で上書き可） |
 | SDK | `@google/genai` |
 | 実行環境 | Node 20+（`fetch`/`AbortController` 標準利用） |
 | 出力先 | `frontend/content/blog/YYYY-MM-DD-<slug>.md`（+ `.en.md` / `.zh-TW.md` / `.zh-CN.md`） |
 | 必須環境変数 | `GEMINI_API_KEY` |
-| 任意環境変数 | `GEMINI_MODEL`（既定 `gemini-2.5-pro`）<br>`BLOG_DATE`（YYYY-MM-DD で対象日上書き）<br>`BLOG_DRY_RUN=1`（API を呼ばず構成のみ確認）<br>`BLOG_API_BASE_URL`（既定: Cloud Run の本番URL）<br>`BLOG_SITE_BASE_URL`（既定: `https://mekiki-research.com`） |
+| 任意環境変数 | `GEMINI_MODEL`（既定 `gemini-3.1-pro-preview`）<br>`BLOG_DATE`（YYYY-MM-DD で対象日上書き）<br>`BLOG_DRY_RUN=1`（API を呼ばず構成のみ確認）<br>`BLOG_API_BASE_URL`（既定: Cloud Run の本番URL）<br>`BLOG_SITE_BASE_URL`（既定: `https://mekiki-research.com`） |
 
 **設計上の分離**: メタデータ（JSON）と本文（Markdown）は **別々の Gemini 呼び出し** で生成しています。本文を JSON 文字列に詰め込むと制御文字エスケープが破綻して `JSON.parse` が失敗するため、実運用で問題が起きた末に分離した経緯があります。
 
@@ -591,7 +591,7 @@ jobs:
 
 | 技術 | 用途 |
 |---|---|
-| `@google/genai` | Gemini 2.5 Pro 呼び出し（記事生成・翻訳） |
+| `@google/genai` | Gemini 3.1 Pro Preview 呼び出し（記事生成・翻訳） |
 | Node 20 native `fetch` | 本番APIからの実データ取得 |
 | `twitter-api-v2` | X 自動投稿用 SDK（現在は無効化） |
 
@@ -620,8 +620,8 @@ jobs:
 | 国交省 不動産情報ライブラリ API (XIT001) | 取引価格データ取得 |
 | 国交省 不動産情報ライブラリ API (XKT026/029/002/004/005/010/015) | ハザード・生活環境データ取得 |
 | 国土地理院 API (GSI) | 逆ジオコーディング・住所検索・地図タイル |
-| Gemini 2.5 Pro | ブログ記事生成・翻訳（バッチ） |
-| Gemini 2.5 Flash | エリア分析レポート / 画像プロンプト動的生成（リアルタイム） |
+| Gemini 3.1 Pro Preview | ブログ記事生成・翻訳（バッチ） |
+| Gemini 3.6 Flash | エリア分析レポート / 画像プロンプト動的生成（リアルタイム） |
 | Imagen 4 Fast | 暮らしのイメージ画像生成（Primary） |
 | Gemini 2.5 Flash Image | 画像生成 Fallback |
 | e-Stat API | 人口動態スコア（オプション） |
@@ -885,7 +885,7 @@ BLOG_DATE=2026-12-31 GEMINI_API_KEY=... node scripts/generate_daily_blog.js
 | Secret 名 | 設定先ワークフロー | 目的 |
 |---|---|---|
 | **`PAT_TOKEN`** | `generate-blog.yml` | repo + workflow スコープの Personal Access Token。デフォルトの `GITHUB_TOKEN` では他ワークフローを連鎖トリガーできない仕様への対処。push 後に `deploy.yml` を発火させるために必須 |
-| **`GEMINI_API_KEY`** | `generate-blog.yml` | Gemini 2.5 Pro 呼び出し用 API キー（記事生成・翻訳） |
+| **`GEMINI_API_KEY`** | `generate-blog.yml` | Gemini 3.1 Pro Preview 呼び出し用 API キー（記事生成・翻訳） |
 | `GCP_SA_KEY` | `deploy.yml` | Cloud Run / Artifact Registry / Cloud Build へのデプロイ権限を持つサービスアカウントの JSON キー |
 | `GCP_PROJECT_ID` | `deploy.yml` | GCP プロジェクト ID |
 | `GCP_REGION` | `deploy.yml` | デプロイリージョン（`asia-northeast1`） |
@@ -926,8 +926,8 @@ BLOG_DATE=2026-12-31 GEMINI_API_KEY=... node scripts/generate_daily_blog.js
 
 | 変数名 | 必須 | 既定値 | 用途 |
 |---|---|---|---|
-| `GEMINI_API_KEY` | ✅ | — | Gemini 2.5 Pro |
-| `GEMINI_MODEL` | ❌ | `gemini-2.5-pro` | モデル切替 |
+| `GEMINI_API_KEY` | ✅ | — | Gemini 3.1 Pro Preview |
+| `GEMINI_MODEL` | ❌ | `gemini-3.1-pro-preview` | モデル切替 |
 | `BLOG_DATE` | ❌ | JST 本日 | 対象日上書き |
 | `BLOG_DRY_RUN` | ❌ | — | `1` で API 呼び出しスキップ |
 | `BLOG_API_BASE_URL` | ❌ | `https://realestate-api-2hctlfcy6a-an.a.run.app` | 実データ取得先 |
@@ -1271,7 +1271,7 @@ real-estate-report-system/
 - 暮らしのイメージ画像は AI が生成した架空のイメージであり、実際の物件・街並みとは異なります。
 - 国土交通省 不動産情報ライブラリ API の利用には API キーの申請が必要です（無料）。
 - Gemini API / Imagen API の利用料金は Google AI Studio の料金体系に従います。
-- ブログ自動生成は1日1記事 × 4言語 = 4ファイルを Gemini 2.5 Pro で呼び出すため、`GEMINI_API_KEY` の課金枠に余裕を持たせてください。
+- ブログ自動生成は1日1記事 × 4言語 = 4ファイルを Gemini 3.1 Pro Preview で呼び出すため、`GEMINI_API_KEY` の課金枠に余裕を持たせてください。
 
 ---
 

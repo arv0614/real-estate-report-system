@@ -3,7 +3,7 @@ import { config } from "../config";
 
 // ============================================================
 // 暮らしイメージ画像生成
-// Stage1: gemini-2.5-flash でエリア固有の英語プロンプトを生成
+// Stage1: gemini-3.6-flash でエリア固有の英語プロンプトを生成
 // Stage2: gemini-3.1-flash-image → gemini-2.5-flash-image → SVG モック
 //
 // 注: 旧 Imagen 4 (imagen-4.0-*-generate-001) は 2026年に廃止予定のため
@@ -45,7 +45,7 @@ Rules:
 - Always end with: photorealistic, high-quality photography, 16:9 landscape format, vibrant colors, happy family`;
 
 /**
- * gemini-2.5-flash を使って、エリア固有の画像生成用英語プロンプトを動的生成する。
+ * gemini-3.6-flash を使って、エリア固有の画像生成用英語プロンプトを動的生成する。
  * 失敗した場合は静的フォールバックプロンプトを返す。
  */
 async function generateDynamicPrompt(
@@ -55,7 +55,7 @@ async function generateDynamicPrompt(
 ): Promise<string> {
   const genAI = new GoogleGenerativeAI(config.gemini.apiKey);
   const model = genAI.getGenerativeModel({
-    model: "gemini-2.5-flash",
+    model: "gemini-3.6-flash",
     systemInstruction: PROMPT_SYSTEM_INSTRUCTION,
   });
 
@@ -157,7 +157,7 @@ async function generateViaGeminiImage(
 
 /**
  * 「その街での暮らしイメージ」画像を2段階で生成する。
- * Stage1: gemini-2.5-flash でエリア固有の英語プロンプトを動的生成
+ * Stage1: gemini-3.6-flash でエリア固有の英語プロンプトを動的生成
  * Stage2: gemini-3.1-flash-image → gemini-2.5-flash-image → SVG モック
  */
 export async function generateLifestyleImage(
