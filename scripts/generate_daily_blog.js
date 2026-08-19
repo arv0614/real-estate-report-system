@@ -117,8 +117,15 @@ function sanitizeSlug(raw) {
 
 function parseJson(text) {
   let cleaned = String(text || "").trim();
+  // コードフェンス (```json ... ``` / ``` ... ```) を除去
   if (cleaned.startsWith("```")) {
     cleaned = cleaned.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+  }
+  // 前後に余計な説明文が混ざっている場合、最初の '{' から最後の '}' までを抽出
+  const start = cleaned.indexOf("{");
+  const end = cleaned.lastIndexOf("}");
+  if (start !== -1 && end !== -1 && end > start) {
+    cleaned = cleaned.slice(start, end + 1);
   }
   return JSON.parse(cleaned);
 }
@@ -132,18 +139,46 @@ function stripFences(text) {
 }
 
 // ─── Gemini 呼び出しラッパー ───────────────────────────────────────────────────
+const JSON_CALL_MAX_ATTEMPTS = 3;
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// JSON モードを明示指定してもごく稀にフォーマットが崩れて返ってくることがあるため、
+// パース失敗時は生の応答をログに残した上で最大 JSON_CALL_MAX_ATTEMPTS 回まで叩き直す。
 async function callJson(ai, prompt) {
-  const response = await ai.models.generateContent({
-    model: MODEL,
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      temperature: 0.8,
-    },
-  });
-  const text = response?.text;
-  if (!text) throw new Error("Gemini からの応答が空でした (JSON)");
-  return parseJson(text);
+  let lastErr;
+  for (let attempt = 1; attempt <= JSON_CALL_MAX_ATTEMPTS; attempt++) {
+    const response = await ai.models.generateContent({
+      model: MODEL,
+      contents: prompt,
+      config: {
+        responseModalities: ["TEXT"],
+        responseMimeType: "application/json",
+        temperature: 0.8,
+      },
+    });
+    const text = response?.text;
+    if (!text) {
+      lastErr = new Error("Gemini からの応答が空でした (JSON)");
+      console.warn(`[WARN] callJson attempt ${attempt}/${JSON_CALL_MAX_ATTEMPTS}: 応答が空`);
+    } else {
+      try {
+        return parseJson(text);
+      } catch (err) {
+        lastErr = err;
+        console.warn(
+          `[WARN] callJson attempt ${attempt}/${JSON_CALL_MAX_ATTEMPTS}: JSON.parse 失敗 (${err.message})`,
+        );
+        console.warn(`[WARN] パースに失敗した生の応答文字列:\n${text}`);
+      }
+    }
+    if (attempt < JSON_CALL_MAX_ATTEMPTS) {
+      await sleep(1000 * attempt);
+    }
+  }
+  throw new Error(`Gemini JSON 応答の取得に ${JSON_CALL_MAX_ATTEMPTS} 回失敗しました: ${lastErr?.message}`);
 }
 
 async function callText(ai, prompt) {
