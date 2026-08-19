@@ -299,7 +299,7 @@ function jaBodyPrompt({ today, meta, areaData, plan }) {
   const lat = Number(meta.primaryLocation?.lat);
   const lng = Number(meta.primaryLocation?.lng);
   const locName = meta.primaryLocation?.name || "対象エリア";
-  const ctaUrl = `${SITE_BASE_URL}/?lat=${lat}&lng=${lng}&zoom=15`;
+  const ctaUrl = `${SITE_BASE_URL}/?lat=${lat}&lng=${lng}&zoom=15&ref=blog_cta`;
   const themeBlock = plan
     ? `
 # 本日の企画（編集長決定済み・厳守）
@@ -350,7 +350,7 @@ ${evidenceBlock}
 # 末尾CTA（厳守）
 - 記事最終セクション（## 8. まとめ）の末尾に、以下の Markdown リンクを **改変せず** 必ず挿入すること:
   \`[${locName}の最新の地価・ハザード情報を Mekiki Research で確認する 👉](${ctaUrl})\`
-- このリンクの URL（クエリ \`?lat=${lat}&lng=${lng}&zoom=15\` を含む）は省略・改変・分割しないこと。
+- このリンクの URL（クエリ \`?lat=${lat}&lng=${lng}&zoom=15&ref=blog_cta\` を含む）は省略・改変・分割しないこと。
 - ベータ版（/research）など他のパスへのリンクは禁止。本番トップページ + 位置情報クエリのみを使用する。
 
 # 出力 (厳守)
