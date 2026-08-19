@@ -251,9 +251,9 @@ Web 広告の出稿効果を **無料**（Looker Studio + GA4 標準）で可視
 ┌─────────────────────────────────────────────────────────────────────┐
 │  ③ Automation Scripts (GitHub Actions / scripts/)                  │
 │     - generate_daily_blog.js: 毎朝7時に4言語ブログ記事を生成        │
+│       → AI編集長（企画会議）が季節ネタ/連載継続/地域を自律決定       │
 │       → 実データ取得 (上記 ② の同じAPIを叩く) → エビデンスとして引用 │
-│       → 加重ランダムで全国の都市を選定（首都圏偏重を回避）          │
-│       → ?lat=&lng= 形式で① のトップページにCTAリンク                │
+│       → ?lat=&lng=&zoom= 形式で① のトップページにCTAリンク           │
 │     - post_to_x.js: 旧 X 自動投稿（現在は無効化）                    │
 │     - monitor_traffic_anomalies.js: 30分毎に不正クリック監視         │
 │     - summarize_ad_performance.js: 毎朝 GA4 日次広告レポート → Slack │
@@ -282,13 +282,16 @@ Web 広告の出稿効果を **無料**（Looker Studio + GA4 標準）で可視
       ▼
 [Node 20] node scripts/generate_daily_blog.js
       │
-      ├─ ① 加重ランダムで地域選定（REGION_POOL）
-      ├─ ② Gemini 3.1 Pro Preview: メタデータ生成（slug/title/desc/tags/primaryLocation/outline）
+      ├─ ① ★ AI編集長の企画会議: Gemini 3.6 Flash が data/blog_context.json
+      │     （過去テーマ・進行中の連載）を参照し、季節ネタ優先 → 連載継続/新テーマ
+      │     切り替え判断 → 対象エリア(市区町村+lat/lng) を自律決定
+      ├─ ② Gemini 3.1 Pro Preview: メタデータ生成（slug/title/desc/tags/outline）
       ├─ ③ ★ 実データ取得: 本番 API /api/property/transactions?lat=&lng= を叩く
       │     → MLIT 取引データ + 国土地理院ハザード + 周辺環境 を summarize
-      ├─ ④ Gemini 3.1 Pro Preview: 本文生成（実データを引用エビデンスとして注入）
+      ├─ ④ Gemini 3.1 Pro Preview: 本文生成（①のテーマ・切り口 + 実データを注入）
       ├─ ⑤ Gemini 3.1 Pro Preview: 英 / 繁 / 簡 の3言語にメタ + 本文を翻訳
-      └─ ⑥ frontend/content/blog/YYYY-MM-DD-<slug>.{,en,zh-TW,zh-CN}.md として保存
+      ├─ ⑥ frontend/content/blog/YYYY-MM-DD-<slug>.{,en,zh-TW,zh-CN}.md として保存
+      └─ ⑦ ①の決定結果を data/blog_context.json に記録（連載カウント更新）
       │
       ▼
 [Git] PAT_TOKEN で main へ直接 push
@@ -305,14 +308,16 @@ Web 広告の出稿効果を **無料**（Looker Studio + GA4 標準）で可視
 
 | 項目 | 仕様 |
 |---|---|
-| LLM | Google Gemini 3.1 Pro Preview（`gemini-3.1-pro-preview`、`GEMINI_MODEL` で上書き可） |
+| LLM（本文執筆） | Google Gemini 3.1 Pro Preview（`gemini-3.1-pro-preview`、`GEMINI_MODEL` で上書き可） |
+| LLM（企画会議） | Google Gemini 3.6 Flash（`gemini-3.6-flash`、`GEMINI_PLANNING_MODEL` で上書き可） |
 | SDK | `@google/genai` |
 | 実行環境 | Node 20+（`fetch`/`AbortController` 標準利用） |
 | 出力先 | `frontend/content/blog/YYYY-MM-DD-<slug>.md`（+ `.en.md` / `.zh-TW.md` / `.zh-CN.md`） |
+| コンテキスト記録 | `data/blog_context.json`（過去テーマ・進行中の連載。次回の企画会議の入力） |
 | 必須環境変数 | `GEMINI_API_KEY` |
-| 任意環境変数 | `GEMINI_MODEL`（既定 `gemini-3.1-pro-preview`）<br>`BLOG_DATE`（YYYY-MM-DD で対象日上書き）<br>`BLOG_DRY_RUN=1`（API を呼ばず構成のみ確認）<br>`BLOG_API_BASE_URL`（既定: Cloud Run の本番URL）<br>`BLOG_SITE_BASE_URL`（既定: `https://mekiki-research.com`） |
+| 任意環境変数 | `GEMINI_MODEL`（既定 `gemini-3.1-pro-preview`）<br>`GEMINI_PLANNING_MODEL`（既定 `gemini-3.6-flash`）<br>`BLOG_DATE`（YYYY-MM-DD で対象日上書き）<br>`BLOG_DRY_RUN=1`（ファイル書き込み・翻訳をスキップし企画会議〜日本語本文をプレビュー）<br>`BLOG_API_BASE_URL`（既定: Cloud Run の本番URL）<br>`BLOG_SITE_BASE_URL`（既定: `https://mekiki-research.com`） |
 
-**設計上の分離**: メタデータ（JSON）と本文（Markdown）は **別々の Gemini 呼び出し** で生成しています。本文を JSON 文字列に詰め込むと制御文字エスケープが破綻して `JSON.parse` が失敗するため、実運用で問題が起きた末に分離した経緯があります。
+**設計上の分離**: メタデータ（JSON）と本文（Markdown）は **別々の Gemini 呼び出し** で生成しています。本文を JSON 文字列に詰め込むと制御文字エスケープが破綻して `JSON.parse` が失敗するため、実運用で問題が起きた末に分離した経緯があります。同様に「テーマ決定（企画会議）」も本文執筆とは別の軽量モデル呼び出しに分離し、コストを抑えつつ過去コンテキストを踏まえた判断をさせています。
 
 ### 2. 4言語展開とSEO対策（hreflang / canonical / 構造化データ）
 
@@ -344,14 +349,15 @@ Web 広告の出稿効果を **無料**（Looker Studio + GA4 標準）で可視
 
 これが本ブログ自動化システムの **最も重要な特徴** です。
 
-メタ生成と本文生成の **間** に、`primaryLocation.lat / lng` を使ってトップページが叩くのと同じバックエンド API を叩き、実取引データ・ハザード・周辺環境を取得して本文プロンプトに注入します。
+メタ生成と本文生成の **間** に、企画会議（AI編集長）が決定した `primaryLocation.lat / lng` を使ってトップページが叩くのと同じバックエンド API を叩き、実取引データ・ハザード・周辺環境を取得して本文プロンプトに注入します。
 
 ```
-┌─ Stage 1: メタ生成 ────────────┐
-│  Gemini → primaryLocation:     │
-│    { lat, lng, name }          │
+┌─ Stage 0: 企画会議（AI編集長）─┐
+│  Gemini → { theme, angle,      │
+│    targetArea, lat, lng,       │
+│    isSeriesContinuation }      │
 └────────────────┬───────────────┘
-                 │
+                 │ primaryLocation = { lat, lng, name: targetArea }
                  ▼ fetchAreaData(lat, lng)
 ┌─ Stage 2: 実データ取得（NEW）──────────────────────────┐
 │  GET ${API_BASE_URL}/api/property/transactions       │
@@ -380,37 +386,33 @@ Web 広告の出稿効果を **無料**（Looker Studio + GA4 標準）で可視
 
 **API 失敗時のフォールバック**: ネットワークエラーや上流障害で実データ取得に失敗した場合は `areaData = null` のまま本文生成に進み、プロンプトは「一般公開情報・国交省統計・地価公示の傾向に基づいて執筆。具体的な数値の断定は避けること」というフォールバック指示に切り替わります。記事生成プロセス自体は止めません。
 
-### 4. ★ 地域分散アルゴリズム：加重ランダム選定
+### 4. ★ AI編集長の企画会議：テーマ・連載・地域の自律決定
 
-過去の記事が首都圏（東京23区中心部）に偏る問題を解決するため、**加重ランダム** で全国の地域を意図的にローテーションします。
+過去は「加重ランダムで地域を選ぶ」だけの仕組みでしたが、現在は本文執筆の**前**に Gemini 3.6 Flash による企画会議ステップ（`editorialPlanPrompt()` → `callJson()`、モデルは `GEMINI_PLANNING_MODEL` で上書き可）を挟み、AI編集長が「今日のテーマ・切り口・対象エリア」を自律的に決定します。
 
-```javascript
-// scripts/generate_daily_blog.js
-const REGION_POOL = [
-  { name: "関西エリア",       weight: 3, examples: "大阪市梅田・なんば、京都市..." },
-  { name: "中京エリア",       weight: 2, examples: "名古屋市栄・名駅、岐阜市..." },
-  { name: "北海道・東北",     weight: 2, examples: "札幌市大通、仙台市青葉区..." },
-  { name: "中国・四国",       weight: 2, examples: "広島市紙屋町、岡山市..." },
-  { name: "九州・沖縄",       weight: 2, examples: "福岡市天神・博多、那覇市..." },
-  { name: "北陸・甲信越",     weight: 2, examples: "新潟市、金沢市、長野市..." },
-  { name: "注目地方エリア",   weight: 1, examples: "ニセコ町、軽井沢、別府市..." },
-  { name: "首都圏（最低頻度）", weight: 1, examples: "..." },
-];
+**判断材料（`data/blog_context.json`）**
+
+```json
+{
+  "recentThemes": [
+    { "date": "2026-08-19", "theme": "防災の日直前！高台住宅地の防災力と不動産価値", "angle": "...", "targetArea": "高知県高知市", "isSeriesContinuation": false }
+  ],
+  "currentSeries": { "theme": "伊能忠敬の足跡", "angle": "...", "count": 3, "startedAt": "2026-08-10", "lastDate": "2026-08-19" }
+}
 ```
 
-| 重み | 地域 | 採用確率（合計重み15） |
-|---|---|---|
-| 3 | 関西エリア | 20% |
-| 2 | 中京 / 北海道東北 / 中国四国 / 九州沖縄 / 北陸甲信越 | 各 13.3%（合計 66.7%） |
-| 1 | 注目地方エリア / 首都圏 | 各 6.7%（合計 13.3%） |
+- `recentThemes`: 直近30件のテーマ・エリアを記録（重複・偏り回避のため企画会議プロンプトに列挙）
+- `currentSeries`: 進行中の連載タイトル・切り口・掲載回数。**連載タイトルは継続中は書き換えない**（AIが「○○（完結編）」のように表記を変えて返しても `isSeriesContinuation: true` を信頼し、連載としては同一に保つ。詳細は `updateContext()`）
 
-選定された地域は `jaMetaPrompt()` に **強い制約** として渡され、Gemini は以下を厳守させられます：
+**決定方針（優先順位順、プロンプトで明示）**
 
-- 本記事は **「${region.name}」** に必ずフォーカスすること（他地域への逸脱禁止）
-- 候補エリア例から具体的な都市・地区を1つ選ぶこと
-- **首都圏（東京23区中心部・横浜駅周辺など）に偏ってはいけない**
-- 過去30件の slug と重複しない地点を意図的に選ぶこと
-- `primaryLocation.lat/lng` は **正確な実在座標** を出力（架空・近似丸めは禁止）
+1. **季節ネタの最優先**: 正月・節分・夏至・七夕・防災の日(9/1)・十五夜・ハロウィン・クリスマス・大晦日 など、日本の季節行事・記念日に該当/近ければ最優先
+2. **連載の継続判断**: 季節ネタが無ければ `currentSeries` を踏まえ、継続（3〜5回目安）か新テーマへの切り替えかを自律判断
+3. **地域の多様性**: `recentThemes` の過去エリアと重複・偏り（特に首都圏中心部）を避け、全国の市区町村から選定
+
+**出力 (JSON)**: `{ theme, angle, targetArea, lat, lng, isSeriesContinuation }` — `targetArea`/`lat`/`lng` はここで確定し、以降のメタ生成・本文生成・実データ取得はすべてこの地点を使う（メタ生成ステップは座標を再選定しない）。
+
+生成成功後、この決定結果は `updateContext()` で `data/blog_context.json` に書き戻され、GitHub Actions のコミットステップ（`data/blog_context.json` も `git add` 対象）で main に永続化されます。次回実行時の企画会議はこの更新後のファイルを読み込みます。
 
 ### 5. トップページへの動的ルーティング（CTAクエリパラメータ）
 
@@ -421,7 +423,7 @@ const REGION_POOL = [
 
 ...本文の結論...
 
-[博多駅周辺の不動産データを物件目利きリサーチで実際に調べる →](https://mekiki-research.com/?lat=33.5904&lng=130.4208)
+[博多市の最新の地価・ハザード情報を Mekiki Research で確認する 👉](https://mekiki-research.com/?lat=33.5904&lng=130.4208&zoom=15)
 ```
 
 **フロントエンド側の受け側ロジック**（`frontend/app/HomeClient.tsx`）：
@@ -866,10 +868,18 @@ npx playwright test tests/production_e2e.spec.ts --reporter=list
 ### ブログ生成スクリプトのローカル検証
 
 ```bash
-# ドライラン（API を呼ばずプロンプト構成のみ確認）
+# ドライラン: GEMINI_API_KEY 未設定なら企画会議プロンプトのプレビューのみ
 BLOG_DRY_RUN=1 node scripts/generate_daily_blog.js
 
-# 実行（GEMINI_API_KEY 必須・実 API を叩く）
+# ドライラン: GEMINI_API_KEY があれば企画会議→メタ生成→日本語本文まで実行して
+# 標準出力に表示（ファイル書き込み・コンテキスト保存・翻訳はスキップ）
+BLOG_DRY_RUN=1 GEMINI_API_KEY=... node scripts/generate_daily_blog.js
+
+# 季節ネタの発動確認（例: クリスマス・正月）
+BLOG_DRY_RUN=1 BLOG_DATE=2026-12-25 GEMINI_API_KEY=... node scripts/generate_daily_blog.js
+BLOG_DRY_RUN=1 BLOG_DATE=2026-01-01 GEMINI_API_KEY=... node scripts/generate_daily_blog.js
+
+# 実行（4言語生成 + ファイル書き込み + data/blog_context.json 更新）
 GEMINI_API_KEY=... node scripts/generate_daily_blog.js
 
 # 日付を指定して既存ファイルとの衝突を回避
@@ -885,7 +895,7 @@ BLOG_DATE=2026-12-31 GEMINI_API_KEY=... node scripts/generate_daily_blog.js
 | Secret 名 | 設定先ワークフロー | 目的 |
 |---|---|---|
 | **`PAT_TOKEN`** | `generate-blog.yml` | repo + workflow スコープの Personal Access Token。デフォルトの `GITHUB_TOKEN` では他ワークフローを連鎖トリガーできない仕様への対処。push 後に `deploy.yml` を発火させるために必須 |
-| **`GEMINI_API_KEY`** | `generate-blog.yml` | Gemini 3.1 Pro Preview 呼び出し用 API キー（記事生成・翻訳） |
+| **`GEMINI_API_KEY`** | `generate-blog.yml` | Gemini API キー（企画会議: 3.6 Flash / 記事生成・翻訳: 3.1 Pro Preview） |
 | `GCP_SA_KEY` | `deploy.yml` | Cloud Run / Artifact Registry / Cloud Build へのデプロイ権限を持つサービスアカウントの JSON キー |
 | `GCP_PROJECT_ID` | `deploy.yml` | GCP プロジェクト ID |
 | `GCP_REGION` | `deploy.yml` | デプロイリージョン（`asia-northeast1`） |
@@ -926,10 +936,11 @@ BLOG_DATE=2026-12-31 GEMINI_API_KEY=... node scripts/generate_daily_blog.js
 
 | 変数名 | 必須 | 既定値 | 用途 |
 |---|---|---|---|
-| `GEMINI_API_KEY` | ✅ | — | Gemini 3.1 Pro Preview |
-| `GEMINI_MODEL` | ❌ | `gemini-3.1-pro-preview` | モデル切替 |
-| `BLOG_DATE` | ❌ | JST 本日 | 対象日上書き |
-| `BLOG_DRY_RUN` | ❌ | — | `1` で API 呼び出しスキップ |
+| `GEMINI_API_KEY` | ✅ | — | Gemini API キー（企画会議・記事生成・翻訳） |
+| `GEMINI_MODEL` | ❌ | `gemini-3.1-pro-preview` | 本文執筆モデル切替 |
+| `GEMINI_PLANNING_MODEL` | ❌ | `gemini-3.6-flash` | 企画会議（テーマ選定）モデル切替 |
+| `BLOG_DATE` | ❌ | JST 本日 | 対象日上書き（季節ネタ検証にも使用） |
+| `BLOG_DRY_RUN` | ❌ | — | `1` でファイル書き込み・コンテキスト保存・翻訳をスキップ |
 | `BLOG_API_BASE_URL` | ❌ | `https://realestate-api-2hctlfcy6a-an.a.run.app` | 実データ取得先 |
 | `BLOG_SITE_BASE_URL` | ❌ | `https://mekiki-research.com` | CTA リンクのドメイン |
 
@@ -969,7 +980,7 @@ cd frontend && npm install && npm run dev  # http://localhost:3000
 
 ```bash
 # プロジェクトルートから
-BLOG_DRY_RUN=1 node scripts/generate_daily_blog.js  # 構成確認のみ
+BLOG_DRY_RUN=1 node scripts/generate_daily_blog.js  # 構成確認のみ（API キーがあれば企画会議も実行）
 GEMINI_API_KEY=... node scripts/generate_daily_blog.js  # 実際に1記事生成
 ```
 
@@ -1243,13 +1254,15 @@ real-estate-report-system/
 │   ├── cloudbuild.yaml                 # Cloud Build substitution 定義
 │   └── tests/production_e2e.spec.ts    # Playwright E2E（本番ドメイン・14シナリオ）
 ├── scripts/
-│   ├── generate_daily_blog.js          # ブログ自動生成（Gemini + 実データ + 地域分散）
+│   ├── generate_daily_blog.js          # ブログ自動生成（AI編集長の企画会議 + Gemini + 実データ）
 │   ├── prepare-hoanrin.mjs             # A13 SHP→GeoJSON 変換 & GCS アップロード [P2]
 │   ├── post_to_x.js                    # X 自動投稿（無効化中）
 │   ├── deploy.sh                       # バックエンド手動デプロイ
 │   ├── deploy_frontend.sh              # フロントエンド手動デプロイ
 │   ├── terraform_apply.sh              # Terraform 適用ヘルパー
 │   └── test_local.sh                   # ローカル疎通テスト
+├── data/
+│   └── blog_context.json               # AI編集長の企画会議コンテキスト（過去テーマ・連載状況、CI が自動更新）
 ├── terraform/                          # GCP IaC（Cloud Run / GCS / Artifact Registry / IAM）
 ├── marketing/
 │   ├── x_promotions.json               # X 投稿文面プール（再開時に使用）

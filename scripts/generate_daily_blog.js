@@ -9,21 +9,29 @@
  *   本文を JSON 文字列に詰め込むと制御文字エスケープが破綻しがちで、
  *   実際に動かして JSON.parse 失敗を確認したため分離した。
  *
+ * AI編集長（企画会議）:
+ *   本文執筆の前に、Gemini に「今日のテーマ・切り口・対象エリア」を自律的に
+ *   決定させる企画会議ステップを挟む。過去のテーマ・連載状況は
+ *   data/blog_context.json にローカル記録し、季節ネタの優先判定や
+ *   連載（3〜5回目安）の継続/切り替え判断の入力として使う。
+ *
  * 必須環境変数:
- *   GEMINI_API_KEY      — Gemini API キー
+ *   GEMINI_API_KEY        — Gemini API キー
  *
  * 任意環境変数:
- *   GEMINI_MODEL        — 既定: gemini-3.1-pro-preview
- *   BLOG_DATE           — 上書き YYYY-MM-DD (既定: JST の本日)
- *   BLOG_DRY_RUN        — "1" の場合 API を呼ばず構成のみ確認
- *   BLOG_API_BASE_URL   — 実データ取得用バックエンド URL
- *                          既定: https://realestate-api-2hctlfcy6a-an.a.run.app
- *   BLOG_SITE_BASE_URL  — 末尾CTAリンクの本番トップページ URL
- *                          既定: https://mekiki-research.com
+ *   GEMINI_MODEL          — 本文執筆用モデル。既定: gemini-3.1-pro-preview
+ *   GEMINI_PLANNING_MODEL — 企画会議（テーマ選定）用の軽量モデル。既定: gemini-3.6-flash
+ *   BLOG_DATE             — 上書き YYYY-MM-DD (既定: JST の本日)
+ *   BLOG_DRY_RUN          — "1" の場合、ファイル書き込み・コンテキスト保存・
+ *                            翻訳をスキップし、企画会議〜日本語本文生成のみ確認
+ *   BLOG_API_BASE_URL     — 実データ取得用バックエンド URL
+ *                            既定: https://realestate-api-2hctlfcy6a-an.a.run.app
+ *   BLOG_SITE_BASE_URL    — 末尾CTAリンクの本番トップページ URL
+ *                            既定: https://mekiki-research.com
  *   GCP_PROJECT_ID / FIREBASE_PROJECT_ID — Firestore への X 投稿テンプレート
- *                          書き込みを有効化するための GCP プロジェクト ID。
- *                          未設定 / Admin SDK 初期化失敗時は Firestore 書き込みを
- *                          スキップしてブログ生成自体は成功させる。
+ *                            書き込みを有効化するための GCP プロジェクト ID。
+ *                            未設定 / Admin SDK 初期化失敗時は Firestore 書き込みを
+ *                            スキップしてブログ生成自体は成功させる。
  */
 
 const fs = require("fs");
@@ -31,6 +39,7 @@ const path = require("path");
 
 const BLOG_DIR = path.resolve(__dirname, "../frontend/content/blog");
 const MODEL = process.env.GEMINI_MODEL || "gemini-3.1-pro-preview";
+const PLANNING_MODEL = process.env.GEMINI_PLANNING_MODEL || "gemini-3.6-flash";
 const DRY_RUN = process.env.BLOG_DRY_RUN === "1";
 
 // 実データ取得先: 既定は Cloud Run の本番バックエンド。
@@ -38,28 +47,49 @@ const DRY_RUN = process.env.BLOG_DRY_RUN === "1";
 const API_BASE_URL = (process.env.BLOG_API_BASE_URL || "https://realestate-api-2hctlfcy6a-an.a.run.app").replace(/\/$/, "");
 const SITE_BASE_URL = (process.env.BLOG_SITE_BASE_URL || "https://mekiki-research.com").replace(/\/$/, "");
 
-// ─── 地域分散プール ──────────────────────────────────────────────────────────
-// 首都圏に偏らない記事生成のため、毎回 weighted random で1地域を選びメタプロンプトに渡す。
-// 首都圏は最低頻度に抑え、関西・中京・地方中核都市・注目地方エリアを意図的にローテーション。
-const REGION_POOL = [
-  { name: "関西エリア", examples: "大阪市梅田・なんば、京都市四条河原町・京都駅周辺、神戸市三宮・元町、奈良市、大津市、和歌山市、姫路市、堺市、東大阪市など", weight: 3 },
-  { name: "中京エリア", examples: "名古屋市栄・名駅、岐阜市、四日市市、津市、豊田市、岡崎市、一宮市、刈谷市、桑名市など", weight: 2 },
-  { name: "北海道・東北", examples: "札幌市大通・すすきの、仙台市青葉区、盛岡市、秋田市、山形市、福島市、青森市、函館市、八戸市、いわき市など", weight: 2 },
-  { name: "中国・四国", examples: "広島市紙屋町・八丁堀、岡山市、高松市、松山市、高知市、松江市、鳥取市、徳島市、福山市、下関市など", weight: 2 },
-  { name: "九州・沖縄", examples: "福岡市天神・博多、北九州市、熊本市、鹿児島市、大分市、長崎市、宮崎市、佐賀市、那覇市、久留米市など", weight: 2 },
-  { name: "北陸・甲信越", examples: "新潟市、金沢市、富山市、長野市、松本市、甲府市、福井市、上越市、長岡市、諏訪市など", weight: 2 },
-  { name: "注目地方エリア", examples: "ニセコ町、軽井沢町、倉敷市美観地区、別府市、北谷町、富良野市、伊豆高原、白馬村、宮古島市、屋久島町、湯布院、葉山町、熱海市など", weight: 1 },
-  { name: "首都圏（最低頻度）", examples: "東京23区内の特定エリア（湾岸・城東・城北・多摩地域など）、横浜市、川崎市、千葉市、さいたま市、つくば市など。ただし渋谷・新宿・銀座など過去頻出エリアは避けること", weight: 1 },
-];
+// ─── AI編集長コンテキスト（連載・過去テーマの記録） ────────────────────────
+// 「今日のテーマ・エリア」を毎回ランダムに選ぶのではなく、AI編集長 (Gemini) が
+// 過去の掲載履歴・進行中の連載を踏まえて自律的に決定する。その判断材料として
+// ローカル JSON に「直近テーマ」「現在の連載と継続回数」を記録・引き継ぐ。
+const CONTEXT_PATH = path.resolve(__dirname, "../data/blog_context.json");
+const MAX_RECENT_THEMES = 30;
 
-function pickRegion() {
-  const total = REGION_POOL.reduce((s, r) => s + r.weight, 0);
-  let n = Math.random() * total;
-  for (const r of REGION_POOL) {
-    n -= r.weight;
-    if (n <= 0) return r;
+function loadContext() {
+  const defaults = { recentThemes: [], currentSeries: null };
+  if (!fs.existsSync(CONTEXT_PATH)) return defaults;
+  try {
+    const raw = JSON.parse(fs.readFileSync(CONTEXT_PATH, "utf8"));
+    return {
+      recentThemes: Array.isArray(raw.recentThemes) ? raw.recentThemes : [],
+      currentSeries: raw.currentSeries || null,
+    };
+  } catch (err) {
+    console.warn(`[WARN] blog_context.json の読み込みに失敗したため初期状態を使用します: ${err.message}`);
+    return defaults;
   }
-  return REGION_POOL[0];
+}
+
+function saveContext(context) {
+  fs.mkdirSync(path.dirname(CONTEXT_PATH), { recursive: true });
+  fs.writeFileSync(CONTEXT_PATH, JSON.stringify(context, null, 2) + "\n", "utf8");
+}
+
+// 企画会議の決定結果を反映してコンテキストを更新する。
+// isSeriesContinuation は AI の判断をそのまま信頼するが、テーマ名の完全一致では
+// 判定しない（「○○（完結編）」のような表記揺れで継続と誤認されなくなるのを防ぐため）。
+// 継続時は連載タイトルを currentSeries.theme のまま固定し、切り口(angle)のみ更新する。
+function updateContext(context, plan, today) {
+  const continuing = Boolean(plan.isSeriesContinuation) && Boolean(context.currentSeries);
+  const currentSeries = continuing
+    ? { ...context.currentSeries, angle: plan.angle, count: context.currentSeries.count + 1, lastDate: today }
+    : { theme: plan.theme, angle: plan.angle, count: 1, startedAt: today, lastDate: today };
+
+  const recentThemes = [
+    { date: today, theme: currentSeries.theme, angle: plan.angle, targetArea: plan.targetArea, isSeriesContinuation: continuing },
+    ...context.recentThemes,
+  ].slice(0, MAX_RECENT_THEMES);
+
+  return { recentThemes, currentSeries };
 }
 
 if (!DRY_RUN && !process.env.GEMINI_API_KEY) {
@@ -147,11 +177,11 @@ function sleep(ms) {
 
 // JSON モードを明示指定してもごく稀にフォーマットが崩れて返ってくることがあるため、
 // パース失敗時は生の応答をログに残した上で最大 JSON_CALL_MAX_ATTEMPTS 回まで叩き直す。
-async function callJson(ai, prompt) {
+async function callJson(ai, prompt, model = MODEL) {
   let lastErr;
   for (let attempt = 1; attempt <= JSON_CALL_MAX_ATTEMPTS; attempt++) {
     const response = await ai.models.generateContent({
-      model: MODEL,
+      model,
       contents: prompt,
       config: {
         responseModalities: ["TEXT"],
@@ -193,22 +223,67 @@ async function callText(ai, prompt) {
 }
 
 // ─── プロンプト ───────────────────────────────────────────────────────────────
-function jaMetaPrompt({ today, recentSlugs, region }) {
+
+// AI編集長による企画会議: 本文執筆に先立ち「今日のテーマ・切り口・対象エリア」を決定させる。
+// 季節ネタの優先判定、連載の継続/切り替え判断、地域の多様性確保 (首都圏偏重回避) を
+// 過去コンテキストに基づいて自律的に行わせる。
+function editorialPlanPrompt({ today, context }) {
+  const recentList =
+    context.recentThemes
+      .slice(0, 15)
+      .map((t) => `- ${t.date} | テーマ: ${t.theme} | エリア: ${t.targetArea}${t.isSeriesContinuation ? " (連載継続)" : ""}`)
+      .join("\n") || "(まだ記事がありません)";
+
+  const series = context.currentSeries;
+  const seriesBlock = series
+    ? `現在進行中の連載: 「${series.theme}」(切り口: ${series.angle}) — これまで ${series.count} 回掲載 (開始日: ${series.startedAt})。
+連載は3〜5回程度で完結させるのが目安。${series.count >= 4 ? "そろそろ完結、または新テーマへの切り替えを検討すること。" : ""}`
+    : "現在進行中の連載はありません。";
+
+  return `あなたは日本の不動産オウンドメディア「物件目利きリサーチ」(https://mekiki-research.com) の編集長です。
+本日 ${today} 付のブログ記事の企画会議を行い、「今日書くべきテーマ・切り口・対象エリア」を決定してください。
+
+# 直近の掲載履歴（重複・偏り回避のため）
+${recentList}
+
+# 連載の状況
+${seriesBlock}
+
+# 決定方針（優先順位順）
+1. **季節ネタの最優先**: 本日 ${today} が日本の季節行事・記念日（正月、成人の日、節分、ひな祭り、お花見・入学式、ゴールデンウィーク、夏至、七夕、お盆、防災の日(9/1)、十五夜、ハロウィン、紅葉シーズン、年末、クリスマス、大晦日 など）に該当する、またはその直前の時期であれば、それにちなんだテーマを最優先で選ぶこと。該当しない場合はこのルールを無視してよい。
+2. **連載の継続判断**: 季節ネタが無い場合、上記「連載の状況」を踏まえ、連載を継続するか（3〜5回程度を目安に）、飽きが来る前に新しい連載テーマ（例: 伊能忠敬の足跡、新幹線の新駅周辺 など）に切り替えるかを自律的に判断すること。
+3. **地域の多様性**: 直近の掲載履歴にあるエリアとの重複や偏り（特に東京23区中心部・横浜駅周辺など首都圏中心部への偏り）を避け、全国の多様な市区町村からテーマに最もふさわしい具体的エリアを選ぶこと。
+
+# 出力要件
+- targetArea: 日本の具体的な市区町村・地区名（例:「福岡市博多区」「金沢市」）
+- lat / lng: targetArea の代表地点（駅・市役所等）の **実在する正確な緯度経度**（架空の座標や近似しすぎる丸めは禁止）
+- isSeriesContinuation: 上記「現在進行中の連載」のテーマを継続する場合のみ true。季節ネタ・新テーマの場合は false
+
+# 出力 (厳守: JSON のみ、コードフェンスや説明文は禁止)
+{
+  "theme": "今日のテーマ（連載名 or 季節ネタ名、20字程度）",
+  "angle": "具体的な切り口・分析視点（40字程度）",
+  "targetArea": "具体的な市区町村・地区名",
+  "lat": 0.0,
+  "lng": 0.0,
+  "isSeriesContinuation": false
+}`;
+}
+
+function jaMetaPrompt({ today, recentSlugs, plan }) {
   return `あなたは日本の不動産市場に精通したベテラン不動産アナリストで、B2B SaaS「物件目利きリサーチ」(https://mekiki-research.com) のオウンドメディアを執筆しています。
 本日 ${today} 付の不動産ブログ記事1件のメタデータを日本語で生成してください。
 
-# テーマ要件
-- 日本の不動産 (相場、再開発、ハザード、人口動態、地価、投資、住宅市場、政策動向 など)
-- 地名や政策名を具体的に絞った切り口にすること
-- 過去の slug と重複させない: ${recentSlugs.slice(0, 30).join(", ") || "(なし)"}
+# 本日の企画（編集長決定済み・厳守）
+- テーマ: ${plan.theme}
+- 切り口: ${plan.angle}
+- 対象エリア: ${plan.targetArea}（lat=${plan.lat}, lng=${plan.lng}）
 
-# 地域選定（最重要・絶対厳守）
-- 本記事は **「${region.name}」** に必ずフォーカスすること。他地域に逸脱しない。
-- 候補エリア例: ${region.examples}
-- **首都圏（東京23区中心部・横浜駅周辺など）に偏ってはいけない。** 全国の多様な都市・エリアをローテーションする方針のため、上記の指定地域を厳守すること。
-- 上記候補のうち、過去 slug と重複しない都市・地区を意図的に1つ選ぶこと。
-- primaryLocation.lat / lng は選定した具体的な地点（駅・交差点・著名スポット等）の **正確な実在座標** を出力すること。架空の座標や近似しすぎる丸めは禁止。
-- primaryLocation.name は具体的な日本語地名（例: 「博多駅」「金沢駅」「ニセコ町ヒラフ」）を出力すること。
+上記テーマ・切り口・エリアに厳密に従ってメタデータを生成すること。他テーマ・他地域への逸脱は禁止。
+
+# その他要件
+- 過去の slug と重複させない: ${recentSlugs.slice(0, 30).join(", ") || "(なし)"}
+- 地名や政策名を具体的に絞った切り口にすること
 
 # 出力 (厳守: JSON のみ、コードフェンスや説明文は禁止)
 {
@@ -216,16 +291,22 @@ function jaMetaPrompt({ today, recentSlugs, region }) {
   "title": "60〜80文字、SEOを意識し具体的な数字や年号・地名を含む",
   "description": "メタディスクリプション 140〜180文字、結論を端的に",
   "tags": ["タグ1", "タグ2", "..."],
-  "primaryLocation": { "lat": 0.0, "lng": 0.0, "name": "選定した具体的地名" },
   "outline": ["## 1. ...", "## 2. ...", "...", "## 8. まとめ"]
 }`;
 }
 
-function jaBodyPrompt({ today, meta, areaData }) {
+function jaBodyPrompt({ today, meta, areaData, plan }) {
   const lat = Number(meta.primaryLocation?.lat);
   const lng = Number(meta.primaryLocation?.lng);
   const locName = meta.primaryLocation?.name || "対象エリア";
-  const ctaUrl = `${SITE_BASE_URL}/?lat=${lat}&lng=${lng}`;
+  const ctaUrl = `${SITE_BASE_URL}/?lat=${lat}&lng=${lng}&zoom=15`;
+  const themeBlock = plan
+    ? `
+# 本日の企画（編集長決定済み・厳守）
+- テーマ: ${plan.theme}
+- 切り口: ${plan.angle}
+本文全体を通して、上記テーマ・切り口を軸に据えて執筆すること。`
+    : "";
 
   const evidenceBlock = areaData
     ? `
@@ -251,6 +332,7 @@ ${JSON.stringify(areaData, null, 2)}
 `;
 
   return `あなたは日本の不動産市場に精通したベテラン不動産アナリストです。「物件目利きリサーチ」(${SITE_BASE_URL}) のオウンドメディア向けに、本日 ${today} 付の以下の記事の本文を Markdown で執筆してください。
+${themeBlock}
 ${evidenceBlock}
 # 記事メタデータ
 - タイトル: ${meta.title}
@@ -267,8 +349,8 @@ ${evidenceBlock}
 
 # 末尾CTA（厳守）
 - 記事最終セクション（## 8. まとめ）の末尾に、以下の Markdown リンクを **改変せず** 必ず挿入すること:
-  \`[${locName}周辺の不動産データを物件目利きリサーチで実際に調べる →](${ctaUrl})\`
-- このリンクの URL（クエリ \`?lat=${lat}&lng=${lng}\` を含む）は省略・改変・分割しないこと。
+  \`[${locName}の最新の地価・ハザード情報を Mekiki Research で確認する 👉](${ctaUrl})\`
+- このリンクの URL（クエリ \`?lat=${lat}&lng=${lng}&zoom=15\` を含む）は省略・改変・分割しないこと。
 - ベータ版（/research）など他のパスへのリンクは禁止。本番トップページ + 位置情報クエリのみを使用する。
 
 # 出力 (厳守)
@@ -515,35 +597,63 @@ async function main() {
 
   const today = jstToday();
   const recentSlugs = existingSlugs();
-  const region = pickRegion();
+  const context = loadContext();
   console.log(`[INFO] 対象日 (JST): ${today}`);
   console.log(`[INFO] 既存記事 base 数: ${recentSlugs.length}`);
-  console.log(`[INFO] 選定地域: ${region.name} (weight=${region.weight})`);
-  console.log(`[INFO] モデル: ${MODEL}${DRY_RUN ? " (DRY RUN)" : ""}`);
+  console.log(`[INFO] 過去テーマ記録数: ${context.recentThemes.length}, 進行中の連載: ${context.currentSeries?.theme || "(なし)"}`);
+  console.log(`[INFO] 企画モデル: ${PLANNING_MODEL} / 執筆モデル: ${MODEL}${DRY_RUN ? " (DRY RUN)" : ""}`);
 
-  if (DRY_RUN) {
-    console.log("[DRY] meta prompt の長さ:", jaMetaPrompt({ today, recentSlugs, region }).length);
+  if (DRY_RUN && !process.env.GEMINI_API_KEY) {
+    console.log("[DRY] GEMINI_API_KEY 未設定のため企画会議プロンプトのプレビューのみ表示します");
+    console.log(editorialPlanPrompt({ today, context }));
     return;
   }
 
   const { GoogleGenAI } = await import("@google/genai");
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-  console.log("[INFO] [JA] メタデータ生成中...");
-  const jaMeta = await callJson(ai, jaMetaPrompt({ today, recentSlugs, region }));
-  for (const k of ["slug", "title", "description", "tags", "primaryLocation"]) {
-    if (!jaMeta[k]) throw new Error(`日本語メタの必須フィールド '${k}' が欠けています`);
+  console.log("[INFO] [編集長] 企画会議中...");
+  const plan = await callJson(ai, editorialPlanPrompt({ today, context }), PLANNING_MODEL);
+  for (const k of ["theme", "angle", "targetArea"]) {
+    if (!plan[k]) throw new Error(`企画会議の必須フィールド '${k}' が欠けています`);
   }
   if (
-    typeof jaMeta.primaryLocation.lat !== "number" ||
-    typeof jaMeta.primaryLocation.lng !== "number" ||
-    !isFinite(jaMeta.primaryLocation.lat) ||
-    !isFinite(jaMeta.primaryLocation.lng)
+    typeof plan.lat !== "number" ||
+    typeof plan.lng !== "number" ||
+    !isFinite(plan.lat) ||
+    !isFinite(plan.lng)
   ) {
-    throw new Error(
-      `primaryLocation の lat/lng が不正です: ${JSON.stringify(jaMeta.primaryLocation)}`,
-    );
+    throw new Error(`企画会議の lat/lng が不正です: ${JSON.stringify(plan)}`);
   }
+  console.log(`[INFO] 企画会議の決定: theme=${plan.theme} / area=${plan.targetArea} / series継続=${Boolean(plan.isSeriesContinuation)}`);
+
+  if (DRY_RUN) {
+    console.log("[DRY] [JA] メタデータ生成中...");
+    const jaMeta = await callJson(ai, jaMetaPrompt({ today, recentSlugs, plan }));
+    console.log("[DRY] メタデータ:", JSON.stringify(jaMeta, null, 2));
+    console.log("[DRY] [JA] 本文 Markdown 生成中 (実データ取得はスキップ)...");
+    const jaBody = await callText(
+      ai,
+      jaBodyPrompt({
+        today,
+        meta: { ...jaMeta, primaryLocation: { lat: plan.lat, lng: plan.lng, name: plan.targetArea } },
+        areaData: null,
+        plan,
+      }),
+    );
+    console.log("[DRY] 本文 Markdown:\n" + jaBody);
+    console.log("[DRY] (dry-run のためファイル書き込み・コンテキスト保存・翻訳はスキップしました)");
+    return;
+  }
+
+  const primaryLocation = { lat: plan.lat, lng: plan.lng, name: plan.targetArea };
+
+  console.log("[INFO] [JA] メタデータ生成中...");
+  const jaMeta = await callJson(ai, jaMetaPrompt({ today, recentSlugs, plan }));
+  for (const k of ["slug", "title", "description", "tags"]) {
+    if (!jaMeta[k]) throw new Error(`日本語メタの必須フィールド '${k}' が欠けています`);
+  }
+  jaMeta.primaryLocation = primaryLocation;
   jaMeta.slug = sanitizeSlug(jaMeta.slug);
   if (!jaMeta.slug) throw new Error("生成された slug が無効です");
 
@@ -567,7 +677,7 @@ async function main() {
   }
 
   console.log("[INFO] [JA] 本文 Markdown 生成中...");
-  const jaBody = await callText(ai, jaBodyPrompt({ today, meta: jaMeta, areaData }));
+  const jaBody = await callText(ai, jaBodyPrompt({ today, meta: jaMeta, areaData, plan }));
   if (jaBody.length < 1500) {
     throw new Error(`日本語本文が短すぎます: ${jaBody.length} chars`);
   }
@@ -591,6 +701,10 @@ async function main() {
   }
 
   console.log(`\n[SUCCESS] 4 言語のブログ記事を生成しました: ${baseName}`);
+
+  // 企画会議の決定結果 (連載継続回数・直近テーマ) を記録し、翌日以降の
+  // 企画会議の判断材料として引き継ぐ。
+  saveContext(updateContext(context, plan, today));
 
   // Firestore (social_templates) への X 投稿テンプレート保存。
   // 失敗してもブログ生成自体は成功扱いのため await のみ（throw しない）。
