@@ -113,4 +113,4 @@ Towards 2030, Toyama City is set to further increase its prominence as a "model 
 
 However, the data analyzed in this report is based on broad statistics for Toyama City and a few sample cases. There are also challenges that must be faced, such as the flood risk of up to 10-20 meters. The final investment decision must be made after a multifaceted and professional examination of the potential and risks of each individual property.
 
-[Explore real estate data for the Toyama Station area on Mekiki Research →](https://mekiki-research.com/?lat=36.70131&lng=137.21356)
+[Explore real estate data for the Toyama Station area on Mekiki Research →](https://mekiki-research.com/?lat=36.70131&lng=137.21356&ref=blog_cta)

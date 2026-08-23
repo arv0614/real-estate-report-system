@@ -99,4 +99,4 @@ Of course, investment comes with risks. The flood risk of up to 5-10 meters, in 
 
 However, for those who can properly manage these risks and think about long-term asset building, present-day Okayama City, especially the area around Okayama Station, is a very attractive investment destination. By looking ahead at the changing face of the city, you can capture its future value. Now may be the perfect time to take that first step.
 
-[Explore real estate data around Okayama Station with Mekiki Research →](https://mekiki-research.com/?lat=34.666944&lng=133.918889)
+[Explore real estate data around Okayama Station with Mekiki Research →](https://mekiki-research.com/?lat=34.666944&lng=133.918889&ref=blog_cta)

@@ -153,4 +153,4 @@ primaryLocation:
 
 这次再开发并非仅仅一栋建筑的诞生。它更是四国中心城市松山为迈向未来、描绘新增长轨道而吹响的号角。我们断言，对于那些能从数据中解读变化征兆、以长远眼光构筑资产的投资者而言，当下的松山市，是日本国内也属于屈指可数的、值得关注的市场之一。
 
-[点击此处，通过 Mekiki Research 查询伊予铁道松山市站周边的实际房地产数据 →](https://mekiki-research.com/?lat=33.8354&lng=132.7611)
+[点击此处，通过 Mekiki Research 查询伊予铁道松山市站周边的实际房地产数据 →](https://mekiki-research.com/?lat=33.8354&lng=132.7611&ref=blog_cta)

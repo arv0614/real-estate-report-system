@@ -97,4 +97,4 @@ Our analysis of real-world data from "Mekiki Real Estate Research" has revealed 
 
 However, to succeed in investment, one must not ignore negative factors like flood risk and must make calm, data-driven judgments. The key to building assets in the future Niigata Station area will be to look beyond averages and superficial information and to analyze the potential and risks of individual properties from multiple perspectives. All eyes are now on the future of Niigata as it is reborn as the new gateway to the Sea of Japan coast.
 
-[Explore real estate data around Niigata Station with Mekiki Real Estate Research →](https://mekiki-research.com/?lat=37.9128&lng=139.0617)
+[Explore real estate data around Niigata Station with Mekiki Real Estate Research →](https://mekiki-research.com/?lat=37.9128&lng=139.0617&ref=blog_cta)

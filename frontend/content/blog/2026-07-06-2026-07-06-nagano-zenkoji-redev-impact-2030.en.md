@@ -113,4 +113,4 @@ Regardless of the strategy chosen, the key to success is "objective, data-driven
 
 This grand project to shape the future of Nagano City has only just begun. Investors who can swiftly identify the signs of change and formulate a detailed strategy will be the ones to reap significant rewards in 2030.
 
-[Explore real estate data for the Nagano Station area on Mekiki-Research →](https://mekiki-research.com/?lat=36.6479&lng=138.1884)
+[Explore real estate data for the Nagano Station area on Mekiki-Research →](https://mekiki-research.com/?lat=36.6479&lng=138.1884&ref=blog_cta)

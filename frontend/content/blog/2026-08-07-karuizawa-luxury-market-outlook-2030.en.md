@@ -116,4 +116,4 @@ Successful investment in the Karuizawa of the future will require more than just
 
 Future real estate investment in Karuizawa will demand a more strategic approach that incorporates these perspectives. The data analyzed in this article is merely the first step. We encourage you to examine more detailed data for yourself and apply it to building your future assets.
 
-[Explore real estate data around Karuizawa Station on Mekiki Research →](https://mekiki-research.com/?lat=36.3424&lng=138.636)
+[Explore real estate data around Karuizawa Station on Mekiki Research →](https://mekiki-research.com/?lat=36.3424&lng=138.636&ref=blog_cta)

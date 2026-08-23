@@ -115,4 +115,4 @@ The new landmark set to be completed in 2029 could serve as the catalyst to maxi
 
 For those considering real estate investment or purchase, the key to success lies in calmly analyzing both this macro-level future outlook and the specific characteristics and risks of individual properties based on data. Why not envision the future of Sakaihigashi while verifying its value with objective data?
 
-[Explore real estate data for the Sakaihigashi Station area on Mekiki Research →](https://mekiki-research.com/?lat=34.5739&lng=135.4837)
+[Explore real estate data for the Sakaihigashi Station area on Mekiki Research →](https://mekiki-research.com/?lat=34.5739&lng=135.4837&ref=blog_cta)

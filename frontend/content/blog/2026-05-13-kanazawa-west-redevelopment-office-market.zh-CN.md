@@ -110,4 +110,4 @@ primaryLocation:
 
 向着传统文化与尖端商务功能相融合的独一无二的城市迈进。金泽的新挑战，现在正要拉开序幕。对于房地产投资者、寻求业务扩张的企业，以及探索新工作方式的商务人士而言，2026年以后金泽的动向，必将成为一个不容错过的最重要议题。
 
-[通过Mekiki Research实际查询金泽站西口周边的房地产数据 →](https://mekiki-research.com/?lat=36.57901&lng=136.64748)
+[通过Mekiki Research实际查询金泽站西口周边的房地产数据 →](https://mekiki-research.com/?lat=36.57901&lng=136.64748&ref=blog_cta)

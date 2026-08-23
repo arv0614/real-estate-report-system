@@ -108,4 +108,4 @@ The right strategy for investors and potential buyers is to understand both the 
 
 The "Kitakyushu Renaissance" has only just begun. In this historic period of transformation, calm, data-driven analysis and foresight will be what separates success from failure in real estate investment. It is crucial to continue monitoring how the city of Kokura will evolve from here.
 
-[Explore real estate data around Kokura Station yourself with Mekiki Research →](https://mekiki-research.com/?lat=33.88753&lng=130.88349)
+[Explore real estate data around Kokura Station yourself with Mekiki Research →](https://mekiki-research.com/?lat=33.88753&lng=130.88349&ref=blog_cta)

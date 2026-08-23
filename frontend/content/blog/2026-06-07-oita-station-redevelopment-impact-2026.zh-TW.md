@@ -95,4 +95,4 @@ primaryLocation:
 
 無論採取何種策略，成功的關鍵都在於「基於數據的客觀決策」。不僅是地價或交易價格，還需要蒐集並分析土地使用分區、建蔽率・容積率，乃至於洪水等災害風險等多元資訊，從而洞察物件的真正價值。大分市的未來，將從這個充滿活力的市中心，繼續向外擴展。
 
-[點此透過 Mekiki Research 實際查詢大分車站周邊的不動產數據 →](https://mekiki-research.com/?lat=33.2326&lng=131.6087)
+[點此透過 Mekiki Research 實際查詢大分車站周邊的不動產數據 →](https://mekiki-research.com/?lat=33.2326&lng=131.6087&ref=blog_cta)

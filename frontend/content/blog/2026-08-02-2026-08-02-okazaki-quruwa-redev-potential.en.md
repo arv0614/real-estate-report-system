@@ -107,4 +107,4 @@ For future investment strategies, promising options include new or recently buil
 
 The future of Okazaki City is being set in motion right now. The data analyzed in this article is merely the prologue to that change. The most important step in making a final investment decision is to gather the latest information yourself, visit the location, and experience it firsthand. We hope this article serves as the first step on that journey.
 
-[Explore real estate data for the Higashi-Okazaki Station area on Mekiki Research →](https://mekiki-research.com/?lat=34.954199&lng=137.165831)
+[Explore real estate data for the Higashi-Okazaki Station area on Mekiki Research →](https://mekiki-research.com/?lat=34.954199&lng=137.165831&ref=blog_cta)

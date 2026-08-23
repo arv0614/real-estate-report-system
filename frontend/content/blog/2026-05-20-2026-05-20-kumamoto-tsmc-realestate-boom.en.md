@@ -95,4 +95,4 @@ The keys to forecasting the future market are the start of operations at TSMC's 
 
 On the other hand, overheated markets are invariably followed by a correction. It is more important than ever for investors and prospective homebuyers to evaluate properties calmly based on objective data, without getting carried away by the current frenzy. The ability to "discern a property's true value" (*mekiki*) with your own eyes, by analyzing location, price validity, and potential risks like flooding and landslides, has never been more critical. While we are highly optimistic about Kumamoto's future, a grounded and deliberate approach is essential.
 
-[Explore real estate data for the Kumamoto Station area yourself with Mekiki Research →](https://mekiki-research.com/?lat=32.7891&lng=130.6896)
+[Explore real estate data for the Kumamoto Station area yourself with Mekiki Research →](https://mekiki-research.com/?lat=32.7891&lng=130.6896&ref=blog_cta)

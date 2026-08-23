@@ -109,4 +109,4 @@ primaryLocation:
 
 輕井澤早已不僅僅是個避暑勝地。它正在進化為一個能容納多元生活方式的平台，以及一個具有國際價值的資產累積場域。希望本文提供的數據與分析，能為各位明智的房地產投資提供一些幫助。
 
-[前往「物件鑑價研究 (Mekiki Research)」實際查詢輕井澤車站周邊的不動產數據 →](https://mekiki-research.com/?lat=36.34241&lng=138.63483)
+[前往「物件鑑價研究 (Mekiki Research)」實際查詢輕井澤車站周邊的不動產數據 →](https://mekiki-research.com/?lat=36.34241&lng=138.63483&ref=blog_cta)

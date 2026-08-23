@@ -125,4 +125,4 @@ However, a successful investment requires a full understanding and hedging of po
 
 Future investment strategies for the Gifu Station area can take various forms depending on individual investor goals. One could target demand from single professionals or students with studio apartments near the station, hold family-oriented properties for the long term in quieter residential areas, or develop commercial properties on high-potential land in commercial districts. Whatever the strategy, calm, data-driven analysis and a cautious approach that directly confronts risk will be the keys to success.
 
-[Explore real estate data for the Gifu Station area on Mekiki Research →](https://mekiki-research.com/?lat=35.4118&lng=136.7589)
+[Explore real estate data for the Gifu Station area on Mekiki Research →](https://mekiki-research.com/?lat=35.4118&lng=136.7589&ref=blog_cta)

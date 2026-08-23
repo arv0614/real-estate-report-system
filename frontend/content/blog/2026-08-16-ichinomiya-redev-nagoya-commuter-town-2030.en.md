@@ -108,4 +108,4 @@ The median transaction price of ¥18.00 million is still affordable compared to 
 
 However, the non-negligible issue of flood risk also exists. The key to success lies in calmly analyzing and judging both the macro-level growth expectations and the micro-level risk factors based on data. Maximizing the potential offered by zoning regulations like floor area ratios while reliably mitigating hazard risks is crucial. Such precise property selection is arguably the only path to a successful real estate investment in Ichinomiya leading up to 2030.
 
-[Explore real estate data around Ichinomiya Station on Mekiki Research →](https://mekiki-research.com/?lat=35.3023&lng=136.8065)
+[Explore real estate data around Ichinomiya Station on Mekiki Research →](https://mekiki-research.com/?lat=35.3023&lng=136.8065&ref=blog_cta)

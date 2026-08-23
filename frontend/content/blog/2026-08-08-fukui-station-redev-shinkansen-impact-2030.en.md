@@ -119,4 +119,4 @@ On the other hand, preparing for natural disasters, such as the maximum flood ri
 
 Towards 2030, Fukui City's real estate market will undoubtedly transition to a new stage. In this historic period of transformation, a calm analysis based on accurate data is the compass for making optimal real estate decisions. Precisely because this is a time of both great opportunity and significant risk, we hope you will use reliable information as your weapon to discern the future value of Fukui City.
 
-[Explore real estate data around Fukui Station on Mekiki Research →](https://mekiki-research.com/?lat=36.062&lng=136.2223)
+[Explore real estate data around Fukui Station on Mekiki Research →](https://mekiki-research.com/?lat=36.062&lng=136.2223&ref=blog_cta)

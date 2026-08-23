@@ -133,4 +133,4 @@ The 3,418 transaction records presented by "Mekiki Research" highlight the area'
 
 In 2028, when the new landmark tower reveals itself, the city of Sakaihigashi, and its real estate market, will surely present a completely different landscape than today. Why not start preparing now to ride that wave of change?
 
-[Click here to explore real estate data around Nankai Koya Line Sakaihigashi Station with Mekiki Research →](https://mekiki-research.com/?lat=34.57531&lng=135.48385)
+[Click here to explore real estate data around Nankai Koya Line Sakaihigashi Station with Mekiki Research →](https://mekiki-research.com/?lat=34.57531&lng=135.48385&ref=blog_cta)

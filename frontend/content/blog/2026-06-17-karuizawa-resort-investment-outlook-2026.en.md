@@ -109,4 +109,4 @@ Having moved past the COVID-era frenzy, the Karuizawa real estate market is tran
 
 Karuizawa is no longer just a summer retreat. It has evolved into a platform that embraces diverse lifestyles and a venue for building internationally recognized assets. We hope the data and analysis provided in this article will aid you in making wise real estate investments.
 
-[Look up real estate data for the Karuizawa Station area yourself on Mekiki Research →](https://mekiki-research.com/?lat=36.34241&lng=138.63483)
+[Look up real estate data for the Karuizawa Station area yourself on Mekiki Research →](https://mekiki-research.com/?lat=36.34241&lng=138.63483&ref=blog_cta)

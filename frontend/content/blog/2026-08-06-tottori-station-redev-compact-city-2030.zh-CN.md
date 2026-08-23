@@ -117,4 +117,4 @@ primaryLocation:
 
 到2030年，鸟取站周边地区或许不仅焕然一新，更将蜕变为一个尊重历史与文化、所有年龄层都能舒适生活的高品质紧凑型城市。展望这一未来图景，并持续基于客观数据进行冷静分析，可以说是今后选择房地产时最为重要的一点。
 
-[通过 Mekiki-Research 实际查询鸟取站周边的房地产数据 →](https://mekiki-research.com/?lat=35.50191&lng=134.23663)
+[通过 Mekiki-Research 实际查询鸟取站周边的房地产数据 →](https://mekiki-research.com/?lat=35.50191&lng=134.23663&ref=blog_cta)

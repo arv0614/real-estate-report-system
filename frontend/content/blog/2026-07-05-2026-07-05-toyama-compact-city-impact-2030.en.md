@@ -125,4 +125,4 @@ Here are three key takeaways for successful real estate investment in Toyama:
 
 Toyama's Compact City strategy provides a clear "map" for real estate investors. However, to read that map correctly and distinguish between treasure and pitfalls, an indispensable "compass" in the form of reliable data is essential.
 
-[Explore real estate data around Toyama Station yourself with Mekiki Research →](https://mekiki-research.com/?lat=36.7013&lng=137.213)
+[Explore real estate data around Toyama Station yourself with Mekiki Research →](https://mekiki-research.com/?lat=36.7013&lng=137.213&ref=blog_cta)

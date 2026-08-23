@@ -95,4 +95,4 @@ As the data from Mekiki Research indicates, the market is already beginning to p
 
 After 2026, central Hiroshima will reveal its new form. To catch the wave of this transformation and make wise real estate investment decisions, it is essential to have a perspective that combines macro-level development plans with micro-level property data, calmly assessing both opportunities and risks. We hope the data and perspectives analyzed in this article will be of assistance in your real estate strategy.
 
-[Explore real estate data for the Kamiyacho intersection area in Hiroshima with Mekiki Research →](https://mekiki-research.com/?lat=34.39561&lng=132.45713)
+[Explore real estate data for the Kamiyacho intersection area in Hiroshima with Mekiki Research →](https://mekiki-research.com/?lat=34.39561&lng=132.45713&ref=blog_cta)

@@ -120,4 +120,4 @@ However, challenges must also be addressed, including the serious flood risk of 
 
 In conclusion, the Matsumoto Station redevelopment undoubtedly presents a major investment opportunity. However, to reap its benefits, it is essential to calmly analyze both the potential and the risks based on data and to formulate a long-term strategy. Using the analysis in this article as a reference, we encourage you to see the changes on the ground with your own eyes.
 
-[Explore real estate data around Matsumoto Station with Mekiki Research →](https://mekiki-research.com/?lat=36.2306&lng=137.9648)
+[Explore real estate data around Matsumoto Station with Mekiki Research →](https://mekiki-research.com/?lat=36.2306&lng=137.9648&ref=blog_cta)

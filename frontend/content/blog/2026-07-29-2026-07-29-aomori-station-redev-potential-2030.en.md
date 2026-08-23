@@ -128,4 +128,4 @@ As transaction data shows (average price approx. ¥13.52 million, median price �
 
 However, there are also challenges that cannot be overlooked, such as a severe flood risk of up to 3–5 meters. To achieve success, a calm, multi-faceted perspective is essential, one that involves understanding macro-level urban planning trends while meticulously analyzing micro-level transaction data and hazard information for each property. As Aomori City transforms towards 2030, for investors with a discerning eye, it is a market with high potential to yield significant returns.
 
-[Explore real estate data around Aomori Station with Mekiki Research →](https://mekiki-research.com/?lat=40.82861&lng=140.73518)
+[Explore real estate data around Aomori Station with Mekiki Research →](https://mekiki-research.com/?lat=40.82861&lng=140.73518&ref=blog_cta)

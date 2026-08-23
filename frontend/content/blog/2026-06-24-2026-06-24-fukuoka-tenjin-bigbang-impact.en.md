@@ -106,4 +106,4 @@ As the actual transaction data from Mekiki Research shows, the brisk activity of
 
 For real estate investors, attractive opportunities lie not only in Tenjin proper but also in the surrounding areas where its ripple effects are felt. At the same time, it is essential to pay attention to potential challenges like flood risk and make decisions based on calm, analytical judgment. As the Tenjin Big Bang nears completion over the next few years, Fukuoka's real estate market, along with its dynamic changes, is certain to transition to a new stage of value creation.
 
-[Explore real estate data around the Tenjin intersection on Mekiki Research →](https://mekiki-research.com/?lat=33.59074&lng=130.40003)
+[Explore real estate data around the Tenjin intersection on Mekiki Research →](https://mekiki-research.com/?lat=33.59074&lng=130.40003&ref=blog_cta)

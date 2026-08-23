@@ -132,4 +132,4 @@ Looking towards 2030, Sakae will likely have established its position as a "city
 
 Sakae exudes the charm of a mature city, distinct from the dynamism of Meieki. Its real estate potential is just now beginning to blossom. The key to successful real estate investment in Sakae lies in looking beyond superficial price fluctuations and deciphering the grand vision for the city's future, supported by concrete data.
 
-[Explore real estate data around the Sakae intersection on Mekiki Research →](https://mekiki-research.com/?lat=35.169918&lng=136.907705)
+[Explore real estate data around the Sakae intersection on Mekiki Research →](https://mekiki-research.com/?lat=35.169918&lng=136.907705&ref=blog_cta)

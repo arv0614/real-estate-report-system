@@ -100,4 +100,4 @@ The market levels indicated by the 2021–2025 transaction data, with an average
 
 Of course, there are undeniable concerns, such as the flood risk. However, even after accounting for this, the opportunity to ride the wave of dynamic urban transformation underway at the gateway to Shikoku is well worth considering. Rather than getting caught up in short-term price fluctuations, the best investment strategy for the current Takamatsu real estate market may be to visualize the completed city of 2028 and build assets with a medium- to long-term perspective.
 
-[Explore real estate data around JR Takamatsu Station on Bukken Mekiki Research →](https://mekiki-research.com/?lat=34.3516&lng=134.0465)
+[Explore real estate data around JR Takamatsu Station on Bukken Mekiki Research →](https://mekiki-research.com/?lat=34.3516&lng=134.0465&ref=blog_cta)

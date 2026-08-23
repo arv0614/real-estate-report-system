@@ -115,4 +115,4 @@ However, at the same time, there is an undeniable challenge: a flood risk of up 
 
 The real estate market around JR Tokushima Station is now standing at the entrance of a major transformation. At this historic turning point, having accurate information and deep insight will be the key to success.
 
-[Explore real estate data for the JR Tokushima Station area on Mekiki Research →](https://mekiki-research.com/?lat=34.0735&lng=134.5516)
+[Explore real estate data for the JR Tokushima Station area on Mekiki Research →](https://mekiki-research.com/?lat=34.0735&lng=134.5516&ref=blog_cta)

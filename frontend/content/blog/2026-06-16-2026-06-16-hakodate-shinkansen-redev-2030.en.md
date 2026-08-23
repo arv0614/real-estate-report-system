@@ -99,4 +99,4 @@ For those considering an investment in Hakodate real estate now, in 2026, the fo
 
 Of course, Hakodate is no exception to the structural challenge of population decline faced by many regional cities in Japan. However, Hakodate's attempt to redefine its appeal by leveraging a national project like the Shinkansen extension is creating a new dynamism in its real estate market. How will Hakodate transform by 2030? Deciphering the signs of that change from data and acting proactively will be the key to achieving success in real estate investment in the years to come.
 
-[Explore real estate data around Hakodate Station on Mekiki Research →](https://mekiki-research.com/?lat=41.77361&lng=140.72647)
+[Explore real estate data around Hakodate Station on Mekiki Research →](https://mekiki-research.com/?lat=41.77361&lng=140.72647&ref=blog_cta)

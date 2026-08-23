@@ -121,4 +121,4 @@ We have analyzed the Morioka real estate market in 2026 based on data, focusing 
 
 With the semiconductor boom as a tailwind, Morioka is poised for a new leap forward as the core city of the Kita-Tohoku region. There is no doubt that those who can ride this dynamic wave of change can expect significant investment returns. We hope that the data and analysis presented in this article will aid you in making informed real estate investment decisions.
 
-[Explore real estate data for the Morioka Station area on Mekiki Research →](https://mekiki-research.com/?lat=39.702036&lng=141.135308)
+[Explore real estate data for the Morioka Station area on Mekiki Research →](https://mekiki-research.com/?lat=39.702036&lng=141.135308&ref=blog_cta)

@@ -125,4 +125,4 @@ Furthermore, the data showing that the survey area has a low risk of flooding an
 
 Sendai is in the midst of a rebirth, driven by the "Sendai City Center Redevelopment Project." Seizing this historic period of transformation and conducting a calm, data-driven analysis is undoubtedly the key to successful real estate investment in Sendai going forward.
 
-[Explore real estate data for the Sendai Station area on Mekiki Research →](https://mekiki-research.com/?lat=38.260098&lng=140.882103)
+[Explore real estate data for the Sendai Station area on Mekiki Research →](https://mekiki-research.com/?lat=38.260098&lng=140.882103&ref=blog_cta)

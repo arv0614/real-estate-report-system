@@ -104,4 +104,4 @@ On the positive side are the recovered tourism demand and the establishment of n
 
 In conclusion, is Atami a "buy" in 2026? The answer is: "Yes, but only with exhaustive property selection and risk analysis." Investors who avoid getting swept up in the hype, meticulously vet hazard risks using objective data like that presented here, and calmly simulate future cash flow will find that Atami remains a highly attractive investment destination—if they can identify a quality property that aligns with their strategy.
 
-[Explore real estate data around Atami Station on Mekiki Research →](https://mekiki-research.com/?lat=35.1033&lng=139.0772)
+[Explore real estate data around Atami Station on Mekiki Research →](https://mekiki-research.com/?lat=35.1033&lng=139.0772&ref=blog_cta)

@@ -111,4 +111,4 @@ Of course, there are points investors must be cautious of, such as projected flo
 
 As the gateway to Eastern Japan and a new center for business and life, the transformation of Omiya is poised to bring great opportunities to the real estate market. It's an area that demands ever-closer attention in the coming years.
 
-[Explore real estate data around Omiya Station yourself on Mekiki Research →](https://mekiki-research.com/?lat=35.9065&lng=139.6238)
+[Explore real estate data around Omiya Station yourself on Mekiki Research →](https://mekiki-research.com/?lat=35.9065&lng=139.6238&ref=blog_cta)

@@ -108,4 +108,4 @@ The keys to a successful real estate investment in the Kurashiki Bikan Historica
 
 The Kurashiki Bikan Historical Quarter is not merely an object of speculation but a "living heritage" that connects Japan's culture and history to the future. Developing a business with a deep understanding of and respect for its essence will lead to long-term success and a harmonious coexistence with the local community.
 
-[Explore real estate data for the Kurashiki Bikan Historical Quarter area on Mekiki Research →](https://mekiki-research.com/?lat=34.59661&lng=133.77153)
+[Explore real estate data for the Kurashiki Bikan Historical Quarter area on Mekiki Research →](https://mekiki-research.com/?lat=34.59661&lng=133.77153&ref=blog_cta)

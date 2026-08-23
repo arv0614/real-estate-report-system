@@ -105,4 +105,4 @@ primaryLocation:
 
 在與世界遺產共存的同時，推動著前瞻性的城市建設的姬路。其中心地帶正形成一個融合了歷史價值與現代便利性，獨一無二且充滿魅力的房地產市場。請務必參考本文所分析的數據，親自用您的雙眼去確認它的潛力。
 
-[前往「Mekiki Research」，實際查詢姬路車站周邊的房地產數據 →](https://mekiki-research.com/?lat=34.82772&lng=134.69123)
+[前往「Mekiki Research」，實際查詢姬路車站周邊的房地產數據 →](https://mekiki-research.com/?lat=34.82772&lng=134.69123&ref=blog_cta)

@@ -119,4 +119,4 @@ primaryLocation:
 
 四日市市正处于变革的中心。在这个历史性的转折点上，基于准确数据的深刻洞见，将是成功进行房地产投资的关键。
 
-[通过Mekiki Research实际查询近铁四日市站周边的房产数据 →](https://mekiki-research.com/?lat=34.966713&lng=136.622531)
+[通过Mekiki Research实际查询近铁四日市站周边的房产数据 →](https://mekiki-research.com/?lat=34.966713&lng=136.622531&ref=blog_cta)

@@ -92,4 +92,4 @@ While short-term fluctuations in the supply-demand balance are expected, we conc
 
 Continuous data analysis is essential to accurately grasp future market trends. The key to success will be to closely monitor trends in transaction prices and changes in the surrounding environment, as analyzed in this article, to identify the next investment opportunity.
 
-[Explore real estate data around GRAND GREEN OSAKA on Mekiki Research →](https://mekiki-research.com/?lat=34.70451&lng=135.49472)
+[Explore real estate data around GRAND GREEN OSAKA on Mekiki Research →](https://mekiki-research.com/?lat=34.70451&lng=135.49472&ref=blog_cta)

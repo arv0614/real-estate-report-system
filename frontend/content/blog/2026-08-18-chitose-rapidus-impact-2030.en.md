@@ -97,4 +97,4 @@ The clusters of apartments rising in Commercial Zones with a 300% Floor Area Rat
 
 For real estate investors and corporate representatives, discarding outdated market perceptions and conducting precise, data-driven market analysis will be the only approach to seizing this once-in-a-lifetime opportunity.
 
-[Check the actual real estate data around Chitose Station on Bukken Mekiki Research →](https://mekiki-research.com/?lat=42.829141&lng=141.651543)
+[Check the actual real estate data around Chitose Station on Bukken Mekiki Research →](https://mekiki-research.com/?lat=42.829141&lng=141.651543&ref=blog_cta)

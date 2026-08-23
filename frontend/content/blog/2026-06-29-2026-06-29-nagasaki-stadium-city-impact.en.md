@@ -130,4 +130,4 @@ Based on this situation, the following three strategies are essential for achiev
 
 Nagasaki's "once-in-a-century urban development" is creating significant opportunities in the real estate market. However, a true "discerning eye" belongs to those who can accurately understand both the bright spots and the shadows, and make calm, data-driven decisions.
 
-[Explore real estate data around Nagasaki Stadium City with Mekiki Research →](https://mekiki-research.com/?lat=32.7597&lng=129.8694)
+[Explore real estate data around Nagasaki Stadium City with Mekiki Research →](https://mekiki-research.com/?lat=32.7597&lng=129.8694&ref=blog_cta)

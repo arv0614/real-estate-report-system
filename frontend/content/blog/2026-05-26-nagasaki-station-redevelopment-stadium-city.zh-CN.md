@@ -106,4 +106,4 @@ primaryLocation:
 
 投资长崎的未来，无非就是冷静地审视这些变化，并权衡其潜力与风险。不被表面的繁华所迷惑，基于客观数据进行审慎的物业选择，将比以往任何时候都更加重要。
 
-[点击此处，通过“物业评估研究 (Mekiki Research)”查询长崎站周边的房地产数据 →](https://mekiki-research.com/?lat=32.751613&lng=129.872436)
+[点击此处，通过“物业评估研究 (Mekiki Research)”查询长崎站周边的房地产数据 →](https://mekiki-research.com/?lat=32.751613&lng=129.872436&ref=blog_cta)

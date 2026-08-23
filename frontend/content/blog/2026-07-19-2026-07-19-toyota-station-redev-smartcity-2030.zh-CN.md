@@ -118,4 +118,4 @@ primaryLocation:
 
 丰田市，堪称一个预测日本产业与城市未来的缩影。请参考本文分析的数据和观点，亲身去判断其潜力和风险。
 
-[通过Mekiki Research实际查询丰田市站周边的房地产数据 →](https://mekiki-research.com/?lat=35.08371&lng=137.15253)
+[通过Mekiki Research实际查询丰田市站周边的房地产数据 →](https://mekiki-research.com/?lat=35.08371&lng=137.15253&ref=blog_cta)

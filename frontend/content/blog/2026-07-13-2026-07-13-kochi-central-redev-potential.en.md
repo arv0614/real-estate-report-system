@@ -123,4 +123,4 @@ On the other hand, the severe flood risk of up to 3 to 5 meters is a challenge t
 
 Kochi City will steadily transform as it moves toward the target year of 2028. Seizing this wave of change could lead to significant investment opportunities. However, success depends on not being swayed by superficial information but on conducting a multifaceted risk analysis based on reliable data. We encourage you to build your own investment strategy by leveraging real transaction data and hazard information like that analyzed in this article.
 
-[Explore real estate data for the Kochi Station area on Mekiki Research →](https://mekiki-research.com/?lat=33.5675&lng=133.5414)
+[Explore real estate data for the Kochi Station area on Mekiki Research →](https://mekiki-research.com/?lat=33.5675&lng=133.5414&ref=blog_cta)

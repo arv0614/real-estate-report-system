@@ -106,4 +106,4 @@ The 3,919 transaction records from 2021 to 2025 that we analyzed today show that
 
 However, there are also undeniable challenges, such as the flood risk. While keeping an eye on macro-level urban planning trends, a micro-level perspective is essential for investigating individual properties, including detailed hazard information and the surrounding environment. Utilizing data like that analyzed in this article to "appraise" properties from multiple angles will be the key to successful real estate investment in Morioka.
 
-[Explore real estate data for the Morioka Station area on Mekiki Research →](https://mekiki-research.com/?lat=39.70194&lng=141.13673)
+[Explore real estate data for the Morioka Station area on Mekiki Research →](https://mekiki-research.com/?lat=39.70194&lng=141.13673&ref=blog_cta)

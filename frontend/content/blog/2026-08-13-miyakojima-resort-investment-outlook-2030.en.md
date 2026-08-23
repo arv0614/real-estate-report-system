@@ -111,4 +111,4 @@ The keys to success lie in having a clear vision on three fronts: 1) defining yo
 
 Miyako Island's real estate market is standing at the threshold of a major transformation. By carefully monitoring the market with a long-term perspective and a foundation of solid data, investors can seize significant opportunities.
 
-[Explore real estate data around Miyako Island City Hall on Mekiki Research →](https://mekiki-research.com/?lat=24.8055&lng=125.2831)
+[Explore real estate data around Miyako Island City Hall on Mekiki Research →](https://mekiki-research.com/?lat=24.8055&lng=125.2831&ref=blog_cta)

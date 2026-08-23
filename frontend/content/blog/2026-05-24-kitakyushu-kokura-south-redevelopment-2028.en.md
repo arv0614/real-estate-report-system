@@ -101,4 +101,4 @@ The 2,312 transaction records we presented illustrate the real market trends aro
 
 As we move toward the 2028 completion, the real estate market around Kokura Station is undeniably entering a period of major transformation. To turn this historic change into an opportunity, swift decision-making based on reliable information will be required. We hope this article serves as a valuable resource for your real estate strategy.
 
-[Explore real estate data for the Kokura Station area on Mekiki Research →](https://mekiki-research.com/?lat=33.8876&lng=130.8837)
+[Explore real estate data for the Kokura Station area on Mekiki Research →](https://mekiki-research.com/?lat=33.8876&lng=130.8837&ref=blog_cta)

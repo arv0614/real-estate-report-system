@@ -109,4 +109,4 @@ However, it is crucial to also address risks, such as the potential for 5-10 met
 
 The transformation of Koriyama City has just begun. In this historic turning point, formulating a strategy based on solid data and deep insight will pave the way to success.
 
-[Explore real estate data around Koriyama Station on Mekiki Research →](https://mekiki-research.com/?lat=37.39861&lng=140.39133)
+[Explore real estate data around Koriyama Station on Mekiki Research →](https://mekiki-research.com/?lat=37.39861&lng=140.39133&ref=blog_cta)

@@ -102,4 +102,4 @@ The keys to successful real estate investment in the Kyoto of tomorrow can be su
 
 To witness this historic shift and reap the rewards, both meticulous analysis and bold decision-making will be required. We encourage you to see for yourself the powerful wave of change that is shaping the future of Kyoto.
 
-[Explore real estate data for the Kyoto Station area on Mekiki Research →](https://mekiki-research.com/?lat=34.985849&lng=135.758765)
+[Explore real estate data for the Kyoto Station area on Mekiki Research →](https://mekiki-research.com/?lat=34.985849&lng=135.758765&ref=blog_cta)

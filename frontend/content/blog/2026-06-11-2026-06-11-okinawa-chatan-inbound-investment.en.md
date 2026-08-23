@@ -129,4 +129,4 @@ However, caution is necessary precisely because the market is so active. The 284
 
 Confirming legal regulations like zoning, building coverage ratios, and floor area ratios; checking for hazard risks; and, most importantly, getting a firsthand feel for the local atmosphere and the flow of people—combining both data analysis and on-the-ground research is the surest path to success in the attractive market of Chatan.
 
-[Explore real estate data around Mihama American Village in Chatan, Okinawa with Mekiki Research →](https://mekiki-research.com/?lat=26.3168&lng=127.7578)
+[Explore real estate data around Mihama American Village in Chatan, Okinawa with Mekiki Research →](https://mekiki-research.com/?lat=26.3168&lng=127.7578&ref=blog_cta)

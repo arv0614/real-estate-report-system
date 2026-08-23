@@ -106,4 +106,4 @@ However, this process will also present challenges, such as a temporary loosenin
 
 Successful real estate investment begins with a deep understanding of both these macro-level changes and micro-level property characteristics. It requires a calm, analytical perspective based on concrete figures, like the 2,109 transaction records and the average unit price of approx. ¥400,000/m² we've examined today, rather than being dazzled by the glamorous aspects of redevelopment. It also means earnestly acknowledging hazard information, such as the maximum inundation depth of 10-20 meters, and implementing thorough risk management. Based on these considerations, discerningly selecting a property that aligns with your investment strategy will be the key to building wealth in Hiroshima's transformative city center.
 
-[Explore real estate data around the Kamiyacho intersection yourself with Mekiki Research →](https://mekiki-research.com/?lat=34.39563&lng=132.45901)
+[Explore real estate data around the Kamiyacho intersection yourself with Mekiki Research →](https://mekiki-research.com/?lat=34.39563&lng=132.45901&ref=blog_cta)

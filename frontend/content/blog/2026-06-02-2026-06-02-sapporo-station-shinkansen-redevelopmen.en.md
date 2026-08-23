@@ -118,4 +118,4 @@ As we have deciphered from Mekiki Research's data, this area is already a hub of
 
 Of course, there is still time until the redevelopment is complete, and the process will involve various risks and fluctuations. However, by clearly envisioning the future of Sapporo and conducting sober, data-driven analysis, investors have the opportunity to achieve significant returns that outweigh those risks. Sapporo has now begun the countdown to a great leap forward. This historic period of transformation may well be the perfect opportunity for real estate investment.
 
-[Explore Sapporo Station real estate data yourself on Mekiki Research →](https://mekiki-research.com/?lat=43.068661&lng=141.350734)
+[Explore Sapporo Station real estate data yourself on Mekiki Research →](https://mekiki-research.com/?lat=43.068661&lng=141.350734&ref=blog_cta)

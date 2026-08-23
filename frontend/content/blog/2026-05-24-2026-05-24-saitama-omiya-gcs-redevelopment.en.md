@@ -97,4 +97,4 @@ Looking toward 2030 and beyond, the changes currently underway are just the begi
 
 However, the key to success lies in conducting a calm, data-driven analysis without being swayed by superficial information. A prudent real estate strategy involves a multifaceted examination of objective data such as transaction prices, zoning regulations, and hazard risks, and selecting a property while concretely envisioning the future of the city. Let's keep a close watch on the progress of this massive project and accurately assess the future asset value.
 
-[Explore real estate data for the Omiya Station area on Bukken Mekiki Research →](https://mekiki-research.com/?lat=35.9065&lng=139.6238)
+[Explore real estate data for the Omiya Station area on Bukken Mekiki Research →](https://mekiki-research.com/?lat=35.9065&lng=139.6238&ref=blog_cta)

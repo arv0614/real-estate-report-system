@@ -102,4 +102,4 @@ Notably, the market is already showing signs of polarization, as evidenced by th
 
 Toward 2030, Hakodate is striving to redefine its value—not as a mere "pass-through point," but as a "strategic hub" for tourism in Southern Hokkaido and a "compact city" where citizens can live comfortably. By witnessing this urban transformation and conducting precise, data-driven analysis, real estate investors can seize significant opportunities. It will be essential to keep a close watch on the progress of redevelopment and the resulting shifts in the flow of people.
 
-[Explore real estate data around Hakodate Station with Mekiki Research →](https://mekiki-research.com/?lat=41.7738&lng=140.7265)
+[Explore real estate data around Hakodate Station with Mekiki Research →](https://mekiki-research.com/?lat=41.7738&lng=140.7265&ref=blog_cta)

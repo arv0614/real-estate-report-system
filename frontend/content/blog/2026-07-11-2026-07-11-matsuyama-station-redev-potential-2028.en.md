@@ -153,4 +153,4 @@ From a real estate investment perspective, "now"—as the plan takes shape and m
 
 This redevelopment is more than just the birth of a single building. It is the starting gun for Matsuyama, the central city of Shikoku, to chart a new growth trajectory into the future. For investors who can read the signs of change from data and think about long-term wealth creation, we conclude that Matsuyama is now one of the most noteworthy markets in Japan.
 
-[Explore real estate data around Iyo Railway's Matsuyama City Station on Mekiki Research →](https://mekiki-research.com/?lat=33.8354&lng=132.7611)
+[Explore real estate data around Iyo Railway's Matsuyama City Station on Mekiki Research →](https://mekiki-research.com/?lat=33.8354&lng=132.7611&ref=blog_cta)

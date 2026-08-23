@@ -102,4 +102,4 @@ The "Sakae District Grand Vision" underway in Nagoya's Sakae area is the very sy
 
 As analyzed in this article, the abundant transaction history of 3,870 cases, the progress of redevelopment projects, the improvement of the living environment through park development, and the robust transportation and living infrastructure all point to a bright future for the Sakae area. Investors are called upon to look beyond the immediate headlines, decipher the structural changes in this area based on data, and build a mid- to long-term strategy with an eye on 2030 and beyond. The transformation of Sakae has only just begun.
 
-[Explore real estate data around the Sakae intersection on Mekiki Research →](https://mekiki-research.com/?lat=35.169941&lng=136.908023)
+[Explore real estate data around the Sakae intersection on Mekiki Research →](https://mekiki-research.com/?lat=35.169941&lng=136.908023&ref=blog_cta)

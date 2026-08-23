@@ -109,4 +109,4 @@ As analyzed in this article, this redevelopment is expected to have a positive i
 
 Future value becomes visible by combining past data with the changes that are yet to come. The key is not to take public data and redevelopment plans at face value, but to verify them with your own eyes and analyze them from multiple perspectives. We hope this article serves as a helpful resource for considering the future of Akita City and the potential of its real estate market.
 
-[Explore real estate data around Akita Station with Mekiki Research →](https://mekiki-research.com/?lat=39.7175&lng=140.1297)
+[Explore real estate data around Akita Station with Mekiki Research →](https://mekiki-research.com/?lat=39.7175&lng=140.1297&ref=blog_cta)

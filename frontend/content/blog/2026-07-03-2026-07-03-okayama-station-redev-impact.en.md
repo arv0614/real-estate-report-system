@@ -104,4 +104,4 @@ As we have seen in this analysis, the redevelopment holds immense potential for 
 
 Having witnessed the success of Mori no Machi Grace, Okayama City is now about to enter the final chapter of its transformation. At this historic turning point, leveraging objective data to foresee the market's future will be the key to real estate strategy in Okayama going forward.
 
-[Explore real estate data around Okayama Station yourself with Mekiki Research →](https://mekiki-research.com/?lat=34.6661&lng=133.9189)
+[Explore real estate data around Okayama Station yourself with Mekiki Research →](https://mekiki-research.com/?lat=34.6661&lng=133.9189&ref=blog_cta)

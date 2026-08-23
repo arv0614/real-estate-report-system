@@ -98,4 +98,4 @@ Risks to Acknowledge:
 
 In conclusion, the Kyoto Station area is one of Japan's most promising real estate markets, supported by multiple large-scale redevelopment projects and international demand. However, to reap its potential benefits, a calm analysis based on data and careful property selection, with an understanding of Kyoto's unique regulations and disaster risks, are indispensable. All eyes will be on how this area enhances its value as we head towards 2030.
 
-[Explore real estate data for the Kyoto Station area on Mekiki Research →](https://mekiki-research.com/?lat=34.9858&lng=135.7588)
+[Explore real estate data for the Kyoto Station area on Mekiki Research →](https://mekiki-research.com/?lat=34.9858&lng=135.7588&ref=blog_cta)

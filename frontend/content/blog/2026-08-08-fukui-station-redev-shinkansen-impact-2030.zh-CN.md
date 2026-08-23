@@ -119,4 +119,4 @@ primaryLocation:
 
 展望2030年，福井市的房地产市场无疑将迈入一个新的阶段。在这一历史性的变革时期，基于准确数据进行的冷静分析，将是您做出最佳房地产决策的指南针。正因为机遇与风险并存，我们希望您能以可靠的信息为武器，精准判断福井市的未来价值。
 
-[点击此处，通过 Mekiki-Research 查询福井站周边的房地产数据 →](https://mekiki-research.com/?lat=36.062&lng=136.2223)
+[点击此处，通过 Mekiki-Research 查询福井站周边的房地产数据 →](https://mekiki-research.com/?lat=36.062&lng=136.2223&ref=blog_cta)

@@ -117,4 +117,4 @@ However, one must not forget the flood risk, with a maximum expected depth of 5 
 
 Making decisions based on "facts"—such as the transaction data and hazard information we've analyzed—rather than on superficial impressions is the most critical perspective in today's real estate selection process.
 
-[Explore real estate data around Kariya Station with Mekiki Research →](https://mekiki-research.com/?lat=34.99181&lng=137.01353)
+[Explore real estate data around Kariya Station with Mekiki Research →](https://mekiki-research.com/?lat=34.99181&lng=137.01353&ref=blog_cta)

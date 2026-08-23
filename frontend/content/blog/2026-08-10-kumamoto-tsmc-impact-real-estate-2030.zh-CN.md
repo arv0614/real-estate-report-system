@@ -146,4 +146,4 @@ primaryLocation:
 
 熊本是当下一片充满巨大潜力的前沿阵地。如果能理解这片土地上正在发生的变化的本质，并基于冷静分析做出准确判断，就有可能抓住前所未有的巨大投资机遇。作为“九州硅岛”的核心，熊本未来的飞跃值得我们继续关注。
 
-[在 Mekiki-Research 上查询熊本站周边的实际房产数据 →](https://mekiki-research.com/?lat=34.7317&lng=130.6888)
+[在 Mekiki-Research 上查询熊本站周边的实际房产数据 →](https://mekiki-research.com/?lat=34.7317&lng=130.6888&ref=blog_cta)

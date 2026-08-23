@@ -126,4 +126,4 @@ Mekiki-Research 提供的宫城县仙台市青叶区的房地产交易数据清�
 
 到2030年，仙台必将展现出与现在截然不同的面貌。在描绘其未来蓝图的同时，不妨关注一下东北地区的核心城市——仙台的房地产市场。
 
-[通过 Mekiki-Research 实际查询仙台站周边的房地产数据 →](https://mekiki-research.com/?lat=38.260173&lng=140.882298)
+[通过 Mekiki-Research 实际查询仙台站周边的房地产数据 →](https://mekiki-research.com/?lat=38.260173&lng=140.882298&ref=blog_cta)

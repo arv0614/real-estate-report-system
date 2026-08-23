@@ -112,4 +112,4 @@ As the transaction data shows, real estate prices within Aomori City vary greatl
 
 At the same time, preparation for natural disasters like floods must not be overlooked. Objectively evaluating risks based on data and implementing appropriate measures are essential for long-term asset building. By understanding Aomori City's vision for the future and using data as a compass, it is possible to navigate the turbulent waters of the real estate market ahead.
 
-[Explore real estate data around Aomori Station on Mekiki Research →](https://mekiki-research.com/?lat=40.82861&lng=140.73543)
+[Explore real estate data around Aomori Station on Mekiki Research →](https://mekiki-research.com/?lat=40.82861&lng=140.73543&ref=blog_cta)

@@ -112,4 +112,4 @@ primaryLocation:
 
 另一方面，也不能忽視如洪水風險等自然災害的防備。根據數據客觀評估風險，並採取適當的應對措施，是長期資產規劃中不可或缺的一環。唯有理解青森市的未來藍圖，並手握數據這個羅盤，才能安然渡過未來不動產市場的波濤。
 
-[前往「物件 Mekiki Research」實際查詢青森站周邊的不動產數據 →](https://mekiki-research.com/?lat=40.82861&lng=140.73543)
+[前往「物件 Mekiki Research」實際查詢青森站周邊的不動產數據 →](https://mekiki-research.com/?lat=40.82861&lng=140.73543&ref=blog_cta)

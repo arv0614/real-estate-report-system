@@ -106,4 +106,4 @@ In this article, we have analyzed the real estate investment potential and risks
 
 The Oita Station area is now standing at the threshold of a major transformation. The powerful tailwind of redevelopment, combined with the societal demand for compact cities, will undoubtedly push the area's real estate value to a new level. While challenges like flood risk exist, investors who accurately grasp these issues and formulate data-driven strategies can reap significant rewards. It is well worth considering an investment now in the future of Oita City as it continues to evolve toward 2030.
 
-[Explore real estate data for the Oita Station area on Mekiki Research →](https://mekiki-research.com/?lat=33.23231&lng=131.60453)
+[Explore real estate data for the Oita Station area on Mekiki Research →](https://mekiki-research.com/?lat=33.23231&lng=131.60453&ref=blog_cta)

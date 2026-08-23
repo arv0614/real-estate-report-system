@@ -146,4 +146,4 @@ Here is a summary of our recommended real estate investment strategy for Miyako 
 
 The Miyako Island real estate market is certainly at a turning point. However, its unparalleled natural environment and brand value will not disappear. It is precisely in this era of change that the ability to see through to essential value based on data—a "discerning eye"—is being tested. We hope this article serves as a valuable aid in your wise investment decisions.
 
-[Explore real estate data around Miyako Island City Hall with Bukken Mekiki Research →](https://mekiki-research.com/?lat=24.80551&lng=125.28113)
+[Explore real estate data around Miyako Island City Hall with Bukken Mekiki Research →](https://mekiki-research.com/?lat=24.80551&lng=125.28113&ref=blog_cta)

@@ -115,4 +115,4 @@ primaryLocation:
 
 德島站周邊的不動產市場，此刻正站在一個巨大變革的起點。在這個歷史性的轉捩點上，擁有準確的資訊與深刻的洞察力，將是通往成功的關鍵。
 
-[前往「房產鑑價研究」實際查詢JR德島站周邊的不動產資料 →](https://mekiki-research.com/?lat=34.0735&lng=134.5516)
+[前往「房產鑑價研究」實際查詢JR德島站周邊的不動產資料 →](https://mekiki-research.com/?lat=34.0735&lng=134.5516&ref=blog_cta)

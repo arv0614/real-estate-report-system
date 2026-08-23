@@ -116,4 +116,4 @@ For investors to succeed, the following three perspectives are essential:
 
 The Tenjin Big Bang is not the finish line, but a new starting line for Fukuoka's leap to the next stage. Now, in the midst of this transformation, a calm, data-driven analysis and a strategic vision for the future will determine success in real estate investment.
 
-[Explore real estate data around the Tenjin intersection on Mekiki Research →](https://mekiki-research.com/?lat=33.59124&lng=130.39881)
+[Explore real estate data around the Tenjin intersection on Mekiki Research →](https://mekiki-research.com/?lat=33.59124&lng=130.39881&ref=blog_cta)

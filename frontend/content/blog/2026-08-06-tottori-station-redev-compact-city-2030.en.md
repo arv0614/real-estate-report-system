@@ -117,4 +117,4 @@ At the same time, we must sincerely address the challenges indicated by the data
 
 By 2030, the Tottori Station area may be reborn not just as a new place, but as a high-quality compact city that respects its history and culture, where all generations can live comfortably. Keeping this future vision in mind and continuing to conduct calm analysis based on objective data will be the most crucial element in selecting real estate from now on.
 
-[Explore real estate data for the Tottori Station area with Mekiki Research →](https://mekiki-research.com/?lat=35.50191&lng=134.23663)
+[Explore real estate data for the Tottori Station area with Mekiki Research →](https://mekiki-research.com/?lat=35.50191&lng=134.23663&ref=blog_cta)

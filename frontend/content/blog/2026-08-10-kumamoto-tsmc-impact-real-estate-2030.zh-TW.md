@@ -146,4 +146,4 @@ primaryLocation:
 
 熊本如今是一片充滿巨大可能性的新天地。若能理解此地正在發生的變革本質，並基於冷靜分析做出準確判斷，便能抓住前所未有的巨大投資機會。我們將持續關注作為「矽島九州」核心飛躍發展的熊本的未來。
 
-[利用「物件目利きリサーチ (Mekiki Research)」實際查詢熊本車站周邊的不動產數據 →](https://mekiki-research.com/?lat=34.7317&lng=130.6888)
+[利用「物件目利きリサーチ (Mekiki Research)」實際查詢熊本車站周邊的不動產數據 →](https://mekiki-research.com/?lat=34.7317&lng=130.6888&ref=blog_cta)

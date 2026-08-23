@@ -108,4 +108,4 @@ primaryLocation:
 
 正因为处于巨大变革时期，我们才更需要避免被表面信息所迷惑，进行基于第一手数据的详细分析。运用如本文所使用的客观数据，亲眼确认当地的潜力与风险，将是您迈向明智房地产投资的第一步。
 
-[点击此处，通过“物件慧眼调研” (Mekiki Research) 实际查询鹿儿岛中央站周边的房地产数据 →](https://mekiki-research.com/?lat=31.58309&lng=130.55281)
+[点击此处，通过“物件慧眼调研” (Mekiki Research) 实际查询鹿儿岛中央站周边的房地产数据 →](https://mekiki-research.com/?lat=31.58309&lng=130.55281&ref=blog_cta)

@@ -146,4 +146,4 @@ To succeed in real estate investment in Kumamoto during this historic transition
 
 Kumamoto is now a frontier with immense potential. By understanding the essence of the changes taking place in this region and making sound decisions based on calm analysis, you can seize an unprecedented investment opportunity. We will continue to keep a close watch on the future of Kumamoto as it takes a great leap forward as the core of "Silicon Island Kyushu."
 
-[Explore real estate data around Kumamoto Station with Mekiki Research →](https://mekiki-research.com/?lat=34.7317&lng=130.6888)
+[Explore real estate data around Kumamoto Station with Mekiki Research →](https://mekiki-research.com/?lat=34.7317&lng=130.6888&ref=blog_cta)

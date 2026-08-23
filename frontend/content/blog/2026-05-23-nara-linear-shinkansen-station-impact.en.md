@@ -116,4 +116,4 @@ The keys to a successful investment strategy with an eye on the 2037 opening can
 
 The dawn of the new Linear era has already begun. With the compass of reliable data in hand, why not take a prudent step into Nara, a city where history and the future intersect?
 
-[Explore real estate data around Kintetsu-Nara Station yourself with Mekiki Research →](https://mekiki-research.com/?lat=34.685114&lng=135.829094)
+[Explore real estate data around Kintetsu-Nara Station yourself with Mekiki Research →](https://mekiki-research.com/?lat=34.685114&lng=135.829094&ref=blog_cta)

@@ -115,4 +115,4 @@ primaryLocation:
 
 德岛站周边的房地产市场，正站在一个巨大变革的起点。在这个历史性的转折点上，拥有准确的信息和深刻的洞察力，将是通往成功的关键。
 
-[点击此处，通过“物件慧眼研究 (Mekiki-Research)”实际查询JR德岛站周边的房地产数据 →](https://mekiki-research.com/?lat=34.0735&lng=134.5516)
+[点击此处，通过“物件慧眼研究 (Mekiki-Research)”实际查询JR德岛站周边的房地产数据 →](https://mekiki-research.com/?lat=34.0735&lng=134.5516&ref=blog_cta)

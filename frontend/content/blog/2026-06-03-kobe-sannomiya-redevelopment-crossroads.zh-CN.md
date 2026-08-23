@@ -139,4 +139,4 @@ primaryLocation:
 
 2029年，我们将亲眼见证一个面貌焕然一新的三宫。届时，这座城市的房地产将拥有怎样的价值？从现在开始密切关注其动向，在合适的时机采取行动，这或许正是通往未来财富积累的关键一步。
 
-[点击此处，通过“房产洞察研究 (Mekiki Research)”实际查询三宫站周边的房地产数据 →](https://mekiki-research.com/?lat=34.6944&lng=135.1944)
+[点击此处，通过“房产洞察研究 (Mekiki Research)”实际查询三宫站周边的房地产数据 →](https://mekiki-research.com/?lat=34.6944&lng=135.1944&ref=blog_cta)

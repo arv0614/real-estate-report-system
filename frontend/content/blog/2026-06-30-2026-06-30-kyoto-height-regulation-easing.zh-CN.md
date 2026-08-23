@@ -102,4 +102,4 @@ primaryLocation:
 
 要亲历历史转动的瞬间并收获成果，需要周密的分析和果断的决策。请您亲眼见证这股塑造京都未来的巨大浪潮。
 
-[点击此处，通过“物件目利Research”实际查询京都站周边的房地产数据 →](https://mekiki-research.com/?lat=34.985849&lng=135.758765)
+[点击此处，通过“物件目利Research”实际查询京都站周边的房地产数据 →](https://mekiki-research.com/?lat=34.985849&lng=135.758765&ref=blog_cta)

@@ -87,4 +87,4 @@ As the transaction data analyzed here shows, the market already offers a diverse
 
 Investing in Niigata's future is, in a sense, a bet on the success of this grand urban revitalization project. Carefully monitoring its progress and making decisions at the right time will be the key to success.
 
-[Explore real estate data around Niigata Station on Bukken Mekiki Research →](https://mekiki-research.com/?lat=37.9129&lng=139.0622)
+[Explore real estate data around Niigata Station on Bukken Mekiki Research →](https://mekiki-research.com/?lat=37.9129&lng=139.0622&ref=blog_cta)

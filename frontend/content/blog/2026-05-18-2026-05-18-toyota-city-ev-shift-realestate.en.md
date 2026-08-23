@@ -117,4 +117,4 @@ Of course, there are hurdles to overcome, including hazard risks like flooding a
 
 Over the next five to ten years, as the EV shift gains full momentum, the real estate map of Toyota City is likely to be significantly redrawn. Accurately perceiving this historic turning point and conducting calm, data-driven analysis will be the compass for discovering future value.
 
-[Explore real estate data around Toyotashi Station yourself with Mekiki Research →](https://mekiki-research.com/?lat=35.0837&lng=137.1528)
+[Explore real estate data around Toyotashi Station yourself with Mekiki Research →](https://mekiki-research.com/?lat=35.0837&lng=137.1528&ref=blog_cta)

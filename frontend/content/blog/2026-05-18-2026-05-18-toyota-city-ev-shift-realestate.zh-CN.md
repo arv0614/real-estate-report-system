@@ -117,4 +117,4 @@ primaryLocation:
 
 在电动汽车转型全面展开的未来5到10年里，丰田市的房地产版图可能会被大幅改写。准确把握这一历史性的转折点，并进行基于数据的冷静分析，必将成为我们发现未来价值的指南针。
 
-[点击此处，通过物见研调(Mekiki-Research)查询丰田市站周边的房地产数据 →](https://mekiki-research.com/?lat=35.0837&lng=137.1528)
+[点击此处，通过物见研调(Mekiki-Research)查询丰田市站周边的房地产数据 →](https://mekiki-research.com/?lat=35.0837&lng=137.1528&ref=blog_cta)

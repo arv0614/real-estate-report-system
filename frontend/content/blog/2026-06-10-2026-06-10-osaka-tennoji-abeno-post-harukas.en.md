@@ -102,4 +102,4 @@ The combination of outstanding transportation convenience, a concentration of co
 
 Of course, challenges such as the renewal of aging buildings and competition with other areas exist. However, this district has more than enough potential and future promise to overcome them. From the perspectives of commerce, residence, and investment, the Tennoji and Abeno area will undoubtedly remain a key hub driving Osaka's real estate market in 2026 and beyond.
 
-[Explore real estate data around Tennoji Station on Mekiki Research →](https://mekiki-research.com/?lat=34.6469&lng=135.5137)
+[Explore real estate data around Tennoji Station on Mekiki Research →](https://mekiki-research.com/?lat=34.6469&lng=135.5137&ref=blog_cta)

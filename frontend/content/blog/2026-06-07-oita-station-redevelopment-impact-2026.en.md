@@ -95,4 +95,4 @@ For future investment strategies, three directions can be considered:
 
 Regardless of the strategy chosen, the key to success lies in "objective decision-making based on data." The ability to discern a property's true value by collecting and analyzing multifaceted information—not just land and transaction prices, but also zoning regulations, building coverage/floor-area ratios, and hazard risks like flooding—is paramount. The future of Oita City will undoubtedly continue to expand from this vibrant city center.
 
-[Explore real estate data for the Oita Station area yourself with Mekiki Research →](https://mekiki-research.com/?lat=33.2326&lng=131.6087)
+[Explore real estate data for the Oita Station area yourself with Mekiki Research →](https://mekiki-research.com/?lat=33.2326&lng=131.6087&ref=blog_cta)

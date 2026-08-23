@@ -101,4 +101,4 @@ However, it is also a fact that this is a polarized market where property values
 
 To succeed in Niseko real estate investment, it is essential to avoid getting caught up in the frenzy and instead rely on calm, data-driven analysis. A "discerning eye"—the ability to accurately assess the potential and risks of individual properties by understanding legal regulations like city planning and floor-area ratios—is more crucial than ever. Building your investment strategy by leveraging primary data, such as that analyzed in this article, is a prudent approach for 2030 and beyond.
 
-[Explore real estate data around Niseko Grand Hirafu on Mekiki Research →](https://mekiki-research.com/?lat=42.85951&lng=140.71353)
+[Explore real estate data around Niseko Grand Hirafu on Mekiki Research →](https://mekiki-research.com/?lat=42.85951&lng=140.71353&ref=blog_cta)

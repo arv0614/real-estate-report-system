@@ -99,4 +99,4 @@ However, a thorough risk assessment is essential for any investment. The flood r
 
 Looking towards 2030, the area around Niigata Station will likely be functioning as the center of a more attractive, convenient, and sustainable compact city. In this historic period of transformation, a calm, data-driven analysis will be the key to successful real estate investment in Niigata City.
 
-[Explore real estate data for the Niigata Station area on Mekiki Research →](https://mekiki-research.com/?lat=37.9128&lng=139.0614)
+[Explore real estate data for the Niigata Station area on Mekiki Research →](https://mekiki-research.com/?lat=37.9128&lng=139.0614&ref=blog_cta)

@@ -99,4 +99,4 @@ From an investment strategy perspective, the present moment—while the project 
 
 Of course, the redevelopment's impact is not solely positive. There are risk factors to monitor, such as its relationship with existing urban centers like Nanokamachi and the city's overall population dynamics. This is precisely why a calm analysis based on reliable data, rather than superficial information, is essential. The key to successful real estate investment in Yamagata City will be to thoroughly interpret actual transaction prices and environmental data, like those cited in this report, and to gain a deep understanding of the unique characteristics of each area.
 
-[Explore real estate data for the Yamagata Station area on Mekiki Research →](https://mekiki-research.com/?lat=38.24803&lng=140.32749)
+[Explore real estate data for the Yamagata Station area on Mekiki Research →](https://mekiki-research.com/?lat=38.24803&lng=140.32749&ref=blog_cta)

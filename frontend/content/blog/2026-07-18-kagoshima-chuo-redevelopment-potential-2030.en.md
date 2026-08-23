@@ -108,4 +108,4 @@ However, behind these bright future prospects, we must not forget the existence 
 
 Precisely because it is in a period of great transformation, a detailed analysis based on primary data, rather than superficial information, is indispensable. Utilizing objective data like that used in this article and verifying the potential and risks on the ground with your own eyes is the first step toward wise real estate investment.
 
-[Explore real estate data for the Kagoshima-Chuo Station area on Mekiki Research →](https://mekiki-research.com/?lat=31.58309&lng=130.55281)
+[Explore real estate data for the Kagoshima-Chuo Station area on Mekiki Research →](https://mekiki-research.com/?lat=31.58309&lng=130.55281&ref=blog_cta)

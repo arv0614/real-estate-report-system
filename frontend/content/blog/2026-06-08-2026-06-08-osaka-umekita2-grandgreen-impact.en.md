@@ -93,4 +93,4 @@ As the latest transaction data shows, this area has already formed a vibrant mar
 
 What kind of future will the magnificent urban development of "Grand Green Osaka" create for the Kansai real estate market? We encourage you to witness the signs of this transformation with your own eyes.
 
-[Explore real estate data around Grand Green Osaka (Umekita 2nd Phase) with Mekiki Research →](https://mekiki-research.com/?lat=34.70455&lng=135.49472)
+[Explore real estate data around Grand Green Osaka (Umekita 2nd Phase) with Mekiki Research →](https://mekiki-research.com/?lat=34.70455&lng=135.49472&ref=blog_cta)

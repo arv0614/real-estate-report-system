@@ -101,4 +101,4 @@ Catalyzed by the Osaka-Kansai Expo, Nara City's real estate market is on the ver
 
 Now, as Nara's historical value and future potential intersect, a once-in-a-lifetime investment opportunity awaits.
 
-[Explore real estate data around Kintetsu-Nara Station yourself with Mekiki Research →](https://mekiki-research.com/?lat=34.685012&lng=135.828983)
+[Explore real estate data around Kintetsu-Nara Station yourself with Mekiki Research →](https://mekiki-research.com/?lat=34.685012&lng=135.828983&ref=blog_cta)

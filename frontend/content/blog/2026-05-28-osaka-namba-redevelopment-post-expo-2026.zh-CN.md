@@ -107,4 +107,4 @@ primaryLocation:
 
 难波地区无疑是大阪正在经历最剧烈变革的地方之一。若能从数据中解读出变化的迹象，并预见其未来的价值，巨大的投资机遇就在眼前。
 
-[点击此处，通过“Mekiki Research”实际查询难波公园周边的房地产数据 →](https://mekiki-research.com/?lat=34.66355&lng=135.50208)
+[点击此处，通过“Mekiki Research”实际查询难波公园周边的房地产数据 →](https://mekiki-research.com/?lat=34.66355&lng=135.50208&ref=blog_cta)

@@ -106,4 +106,4 @@ The key factors that will shape Nagasaki's property values from 2026 onward can 
 
 Investing in Nagasaki's future means calmly assessing these changes and weighing the potential against the risks. Now more than ever, it will be crucial to move beyond the surface-level excitement and make careful property selections based on objective data.
 
-[Explore real estate data for the Nagasaki Station area on Mekiki Research →](https://mekiki-research.com/?lat=32.751613&lng=129.872436)
+[Explore real estate data for the Nagasaki Station area on Mekiki Research →](https://mekiki-research.com/?lat=32.751613&lng=129.872436&ref=blog_cta)

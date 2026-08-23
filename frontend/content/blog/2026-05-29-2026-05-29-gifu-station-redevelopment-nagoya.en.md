@@ -133,4 +133,4 @@ At the same time, the severe flood risk, with a maximum inundation depth of 5–
 
 In conclusion, the real estate market around Gifu Station from 2026 onward can be described as a market that combines high potential with clear risks—one that truly tests an investor's discernment. The surest path to success in this attractive market will be to closely monitor the progress of redevelopment and demographic shifts, diligently analyze various data including hazard information, and act at the right moment.
 
-[Explore real estate data around JR Gifu Station yourself with Mekiki Research →](https://mekiki-research.com/?lat=35.4124&lng=136.7575)
+[Explore real estate data around JR Gifu Station yourself with Mekiki Research →](https://mekiki-research.com/?lat=35.4124&lng=136.7575&ref=blog_cta)

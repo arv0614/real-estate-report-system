@@ -119,4 +119,4 @@ For investors, an excellent opportunity to benefit from the value enhancement dr
 
 Yokkaichi City is in the midst of a transformation. At this historic turning point, deep insights based on accurate data will be the key to successful real estate investment.
 
-[Explore real estate data for the Kintetsu-Yokkaichi Station area on Mekiki Research →](https://mekiki-research.com/?lat=34.966713&lng=136.622531)
+[Explore real estate data for the Kintetsu-Yokkaichi Station area on Mekiki Research →](https://mekiki-research.com/?lat=34.966713&lng=136.622531&ref=blog_cta)

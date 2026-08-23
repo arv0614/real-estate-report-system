@@ -104,4 +104,4 @@ Under the clear guidance of the "Sakae Grand Vision," successful projects like t
 
 Towards 2030, the Sakae area holds the potential to evolve from a place to "visit" to a place to "work, live, and relax." For investors, this period of historic transformation in Sakae's real estate market, with the right analysis and strategy, could present a significant opportunity.
 
-[Explore real estate data for the Sakae intersection area in Nagoya with Mekiki Research →](https://mekiki-research.com/?lat=35.170014&lng=136.907731)
+[Explore real estate data for the Sakae intersection area in Nagoya with Mekiki Research →](https://mekiki-research.com/?lat=35.170014&lng=136.907731&ref=blog_cta)

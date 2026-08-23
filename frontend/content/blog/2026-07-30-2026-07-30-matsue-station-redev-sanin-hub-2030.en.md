@@ -102,4 +102,4 @@ On the other hand, investors and individuals considering purchasing real estate 
 
 Towards 2030, the area around Matsue Station is set to undergo a major transformation. Within this dynamic change, there are solid investment opportunities. We hope that the data and analysis presented in this article will aid you in making informed real estate investment decisions.
 
-[Explore real estate data around Matsue Station with Mekiki Research →](https://mekiki-research.com/?lat=35.46461&lng=133.05973)
+[Explore real estate data around Matsue Station with Mekiki Research →](https://mekiki-research.com/?lat=35.46461&lng=133.05973&ref=blog_cta)

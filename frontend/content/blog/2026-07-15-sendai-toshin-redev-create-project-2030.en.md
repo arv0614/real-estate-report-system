@@ -126,4 +126,4 @@ The current median transaction price of 24.00 million yen suggests that very att
 
 By 2030, Sendai will undoubtedly present a completely different face. While envisioning this future, why not turn your attention to the real estate market of Sendai, the hub city of the Tohoku region?
 
-[Explore real estate data around Sendai Station with Mekiki Research →](https://mekiki-research.com/?lat=38.260173&lng=140.882298)
+[Explore real estate data around Sendai Station with Mekiki Research →](https://mekiki-research.com/?lat=38.260173&lng=140.882298&ref=blog_cta)

@@ -92,4 +92,4 @@ For investors, Akita City is a market where great opportunities and risks coexis
 
 As many regional cities in Japan face similar challenges, if Akita City's initiatives become a successful model, its real estate market will transition to a new stage. By looking ahead to future value and meticulously interpreting the data, it should be possible to find investment opportunities to ride the wave of this transformation.
 
-[Research real estate data for the Akita Station area on Mekiki Research →](https://mekiki-research.com/?lat=39.71791&lng=140.12958)
+[Research real estate data for the Akita Station area on Mekiki Research →](https://mekiki-research.com/?lat=39.71791&lng=140.12958&ref=blog_cta)

@@ -100,4 +100,4 @@ primaryLocation:
 
 金澤站西口的變革才剛開始。希望您能參考本文所提供的數據，親自到現場確認變化，並抓住巨大的商機。
 
-[點擊此處，透過「物件精準研究 (Mekiki-Research)」實際查詢金澤站西口周邊的不動產數據 →](https://mekiki-research.com/?lat=36.5786&lng=136.6472)
+[點擊此處，透過「物件精準研究 (Mekiki-Research)」實際查詢金澤站西口周邊的不動產數據 →](https://mekiki-research.com/?lat=36.5786&lng=136.6472&ref=blog_cta)

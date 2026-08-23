@@ -114,4 +114,4 @@ After 2026, once the redevelopment is complete and new urban functions are fully
 
 However, one must also heed the warnings that the data presents, such as the flood risk of up to 5 to 10 meters. The ability to "assess" (目利き, *mekiki*) properties from a multifaceted perspective—weighing the bright future prospects against potential risks—will be the most critical skill for achieving success in Himeji's evolving market.
 
-[Explore real estate data around Himeji Station yourself with Bukken Mekiki Research →](https://mekiki-research.com/?lat=34.8278&lng=134.6914)
+[Explore real estate data around Himeji Station yourself with Bukken Mekiki Research →](https://mekiki-research.com/?lat=34.8278&lng=134.6914&ref=blog_cta)

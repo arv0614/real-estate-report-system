@@ -94,4 +94,4 @@ primaryLocation:
 
 福井站西口的再开发项目，无疑是福井市房地产市场几十年来难得的重大投资机遇。但成功并非唾手可得。基于如本文所分析的客观数据，着眼于未来城市结构的变化，并妥善管理风险——这才是未来在福井市进行明智房地产投资的成功之道。
 
-[点击此处，通过Mekiki Research查询福井站周边的房地产数据 →](https://mekiki-research.com/?lat=36.06181&lng=136.22253)
+[点击此处，通过Mekiki Research查询福井站周边的房地产数据 →](https://mekiki-research.com/?lat=36.06181&lng=136.22253&ref=blog_cta)

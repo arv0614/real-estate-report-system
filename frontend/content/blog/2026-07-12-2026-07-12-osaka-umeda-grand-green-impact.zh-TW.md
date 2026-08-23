@@ -92,4 +92,4 @@ GRAND GREEN OSAKA提供的「公園體驗」，與現有設施提供的「百貨
 
 為了準確掌握未來的市場動向，持續性的數據分析不可或缺。密切關注本文所分析的交易價格動向及周邊環境變化，並從中洞察下一個投資機會，將是成功的關鍵。
 
-[使用「物件精選研究 (Mekiki Research)」實際查詢GRAND GREEN OSAKA周邊的房地產數據 →](https://mekiki-research.com/?lat=34.70451&lng=135.49472)
+[使用「物件精選研究 (Mekiki Research)」實際查詢GRAND GREEN OSAKA周邊的房地產數據 →](https://mekiki-research.com/?lat=34.70451&lng=135.49472&ref=blog_cta)

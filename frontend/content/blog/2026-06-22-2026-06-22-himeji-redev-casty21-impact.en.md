@@ -105,4 +105,4 @@ In 2026, the Himeji Station area is at a pivotal time as the results of the "Cas
 
 Himeji is a city pursuing future-oriented development while coexisting with a World Heritage site. Its central district is forming an exceptionally attractive real estate market that blends historical value with modern convenience. We encourage you to use the data analyzed in this article as a reference and see its potential with your own eyes.
 
-[Explore real estate data for the Himeji Station area on Mekiki Research →](https://mekiki-research.com/?lat=34.82772&lng=134.69123)
+[Explore real estate data for the Himeji Station area on Mekiki Research →](https://mekiki-research.com/?lat=34.82772&lng=134.69123&ref=blog_cta)

@@ -119,4 +119,4 @@ The 4,037 transaction data points we analyzed speak eloquently of this city's vi
 
 In conclusion, from a long-term perspective, Tsukuba can be evaluated as one of the premier investment destinations in the Tokyo suburbs, with strong potential for stable and appreciating asset values. Of course, it is necessary to carefully assess risks such as the specifics of individual properties and future economic trends, but its potential is immense. It is a city to watch, with its Super City initiative and evolving startup ecosystem promising an exciting future.
 
-[Explore real estate data around Tsukuba Station on Mekiki Research →](https://mekiki-research.com/?lat=36.0833&lng=140.1115)
+[Explore real estate data around Tsukuba Station on Mekiki Research →](https://mekiki-research.com/?lat=36.0833&lng=140.1115&ref=blog_cta)

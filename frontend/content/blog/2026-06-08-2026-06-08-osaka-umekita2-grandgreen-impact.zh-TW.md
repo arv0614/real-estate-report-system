@@ -93,4 +93,4 @@ primaryLocation:
 
 「GRAND GREEN OSAKA」這個宏偉的都市開發計畫，未來將為關西的不動產市場描繪出怎樣的藍圖？請務必親眼見證這些變化的徵兆。
 
-[前往「物件鑑價研究網」實際查詢GRAND GREEN OSAKA (梅北2期)周邊的不動產數據 →](https://mekiki-research.com/?lat=34.70455&lng=135.49472)
+[前往「物件鑑價研究網」實際查詢GRAND GREEN OSAKA (梅北2期)周邊的不動產數據 →](https://mekiki-research.com/?lat=34.70455&lng=135.49472&ref=blog_cta)

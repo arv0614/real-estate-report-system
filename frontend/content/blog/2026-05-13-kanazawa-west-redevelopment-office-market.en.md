@@ -110,4 +110,4 @@ The latest data shows that Kanazawa's real estate market is thriving, and the in
 
 Towards a one-of-a-kind city where traditional culture and cutting-edge business functions merge. Kanazawa's new chapter is about to begin. For real estate investors, companies seeking to expand, and business professionals exploring new ways of working, the developments in Kanazawa from 2026 onward will be a critical theme that cannot be ignored.
 
-[Explore real estate data for the Kanazawa Station West Exit area on Mekiki Research →](https://mekiki-research.com/?lat=36.57901&lng=136.64748)
+[Explore real estate data for the Kanazawa Station West Exit area on Mekiki Research →](https://mekiki-research.com/?lat=36.57901&lng=136.64748&ref=blog_cta)

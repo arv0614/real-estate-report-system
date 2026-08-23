@@ -126,4 +126,4 @@ primaryLocation:
 
 到了2030年，仙台勢必會展現出與今日截然不同的樣貌。在描繪這幅未來藍圖的同時，不妨開始關注這個東北核心城市——仙台的不動產市場吧。
 
-[透過物件鑑定 Research 實際查詢仙台車站周邊的不動產數據 →](https://mekiki-research.com/?lat=38.260173&lng=140.882298)
+[透過物件鑑定 Research 實際查詢仙台車站周邊的不動產數據 →](https://mekiki-research.com/?lat=38.260173&lng=140.882298&ref=blog_cta)

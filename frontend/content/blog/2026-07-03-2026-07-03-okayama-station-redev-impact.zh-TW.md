@@ -104,4 +104,4 @@ primaryLocation:
 
 繼杜之街GRACE的成功之後，岡山市正迎來變革的最終章。在這個歷史性的轉捩點，活用客觀數據、洞悉市場的未來，將是掌握未來岡山房地產策略的關鍵。
 
-[前往「物件鑑定Research」實際查詢岡山站周邊的不動產數據 →](https://mekiki-research.com/?lat=34.6661&lng=133.9189)
+[前往「物件鑑定Research」實際查詢岡山站周邊的不動產數據 →](https://mekiki-research.com/?lat=34.6661&lng=133.9189&ref=blog_cta)

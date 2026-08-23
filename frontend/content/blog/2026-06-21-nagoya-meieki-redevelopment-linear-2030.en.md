@@ -113,4 +113,4 @@ As the figures of an average transaction price of approximately ¥55.63 million 
 
 However, the path forward is not without its challenges. Potential issues such as maglev delays, an office supply glut, and a flood risk of 5–10 meters exist. To succeed in real estate investment in the Nagoya Station area from now on, it is imperative to confront both the bright prospects and the potential shadows, and to formulate a calm, meticulous strategy based on data. Why not seize this historic period of transformation as an opportunity and take a prudent step forward?
 
-[Click here to explore real estate data around Meitetsu Nagoya Station on Mekiki Research →](https://mekiki-research.com/?lat=35.17011&lng=136.88234)
+[Click here to explore real estate data around Meitetsu Nagoya Station on Mekiki Research →](https://mekiki-research.com/?lat=35.17011&lng=136.88234&ref=blog_cta)

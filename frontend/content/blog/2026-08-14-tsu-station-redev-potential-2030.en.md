@@ -118,4 +118,4 @@ However, behind this potential lie severe flood risks with maximum depths of 10�
 
 By 2030, as it embraces the new flow of people brought by the Linear line, Tsu City may have transformed from "just another city in the Tokai region" to a "strategic hub connected to the Tokyo metropolitan area." While envisioning that future, the opportune moment to take a strategic step forward, with data as your compass, has arrived.
 
-[Examine real estate data for the Tsu Station area yourself on Mekiki Research →](https://mekiki-research.com/?lat=34.7299&lng=136.51)
+[Examine real estate data for the Tsu Station area yourself on Mekiki Research →](https://mekiki-research.com/?lat=34.7299&lng=136.51&ref=blog_cta)

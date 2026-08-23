@@ -139,4 +139,4 @@ At the same time, investors must keep an eye on hazard risks like flooding and l
 
 In 2029, we will witness a completely new Sannomiya. What will the real estate in this city be worth then? Carefully monitoring the trends from now and taking action at the right time will be the path to building future wealth.
 
-[Explore real estate data for the Sannomiya Station area on Mekiki Research →](https://mekiki-research.com/?lat=34.6944&lng=135.1944)
+[Explore real estate data for the Sannomiya Station area on Mekiki Research →](https://mekiki-research.com/?lat=34.6944&lng=135.1944&ref=blog_cta)

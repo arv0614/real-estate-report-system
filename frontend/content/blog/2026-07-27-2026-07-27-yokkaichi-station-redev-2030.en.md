@@ -102,4 +102,4 @@ The 4,313 transaction records from "Mekiki Research" show that the city's real e
 
 However, the flood risk, with a maximum inundation depth of 3 to 5 meters, cannot be overlooked. The key to successful real estate investment in Yokkaichi lies in balancing future potential against risk, supported by meticulous research and proactive countermeasures. Feel the pulse of a city transforming towards 2030 through the data, and take a well-informed step forward.
 
-[Explore real estate data for the Kintetsu-Yokkaichi Station area on Mekiki Research →](https://mekiki-research.com/?lat=34.9665&lng=136.6225)
+[Explore real estate data for the Kintetsu-Yokkaichi Station area on Mekiki Research →](https://mekiki-research.com/?lat=34.9665&lng=136.6225&ref=blog_cta)

@@ -109,4 +109,4 @@ GX/DX特区构想的推进，预计将对郡山市的写字楼市场产生最直
 
 郡山市的转型才刚刚开始。在这个历史性的转型期，制定基于可靠数据和深刻洞察的战略，将为您开辟通往成功的道路。
 
-[在“物见专家调研” (Mekiki Research) 上实际查询郡山站周边的房地产数据 →](https://mekiki-research.com/?lat=37.39861&lng=140.39133)
+[在“物见专家调研” (Mekiki Research) 上实际查询郡山站周边的房地产数据 →](https://mekiki-research.com/?lat=37.39861&lng=140.39133&ref=blog_cta)

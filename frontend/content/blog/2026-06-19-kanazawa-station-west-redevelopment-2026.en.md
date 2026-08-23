@@ -100,4 +100,4 @@ Finally, here are three perspectives that investors should have to achieve succe
 
 The transformation of the Kanazawa Station West Exit has only just begun. We encourage you to use the data presented in this article as a reference, see the changes on the ground with your own eyes, and seize this major opportunity.
 
-[Research real estate data for the Kanazawa Station West Exit area yourself with Mekiki Research →](https://mekiki-research.com/?lat=36.5786&lng=136.6472)
+[Research real estate data for the Kanazawa Station West Exit area yourself with Mekiki Research →](https://mekiki-research.com/?lat=36.5786&lng=136.6472&ref=blog_cta)

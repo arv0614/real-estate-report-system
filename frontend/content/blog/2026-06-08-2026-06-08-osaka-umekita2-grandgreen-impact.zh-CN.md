@@ -93,4 +93,4 @@ primaryLocation:
 
 “大阪绿色广场”这一宏大的城市开发项目，将为关西的房地产市场描绘出怎样的未来？请务必亲眼见证这些变化的迹象。
 
-[通过“物件Mekiki Research”实际查询大阪绿色广场 (梅北2期)周边的房地产数据 →](https://mekiki-research.com/?lat=34.70455&lng=135.49472)
+[通过“物件Mekiki Research”实际查询大阪绿色广场 (梅北2期)周边的房地产数据 →](https://mekiki-research.com/?lat=34.70455&lng=135.49472&ref=blog_cta)

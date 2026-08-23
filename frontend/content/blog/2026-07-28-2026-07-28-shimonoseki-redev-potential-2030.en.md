@@ -99,4 +99,4 @@ As Mekiki Research data indicates, Shimonoseki's real estate market currently ho
 
 Of course, structural challenges like population decline and natural disaster risks such as debris flows cannot be ignored. However, by leveraging Shimonoseki's unique strengths, including its historic townscape and rich tourism resources, a successful redevelopment can pave the way for the city's revitalization as a sustainable and attractive urban center. Carefully monitoring this ambitious project, which aims for completion by 2030, and conducting calm, data-driven analysis will be the key to seizing real estate investment success in the Shimonoseki of tomorrow.
 
-[Explore real estate data for the Shimonoseki Station area on Mekiki Research →](https://mekiki-research.com/?lat=33.9492&lng=130.9234)
+[Explore real estate data for the Shimonoseki Station area on Mekiki Research →](https://mekiki-research.com/?lat=33.9492&lng=130.9234&ref=blog_cta)

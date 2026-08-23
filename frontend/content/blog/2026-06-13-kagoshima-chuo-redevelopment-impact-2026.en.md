@@ -114,4 +114,4 @@ Mekiki Research's data, spanning 7,348 transactions from 2021 to 2025, shows tha
 
 However, alongside this potential, there are also points of caution, such as flood risk. Successful real estate investment begins with a calm analysis of both macro-level urban development trends and micro-level property-specific characteristics and risks, all based on objective data. For investors equipped with accurate information and analytical skills, the Kagoshima real estate market from 2026 onward will undoubtedly present a major opportunity.
 
-[Explore real estate data for the Kagoshima-Chuo Station area on Mekiki Research →](https://mekiki-research.com/?lat=31.583321&lng=130.542289)
+[Explore real estate data for the Kagoshima-Chuo Station area on Mekiki Research →](https://mekiki-research.com/?lat=31.583321&lng=130.542289&ref=blog_cta)

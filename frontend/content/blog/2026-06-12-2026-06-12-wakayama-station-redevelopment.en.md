@@ -117,4 +117,4 @@ At the same time, severe risks, such as a maximum flood depth of 3-5 meters, and
 
 In conclusion, the Wakayamashi Station area can be considered a "'buy' for investors who can correctly understand the potential and risks and make discerning property selections." The key to success lies in choosing prime, station-adjacent locations that can fully benefit from the redevelopment, while also identifying properties (e.g., upper floors, robust structures) that can hedge against hazard risks. A multi-faceted analysis based on data—not just on superficial prices and yields—is required to discern the true value of this city.
 
-[Explore real estate data for the Wakayamashi Station area on Mekiki Research →](https://mekiki-research.com/?lat=34.23761&lng=135.17053)
+[Explore real estate data for the Wakayamashi Station area on Mekiki Research →](https://mekiki-research.com/?lat=34.23761&lng=135.17053&ref=blog_cta)

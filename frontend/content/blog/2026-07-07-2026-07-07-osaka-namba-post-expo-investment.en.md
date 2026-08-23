@@ -99,4 +99,4 @@ Specifically, the following three strategies will be key:
 
 Namba is undoubtedly one of the most exciting real estate investment markets in Japan. We hope the data and analysis presented in this report will contribute to your prudent investment decisions.
 
-[Explore real estate data around Nankai Namba Station on Mekiki Research →](https://mekiki-research.com/?lat=34.663519&lng=135.501525)
+[Explore real estate data around Nankai Namba Station on Mekiki Research →](https://mekiki-research.com/?lat=34.663519&lng=135.501525&ref=blog_cta)

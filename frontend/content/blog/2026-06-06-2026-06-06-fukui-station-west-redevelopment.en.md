@@ -94,4 +94,4 @@ However, to reap these benefits, investors must not be swayed by broad indicator
 
 The Fukui Station West Exit redevelopment undoubtedly represents the biggest investment opportunity in Fukui City's real estate market in decades. However, success is not guaranteed. The soundest approach to making wise real estate investments in Fukui City from now on is to act based on objective data like that analyzed in this article, look ahead to future changes in the urban structure, and manage risks appropriately.
 
-[Explore real estate data for the Fukui Station area yourself on Mekiki Research →](https://mekiki-research.com/?lat=36.06181&lng=136.22253)
+[Explore real estate data for the Fukui Station area yourself on Mekiki Research →](https://mekiki-research.com/?lat=36.06181&lng=136.22253&ref=blog_cta)

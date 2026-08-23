@@ -103,4 +103,4 @@ primaryLocation:
 
 2030年，脫胎換骨成為超級總站的名古屋車站，想必已是日本新的經濟與交流中心。若能描繪其未來樣貌，並以長遠的眼光來規劃資產累積，那麼這個地區無疑是日本國內屈指可數的魅力投資標的。
 
-[前往物件鑑定速查 (Mekiki Research) 實際查詢名古屋車站周邊的不動產數據 →](https://mekiki-research.com/?lat=35.170915&lng=136.881537)
+[前往物件鑑定速查 (Mekiki Research) 實際查詢名古屋車站周邊的不動產數據 →](https://mekiki-research.com/?lat=35.170915&lng=136.881537&ref=blog_cta)

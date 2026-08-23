@@ -107,4 +107,4 @@ To conclude, here are three perspectives that investors should adopt for success
 
 The Namba area is unquestionably one of the most dynamically transforming places in Osaka. For those who can decipher the signs of this change from the data and envision its future value, significant investment opportunities await.
 
-[Explore real estate data around Namba Parks yourself with Mekiki Research →](https://mekiki-research.com/?lat=34.66355&lng=135.50208)
+[Explore real estate data around Namba Parks yourself with Mekiki Research →](https://mekiki-research.com/?lat=34.66355&lng=135.50208&ref=blog_cta)

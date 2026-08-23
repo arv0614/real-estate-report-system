@@ -106,4 +106,4 @@ primaryLocation:
 
 投資長崎的未來，無非就是冷靜洞察這些變化，並權衡其潛力與風險。不被表面的繁榮所迷惑，基於客觀數據進行審慎的物件選擇，將會比以往任何時候都更加重要。
 
-[前往「物件鑑定Research」，實際查詢長崎車站周邊的不動產數據 →](https://mekiki-research.com/?lat=32.751613&lng=129.872436)
+[前往「物件鑑定Research」，實際查詢長崎車站周邊的不動產數據 →](https://mekiki-research.com/?lat=32.751613&lng=129.872436&ref=blog_cta)

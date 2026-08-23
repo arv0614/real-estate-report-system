@@ -111,4 +111,4 @@ The data objectively reflects this reality. The gap between the average and medi
 
 The era of making real estate investment decisions based solely on yield or low prices is over. More than ever, the power of a "discerning eye" (mekiki) is required to see through to the intrinsic value of a property from a macro perspective, considering government urban planning, demographics, and disaster risks. Aomori City's challenge poses a profound question to all of us involved in real estate: how should we assess future value?
 
-[Explore real estate data for the Aomori Station area on Mekiki Research →](https://mekiki-research.com/?lat=40.82832&lng=140.73694)
+[Explore real estate data for the Aomori Station area on Mekiki Research →](https://mekiki-research.com/?lat=40.82832&lng=140.73694&ref=blog_cta)

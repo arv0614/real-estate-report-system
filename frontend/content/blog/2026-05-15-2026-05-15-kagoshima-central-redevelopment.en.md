@@ -108,4 +108,4 @@ However, investors must not be swept up in the excitement and should maintain a 
 
 The transformation of Kagoshima-Chuo Station has only just begun. In this historic turning point, precise, data-driven analysis will be the only compass to guide real estate investment to success.
 
-[Explore real estate data around Kagoshima-Chuo Station with Mekiki Research →](https://mekiki-research.com/?lat=31.58329&lng=130.54221)
+[Explore real estate data around Kagoshima-Chuo Station with Mekiki Research →](https://mekiki-research.com/?lat=31.58329&lng=130.54221&ref=blog_cta)

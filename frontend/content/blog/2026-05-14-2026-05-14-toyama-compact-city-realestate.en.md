@@ -102,4 +102,4 @@ At the same time, the severe flood risk of up to 10-20 meters is a factor that a
 
 A city designed with a plan is both beautiful and resilient. Toyama's real estate market offers a glimpse into one possible future for Japan's regional cities. We hope this article serves as a valuable resource for your wise real estate decisions.
 
-[Explore real estate data for the Toyama Station area yourself with Mekiki Research →](https://mekiki-research.com/?lat=36.7011&lng=137.2135)
+[Explore real estate data for the Toyama Station area yourself with Mekiki Research →](https://mekiki-research.com/?lat=36.7011&lng=137.2135&ref=blog_cta)

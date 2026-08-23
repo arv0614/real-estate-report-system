@@ -109,4 +109,4 @@ For an investment strategy from 2026 onward, the following points will be import
 
 In conclusion, the Susukino area is an extremely attractive real estate investment market, in the midst of dynamic change, even among the central districts of Sapporo. Based on the objective data provided, calmly analyzing the area's potential and risks, and discerningly selecting a property that matches your own investment strategy will be the key to success.
 
-[Explore real estate data for the Susukino Crossing area yourself with Mekiki Research →](https://mekiki-research.com/?lat=43.055318&lng=141.353515)
+[Explore real estate data for the Susukino Crossing area yourself with Mekiki Research →](https://mekiki-research.com/?lat=43.055318&lng=141.353515&ref=blog_cta)

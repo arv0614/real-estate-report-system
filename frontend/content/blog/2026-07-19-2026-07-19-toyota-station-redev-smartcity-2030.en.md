@@ -118,4 +118,4 @@ As of 2026, real estate investment in Toyota City requires the following perspec
 
 Toyota City is truly a microcosm that foretells the future of Japan's industry and cities. We encourage you to use the data and perspectives analyzed in this article to assess its potential and risks with your own eyes.
 
-[Explore real estate data around Toyota-shi Station with Mekiki Research →](https://mekiki-research.com/?lat=35.08371&lng=137.15253)
+[Explore real estate data around Toyota-shi Station with Mekiki Research →](https://mekiki-research.com/?lat=35.08371&lng=137.15253&ref=blog_cta)

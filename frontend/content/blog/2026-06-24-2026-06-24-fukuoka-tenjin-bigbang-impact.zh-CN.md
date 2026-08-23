@@ -106,4 +106,4 @@ primaryLocation:
 
 对于房地产投资者而言，不仅是天神核心区，其辐射效应所及的周边区域同样蕴藏着诱人的机遇。但与此同时，也需要关注洪水等潜在风险，并基于冷静分析做出判断。随着“天神BIG BANG”接近完成形态，未来几年，福冈的房地产市场无疑将在动态变化中，迈向价值创造的新阶段。
 
-[点击此处，通过Mekiki Research实际查询天神十字路口周边的房地产数据 →](https://mekiki-research.com/?lat=33.59074&lng=130.40003)
+[点击此处，通过Mekiki Research实际查询天神十字路口周边的房地产数据 →](https://mekiki-research.com/?lat=33.59074&lng=130.40003&ref=blog_cta)

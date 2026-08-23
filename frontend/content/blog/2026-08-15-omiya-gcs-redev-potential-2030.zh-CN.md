@@ -111,4 +111,4 @@ primaryLocation:
 
 作为东日本的门户，以及新的商务与生活中心，正在转型中的大宫，必将为房地产市场带来巨大机遇。其未来动向，越来越值得我们密切关注。
 
-[通过房产评估研究 (Mekiki-Research) 实际查询大宫站周边的房地产数据 →](https://mekiki-research.com/?lat=35.9065&lng=139.6238)
+[通过房产评估研究 (Mekiki-Research) 实际查询大宫站周边的房地产数据 →](https://mekiki-research.com/?lat=35.9065&lng=139.6238&ref=blog_cta)

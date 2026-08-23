@@ -116,4 +116,4 @@ primaryLocation:
 
 磁悬浮新时代的序幕已经拉开。手握可靠数据这一罗盘，不妨在历史与未来交汇的城市——奈良，迈出您明智的第一步。
 
-[点击此处，通过物件Mekiki Research实际查询近铁奈良站周边的房地产数据 →](https://mekiki-research.com/?lat=34.685114&lng=135.829094)
+[点击此处，通过物件Mekiki Research实际查询近铁奈良站周边的房地产数据 →](https://mekiki-research.com/?lat=34.685114&lng=135.829094&ref=blog_cta)

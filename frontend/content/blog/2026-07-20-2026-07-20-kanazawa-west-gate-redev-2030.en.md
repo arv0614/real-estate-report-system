@@ -97,4 +97,4 @@ In this report, we have conducted a multi-faceted analysis, based on real-world 
 
 In conclusion, the Kanazawa Station West Exit area has an extremely high probability of further increasing its value as it becomes the central engine driving the Hokuriku region's economy toward 2030. However, to reap the benefits, it is indispensable to have a "discerning eye" (mekiki) to calmly assess the risks and opportunities of the area and individual properties based not on generalities or expectations, but on objective data like that presented in this report.
 
-[Explore real estate data for the Kanazawa Station West Exit area on Mekiki Research →](https://mekiki-research.com/?lat=36.57861&lng=136.64575)
+[Explore real estate data for the Kanazawa Station West Exit area on Mekiki Research →](https://mekiki-research.com/?lat=36.57861&lng=136.64575&ref=blog_cta)

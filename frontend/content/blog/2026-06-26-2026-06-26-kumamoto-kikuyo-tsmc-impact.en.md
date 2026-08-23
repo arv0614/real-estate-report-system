@@ -98,4 +98,4 @@ However, alongside this opportunity are undeniable risks, such as market overhea
 
 The ultimate path to success in the Kumamoto-Kikuyo real estate market from 2026 onward is not to view the "semiconductor bubble" as a mere chance for speculation, but to identify properties with sustainable value within the larger trend of Japan's new industrial cluster formation.
 
-[Explore real estate data around Haramizu Station on Mekiki Research →](https://mekiki-research.com/?lat=32.86873&lng=130.82021)
+[Explore real estate data around Haramizu Station on Mekiki Research →](https://mekiki-research.com/?lat=32.86873&lng=130.82021&ref=blog_cta)

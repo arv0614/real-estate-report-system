@@ -103,4 +103,4 @@ Of course, there are points to watch carefully, such as flood risks and the dist
 
 In 2030, a reborn Nagoya Station, transformed into a Super Terminal, will likely stand as a new center of Japan's economy and exchange. For those looking to build wealth with a long-term perspective while envisioning this future, the area represents one of the most compelling investment destinations in the country.
 
-[Explore real estate data for the Nagoya Station area on Mekiki-Research →](https://mekiki-research.com/?lat=35.170915&lng=136.881537)
+[Explore real estate data for the Nagoya Station area on Mekiki-Research →](https://mekiki-research.com/?lat=35.170915&lng=136.881537&ref=blog_cta)

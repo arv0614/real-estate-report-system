@@ -124,4 +124,4 @@ In conclusion, the Fukuyama Station area can be described as a market with "high
 
 The key to success lies in "risk visualization and mitigation." It is essential to thoroughly analyze hazard maps, understand the specific risks for each property, and implement measures to hedge against them (e.g., insurance, architectural design). Carefully selecting promising properties within one's risk tolerance, while regularly monitoring the progress of the vision, will be the prudent investment strategy for building wealth in Fukuyama by 2030.
 
-[Explore real estate data around Fukuyama Station on Mekiki Research →](https://mekiki-research.com/?lat=34.487&lng=133.3621)
+[Explore real estate data around Fukuyama Station on Mekiki Research →](https://mekiki-research.com/?lat=34.487&lng=133.3621&ref=blog_cta)

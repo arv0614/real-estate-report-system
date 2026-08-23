@@ -99,4 +99,4 @@ primaryLocation:
 
 展望2030年，新潟站周边地区将成为一个更具吸引力、更便捷、可持续的紧凑型城市的中心。在这个历史性的变革时期，基于准确数据进行冷静分析，是成功投资新潟市房地产的关键。
 
-[通过Mekiki Research房产洞察实际查询新潟站周边的房地产数据 →](https://mekiki-research.com/?lat=37.9128&lng=139.0614)
+[通过Mekiki Research房产洞察实际查询新潟站周边的房地产数据 →](https://mekiki-research.com/?lat=37.9128&lng=139.0614&ref=blog_cta)

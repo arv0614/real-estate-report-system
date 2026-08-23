@@ -102,4 +102,4 @@ primaryLocation:
 
 要在歷史轉動的瞬間躬逢其盛並獲取碩果，需要縝密的分析與果敢的決斷。敬請親自見證這股形塑京都未來的巨大浪潮。
 
-[前往「房產鑑識研究 (Mekiki Research)」實際查詢京都車站周邊的不動產數據 →](https://mekiki-research.com/?lat=34.985849&lng=135.758765)
+[前往「房產鑑識研究 (Mekiki Research)」實際查詢京都車站周邊的不動產數據 →](https://mekiki-research.com/?lat=34.985849&lng=135.758765&ref=blog_cta)

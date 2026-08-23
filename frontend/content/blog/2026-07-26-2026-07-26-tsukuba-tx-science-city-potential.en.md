@@ -109,4 +109,4 @@ Furthermore, the "Super Science City" initiative and the growing cluster of star
 
 Looking towards 2030, Tsukuba's real estate market is poised to transcend the category of a mere Tokyo suburb and further solidify its status as a "growth city" with its own unique value-creation cycle. While risks such as the dependency on the TX line exist, we assess that the city holds a growth potential that more than compensates for them. A calm, data-driven analysis and a strategic approach tailored to each area's characteristics are the keys to success in this promising market.
 
-[Explore real estate data around Tsukuba Station on Mekiki Research →](https://mekiki-research.com/?lat=36.0835&lng=140.1115)
+[Explore real estate data around Tsukuba Station on Mekiki Research →](https://mekiki-research.com/?lat=36.0835&lng=140.1115&ref=blog_cta)

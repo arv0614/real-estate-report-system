@@ -104,4 +104,4 @@ To succeed in real estate investment during this period of transformation, a cal
 
 There are commercial properties near the station that will directly benefit from rising land prices, income-generating properties around Tachibana Street that promise stable returns, and residential properties in popular school districts that will capture new housing needs. While envisioning the future of Miyazaki City, the strategy of deciding which area to invest in and which property type to choose will be the "winning strategy" in the Miyazaki real estate market from 2026 onward.
 
-[Explore Real Estate Data Around Miyazaki Station with Bukken Mekiki Research →](https://mekiki-research.com/?lat=31.91583&lng=131.42871)
+[Explore Real Estate Data Around Miyazaki Station with Bukken Mekiki Research →](https://mekiki-research.com/?lat=31.91583&lng=131.42871&ref=blog_cta)
