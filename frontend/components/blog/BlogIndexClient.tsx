@@ -4,6 +4,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import type { PostMeta } from "@/lib/blog";
+import { PREFECTURES, prefectureForLocation, prefectureLabel } from "@/lib/blog/prefecture";
 
 const BlogMap = dynamic(() => import("./BlogMap"), { ssr: false });
 
@@ -34,12 +35,23 @@ function formatDate(iso: string, locale: string) {
 
 const LIST_LABELS: Record<
   string,
-  { sort: string; area: string; allAreas: string; newest: string; oldest: string; postsSingular?: string; postsPlural?: string; countSuffix: string }
+  {
+    sort: string;
+    area: string;
+    allAreas: string;
+    prefecture: string;
+    allPrefectures: string;
+    newest: string;
+    oldest: string;
+    postsSingular?: string;
+    postsPlural?: string;
+    countSuffix: string;
+  }
 > = {
-  ja: { sort: "並び替え", area: "エリア", allAreas: "すべてのエリア", newest: "新しい順", oldest: "古い順", countSuffix: "件" },
-  en: { sort: "Sort", area: "Area", allAreas: "All areas", newest: "Newest first", oldest: "Oldest first", postsSingular: "post", postsPlural: "posts", countSuffix: "" },
-  "zh-TW": { sort: "排序", area: "區域", allAreas: "所有區域", newest: "由新至舊", oldest: "由舊至新", countSuffix: "篇" },
-  "zh-CN": { sort: "排序", area: "区域", allAreas: "所有区域", newest: "由新到旧", oldest: "由旧到新", countSuffix: "篇" },
+  ja: { sort: "並び替え", area: "エリア", allAreas: "すべてのエリア", prefecture: "都道府県", allPrefectures: "すべての地域", newest: "新しい順", oldest: "古い順", countSuffix: "件" },
+  en: { sort: "Sort", area: "Area", allAreas: "All areas", prefecture: "Prefecture", allPrefectures: "All regions", newest: "Newest first", oldest: "Oldest first", postsSingular: "post", postsPlural: "posts", countSuffix: "" },
+  "zh-TW": { sort: "排序", area: "區域", allAreas: "所有區域", prefecture: "都道府縣", allPrefectures: "所有地區", newest: "由新至舊", oldest: "由舊至新", countSuffix: "篇" },
+  "zh-CN": { sort: "排序", area: "区域", allAreas: "所有区域", prefecture: "都道府县", allPrefectures: "所有地区", newest: "由新到旧", oldest: "由旧到新", countSuffix: "篇" },
 };
 
 export default function BlogIndexClient({ posts, locale, emptyMsg }: Props) {
@@ -48,26 +60,53 @@ export default function BlogIndexClient({ posts, locale, emptyMsg }: Props) {
 
   const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
   const [areaFilter, setAreaFilter] = useState<string>("all");
+  const [prefectureFilter, setPrefectureFilter] = useState<string>("all");
+
+  // 都道府県: lat/lng ベースの判定（frontend/lib/blog/prefecture.ts）を使うため
+  // 表記揺れのある primaryLocation.name や翻訳済みロケール（en/zh-TW/zh-CN）でも
+  // 常に安定して分類できる。
+  const prefectureOptions = useMemo(() => {
+    const present = new Set<string>();
+    for (const p of posts) {
+      const pref = prefectureForLocation(p.primaryLocation);
+      if (pref) present.add(pref);
+    }
+    // 北から南への標準的な都道府県順で表示（アルファベット順より地理的に把握しやすい）
+    return PREFECTURES.filter((p) => present.has(p.name)).map((p) => p.name);
+  }, [posts]);
+
+  // 都道府県を選ぶと、その都道府県内の記事だけに市区町村フィルタの選択肢も絞り込む
+  const postsInPrefecture = useMemo(() => {
+    if (prefectureFilter === "all") return posts;
+    return posts.filter((p) => prefectureForLocation(p.primaryLocation) === prefectureFilter);
+  }, [posts, prefectureFilter]);
 
   const areaOptions = useMemo(() => {
     const names = new Set<string>();
-    for (const p of posts) {
+    for (const p of postsInPrefecture) {
       if (p.primaryLocation?.name) names.add(p.primaryLocation.name);
     }
     return Array.from(names).sort((a, b) => a.localeCompare(b, "ja"));
-  }, [posts]);
+  }, [postsInPrefecture]);
 
   const visiblePosts = useMemo(() => {
     const filtered =
       areaFilter === "all"
-        ? posts
-        : posts.filter((p) => p.primaryLocation?.name === areaFilter);
+        ? postsInPrefecture
+        : postsInPrefecture.filter((p) => p.primaryLocation?.name === areaFilter);
 
     return [...filtered].sort((a, b) => {
       if (sortOrder === "newest") return a.publishedAt < b.publishedAt ? 1 : -1;
       return a.publishedAt > b.publishedAt ? 1 : -1;
     });
-  }, [posts, sortOrder, areaFilter]);
+  }, [postsInPrefecture, sortOrder, areaFilter]);
+
+  function handlePrefectureChange(value: string) {
+    setPrefectureFilter(value);
+    // 都道府県を切り替えたら、別の都道府県に属していた市区町村フィルタは意味を
+    // 失うためリセットする（両フィルタの組み合わせで0件になるのを防ぐ）。
+    setAreaFilter("all");
+  }
 
   // Top-N most-recent posts (across all posts) — used to highlight the latest articles
   // in both the list (NEW badge) and on the map (red pin + NEW badge).
@@ -80,6 +119,8 @@ export default function BlogIndexClient({ posts, locale, emptyMsg }: Props) {
   const sortLabel = labels.sort;
   const areaLabel = labels.area;
   const allAreasLabel = labels.allAreas;
+  const prefectureLabelText = labels.prefecture;
+  const allPrefecturesLabel = labels.allPrefectures;
   const newestLabel = labels.newest;
   const oldestLabel = labels.oldest;
   const newBadgeLabel = "NEW";
@@ -111,6 +152,27 @@ export default function BlogIndexClient({ posts, locale, emptyMsg }: Props) {
             <option value="oldest">{oldestLabel}</option>
           </select>
         </div>
+
+        {prefectureOptions.length > 0 && (
+          <div className="flex items-center gap-2 flex-1">
+            <label htmlFor="blog-prefecture" className="text-xs font-semibold text-slate-500 shrink-0">
+              {prefectureLabelText}
+            </label>
+            <select
+              id="blog-prefecture"
+              value={prefectureFilter}
+              onChange={(e) => handlePrefectureChange(e.target.value)}
+              className="text-sm rounded-lg border border-slate-200 px-2.5 py-1.5 text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-300 transition-colors flex-1 min-w-0"
+            >
+              <option value="all">{allPrefecturesLabel}</option>
+              {prefectureOptions.map((name) => (
+                <option key={name} value={name}>
+                  {prefectureLabel(name, locale)}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {areaOptions.length > 0 && (
           <div className="flex items-center gap-2 flex-1">

@@ -491,6 +491,7 @@ useEffect(() => {
 | 出力先 | `data/blog_seo_guidelines.json`（週次で上書き） |
 | 実行トリガー | `.github/workflows/analyze_blog_seo.yml`（cron 毎週月曜 JST 09:00 + 手動） |
 | サンプル数が少ない場合 | 分析対象記事数が3件未満（`MIN_SAMPLE_ARTICLES`）の場合は Gemini 呼び出しをスキップし、既定のベストプラクティスに基づく `insufficientData: true` のガイドラインを出力（ブログ運用開始直後でもパイプラインが壊れないようにするため） |
+| Slack通知 | `SLACK_WEBHOOK_URL` 設定時、①SEO運用ファネルレポート（総PV/CTAクリック/サインアップ/CVR）と②編集・改善方針のアップデート（今週の振り返り・推奨テーマ/エリア・画像挿入方針）を通知（`summarize_ad_performance.js` と同じ通知パターン。未設定時は標準出力にのみ表示） |
 
 **`data/blog_seo_guidelines.json` の主なフィールド**
 
@@ -589,6 +590,7 @@ on:
 |---|---|
 | **GCP_SA_KEY 未設定時はスキップ** | `summarize_ad_performance.js`（`ad_daily_report.yml`）と同じパターン。Secrets 未設定でもジョブ自体は失敗させず、`::warning::` のみでスキップする。 |
 | **既定の GITHUB_TOKEN で push** | `data/blog_seo_guidelines.json` は `deploy.yml` の `paths: frontend/**` に一致しないため、`generate-blog.yml` と異なり **PAT_TOKEN は不要**（連鎖トリガーの必要がない）。 |
+| **SLACK_WEBHOOK_URL（任意）** | 設定時、実行ごとに SEO運用ファネルレポート + 編集・改善方針のアップデートを Slack に通知（未設定でもジョブは正常終了、標準出力にのみ表示）。 |
 | **concurrency: analyze-blog-seo** | 週次スケジュールと手動 dispatch の同時実行を防止。 |
 | **サンプル数不足時の挙動** | `analyze_blog_performance.js` 側で分析対象記事が3件未満の場合は Gemini を呼ばず既定ガイドライン（`insufficientData: true`）を出力するため、ブログ運用開始直後でもワークフロー自体は正常終了する。 |
 
@@ -1018,6 +1020,10 @@ GA4_PROPERTY_ID=... GEMINI_API_KEY=... node scripts/analyze_blog_performance.js 
 
 # 実行（data/blog_seo_guidelines.json に保存）
 GA4_PROPERTY_ID=... GEMINI_API_KEY=... node scripts/analyze_blog_performance.js
+
+# Slack通知内容のプレビュー（SLACK_WEBHOOK_URL を設定しても --dry-run 中は実送信されず、
+# 送信予定の本文が [DRY] Slack 送信内容: として標準出力に表示されるだけ）
+GA4_PROPERTY_ID=... GEMINI_API_KEY=... SLACK_WEBHOOK_URL=... node scripts/analyze_blog_performance.js --dry-run
 ```
 
 `--input` フィクスチャの形式は `{ "pageReport": {...}, "eventReport": {...} }`（GA4 `runReport` の生レスポンス2件）。
@@ -1034,6 +1040,7 @@ GA4_PROPERTY_ID=... GEMINI_API_KEY=... node scripts/analyze_blog_performance.js
 | **`PAT_TOKEN`** | `generate-blog.yml` | repo + workflow スコープの Personal Access Token。デフォルトの `GITHUB_TOKEN` では他ワークフローを連鎖トリガーできない仕様への対処。push 後に `deploy.yml` を発火させるために必須 |
 | **`GEMINI_API_KEY`** | `generate-blog.yml`, `analyze_blog_seo.yml` | Gemini API キー（企画会議・画像プロンプト生成: 3.6 Flash / 記事生成・翻訳・GA4実績分析: 3.1 Pro Preview / アイキャッチ画像生成: 3.1 Flash Image） |
 | `GA4_PROPERTY_ID` | `ad_daily_report.yml`, `analyze_blog_seo.yml` | GA4 プロパティ番号。Data API 呼び出しに使用 |
+| `SLACK_WEBHOOK_URL` | `ad_daily_report.yml`, `analyze_blog_seo.yml`, `monitor_traffic.yml`（任意） | Slack Incoming Webhook URL。日次広告レポート・週次SEO運用レポート・異常検知アラートの通知先（未設定でも各ジョブは正常終了し標準出力にのみ表示） |
 | `GCP_SA_KEY` | `deploy.yml`, `ad_daily_report.yml`, `analyze_blog_seo.yml` | Cloud Run / Artifact Registry / Cloud Build へのデプロイ権限、および GA4 Data API 呼び出し用アクセストークン取得（`analytics.readonly` スコープ）を持つサービスアカウントの JSON キー |
 | `GCP_PROJECT_ID` | `deploy.yml` | GCP プロジェクト ID |
 | `GCP_REGION` | `deploy.yml` | デプロイリージョン（`asia-northeast1`） |
@@ -1093,6 +1100,7 @@ GA4_PROPERTY_ID=... GEMINI_API_KEY=... node scripts/analyze_blog_performance.js
 | `GA4_ACCESS_TOKEN` | ❌ | — | 未設定時は `gcloud auth print-access-token` から取得 |
 | `GEMINI_ANALYSIS_MODEL` | ❌ | `gemini-3.1-pro-preview` | 分析モデル切替 |
 | `BLOG_ANALYSIS_DAYS` | ❌ | `28` | 分析の遡及日数（`--days` で上書き可） |
+| `SLACK_WEBHOOK_URL` | ❌ | — | 設定時、SEO運用レポート（ファネル + 編集・改善方針）をSlackに通知 |
 
 ---
 

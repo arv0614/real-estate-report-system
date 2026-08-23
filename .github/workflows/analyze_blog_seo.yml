@@ -78,6 +78,7 @@ jobs:
         env:
           GA4_PROPERTY_ID: ${{ secrets.GA4_PROPERTY_ID }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           TZ: Asia/Tokyo
         run: |
           DAYS_ARG="${{ github.event.inputs.days }}"

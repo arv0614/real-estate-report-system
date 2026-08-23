@@ -8,7 +8,9 @@
  * Gemini API に渡し、「成績の良い/悪い記事の傾向」と『SEO・CVR改善ガイドライン』を
  * JSON で生成する。結果は data/blog_seo_guidelines.json に保存し、
  * scripts/generate_daily_blog.js が次回実行時に読み込んで企画会議・本文執筆の
- * プロンプトに反映する（自己進化ループ）。
+ * プロンプトに反映する（自己進化ループ）。SLACK_WEBHOOK_URL 設定時は、①全体
+ * ファネル（PV/CTAクリック/サインアップ/CVR）と②編集・改善方針のアップデート
+ * サマリを Slack にも通知する（summarize_ad_performance.js と同じ通知パターン）。
  *
  * 認証: GA4 Data API はアクセストークンが必要。優先順位は
  *   1) 環境変数 GA4_ACCESS_TOKEN
@@ -26,6 +28,7 @@
  *   GEMINI_API_KEY         — 必須（--input フィクスチャ利用時を除く）
  *   GEMINI_ANALYSIS_MODEL  — 任意。既定: gemini-3.1-pro-preview
  *   BLOG_ANALYSIS_DAYS     — 任意。既定: 28（--days で上書き可）
+ *   SLACK_WEBHOOK_URL      — 任意。設定時はSEO運用レポートをSlack Incoming Webhookに送信
  */
 
 const fs = require("fs");
@@ -41,6 +44,7 @@ const INPUT_FILE = flagValue("--input", null);
 const DAYS = Number(flagValue("--days", process.env.BLOG_ANALYSIS_DAYS || 28));
 const PROPERTY_ID = process.env.GA4_PROPERTY_ID;
 const MODEL = process.env.GEMINI_ANALYSIS_MODEL || "gemini-3.1-pro-preview";
+const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
 
 const BLOG_DIR = path.resolve(__dirname, "../frontend/content/blog");
 const OUTPUT_PATH = path.resolve(__dirname, "../data/blog_seo_guidelines.json");
@@ -349,12 +353,104 @@ function fallbackGuidelines({ sampleSize, reason }) {
         "実データ（取引価格・単価・ハザード情報）を表形式で整理し、本文中盤までに配置する",
         "本文冒頭のリード段落で読者の悩み・検索意図に直接答える",
       ],
-      visuals: ["価格推移や取引件数を示すグラフのプレースホルダー・提案を1箇所以上含める", "アイキャッチ画像の構図・被写体の提案を含める"],
+      visuals: ["取引価格グラフをリード段落の後、実データの説明箇所付近に配置する", "アイキャッチ画像はエリア・テーマの実際の風景を反映した構図にする"],
       tone: "専門的だが平易で、初めて不動産を調べる読者にも分かりやすいトーン",
       seoNotes: "タイトルに具体的な地名・年号・数字を含め、検索意図に即した見出し構成にする",
     },
     summary: `実績データ不足（分析対象記事数=${sampleSize}）のため、統計分析ではなく既定のベストプラクティスに基づくガイドラインを使用しています。`,
   };
+}
+
+// ─── Slack 通知 ─────────────────────────────────────────────────────────────
+// summarize_ad_performance.js と同様のパターンで、SLACK_WEBHOOK_URL 未設定時は
+// 標準出力にのみ表示し、DRY_RUN 時は実際には送信せず送信予定の本文をログに出す。
+
+// articles 全体（topArticles/bottomArticles に絞る前）から全体ファネルを集計する。
+function computeOverallFunnel(articles) {
+  const totals = articles.reduce(
+    (acc, a) => {
+      acc.pageViews += a.pageViews;
+      acc.clickCtaCount += a.clickCtaCount;
+      acc.signUpCount += a.signUpCount;
+      return acc;
+    },
+    { pageViews: 0, clickCtaCount: 0, signUpCount: 0 },
+  );
+  return {
+    ...totals,
+    ctr: totals.pageViews ? Number((totals.clickCtaCount / totals.pageViews).toFixed(4)) : 0,
+    cvr: totals.clickCtaCount ? Number((totals.signUpCount / totals.clickCtaCount).toFixed(4)) : 0,
+  };
+}
+
+function pct(ratio) {
+  return `${(ratio * 100).toFixed(1)}%`;
+}
+
+// Slack mrkdwn 本文を組み立てる純粋関数（テスト容易性のため sendSlack と分離）。
+function buildSlackText({ guidelines, funnel, days }) {
+  const lines = [
+    `📊 *SEOブログ運用レポート*（直近${days}日間・分析記事数${guidelines.sampleSize}件）`,
+    "",
+    "*① SEO運用ファネルレポート*",
+    `　👀 総PV: ${funnel.pageViews.toLocaleString()}`,
+    `　🖱️ LP CTAクリック: ${funnel.clickCtaCount.toLocaleString()}（CTR: ${pct(funnel.ctr)}）`,
+    `　✅ サインアップ（CV）: ${funnel.signUpCount.toLocaleString()}（CVR: ${pct(funnel.cvr)}）`,
+    "",
+    "*② 編集・改善方針のアップデート*",
+  ];
+
+  if (guidelines.insufficientData) {
+    lines.push("　⚠️ 実績データ不足のため、今回は既定のベストプラクティスに基づくガイドラインを使用しています。");
+  } else {
+    lines.push(`　📝 今週の振り返り: ${guidelines.summary || "(なし)"}`);
+    if (guidelines.recommendedThemes?.length) {
+      lines.push(`　🎯 推奨テーマ: ${guidelines.recommendedThemes.slice(0, 5).join(" / ")}`);
+    }
+    if (guidelines.recommendedAreas?.length) {
+      lines.push(`　📍 推奨エリア: ${guidelines.recommendedAreas.slice(0, 5).join(" / ")}`);
+    }
+    if (guidelines.contentGuidelines?.visuals?.length) {
+      lines.push(`　🖼️ 画像・グラフの挿入方針: ${guidelines.contentGuidelines.visuals.slice(0, 3).join(" / ")}`);
+    }
+    if (guidelines.avoidThemes?.length) {
+      lines.push(`　🚫 避けるべき切り口: ${guidelines.avoidThemes.slice(0, 3).join(" / ")}`);
+    }
+  }
+
+  const topArticle = guidelines.topArticles?.[0];
+  if (topArticle) {
+    lines.push("", `🏆 今期トップ記事: ${topArticle.title || topArticle.slug}（PV ${topArticle.pageViews.toLocaleString()}）`);
+  }
+
+  // Slack の section block は 3000 文字制限があるため安全マージンを取って切り詰める
+  const text = lines.join("\n");
+  return text.length > 2900 ? text.slice(0, 2899) + "…" : text;
+}
+
+async function sendSlack(text) {
+  if (!SLACK_WEBHOOK_URL) {
+    console.log("[INFO] SLACK_WEBHOOK_URL 未設定のため標準出力にのみ表示します");
+    console.log("\n" + text + "\n");
+    return;
+  }
+  if (DRY_RUN) {
+    console.log("[DRY] Slack 送信内容:\n" + text);
+    return;
+  }
+  const res = await fetch(SLACK_WEBHOOK_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      text, // 通知/フォールバック用
+      blocks: [{ type: "section", text: { type: "mrkdwn", text } }],
+    }),
+  });
+  if (!res.ok) {
+    console.error(`[ERROR] Slack 送信に失敗 (HTTP ${res.status})`);
+    process.exit(1);
+  }
+  console.log("[SUCCESS] Slack に SEO運用レポートを送信しました");
 }
 
 // ─── main ───────────────────────────────────────────────────────────────────
@@ -408,12 +504,16 @@ async function main() {
 
     if (DRY_RUN) {
       console.log("[DRY] dry-run のため data/blog_seo_guidelines.json への保存はスキップしました");
-      return;
+    } else {
+      fs.mkdirSync(path.dirname(OUTPUT_PATH), { recursive: true });
+      fs.writeFileSync(OUTPUT_PATH, JSON.stringify(guidelines, null, 2) + "\n", "utf8");
+      console.log(`[SUCCESS] ${path.relative(process.cwd(), OUTPUT_PATH)} に保存しました`);
     }
 
-    fs.mkdirSync(path.dirname(OUTPUT_PATH), { recursive: true });
-    fs.writeFileSync(OUTPUT_PATH, JSON.stringify(guidelines, null, 2) + "\n", "utf8");
-    console.log(`[SUCCESS] ${path.relative(process.cwd(), OUTPUT_PATH)} に保存しました`);
+    // Slack 通知（①SEO運用ファネルレポート + ②編集・改善方針のアップデート）。
+    // DRY_RUN 時は実送信せず送信予定の本文をログに出すのみ（sendSlack 内で分岐）。
+    const funnel = computeOverallFunnel(articles);
+    await sendSlack(buildSlackText({ guidelines, funnel, days: DAYS }));
   } catch (err) {
     console.error(`[ERROR] ブログパフォーマンス分析に失敗しました: ${err.message}`);
     if (err.stack) console.error(err.stack);
@@ -421,5 +521,13 @@ async function main() {
   }
 }
 
-module.exports = { parsePagePath, aggregateArticles, parseFrontmatter, isJaBlogFile, fallbackGuidelines };
+module.exports = {
+  parsePagePath,
+  aggregateArticles,
+  parseFrontmatter,
+  isJaBlogFile,
+  fallbackGuidelines,
+  computeOverallFunnel,
+  buildSlackText,
+};
 if (require.main === module) main();
