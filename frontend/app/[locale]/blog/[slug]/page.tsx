@@ -24,6 +24,13 @@ function blogPathFor(locale: Locale, slug: string): string {
     : `${SITE_URL}/${locale}/blog/${slug}`;
 }
 
+// scripts/generate_daily_blog.js が SEO・CVR改善ガイドラインに基づき本文中に挿入する
+// グラフ・画像提案の編集メモ（`> 📊 ...` / `> 🖼️ ...` のBlockquote行）は、あくまで
+// 執筆時の内部提案であり一般読者向けではないため、レンダリング直前に除去する。
+function stripAiVisualPlaceholders(markdown: string): string {
+  return markdown.replace(/^>\s*(📊|🖼️).*\r?\n?/gm, "");
+}
+
 // 共有時の OGP 画像 URL を生成する。/api/og/blog は 1200x630 の動的画像を返す。
 // generateMetadata と同じロジック (OGP プレビュー UI と SNS で同じ画像を出す)。
 function buildOgImageUrl(post: { title: string; description: string; tags: string[]; publishedAt: string }): string {
@@ -348,7 +355,7 @@ export default async function BlogPostPage({ params }: Props) {
           prose-code:bg-slate-100 prose-code:px-1 prose-code:rounded prose-code:text-sm
         ">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {post.content}
+            {stripAiVisualPlaceholders(post.content)}
           </ReactMarkdown>
         </article>
 
