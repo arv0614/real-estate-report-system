@@ -16,6 +16,7 @@ import createNextIntlPlugin from "next-intl/plugin";
 //   - GTM + GA4:                       www.googletagmanager.com, *.google-analytics.com,
 //                                      analytics.google.com, www.google.com
 //   - Adobe Analytics:                 *.omtrdc.net, *.sc.omtrdc.net, *.2o7.net
+//   - QuickChart（ブログ記事内の取引価格グラフ画像）: quickchart.io
 //   - Next.js (inline styles/scripts): unsafe-inline, unsafe-eval
 //   - ローカル開発バックエンド:         http://localhost:8080 (dev only)
 const isDev = process.env.NODE_ENV === "development";
@@ -26,8 +27,8 @@ const CSP = [
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.gstatic.com https://us-assets.i.posthog.com https://assets.lemonsqueezy.com https://www.googletagmanager.com https://www.google-analytics.com",
   // Tailwind / CSS-in-JS
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://assets.lemonsqueezy.com",
-  // 画像: Firebase Storage / Google アカウント写真 / 国土地理院タイル / Lemon Squeezy / base64 / GTMピクセル / GA4・Adobe Analytics ビーコン / OSMタイル / Cloud Run (SEO lifestyle image)
-  "img-src 'self' data: blob: https://lh3.googleusercontent.com https://firebasestorage.googleapis.com https://cyberjapandata.gsi.go.jp https://maps.gsi.go.jp https://assets.lemonsqueezy.com https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://analytics.google.com https://www.google.com https://*.omtrdc.net https://*.sc.omtrdc.net https://*.2o7.net https://*.tile.openstreetmap.org https://*.a.run.app",
+  // 画像: Firebase Storage / Google アカウント写真 / 国土地理院タイル / Lemon Squeezy / base64 / GTMピクセル / GA4・Adobe Analytics ビーコン / OSMタイル / Cloud Run (SEO lifestyle image) / QuickChart (ブログ記事内グラフ)
+  "img-src 'self' data: blob: https://lh3.googleusercontent.com https://firebasestorage.googleapis.com https://cyberjapandata.gsi.go.jp https://maps.gsi.go.jp https://assets.lemonsqueezy.com https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://analytics.google.com https://www.google.com https://*.omtrdc.net https://*.sc.omtrdc.net https://*.2o7.net https://*.tile.openstreetmap.org https://*.a.run.app https://quickchart.io",
   // フォント
   "font-src 'self' https://fonts.gstatic.com https://assets.lemonsqueezy.com",
   // API・WebSocket通信 + GA4データ収集 + Adobe Analytics ビーコン + OSMタイル (MapLibre fetch)
