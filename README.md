@@ -302,7 +302,29 @@ Web 広告の出稿効果を **無料**（Looker Studio + GA4 標準）で可視
       │
       ▼
 [mekiki-research.com/blog] 4言語で記事公開
+
+
+[GitHub Actions] analyze_blog_seo.yml (cron: "0 0 * * 1" UTC = JST 月曜 09:00、週1回)
+      │
+      ▼
+[Node 20] node scripts/analyze_blog_performance.js
+      │
+      ├─ GA4 Data API から直近28日間のブログ記事実績を取得
+      │     （pagePath に /blog/ を含むページの PV / エンゲージメント率 /
+      │      click_lp_cta・sign_up イベント数を記事[slug]単位に集計）
+      ├─ frontend/content/blog/ の frontmatter（テーマ・タグ・対象エリア）と突き合わせ
+      ├─ Gemini 3.1 Pro Preview で「成績上位/下位の傾向」と
+      │     『SEO・CVR改善ガイドライン』を分析・生成
+      └─ data/blog_seo_guidelines.json に保存 → main へ push
+      │
+      ▼ (次回の generate-blog.yml 実行時に読み込まれる)
+      │
+[① AI編集長の企画会議] recommendedThemes / recommendedAreas を参考材料として利用
+[④ 本文生成] contentGuidelines（構成・画像提案・トーン）をプロンプトに反映
 ```
+
+この2つのワークフローにより、「記事を出す」→「GA4で反響を計測する」→「反響の良い/悪い傾向を分析する」→
+「次の記事生成に反映する」という**データドリブンな自己進化ループ**が完全自動で回る。
 
 ### 1. `scripts/generate_daily_blog.js` の仕組み（Gemini API 使用）
 
@@ -449,15 +471,62 @@ useEffect(() => {
 > **設計判断**: 旧来の `?address=` ベースのシェアURL や、ベータ版の `/research` パスではなく、**本番トップページの `?lat=&lng=`** に統一しました。これにより
 > ① ジオコーディングを経由しない高速着地、② ベータ機能の品質変動から記事の体験を切り離し、③ GA4 上で「ブログ流入 → 検索完了」までを一貫して計測、を達成しています。
 
+### 6. ★ データドリブンな自己進化ループ：GA4実績分析による改善（`scripts/analyze_blog_performance.js`）
+
+週1回、GA4 の実測データを基に「どんなテーマ・エリア・構成の記事が読まれ、CVR に繋がっているか」を Gemini に分析させ、
+その結果を `generate_daily_blog.js` の企画会議・本文執筆プロンプトに機械的にフィードバックする仕組みです。
+
+| 項目 | 仕様 |
+|---|---|
+| LLM（分析） | Google Gemini 3.1 Pro Preview（`gemini-3.1-pro-preview`、`GEMINI_ANALYSIS_MODEL` で上書き可） |
+| データソース | GA4 Data API（`pagePath` に `/blog/` を含むページの `screenPageViews` / `engagementRate` / `userEngagementDuration` / `click_lp_cta` / `sign_up` イベント数） |
+| 集計単位 | 記事（slug）単位。ja / en / zh-TW / zh-CN の4言語ページを合算（`/blog/<slug>` と `/{en,zh-TW,zh-CN}/blog/<slug>`） |
+| メタ情報の突き合わせ | `frontend/content/blog/<slug>.md` の frontmatter（title / tags / primaryLocation.name）を読み込み、GA4 実績と結合してテーマ・エリアの傾向分析を可能にする |
+| 出力先 | `data/blog_seo_guidelines.json`（週次で上書き） |
+| 実行トリガー | `.github/workflows/analyze_blog_seo.yml`（cron 毎週月曜 JST 09:00 + 手動） |
+| サンプル数が少ない場合 | 分析対象記事数が3件未満（`MIN_SAMPLE_ARTICLES`）の場合は Gemini 呼び出しをスキップし、既定のベストプラクティスに基づく `insufficientData: true` のガイドラインを出力（ブログ運用開始直後でもパイプラインが壊れないようにするため） |
+
+**`data/blog_seo_guidelines.json` の主なフィールド**
+
+```json
+{
+  "generatedAt": "2026-08-23T11:32:19.067Z",
+  "period": { "days": 28, "startDate": "2026-07-26", "endDate": "2026-08-22" },
+  "sampleSize": 4,
+  "topArticles": [ { "slug": "...", "pageViews": 420, "engagementRate": 0.71, "clickCtaCount": 32, "signUpCount": 4, "ctr": 0.0762, "cvr": 0.125 } ],
+  "bottomArticles": [ "... 成績下位の記事（同スキーマ）" ],
+  "recommendedThemes": ["次回以降に優先すべきテーマ案"],
+  "recommendedAreas": ["反響が良い傾向のエリア系統"],
+  "avoidThemes": ["反響が薄い傾向のテーマ・切り口"],
+  "highPerformingPatterns": { "themes": ["..."], "areas": ["..."], "insight": "上位記事に共通する傾向の分析" },
+  "lowPerformingPatterns": { "themes": ["..."], "areas": ["..."], "insight": "下位記事に共通する弱点の分析" },
+  "contentGuidelines": {
+    "structure": ["本文構成に関する改善指示"],
+    "visuals": ["画像・グラフに関する改善指示"],
+    "tone": "対象読者層に響くトーン・文体の指示",
+    "seoNotes": "タイトル・見出し・メタディスクリプションで意識すべき点"
+  },
+  "summary": "今回の分析の要約"
+}
+```
+
+**`generate_daily_blog.js` 側の取り込み**（`loadGuidelines()`。ファイルが無い/壊れている場合は `null` を返し、通常どおり生成を続行）
+
+- `editorialPlanPrompt()`: `recommendedThemes` / `recommendedAreas` / `avoidThemes` / `highPerformingPatterns.insight` を「決定方針」の4番目（季節ネタ・連載継続・地域多様性の**後**）の参考材料として提示。季節ネタや連載継続のルールを上書きしない位置づけ。
+- `jaBodyPrompt()`: `contentGuidelines`（structure / visuals / tone / seoNotes）を本文執筆時の構成方針として提示。画像・グラフの提案は実ファイルを生成できないため、`> 📊 グラフ提案: ...` / `> 🖼️ アイキャッチ案: ...` という Markdown 引用ブロックとして本文中に挿入させる（`![...]` の直接画像埋め込みは行わない）。
+
+**画像プレースホルダーの表示**: 現状 `contentGuidelines.visuals` の反映は引用ブロックによる**編集メモ・提案**であり、実際の画像やグラフをレンダリングするコンポーネントは未実装。将来的に QuickChart（`summarize_ad_performance.js` で採用済み）等と連携して自動描画する拡張の余地を残す設計。
+
 ---
 
 ## 🤖 GitHub Actions ワークフロー（CI/CD）
 
-`.github/workflows/` 配下の5ワークフローでメディア運用 + デプロイ + 監視を完全自動化しています。
+`.github/workflows/` 配下の6ワークフローでメディア運用 + デプロイ + 監視を完全自動化しています。
 
 | ワークフロー | トリガー | 主な役割 | 状態 |
 |---|---|---|---|
 | `generate-blog.yml` | cron 22:00 UTC（毎日） + 手動 | 4言語ブログ記事を Gemini で自動生成し main へ push | 🟢 稼働中 |
+| `analyze_blog_seo.yml` | cron 00:00 UTC 月曜（週1回） + 手動 | GA4 実績を分析し `data/blog_seo_guidelines.json` を更新 | 🟢 稼働中 |
 | `deploy.yml` | `frontend/**` への push + 手動 | Cloud Build → Cloud Run デプロイ + sitemap ping | 🟢 稼働中 |
 | `auto_merge_blog.yml` | `pull_request` + cron 毎時 | `claude/*` ブランチの自動生成 PR を main に即マージ | 🟢 稼働中（旧スケジュールエージェント救済用） |
 | `blog_check.yml` | cron 01:00 UTC（毎日） | 当日記事の存在を main で検査し、なければ Issue 起票 | 🟢 稼働中 |
@@ -479,7 +548,26 @@ on:
 | **競合保護** | push 直前に `git pull --rebase origin main` を実行し、他ワークフローが先に main を進めていた場合に rebase してから push。 |
 | **空コミット防止** | 生成失敗時は `git diff --cached --quiet` で検知し、`::notice::` を出して exit 0。空コミットは作らない。 |
 
-### 2. `deploy.yml` — Cloud Run デプロイ + SEO Ping
+### 2. `analyze_blog_seo.yml` — 週次 GA4 実績分析（SEOガイドライン更新）
+
+```yaml
+on:
+  schedule:
+    - cron: "0 0 * * 1"   # UTC 00:00 月曜 = JST 09:00 月曜
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "分析対象の遡及日数（既定: 28）"
+```
+
+| 設計上の重要ポイント | 解説 |
+|---|---|
+| **GCP_SA_KEY 未設定時はスキップ** | `summarize_ad_performance.js`（`ad_daily_report.yml`）と同じパターン。Secrets 未設定でもジョブ自体は失敗させず、`::warning::` のみでスキップする。 |
+| **既定の GITHUB_TOKEN で push** | `data/blog_seo_guidelines.json` は `deploy.yml` の `paths: frontend/**` に一致しないため、`generate-blog.yml` と異なり **PAT_TOKEN は不要**（連鎖トリガーの必要がない）。 |
+| **concurrency: analyze-blog-seo** | 週次スケジュールと手動 dispatch の同時実行を防止。 |
+| **サンプル数不足時の挙動** | `analyze_blog_performance.js` 側で分析対象記事が3件未満の場合は Gemini を呼ばず既定ガイドライン（`insufficientData: true`）を出力するため、ブログ運用開始直後でもワークフロー自体は正常終了する。 |
+
+### 3. `deploy.yml` — Cloud Run デプロイ + SEO Ping
 
 ```yaml
 on:
@@ -501,7 +589,7 @@ on:
 4. 本番 URL に対して 6回 × 10秒間隔のヘルスチェック
 5. `sitemap.xml` の到達性確認 → Google Ping（廃止 API なので非致命的） + IndexNow（Bing/Yandex）
 
-### 3. `auto_merge_blog.yml` — PR 自動マージ（旧経路の救済）
+### 4. `auto_merge_blog.yml` — PR 自動マージ（旧経路の救済）
 
 `claude/*` ブランチで作成された自動 PR を、ホワイトリスト判定の上で即マージするワークフロー。
 **現在の主経路は `generate-blog.yml` の直接 push** ですが、過去の Anthropic スケジュールエージェントが PR ベースで動作していた名残として残しています。
@@ -513,7 +601,7 @@ on:
 
 これら以外を変更している PR はスキップして手動マージに委ねます。コンフリクト時は `merge-conflict` ラベルを付与して人間に委譲。
 
-### 4. `blog_check.yml` — 当日記事の存在監視
+### 5. `blog_check.yml` — 当日記事の存在監視
 
 ```yaml
 on:
@@ -528,7 +616,7 @@ JST 10:00（生成想定時刻 07:00 から3時間後）に `frontend/content/bl
 2. `⚠️ Blog post missing for YYYY-MM-DD` Issue を起票
 3. ジョブを `exit 1` で失敗させ、GitHub のメール通知を発火
 
-### 5. `x_post.yml` — X 自動投稿（**現在は無効化**）
+### 6. `x_post.yml` — X 自動投稿（**現在は無効化**）
 
 旧仕様では月・水・金 JST 09:00 に `marketing/x_promotions.json` から1ツイートをランダム選択して投稿していました。**スパム判定回避のため2026-05-09 に無効化**しています。
 
@@ -593,8 +681,8 @@ jobs:
 
 | 技術 | 用途 |
 |---|---|
-| `@google/genai` | Gemini 3.1 Pro Preview 呼び出し（記事生成・翻訳） |
-| Node 20 native `fetch` | 本番APIからの実データ取得 |
+| `@google/genai` | Gemini 3.1 Pro Preview 呼び出し（記事生成・翻訳・GA4実績分析） |
+| Node 20 native `fetch` | 本番APIからの実データ取得 / GA4 Data API 呼び出し |
 | `twitter-api-v2` | X 自動投稿用 SDK（現在は無効化） |
 
 ### インフラ・BaaS/SaaS
@@ -622,7 +710,8 @@ jobs:
 | 国交省 不動産情報ライブラリ API (XIT001) | 取引価格データ取得 |
 | 国交省 不動産情報ライブラリ API (XKT026/029/002/004/005/010/015) | ハザード・生活環境データ取得 |
 | 国土地理院 API (GSI) | 逆ジオコーディング・住所検索・地図タイル |
-| Gemini 3.1 Pro Preview | ブログ記事生成・翻訳（バッチ） |
+| Gemini 3.1 Pro Preview | ブログ記事生成・翻訳・GA4実績分析（SEOガイドライン生成、バッチ） |
+| GA4 Data API | ブログ記事ごとの PV・エンゲージメント率・CTAクリック・サインアップ実績取得 |
 | Gemini 3.6 Flash | エリア分析レポート / 画像プロンプト動的生成（リアルタイム） |
 | Imagen 4 Fast | 暮らしのイメージ画像生成（Primary） |
 | Gemini 2.5 Flash Image | 画像生成 Fallback |
@@ -886,6 +975,25 @@ GEMINI_API_KEY=... node scripts/generate_daily_blog.js
 BLOG_DATE=2026-12-31 GEMINI_API_KEY=... node scripts/generate_daily_blog.js
 ```
 
+### SEOパフォーマンス分析スクリプトのローカル検証
+
+```bash
+# GA4 を叩かずフィクスチャで分析（GA4_PROPERTY_ID 不要、GEMINI_API_KEY は必要）
+node scripts/analyze_blog_performance.js --input fixtures/ga4_sample.json --dry-run
+
+# 実際の GA4 プロパティに接続してドライラン（gcloud auth login 済み、または GA4_ACCESS_TOKEN 設定）
+GA4_PROPERTY_ID=... GEMINI_API_KEY=... node scripts/analyze_blog_performance.js --dry-run
+
+# 遡及日数を指定
+GA4_PROPERTY_ID=... GEMINI_API_KEY=... node scripts/analyze_blog_performance.js --days 14 --dry-run
+
+# 実行（data/blog_seo_guidelines.json に保存）
+GA4_PROPERTY_ID=... GEMINI_API_KEY=... node scripts/analyze_blog_performance.js
+```
+
+`--input` フィクスチャの形式は `{ "pageReport": {...}, "eventReport": {...} }`（GA4 `runReport` の生レスポンス2件）。
+分析対象記事が3件未満の場合は Gemini を呼ばず、既定のベストプラクティスに基づくガイドライン（`insufficientData: true`）を出力する。
+
 ---
 
 ## 🔑 環境変数と GitHub Secrets
@@ -895,8 +1003,9 @@ BLOG_DATE=2026-12-31 GEMINI_API_KEY=... node scripts/generate_daily_blog.js
 | Secret 名 | 設定先ワークフロー | 目的 |
 |---|---|---|
 | **`PAT_TOKEN`** | `generate-blog.yml` | repo + workflow スコープの Personal Access Token。デフォルトの `GITHUB_TOKEN` では他ワークフローを連鎖トリガーできない仕様への対処。push 後に `deploy.yml` を発火させるために必須 |
-| **`GEMINI_API_KEY`** | `generate-blog.yml` | Gemini API キー（企画会議: 3.6 Flash / 記事生成・翻訳: 3.1 Pro Preview） |
-| `GCP_SA_KEY` | `deploy.yml` | Cloud Run / Artifact Registry / Cloud Build へのデプロイ権限を持つサービスアカウントの JSON キー |
+| **`GEMINI_API_KEY`** | `generate-blog.yml`, `analyze_blog_seo.yml` | Gemini API キー（企画会議: 3.6 Flash / 記事生成・翻訳・GA4実績分析: 3.1 Pro Preview） |
+| `GA4_PROPERTY_ID` | `ad_daily_report.yml`, `analyze_blog_seo.yml` | GA4 プロパティ番号。Data API 呼び出しに使用 |
+| `GCP_SA_KEY` | `deploy.yml`, `ad_daily_report.yml`, `analyze_blog_seo.yml` | Cloud Run / Artifact Registry / Cloud Build へのデプロイ権限、および GA4 Data API 呼び出し用アクセストークン取得（`analytics.readonly` スコープ）を持つサービスアカウントの JSON キー |
 | `GCP_PROJECT_ID` | `deploy.yml` | GCP プロジェクト ID |
 | `GCP_REGION` | `deploy.yml` | デプロイリージョン（`asia-northeast1`） |
 | `NEXT_PUBLIC_API_URL` | `deploy.yml` | バックエンド Cloud Run の URL（ビルド時にバンドル焼き込み） |
@@ -943,6 +1052,16 @@ BLOG_DATE=2026-12-31 GEMINI_API_KEY=... node scripts/generate_daily_blog.js
 | `BLOG_DRY_RUN` | ❌ | — | `1` でファイル書き込み・コンテキスト保存・翻訳をスキップ |
 | `BLOG_API_BASE_URL` | ❌ | `https://realestate-api-2hctlfcy6a-an.a.run.app` | 実データ取得先 |
 | `BLOG_SITE_BASE_URL` | ❌ | `https://mekiki-research.com` | CTA リンクのドメイン |
+
+`scripts/analyze_blog_performance.js` で利用：
+
+| 変数名 | 必須 | 既定値 | 用途 |
+|---|---|---|---|
+| `GA4_PROPERTY_ID` | ✅（`--input` フィクスチャ利用時を除く） | — | GA4 プロパティ番号 |
+| `GEMINI_API_KEY` | ✅（分析対象記事3件未満の場合を除く） | — | Gemini API キー |
+| `GA4_ACCESS_TOKEN` | ❌ | — | 未設定時は `gcloud auth print-access-token` から取得 |
+| `GEMINI_ANALYSIS_MODEL` | ❌ | `gemini-3.1-pro-preview` | 分析モデル切替 |
+| `BLOG_ANALYSIS_DAYS` | ❌ | `28` | 分析の遡及日数（`--days` で上書き可） |
 
 ---
 

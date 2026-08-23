@@ -15,6 +15,13 @@
  *   data/blog_context.json にローカル記録し、季節ネタの優先判定や
  *   連載（3〜5回目安）の継続/切り替え判断の入力として使う。
  *
+ * データドリブンな自己進化ループ（SEO・CVR改善ガイドライン）:
+ *   scripts/analyze_blog_performance.js が GA4 実績を分析して生成する
+ *   data/blog_seo_guidelines.json（無ければスキップ）を読み込み、
+ *   - 企画会議プロンプトに「推奨テーマ/エリア」を渡してテーマ選定に反映
+ *   - 本文執筆プロンプトに「SEO・CVR改善ガイドライン（構成/画像/トーン）」を渡して反映
+ *   することで、過去の反響データに基づいて記事の質を継続的に改善する。
+ *
  * 必須環境変数:
  *   GEMINI_API_KEY        — Gemini API キー
  *
@@ -72,6 +79,23 @@ function loadContext() {
 function saveContext(context) {
   fs.mkdirSync(path.dirname(CONTEXT_PATH), { recursive: true });
   fs.writeFileSync(CONTEXT_PATH, JSON.stringify(context, null, 2) + "\n", "utf8");
+}
+
+// ─── SEO・CVR改善ガイドライン（scripts/analyze_blog_performance.js が生成） ──
+// GA4 実績分析の結果。週次ワークフローで更新される想定。無い/壊れている場合は
+// null を返し、企画会議・本文執筆は従来どおりガイドライン無しで進行する
+// （このスクリプトは常にブログ生成自体を成立させることを優先する）。
+const GUIDELINES_PATH = path.resolve(__dirname, "../data/blog_seo_guidelines.json");
+
+function loadGuidelines() {
+  if (!fs.existsSync(GUIDELINES_PATH)) return null;
+  try {
+    const raw = JSON.parse(fs.readFileSync(GUIDELINES_PATH, "utf8"));
+    return raw && typeof raw === "object" ? raw : null;
+  } catch (err) {
+    console.warn(`[WARN] blog_seo_guidelines.json の読み込みに失敗したため無視します: ${err.message}`);
+    return null;
+  }
 }
 
 // 企画会議の決定結果を反映してコンテキストを更新する。
@@ -227,7 +251,7 @@ async function callText(ai, prompt) {
 // AI編集長による企画会議: 本文執筆に先立ち「今日のテーマ・切り口・対象エリア」を決定させる。
 // 季節ネタの優先判定、連載の継続/切り替え判断、地域の多様性確保 (首都圏偏重回避) を
 // 過去コンテキストに基づいて自律的に行わせる。
-function editorialPlanPrompt({ today, context }) {
+function editorialPlanPrompt({ today, context, guidelines }) {
   const recentList =
     context.recentThemes
       .slice(0, 15)
@@ -240,6 +264,17 @@ function editorialPlanPrompt({ today, context }) {
 連載は3〜5回程度で完結させるのが目安。${series.count >= 4 ? "そろそろ完結、または新テーマへの切り替えを検討すること。" : ""}`
     : "現在進行中の連載はありません。";
 
+  const perfBlock =
+    guidelines && !guidelines.insufficientData
+      ? `
+# GA4実績分析による推奨（scripts/analyze_blog_performance.js、直近${guidelines.period?.days ?? "N"}日間・分析記事数${guidelines.sampleSize ?? "?"}件）
+- 反響が良い傾向のテーマ: ${(guidelines.recommendedThemes || []).join(" / ") || "(なし)"}
+- 反響が良い傾向のエリア系統: ${(guidelines.recommendedAreas || []).join(" / ") || "(なし)"}
+- 反響が薄い傾向（避けるべき切り口）: ${(guidelines.avoidThemes || []).join(" / ") || "(なし)"}
+- 傾向分析: ${guidelines.highPerformingPatterns?.insight || "(なし)"}
+`
+      : "";
+
   return `あなたは日本の不動産オウンドメディア「物件目利きリサーチ」(https://mekiki-research.com) の編集長です。
 本日 ${today} 付のブログ記事の企画会議を行い、「今日書くべきテーマ・切り口・対象エリア」を決定してください。
 
@@ -248,11 +283,12 @@ ${recentList}
 
 # 連載の状況
 ${seriesBlock}
-
+${perfBlock}
 # 決定方針（優先順位順）
 1. **季節ネタの最優先**: 本日 ${today} が日本の季節行事・記念日（正月、成人の日、節分、ひな祭り、お花見・入学式、ゴールデンウィーク、夏至、七夕、お盆、防災の日(9/1)、十五夜、ハロウィン、紅葉シーズン、年末、クリスマス、大晦日 など）に該当する、またはその直前の時期であれば、それにちなんだテーマを最優先で選ぶこと。該当しない場合はこのルールを無視してよい。
 2. **連載の継続判断**: 季節ネタが無い場合、上記「連載の状況」を踏まえ、連載を継続するか（3〜5回程度を目安に）、飽きが来る前に新しい連載テーマ（例: 伊能忠敬の足跡、新幹線の新駅周辺 など）に切り替えるかを自律的に判断すること。
 3. **地域の多様性**: 直近の掲載履歴にあるエリアとの重複や偏り（特に東京23区中心部・横浜駅周辺など首都圏中心部への偏り）を避け、全国の多様な市区町村からテーマに最もふさわしい具体的エリアを選ぶこと。
+4. **GA4実績分析の反映**: 上記「GA4実績分析による推奨」がある場合、季節ネタ・連載継続のルールを優先しつつ、新テーマ選定時や連載の切り替え先を検討する際の参考材料として活用すること（推奨テーマ・エリアをそのまま採用してもよいし、そこから着想を広げてもよい。ただし直近の掲載履歴との重複は避けること）。
 
 # 出力要件
 - targetArea: 日本の具体的な市区町村・地区名（例:「福岡市博多区」「金沢市」）
@@ -295,7 +331,7 @@ function jaMetaPrompt({ today, recentSlugs, plan }) {
 }`;
 }
 
-function jaBodyPrompt({ today, meta, areaData, plan }) {
+function jaBodyPrompt({ today, meta, areaData, plan, guidelines }) {
   const lat = Number(meta.primaryLocation?.lat);
   const lng = Number(meta.primaryLocation?.lng);
   const locName = meta.primaryLocation?.name || "対象エリア";
@@ -306,6 +342,21 @@ function jaBodyPrompt({ today, meta, areaData, plan }) {
 - テーマ: ${plan.theme}
 - 切り口: ${plan.angle}
 本文全体を通して、上記テーマ・切り口を軸に据えて執筆すること。`
+    : "";
+
+  const cg = guidelines && !guidelines.insufficientData ? guidelines.contentGuidelines : null;
+  const guidelinesBlock = cg
+    ? `
+# SEO・CVR改善ガイドライン（GA4実績分析ベース、scripts/analyze_blog_performance.js が生成・週次更新）
+過去の記事実績分析から得られた、以下の構成・表現方針を今回の本文に反映すること:
+- 構成: ${(cg.structure || []).map((s) => `\n  - ${s}`).join("") || "(なし)"}
+- 画像・グラフの提案: ${(cg.visuals || []).map((s) => `\n  - ${s}`).join("") || "(なし)"}
+- トーン: ${cg.tone || "(指定なし)"}
+- SEO留意点: ${cg.seoNotes || "(指定なし)"}
+
+画像・グラフの提案は、実際の画像ファイルを生成できないため、該当箇所に Markdown の引用ブロック
+(例: \`> 📊 グラフ提案: ○○の取引価格推移（20xx〜20xx年）\` や \`> 🖼️ アイキャッチ案: ○○\`) として
+本文中に自然に挿入すること（本文の直接的な画像埋め込み \`![...]\` は行わない）。`
     : "";
 
   const evidenceBlock = areaData
@@ -334,6 +385,7 @@ ${JSON.stringify(areaData, null, 2)}
   return `あなたは日本の不動産市場に精通したベテラン不動産アナリストです。「物件目利きリサーチ」(${SITE_BASE_URL}) のオウンドメディア向けに、本日 ${today} 付の以下の記事の本文を Markdown で執筆してください。
 ${themeBlock}
 ${evidenceBlock}
+${guidelinesBlock}
 # 記事メタデータ
 - タイトル: ${meta.title}
 - description: ${meta.description}
@@ -598,14 +650,20 @@ async function main() {
   const today = jstToday();
   const recentSlugs = existingSlugs();
   const context = loadContext();
+  const guidelines = loadGuidelines();
   console.log(`[INFO] 対象日 (JST): ${today}`);
   console.log(`[INFO] 既存記事 base 数: ${recentSlugs.length}`);
   console.log(`[INFO] 過去テーマ記録数: ${context.recentThemes.length}, 進行中の連載: ${context.currentSeries?.theme || "(なし)"}`);
+  console.log(
+    guidelines
+      ? `[INFO] SEO・CVR改善ガイドライン読み込み済み (生成日時=${guidelines.generatedAt || "?"}, insufficientData=${Boolean(guidelines.insufficientData)})`
+      : "[INFO] SEO・CVR改善ガイドラインなし（data/blog_seo_guidelines.json 未生成のためスキップ）",
+  );
   console.log(`[INFO] 企画モデル: ${PLANNING_MODEL} / 執筆モデル: ${MODEL}${DRY_RUN ? " (DRY RUN)" : ""}`);
 
   if (DRY_RUN && !process.env.GEMINI_API_KEY) {
     console.log("[DRY] GEMINI_API_KEY 未設定のため企画会議プロンプトのプレビューのみ表示します");
-    console.log(editorialPlanPrompt({ today, context }));
+    console.log(editorialPlanPrompt({ today, context, guidelines }));
     return;
   }
 
@@ -613,7 +671,7 @@ async function main() {
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
   console.log("[INFO] [編集長] 企画会議中...");
-  const plan = await callJson(ai, editorialPlanPrompt({ today, context }), PLANNING_MODEL);
+  const plan = await callJson(ai, editorialPlanPrompt({ today, context, guidelines }), PLANNING_MODEL);
   for (const k of ["theme", "angle", "targetArea"]) {
     if (!plan[k]) throw new Error(`企画会議の必須フィールド '${k}' が欠けています`);
   }
@@ -639,6 +697,7 @@ async function main() {
         meta: { ...jaMeta, primaryLocation: { lat: plan.lat, lng: plan.lng, name: plan.targetArea } },
         areaData: null,
         plan,
+        guidelines,
       }),
     );
     console.log("[DRY] 本文 Markdown:\n" + jaBody);
@@ -677,7 +736,7 @@ async function main() {
   }
 
   console.log("[INFO] [JA] 本文 Markdown 生成中...");
-  const jaBody = await callText(ai, jaBodyPrompt({ today, meta: jaMeta, areaData, plan }));
+  const jaBody = await callText(ai, jaBodyPrompt({ today, meta: jaMeta, areaData, plan, guidelines }));
   if (jaBody.length < 1500) {
     throw new Error(`日本語本文が短すぎます: ${jaBody.length} chars`);
   }

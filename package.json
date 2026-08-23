@@ -8,7 +8,8 @@
     "generate:blog": "node scripts/generate_daily_blog.js",
     "dashboard:setup": "node scripts/setup_marketing_dashboard.js",
     "monitor:traffic": "node scripts/monitor_traffic_anomalies.js",
-    "report:ads": "node scripts/summarize_ad_performance.js"
+    "report:ads": "node scripts/summarize_ad_performance.js",
+    "analyze:blog": "node scripts/analyze_blog_performance.js"
   },
   "dependencies": {
     "@google/genai": "^1.52.0",

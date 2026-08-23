@@ -24,6 +24,7 @@ terraform/**/*.tfvars
 !frontend/messages/*.json
 !marketing/*.json
 !data/blog_context.json
+!data/blog_seo_guidelines.json
 
 # Node.js
 node_modules/

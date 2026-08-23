@@ -1,0 +1,110 @@
+name: Analyze Blog SEO Performance
+
+# 週に1回 (毎週月曜 JST 09:00 = UTC 00:00) に GA4 Data API から直近のブログ記事実績
+# (PV/エンゲージメント率/CTAクリック/サインアップ) を取得し、Gemini で「成績の良い/悪い
+# 記事の傾向」と『SEO・CVR改善ガイドライン』を分析、data/blog_seo_guidelines.json を更新する。
+#
+# 生成された JSON は scripts/generate_daily_blog.js が次回実行時に読み込み、
+# 企画会議（テーマ選定）と本文執筆（構成・画像提案・トーン）のプロンプトに反映する
+# データドリブンな自己進化ループの起点。
+
+on:
+  schedule:
+    - cron: "0 0 * * 1"   # UTC 00:00 月曜 = JST 09:00 月曜
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "分析対象の遡及日数（既定: 28）"
+        required: false
+        default: ""
+
+concurrency:
+  group: analyze-blog-seo
+  cancel-in-progress: false
+
+jobs:
+  analyze:
+    name: Analyze GA4 performance & update SEO guidelines
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Check if GCP credentials are configured
+        id: gcp_creds
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+        run: |
+          if [ -n "$GCP_SA_KEY" ]; then
+            echo "has_key=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_key=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::GCP_SA_KEY 未設定のため SEO 分析をスキップします"
+          fi
+
+      - name: Authenticate to Google Cloud
+        if: steps.gcp_creds.outputs.has_key == 'true'
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up gcloud CLI
+        if: steps.gcp_creds.outputs.has_key == 'true'
+        uses: google-github-actions/setup-gcloud@v3
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Set up Node.js
+        if: steps.gcp_creds.outputs.has_key == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        if: steps.gcp_creds.outputs.has_key == 'true'
+        run: npm ci
+
+      - name: Run blog performance analysis
+        if: steps.gcp_creds.outputs.has_key == 'true'
+        env:
+          GA4_PROPERTY_ID: ${{ secrets.GA4_PROPERTY_ID }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TZ: Asia/Tokyo
+        run: |
+          DAYS_ARG="${{ github.event.inputs.days }}"
+          if [ -n "$DAYS_ARG" ]; then
+            node scripts/analyze_blog_performance.js --days "$DAYS_ARG"
+          else
+            node scripts/analyze_blog_performance.js
+          fi
+
+      - name: Commit and push updated guidelines
+        if: steps.gcp_creds.outputs.has_key == 'true'
+        env:
+          TZ: Asia/Tokyo
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add data/blog_seo_guidelines.json
+
+          if git diff --cached --quiet; then
+            echo "::notice::No change in blog_seo_guidelines.json. Nothing to commit."
+            exit 0
+          fi
+
+          TODAY=$(date +%Y-%m-%d)
+          git commit -m "chore: update blog SEO guidelines from GA4 performance analysis (${TODAY})"
+
+          git pull --rebase origin main
+          git push origin main
