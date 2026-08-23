@@ -286,10 +286,15 @@ Web 広告の出稿効果を **無料**（Looker Studio + GA4 標準）で可視
       │     （過去テーマ・進行中の連載）を参照し、季節ネタ優先 → 連載継続/新テーマ
       │     切り替え判断 → 対象エリア(市区町村+lat/lng) を自律決定
       ├─ ② Gemini 3.1 Pro Preview: メタデータ生成（slug/title/desc/tags/outline）
-      ├─ ③ ★ 実データ取得: 本番 API /api/property/transactions?lat=&lng= を叩く
-      │     → MLIT 取引データ + 国土地理院ハザード + 周辺環境 を summarize
-      ├─ ④ Gemini 3.1 Pro Preview: 本文生成（①のテーマ・切り口 + 実データを注入）
-      ├─ ⑤ Gemini 3.1 Pro Preview: 英 / 繁 / 簡 の3言語にメタ + 本文を翻訳
+      ├─ ③ ★ 実データ取得 + 図表生成（並行実行）:
+      │     - 本番 API /api/property/transactions?lat=&lng= を叩く
+      │       → MLIT 取引データ + 国土地理院ハザード + 周辺環境 を summarize
+      │       → QuickChart で取引価格グラフ URL を組み立て
+      │     - Gemini 3.6 Flash で英語プロンプト生成 → Gemini 3.1 Flash Image で
+      │       アイキャッチ画像を生成し frontend/public/images/blog/ に保存
+      ├─ ④ Gemini 3.1 Pro Preview: 本文生成（①のテーマ・切り口 + 実データ +
+      │     ③で生成したグラフURL・画像パスを Markdown 画像記法で注入）
+      ├─ ⑤ Gemini 3.1 Pro Preview: 英 / 繁 / 簡 の3言語にメタ + 本文を翻訳（画像URLは不変のまま）
       ├─ ⑥ frontend/content/blog/YYYY-MM-DD-<slug>.{,en,zh-TW,zh-CN}.md として保存
       └─ ⑦ ①の決定結果を data/blog_context.json に記録（連載カウント更新）
       │
@@ -331,13 +336,14 @@ Web 広告の出稿効果を **無料**（Looker Studio + GA4 標準）で可視
 | 項目 | 仕様 |
 |---|---|
 | LLM（本文執筆） | Google Gemini 3.1 Pro Preview（`gemini-3.1-pro-preview`、`GEMINI_MODEL` で上書き可） |
-| LLM（企画会議） | Google Gemini 3.6 Flash（`gemini-3.6-flash`、`GEMINI_PLANNING_MODEL` で上書き可） |
+| LLM（企画会議・画像プロンプト生成） | Google Gemini 3.6 Flash（`gemini-3.6-flash`、`GEMINI_PLANNING_MODEL` で上書き可） |
+| LLM（アイキャッチ画像生成） | Google Gemini 3.1 Flash Image（`gemini-3.1-flash-image`、`GEMINI_IMAGE_MODEL` で上書き可）→ 失敗時 Gemini 2.5 Flash Image（`GEMINI_IMAGE_FALLBACK_MODEL`） |
 | SDK | `@google/genai` |
 | 実行環境 | Node 20+（`fetch`/`AbortController` 標準利用） |
-| 出力先 | `frontend/content/blog/YYYY-MM-DD-<slug>.md`（+ `.en.md` / `.zh-TW.md` / `.zh-CN.md`） |
+| 出力先 | `frontend/content/blog/YYYY-MM-DD-<slug>.md`（+ `.en.md` / `.zh-TW.md` / `.zh-CN.md`）<br>`frontend/public/images/blog/YYYY-MM-DD-<slug>-image.{jpg,png,webp}`（アイキャッチ画像） |
 | コンテキスト記録 | `data/blog_context.json`（過去テーマ・進行中の連載。次回の企画会議の入力） |
 | 必須環境変数 | `GEMINI_API_KEY` |
-| 任意環境変数 | `GEMINI_MODEL`（既定 `gemini-3.1-pro-preview`）<br>`GEMINI_PLANNING_MODEL`（既定 `gemini-3.6-flash`）<br>`BLOG_DATE`（YYYY-MM-DD で対象日上書き）<br>`BLOG_DRY_RUN=1`（ファイル書き込み・翻訳をスキップし企画会議〜日本語本文をプレビュー）<br>`BLOG_API_BASE_URL`（既定: Cloud Run の本番URL）<br>`BLOG_SITE_BASE_URL`（既定: `https://mekiki-research.com`） |
+| 任意環境変数 | `GEMINI_MODEL`（既定 `gemini-3.1-pro-preview`）<br>`GEMINI_PLANNING_MODEL`（既定 `gemini-3.6-flash`）<br>`GEMINI_IMAGE_MODEL`（既定 `gemini-3.1-flash-image`）<br>`GEMINI_IMAGE_FALLBACK_MODEL`（既定 `gemini-2.5-flash-image`）<br>`BLOG_DATE`（YYYY-MM-DD で対象日上書き）<br>`BLOG_DRY_RUN=1`（.mdファイル書き込み・コンテキスト保存・翻訳・Firestore書き込みをスキップし企画会議〜日本語本文をプレビュー。実データ取得・画像生成は実行するため実URLが本文に入るか確認できる）<br>`BLOG_API_BASE_URL`（既定: Cloud Run の本番URL）<br>`BLOG_SITE_BASE_URL`（既定: `https://mekiki-research.com`） |
 
 **設計上の分離**: メタデータ（JSON）と本文（Markdown）は **別々の Gemini 呼び出し** で生成しています。本文を JSON 文字列に詰め込むと制御文字エスケープが破綻して `JSON.parse` が失敗するため、実運用で問題が起きた末に分離した経緯があります。同様に「テーマ決定（企画会議）」も本文執筆とは別の軽量モデル呼び出しに分離し、コストを抑えつつ過去コンテキストを踏まえた判断をさせています。
 
@@ -513,9 +519,28 @@ useEffect(() => {
 **`generate_daily_blog.js` 側の取り込み**（`loadGuidelines()`。ファイルが無い/壊れている場合は `null` を返し、通常どおり生成を続行）
 
 - `editorialPlanPrompt()`: `recommendedThemes` / `recommendedAreas` / `avoidThemes` / `highPerformingPatterns.insight` を「決定方針」の4番目（季節ネタ・連載継続・地域多様性の**後**）の参考材料として提示。季節ネタや連載継続のルールを上書きしない位置づけ。
-- `jaBodyPrompt()`: `contentGuidelines`（structure / visuals / tone / seoNotes）を本文執筆時の構成方針として提示。画像・グラフの提案は実ファイルを生成できないため、`> 📊 グラフ提案: ...` / `> 🖼️ アイキャッチ案: ...` という Markdown 引用ブロックとして本文中に挿入させる（`![...]` の直接画像埋め込みは行わない）。
+- `jaBodyPrompt()`: `contentGuidelines`（structure / visuals / tone / seoNotes）を本文執筆時の構成・トーン方針として提示。`visuals` はグラフ・画像の**配置方針の参考**として渡すのみで、実際に挿入する画像・グラフの実体（URL）は次項「7. 図表の自動生成・挿入」で生成した実アセットを使う。
 
-**画像プレースホルダーの表示**: 現状 `contentGuidelines.visuals` の反映は引用ブロックによる**編集メモ・提案**であり、実際の画像やグラフをレンダリングするコンポーネントは未実装。将来的に QuickChart（`summarize_ad_performance.js` で採用済み）等と連携して自動描画する拡張の余地を残す設計。
+### 7. ★ 図表の自動生成・挿入：QuickChartグラフ + Gemini生成アイキャッチ画像
+
+本文生成の**前**に、記事ごとに (a) 実データに基づく取引価格グラフと (b) エリア・テーマに合わせたアイキャッチ画像を実際に生成し、
+本文プロンプトに実URL・実パスを渡して Markdown 画像記法 `![alt](url)` で本文中に挿入させる。プレースホルダーや説明文への言い換えは禁止し、
+生成済みのURLをそのまま使わせることで、一般読者の画面にも実体のある図表がそのまま表示される。
+
+| 項目 | 仕様 |
+|---|---|
+| グラフ | `buildAreaChartUrl()`。summarizeAreaData() の実データ（samples の期別取引価格 > 無ければ transactionStats の平均/中央値/最小/最大）から [QuickChart](https://quickchart.io/) の画像URLを同期的に組み立てる（AI呼び出し無し）。使えるデータが無ければ `null`（本文へのグラフ挿入指示自体を省略） |
+| アイキャッチ画像 Stage1 | `generateHeroImagePrompt()`。`GEMINI_PLANNING_MODEL`（既定 `gemini-3.6-flash`）でテーマ・切り口・対象エリアに合わせた英語の画像生成プロンプトを動的生成（`backend/src/services/imagenApi.ts` の「暮らしイメージ」生成と同じ二段階方式） |
+| アイキャッチ画像 Stage2 | `generateImageViaGemini()`。`GEMINI_IMAGE_MODEL`（既定 `gemini-3.1-flash-image`）→ 失敗時 `GEMINI_IMAGE_FALLBACK_MODEL`（既定 `gemini-2.5-flash-image`）の順で `generateContent({ config: { responseModalities: ["IMAGE"] } })` を呼び出し、`frontend/public/images/blog/<baseName>-image.{jpg,png,webp}` に保存 |
+| 挿入位置の指示 | ヒーロー画像はリード段落の直後に1回、グラフは実データの説明箇所付近に1回、それぞれ Markdown 画像記法で挿入するよう `jaBodyPrompt()` が厳守指示する |
+| 失敗時の挙動 | グラフ・画像とも生成失敗時は `null` を返すだけで記事生成自体は止めない（`tryGenerateHeroImage()` は内部で try/catch し警告ログのみ） |
+| 実行順序 | 実データ取得（`fetchAreaDataSafe`）とアイキャッチ画像生成は互いに独立なため `Promise.all` で並行実行し、グラフURLの組み立てはその後に同期的に行う |
+| 翻訳時の扱い | `transBodyPrompt()` が画像記法 `![alt](url)` の URL を変更しないよう明示指示（alt テキストのみ翻訳）。4言語とも同じ画像ファイル・同じQuickChart URLを参照する |
+| コミット | `generate-blog.yml` が `frontend/public/images/blog/` も `git add` 対象に含める（`deploy.yml` は独立した checkout で Cloud Build するため、ここでコミットしないと本番の Docker イメージに画像が含まれない） |
+
+**フロントエンド側の表示**: `frontend/app/[locale]/blog/[slug]/page.tsx` の `ReactMarkdown` が Markdown 画像記法を通常の `<img>` としてそのままレンダリングするため、追加のコンポーネント実装は不要。以前導入した `stripAiVisualPlaceholders()`（`> 📊` / `> 🖼️` 行の除去）は、本改修後は通常発生しないケース向けの安全網として残置している。
+
+**運用上の注意（リポジトリ肥大化）**: 生成画像は1記事あたり約0.5〜1.5MBのバイナリとして毎日 `git commit` される設計であるため、リポジトリサイズは日々増加する。運用が長期化しリポジトリサイズが問題になった場合は、GCS等の外部ストレージへの移行を検討する余地がある。
 
 ---
 
@@ -681,7 +706,7 @@ jobs:
 
 | 技術 | 用途 |
 |---|---|
-| `@google/genai` | Gemini 3.1 Pro Preview 呼び出し（記事生成・翻訳・GA4実績分析） |
+| `@google/genai` | Gemini 3.1 Pro Preview / 3.6 Flash / 3.1 Flash Image 呼び出し（記事生成・翻訳・GA4実績分析・アイキャッチ画像生成） |
 | Node 20 native `fetch` | 本番APIからの実データ取得 / GA4 Data API 呼び出し |
 | `twitter-api-v2` | X 自動投稿用 SDK（現在は無効化） |
 
@@ -711,6 +736,8 @@ jobs:
 | 国交省 不動産情報ライブラリ API (XKT026/029/002/004/005/010/015) | ハザード・生活環境データ取得 |
 | 国土地理院 API (GSI) | 逆ジオコーディング・住所検索・地図タイル |
 | Gemini 3.1 Pro Preview | ブログ記事生成・翻訳・GA4実績分析（SEOガイドライン生成、バッチ） |
+| Gemini 3.1 Flash Image | ブログ記事アイキャッチ画像生成（`generate_daily_blog.js`、失敗時 Gemini 2.5 Flash Image） |
+| QuickChart | ブログ記事内の取引価格グラフ画像URL生成（`generate_daily_blog.js`、`summarize_ad_performance.js`） |
 | GA4 Data API | ブログ記事ごとの PV・エンゲージメント率・CTAクリック・サインアップ実績取得 |
 | Gemini 3.6 Flash | エリア分析レポート / 画像プロンプト動的生成（リアルタイム） |
 | Imagen 4 Fast | 暮らしのイメージ画像生成（Primary） |
@@ -960,8 +987,10 @@ npx playwright test tests/production_e2e.spec.ts --reporter=list
 # ドライラン: GEMINI_API_KEY 未設定なら企画会議プロンプトのプレビューのみ
 BLOG_DRY_RUN=1 node scripts/generate_daily_blog.js
 
-# ドライラン: GEMINI_API_KEY があれば企画会議→メタ生成→日本語本文まで実行して
-# 標準出力に表示（ファイル書き込み・コンテキスト保存・翻訳はスキップ）
+# ドライラン: GEMINI_API_KEY があれば企画会議→メタ生成→実データ取得→画像生成→
+# 日本語本文まで実行して標準出力に表示（.mdファイル書き込み・コンテキスト保存・
+# 翻訳・Firestore書き込みはスキップ。frontend/public/images/blog/ には実際に
+# 画像が保存されるため、確認後に不要なら手動で削除する）
 BLOG_DRY_RUN=1 GEMINI_API_KEY=... node scripts/generate_daily_blog.js
 
 # 季節ネタの発動確認（例: クリスマス・正月）
@@ -1003,7 +1032,7 @@ GA4_PROPERTY_ID=... GEMINI_API_KEY=... node scripts/analyze_blog_performance.js
 | Secret 名 | 設定先ワークフロー | 目的 |
 |---|---|---|
 | **`PAT_TOKEN`** | `generate-blog.yml` | repo + workflow スコープの Personal Access Token。デフォルトの `GITHUB_TOKEN` では他ワークフローを連鎖トリガーできない仕様への対処。push 後に `deploy.yml` を発火させるために必須 |
-| **`GEMINI_API_KEY`** | `generate-blog.yml`, `analyze_blog_seo.yml` | Gemini API キー（企画会議: 3.6 Flash / 記事生成・翻訳・GA4実績分析: 3.1 Pro Preview） |
+| **`GEMINI_API_KEY`** | `generate-blog.yml`, `analyze_blog_seo.yml` | Gemini API キー（企画会議・画像プロンプト生成: 3.6 Flash / 記事生成・翻訳・GA4実績分析: 3.1 Pro Preview / アイキャッチ画像生成: 3.1 Flash Image） |
 | `GA4_PROPERTY_ID` | `ad_daily_report.yml`, `analyze_blog_seo.yml` | GA4 プロパティ番号。Data API 呼び出しに使用 |
 | `GCP_SA_KEY` | `deploy.yml`, `ad_daily_report.yml`, `analyze_blog_seo.yml` | Cloud Run / Artifact Registry / Cloud Build へのデプロイ権限、および GA4 Data API 呼び出し用アクセストークン取得（`analytics.readonly` スコープ）を持つサービスアカウントの JSON キー |
 | `GCP_PROJECT_ID` | `deploy.yml` | GCP プロジェクト ID |
@@ -1045,11 +1074,13 @@ GA4_PROPERTY_ID=... GEMINI_API_KEY=... node scripts/analyze_blog_performance.js
 
 | 変数名 | 必須 | 既定値 | 用途 |
 |---|---|---|---|
-| `GEMINI_API_KEY` | ✅ | — | Gemini API キー（企画会議・記事生成・翻訳） |
+| `GEMINI_API_KEY` | ✅ | — | Gemini API キー（企画会議・記事生成・翻訳・画像生成） |
 | `GEMINI_MODEL` | ❌ | `gemini-3.1-pro-preview` | 本文執筆モデル切替 |
-| `GEMINI_PLANNING_MODEL` | ❌ | `gemini-3.6-flash` | 企画会議（テーマ選定）モデル切替 |
+| `GEMINI_PLANNING_MODEL` | ❌ | `gemini-3.6-flash` | 企画会議・画像プロンプト生成モデル切替 |
+| `GEMINI_IMAGE_MODEL` | ❌ | `gemini-3.1-flash-image` | アイキャッチ画像生成モデル切替 |
+| `GEMINI_IMAGE_FALLBACK_MODEL` | ❌ | `gemini-2.5-flash-image` | 画像生成の第一候補失敗時のフォールバック |
 | `BLOG_DATE` | ❌ | JST 本日 | 対象日上書き（季節ネタ検証にも使用） |
-| `BLOG_DRY_RUN` | ❌ | — | `1` でファイル書き込み・コンテキスト保存・翻訳をスキップ |
+| `BLOG_DRY_RUN` | ❌ | — | `1` で .mdファイル書き込み・コンテキスト保存・翻訳・Firestore書き込みをスキップ（実データ取得・画像生成は実行） |
 | `BLOG_API_BASE_URL` | ❌ | `https://realestate-api-2hctlfcy6a-an.a.run.app` | 実データ取得先 |
 | `BLOG_SITE_BASE_URL` | ❌ | `https://mekiki-research.com` | CTA リンクのドメイン |
 

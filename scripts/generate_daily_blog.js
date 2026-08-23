@@ -22,15 +22,25 @@
  *   - 本文執筆プロンプトに「SEO・CVR改善ガイドライン（構成/画像/トーン）」を渡して反映
  *   することで、過去の反響データに基づいて記事の質を継続的に改善する。
  *
+ * 図表の自動生成・挿入:
+ *   本文生成前に、(1) 実取得データ（transactionStats/samples）から QuickChart の
+ *   取引価格グラフ URL を組み立て、(2) Gemini（軽量モデルで英語プロンプト生成 →
+ *   gemini-3.1-flash-image で画像生成）でエリア・テーマに合わせたアイキャッチ画像を
+ *   生成して frontend/public/images/blog/ に保存する。どちらも失敗時は null を返し、
+ *   本文プロンプトから該当の挿入指示を省略するだけで記事生成自体は止めない。
+ *
  * 必須環境変数:
  *   GEMINI_API_KEY        — Gemini API キー
  *
  * 任意環境変数:
- *   GEMINI_MODEL          — 本文執筆用モデル。既定: gemini-3.1-pro-preview
- *   GEMINI_PLANNING_MODEL — 企画会議（テーマ選定）用の軽量モデル。既定: gemini-3.6-flash
+ *   GEMINI_MODEL               — 本文執筆用モデル。既定: gemini-3.1-pro-preview
+ *   GEMINI_PLANNING_MODEL      — 企画会議・画像プロンプト生成用の軽量モデル。既定: gemini-3.6-flash
+ *   GEMINI_IMAGE_MODEL         — アイキャッチ画像生成モデル。既定: gemini-3.1-flash-image
+ *   GEMINI_IMAGE_FALLBACK_MODEL — 画像生成の第一候補失敗時のフォールバック。既定: gemini-2.5-flash-image
  *   BLOG_DATE             — 上書き YYYY-MM-DD (既定: JST の本日)
  *   BLOG_DRY_RUN          — "1" の場合、ファイル書き込み・コンテキスト保存・
  *                            翻訳をスキップし、企画会議〜日本語本文生成のみ確認
+ *                            (実データ取得・画像生成は行い、実URLが本文に入るか確認可能)
  *   BLOG_API_BASE_URL     — 実データ取得用バックエンド URL
  *                            既定: https://realestate-api-2hctlfcy6a-an.a.run.app
  *   BLOG_SITE_BASE_URL    — 末尾CTAリンクの本番トップページ URL
@@ -53,6 +63,13 @@ const DRY_RUN = process.env.BLOG_DRY_RUN === "1";
 // BLOG_API_BASE_URL で上書き可能（ステージング検証や mekiki-research.com 経由の API ルート増設時など）。
 const API_BASE_URL = (process.env.BLOG_API_BASE_URL || "https://realestate-api-2hctlfcy6a-an.a.run.app").replace(/\/$/, "");
 const SITE_BASE_URL = (process.env.BLOG_SITE_BASE_URL || "https://mekiki-research.com").replace(/\/$/, "");
+
+// アイキャッチ画像生成（Gemini 画像モデル、フォールバック順）。
+// backend/src/services/imagenApi.ts の「暮らしイメージ」生成と同じフォールバック方針
+// （Nano Banana 2 → 旧世代 Flash Image）を踏襲する。
+const IMAGE_MODEL_PRIMARY = process.env.GEMINI_IMAGE_MODEL || "gemini-3.1-flash-image";
+const IMAGE_MODEL_FALLBACK = process.env.GEMINI_IMAGE_FALLBACK_MODEL || "gemini-2.5-flash-image";
+const IMAGE_OUTPUT_DIR = path.resolve(__dirname, "../frontend/public/images/blog");
 
 // ─── AI編集長コンテキスト（連載・過去テーマの記録） ────────────────────────
 // 「今日のテーマ・エリア」を毎回ランダムに選ぶのではなく、AI編集長 (Gemini) が
@@ -331,7 +348,7 @@ function jaMetaPrompt({ today, recentSlugs, plan }) {
 }`;
 }
 
-function jaBodyPrompt({ today, meta, areaData, plan, guidelines }) {
+function jaBodyPrompt({ today, meta, areaData, plan, guidelines, heroImage, chart }) {
   const lat = Number(meta.primaryLocation?.lat);
   const lng = Number(meta.primaryLocation?.lng);
   const locName = meta.primaryLocation?.name || "対象エリア";
@@ -350,14 +367,34 @@ function jaBodyPrompt({ today, meta, areaData, plan, guidelines }) {
 # SEO・CVR改善ガイドライン（GA4実績分析ベース、scripts/analyze_blog_performance.js が生成・週次更新）
 過去の記事実績分析から得られた、以下の構成・表現方針を今回の本文に反映すること:
 - 構成: ${(cg.structure || []).map((s) => `\n  - ${s}`).join("") || "(なし)"}
-- 画像・グラフの提案: ${(cg.visuals || []).map((s) => `\n  - ${s}`).join("") || "(なし)"}
+- 画像・グラフの配置方針（参考。実際に挿入する画像・グラフの実体は下記「実画像・グラフの挿入」を参照）: ${(cg.visuals || []).map((s) => `\n  - ${s}`).join("") || "(なし)"}
 - トーン: ${cg.tone || "(指定なし)"}
-- SEO留意点: ${cg.seoNotes || "(指定なし)"}
-
-画像・グラフの提案は、実際の画像ファイルを生成できないため、該当箇所に Markdown の引用ブロック
-(例: \`> 📊 グラフ提案: ○○の取引価格推移（20xx〜20xx年）\` や \`> 🖼️ アイキャッチ案: ○○\`) として
-本文中に自然に挿入すること（本文の直接的な画像埋め込み \`![...]\` は行わない）。`
+- SEO留意点: ${cg.seoNotes || "(指定なし)"}`
     : "";
+
+  // 本文生成前に実データ・AI画像生成から用意済みの実アセット（QuickChartグラフURL /
+  // Gemini生成アイキャッチ画像パス）。プレースホルダーではなく実体のあるURLを
+  // そのまま Markdown 画像記法で挿入させる。どちらか/両方が欠けている場合は
+  // 該当行のみ省略する（画像生成失敗時などに記事生成自体を止めないため）。
+  const assetLines = [];
+  if (heroImage) {
+    assetLines.push(
+      `- アイキャッチ・挿絵画像（生成済み、記事冒頭のリード段落の直後に1回だけ挿入）:\n    \`![${locName}のイメージ](${heroImage.path})\``,
+    );
+  }
+  if (chart) {
+    assetLines.push(
+      `- 取引価格グラフ（QuickChartで生成済みの実データグラフ、実データの説明箇所付近に1回だけ挿入）:\n    \`![${chart.alt}](${chart.url})\``,
+    );
+  }
+  const assetBlock =
+    assetLines.length > 0
+      ? `
+# 実画像・グラフの挿入（厳守）
+以下は本記事のために実際に生成済みの画像・グラフである。説明文やプレースホルダーへの言い換えは禁止。
+指定された Markdown 画像記法をURLを一切改変せずそのまま本文中に挿入すること（各1回ずつ、合計${assetLines.length}箇所）:
+${assetLines.join("\n")}`
+      : "";
 
   const evidenceBlock = areaData
     ? `
@@ -386,6 +423,7 @@ ${JSON.stringify(areaData, null, 2)}
 ${themeBlock}
 ${evidenceBlock}
 ${guidelinesBlock}
+${assetBlock}
 # 記事メタデータ
 - タイトル: ${meta.title}
 - description: ${meta.description}
@@ -454,8 +492,8 @@ function transBodyPrompt({ lang, jaBody }) {
 
 # 翻訳指針
 - 日本の固有名詞は対象言語の慣用表記に置き換え、初出時は ( ) 内に英字または日本語原文を併記
-- Markdown 構造 (見出し、表、箇条書き、リンク) を完全に保つ
-- URL (https://mekiki-research.com 等) は変更しない
+- Markdown 構造 (見出し、表、箇条書き、リンク、画像 \`![alt](url)\`) を完全に保つ
+- URL (https://mekiki-research.com 等、および画像記法内の URL) は変更しない。画像の alt テキストのみ翻訳してよい
 - 翻訳調にせず、ターゲット言語のネイティブが読んで自然になるようリライト
 
 # 出力 (厳守)
@@ -555,10 +593,174 @@ function summarizeAreaData(raw) {
   };
 }
 
+// 実データ取得の失敗を吸収するラッパー。失敗しても記事生成自体は止めない
+// （一般情報ベースのフォールバック執筆に切り替わるだけ）。
+async function fetchAreaDataSafe(primaryLocation) {
+  try {
+    const raw = await fetchAreaData(primaryLocation);
+    const areaData = summarizeAreaData(raw);
+    console.log(
+      `[INFO] 実データ取得 OK: source=${areaData?.source} count=${areaData?.transactionStats?.sampleCount} years=${areaData?.transactionStats?.yearRange}`,
+    );
+    return areaData;
+  } catch (apiErr) {
+    console.warn(`[WARN] 実データ取得に失敗: ${apiErr.message}. 一般情報ベースで本文を生成します。`);
+    return null;
+  }
+}
+
+// ─── 取引価格グラフ（QuickChart） ────────────────────────────────────────────
+// summarizeAreaData() が返した実データから QuickChart の画像 URL を組み立てる純粋関数。
+// AI 呼び出しを伴わないため areaData が取得できていれば同期的に即座に得られる。
+// 優先順位: ① samples（個別取引、期別）> ② transactionStats（平均/中央値/最小/最大の要約）。
+// どちらも使えるだけのデータが無ければ null を返し、呼び出し側は本文プロンプトへの
+// グラフ挿入指示を省略する（実データが薄いエリアでグラフを捏造しないため）。
+function buildAreaChartUrl(areaData, locName) {
+  if (!areaData) return null;
+  const samples = Array.isArray(areaData.samples) ? areaData.samples : [];
+  const priced = samples.filter((s) => typeof s.tradePrice === "number" && s.tradePrice > 0);
+  const label = locName || "対象エリア";
+
+  let chart;
+  let alt;
+  if (priced.length >= 2) {
+    const sorted = [...priced].sort((a, b) => String(a.period || "").localeCompare(String(b.period || "")));
+    chart = {
+      type: "bar",
+      data: {
+        labels: sorted.map((s) => s.period || s.districtName || "—"),
+        datasets: [
+          {
+            label: "取引価格（万円）",
+            data: sorted.map((s) => Math.round(s.tradePrice / 10000)),
+            backgroundColor: "#3b82f6",
+          },
+        ],
+      },
+      options: {
+        plugins: { legend: { display: false }, title: { display: true, text: `${label}の実取引価格` } },
+        scales: { y: { beginAtZero: true, title: { display: true, text: "万円" } } },
+      },
+    };
+    alt = `${label}の実取引価格推移グラフ`;
+  } else {
+    const stats = areaData.transactionStats;
+    const entries = [
+      ["最低", stats?.minTradePrice],
+      ["中央値", stats?.medianTradePrice],
+      ["平均", stats?.avgTradePrice],
+      ["最高", stats?.maxTradePrice],
+    ].filter(([, v]) => typeof v === "number" && v > 0);
+    if (entries.length < 2) return null;
+    chart = {
+      type: "bar",
+      data: {
+        labels: entries.map(([l]) => l),
+        datasets: [
+          {
+            label: "取引価格（万円）",
+            data: entries.map(([, v]) => Math.round(v / 10000)),
+            backgroundColor: ["#60a5fa", "#3b82f6", "#2563eb", "#1d4ed8"],
+          },
+        ],
+      },
+      options: {
+        plugins: { legend: { display: false }, title: { display: true, text: `${label}の取引価格統計` } },
+        scales: { y: { beginAtZero: true, title: { display: true, text: "万円" } } },
+      },
+    };
+    alt = `${label}の取引価格統計グラフ`;
+  }
+
+  const url = `https://quickchart.io/chart?w=600&h=350&bkg=white&c=${encodeURIComponent(JSON.stringify(chart))}`;
+  return { url, alt };
+}
+
 // AI が意図せず混入させる強調記号 (** / __) を除去する。
 // 画像 ![alt](url) やリンク [text](url) は * / _ を構造に使わないので副作用なし。
 function stripBoldMarkdown(text) {
   return String(text || "").replace(/\*\*/g, "").replace(/__/g, "");
+}
+
+// ─── アイキャッチ画像の自動生成（Gemini 画像モデル） ────────────────────────
+// Stage1: 軽量モデル (PLANNING_MODEL) でエリア・テーマに合わせた英語の画像生成
+//         プロンプトを動的生成する（backend/src/services/imagenApi.ts の
+//         「暮らしイメージ」生成と同じ二段階方式）。
+// Stage2: IMAGE_MODEL_PRIMARY → 失敗時 IMAGE_MODEL_FALLBACK の順で画像を生成し、
+//         frontend/public/images/blog/ に保存する。
+// 失敗しても記事生成自体は止めない（tryGenerateHeroImage が null を返すのみ）。
+const IMAGE_PROMPT_SYSTEM_INSTRUCTION = `You are an expert at writing prompts for photorealistic image generation AI.
+Given a Japanese real-estate blog article's theme and target area, write a single English image generation
+prompt for a photorealistic hero image (townscape / landscape / architecture) that matches the article.
+
+Rules:
+- Output ONLY the image generation prompt string. No explanation, no markdown, no prefix like "Prompt:".
+- The prompt must be comma-separated keywords and short phrases.
+- Reflect the REAL visual character of the specific area (urban core vs. suburban vs. rural, coastal vs.
+  mountainous, notable landmarks/architecture style). Do NOT produce generic stock imagery.
+- Choose season/weather appropriate to the area and theme (e.g. snow for Hokkaido/Tohoku in winter contexts).
+- Do NOT include any text, logos, watermarks, or people's faces close-up.
+- Always end with: photorealistic, high-quality photography, 16:9 landscape format, natural lighting.`;
+
+async function generateHeroImagePrompt(ai, { plan, jaMeta }) {
+  const userMessage = `Article theme (Japanese): ${plan.theme}
+Angle (Japanese): ${plan.angle}
+Target area (Japanese): ${plan.targetArea}
+Article title (Japanese): ${jaMeta.title}`;
+  const response = await ai.models.generateContent({
+    model: PLANNING_MODEL,
+    contents: `${IMAGE_PROMPT_SYSTEM_INSTRUCTION}\n\n${userMessage}`,
+    config: { temperature: 0.9 },
+  });
+  const text = response?.text?.trim();
+  if (!text) throw new Error("画像プロンプト生成の応答が空でした");
+  return text;
+}
+
+async function generateImageViaGemini(ai, modelId, prompt) {
+  const response = await ai.models.generateContent({
+    model: modelId,
+    contents: prompt,
+    config: { responseModalities: ["IMAGE"] },
+  });
+  const parts = response?.candidates?.[0]?.content?.parts || [];
+  for (const part of parts) {
+    if (part.inlineData?.data) {
+      return { data: part.inlineData.data, mimeType: part.inlineData.mimeType || "image/jpeg" };
+    }
+  }
+  throw new Error(`${modelId} の応答に画像データが含まれていません`);
+}
+
+function extensionForMimeType(mimeType) {
+  if (mimeType === "image/png") return "png";
+  if (mimeType === "image/webp") return "webp";
+  return "jpg";
+}
+
+async function tryGenerateHeroImage(ai, { plan, jaMeta, baseName }) {
+  try {
+    const imagePrompt = await generateHeroImagePrompt(ai, { plan, jaMeta });
+    console.log(`[INFO] [画像生成] プロンプト: ${imagePrompt}`);
+
+    let result;
+    try {
+      result = await generateImageViaGemini(ai, IMAGE_MODEL_PRIMARY, imagePrompt);
+    } catch (err1) {
+      console.warn(`[WARN] [画像生成] ${IMAGE_MODEL_PRIMARY} 失敗、${IMAGE_MODEL_FALLBACK} にフォールバック: ${err1.message}`);
+      result = await generateImageViaGemini(ai, IMAGE_MODEL_FALLBACK, imagePrompt);
+    }
+
+    const ext = extensionForMimeType(result.mimeType);
+    const filename = `${baseName}-image.${ext}`;
+    fs.mkdirSync(IMAGE_OUTPUT_DIR, { recursive: true });
+    fs.writeFileSync(path.join(IMAGE_OUTPUT_DIR, filename), Buffer.from(result.data, "base64"));
+    console.log(`[INFO] [画像生成] 保存完了: frontend/public/images/blog/${filename} (${result.mimeType})`);
+    return { path: `/images/blog/${filename}`, prompt: imagePrompt };
+  } catch (err) {
+    console.warn(`[WARN] アイキャッチ画像生成に失敗したためスキップします: ${err.message}`);
+    return null;
+  }
 }
 
 // ─── Firestore への X 投稿テンプレート書き込み ──────────────────────────────
@@ -689,19 +891,27 @@ async function main() {
     console.log("[DRY] [JA] メタデータ生成中...");
     const jaMeta = await callJson(ai, jaMetaPrompt({ today, recentSlugs, plan }));
     console.log("[DRY] メタデータ:", JSON.stringify(jaMeta, null, 2));
-    console.log("[DRY] [JA] 本文 Markdown 生成中 (実データ取得はスキップ)...");
-    const jaBody = await callText(
-      ai,
-      jaBodyPrompt({
-        today,
-        meta: { ...jaMeta, primaryLocation: { lat: plan.lat, lng: plan.lng, name: plan.targetArea } },
-        areaData: null,
-        plan,
-        guidelines,
-      }),
-    );
+    jaMeta.primaryLocation = { lat: plan.lat, lng: plan.lng, name: plan.targetArea };
+    jaMeta.slug = sanitizeSlug(jaMeta.slug) || "dry-run-preview";
+    const dryBaseName = `${today}-${jaMeta.slug}`;
+
+    // dry-run でも実データ取得・画像生成は実行する（本文に実URLが埋め込まれるかを
+    // 確認できるようにするため）。.md ファイル書き込み・コンテキスト保存・翻訳・
+    // Firestore 書き込みのみスキップする。画像は IMAGE_OUTPUT_DIR に実際に保存される
+    // （プレビュー用の副作用として許容。commit 対象は frontend/content/blog/*.md と
+    // data/blog_context.json のみなので生成された画像が誤って自動コミットされることはない）。
+    console.log("[DRY] 実データ取得中...");
+    const areaData = await fetchAreaDataSafe(jaMeta.primaryLocation);
+    console.log("[DRY] アイキャッチ画像生成中...");
+    const heroImage = await tryGenerateHeroImage(ai, { plan, jaMeta, baseName: dryBaseName });
+    const chart = buildAreaChartUrl(areaData, jaMeta.primaryLocation.name);
+    console.log(`[DRY] chart=${chart ? chart.url : "(なし)"}`);
+    console.log(`[DRY] heroImage=${heroImage ? heroImage.path : "(なし)"}`);
+
+    console.log("[DRY] [JA] 本文 Markdown 生成中...");
+    const jaBody = await callText(ai, jaBodyPrompt({ today, meta: jaMeta, areaData, plan, guidelines, heroImage, chart }));
     console.log("[DRY] 本文 Markdown:\n" + jaBody);
-    console.log("[DRY] (dry-run のためファイル書き込み・コンテキスト保存・翻訳はスキップしました)");
+    console.log("[DRY] (dry-run のため .md ファイル書き込み・コンテキスト保存・翻訳・Firestore書き込みはスキップしました)");
     return;
   }
 
@@ -722,21 +932,17 @@ async function main() {
     throw new Error(`${baseName}.md は既に存在します。生成を中止します。`);
   }
 
-  // 実データ取得（トップページが叩くのと同じ Cloud Run バックエンドAPI）
-  // 失敗しても記事生成自体は止めない（一般情報ベースのフォールバック執筆を促す）
-  let areaData = null;
-  try {
-    const raw = await fetchAreaData(jaMeta.primaryLocation);
-    areaData = summarizeAreaData(raw);
-    console.log(
-      `[INFO] 実データ取得 OK: source=${areaData?.source} count=${areaData?.transactionStats?.sampleCount} years=${areaData?.transactionStats?.yearRange}`,
-    );
-  } catch (apiErr) {
-    console.warn(`[WARN] 実データ取得に失敗: ${apiErr.message}. 一般情報ベースで本文を生成します。`);
-  }
+  // 実データ取得（トップページが叩くのと同じ Cloud Run バックエンドAPI）と
+  // アイキャッチ画像生成は互いに独立しているため並行実行する。どちらも失敗時は
+  // null を返すだけで記事生成自体は止めない。
+  const [areaData, heroImage] = await Promise.all([
+    fetchAreaDataSafe(jaMeta.primaryLocation),
+    tryGenerateHeroImage(ai, { plan, jaMeta, baseName }),
+  ]);
+  const chart = buildAreaChartUrl(areaData, jaMeta.primaryLocation.name);
 
   console.log("[INFO] [JA] 本文 Markdown 生成中...");
-  const jaBody = await callText(ai, jaBodyPrompt({ today, meta: jaMeta, areaData, plan, guidelines }));
+  const jaBody = await callText(ai, jaBodyPrompt({ today, meta: jaMeta, areaData, plan, guidelines, heroImage, chart }));
   if (jaBody.length < 1500) {
     throw new Error(`日本語本文が短すぎます: ${jaBody.length} chars`);
   }

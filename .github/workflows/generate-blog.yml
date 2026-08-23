@@ -105,8 +105,14 @@ jobs:
           git remote set-url origin "https://x-access-token:${PAT_TOKEN}@github.com/${GH_REPO}.git"
 
           # frontend/content/blog/: 生成記事本体
+          # frontend/public/images/blog/: 記事ごとに自動生成したアイキャッチ画像
+          #   (deploy.yml は独立した checkout で Cloud Build するため、ここで
+          #    コミットしないと本番の Docker イメージに画像が含まれない)
           # data/blog_context.json: AI編集長（企画会議）が参照する連載・過去テーマ記録
           git add frontend/content/blog/
+          if [ -d frontend/public/images/blog ]; then
+            git add frontend/public/images/blog/
+          fi
           if [ -f data/blog_context.json ]; then
             git add data/blog_context.json
           fi
