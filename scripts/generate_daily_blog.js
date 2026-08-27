@@ -212,8 +212,56 @@ function stripFences(text) {
 // ─── Gemini 呼び出しラッパー ───────────────────────────────────────────────────
 const JSON_CALL_MAX_ATTEMPTS = 3;
 
+// Gemini API の一時的な高負荷 (503 UNAVAILABLE) やレート制限 (429)、内部エラー (500) は
+// リトライで回復することが多いため、generateContent の呼び出し自体を指数バックオフで叩き直す。
+const API_CALL_MAX_ATTEMPTS = 5;
+const API_RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// 例外オブジェクトから HTTP ステータスコードを可能な限り抽出する。
+// @google/genai の ApiError は `status` / `code` に数値を持つが、
+// バージョンによっては message に埋め込まれた JSON のみのこともある。
+function extractApiErrorStatus(err) {
+  if (!err) return null;
+  for (const key of ["status", "code", "statusCode"]) {
+    const v = err[key];
+    if (typeof v === "number" && Number.isFinite(v)) return v;
+    if (typeof v === "string" && /^\d{3}$/.test(v.trim())) return Number(v.trim());
+  }
+  const msg = String(err?.message || err || "");
+  const m = msg.match(/"code"\s*:\s*(\d{3})/) || msg.match(/\b(429|500|502|503|504)\b/);
+  return m ? Number(m[1]) : null;
+}
+
+// generateContent を指数バックオフ付きでリトライするラッパー。
+// リトライ不能なエラー (400 系の入力不正など) は即座に再スローする。
+async function generateContentWithRetry(ai, params) {
+  let lastErr;
+  for (let attempt = 1; attempt <= API_CALL_MAX_ATTEMPTS; attempt++) {
+    try {
+      return await ai.models.generateContent(params);
+    } catch (err) {
+      lastErr = err;
+      const status = extractApiErrorStatus(err);
+      const retryable = status === null || API_RETRYABLE_STATUS.has(status);
+      if (!retryable || attempt >= API_CALL_MAX_ATTEMPTS) {
+        break;
+      }
+      const waitSec = 2 ** attempt; // 2, 4, 8, 16 秒
+      console.warn(
+        `[WARN] Gemini API エラー発生 (${status ?? "unknown"}). ` +
+          `${waitSec}秒後にリトライします... (attempt ${attempt}/${API_CALL_MAX_ATTEMPTS})`,
+      );
+      await sleep(waitSec * 1000);
+    }
+  }
+  const status = extractApiErrorStatus(lastErr);
+  throw new Error(
+    `Gemini API 呼び出しに ${API_CALL_MAX_ATTEMPTS} 回失敗しました (status: ${status ?? "unknown"}): ${lastErr?.message || lastErr}`,
+  );
 }
 
 // JSON モードを明示指定してもごく稀にフォーマットが崩れて返ってくることがあるため、
@@ -221,7 +269,7 @@ function sleep(ms) {
 async function callJson(ai, prompt, model = MODEL) {
   let lastErr;
   for (let attempt = 1; attempt <= JSON_CALL_MAX_ATTEMPTS; attempt++) {
-    const response = await ai.models.generateContent({
+    const response = await generateContentWithRetry(ai, {
       model,
       contents: prompt,
       config: {
@@ -253,7 +301,7 @@ async function callJson(ai, prompt, model = MODEL) {
 }
 
 async function callText(ai, prompt) {
-  const response = await ai.models.generateContent({
+  const response = await generateContentWithRetry(ai, {
     model: MODEL,
     contents: prompt,
     config: { temperature: 0.85 },
@@ -707,7 +755,7 @@ async function generateHeroImagePrompt(ai, { plan, jaMeta }) {
 Angle (Japanese): ${plan.angle}
 Target area (Japanese): ${plan.targetArea}
 Article title (Japanese): ${jaMeta.title}`;
-  const response = await ai.models.generateContent({
+  const response = await generateContentWithRetry(ai, {
     model: PLANNING_MODEL,
     contents: `${IMAGE_PROMPT_SYSTEM_INSTRUCTION}\n\n${userMessage}`,
     config: { temperature: 0.9 },
@@ -718,7 +766,7 @@ Article title (Japanese): ${jaMeta.title}`;
 }
 
 async function generateImageViaGemini(ai, modelId, prompt) {
-  const response = await ai.models.generateContent({
+  const response = await generateContentWithRetry(ai, {
     model: modelId,
     contents: prompt,
     config: { responseModalities: ["IMAGE"] },
