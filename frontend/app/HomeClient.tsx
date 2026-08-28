@@ -748,6 +748,8 @@ function HomePageContent() {
       <main className="max-w-5xl mx-auto px-4 py-8 space-y-6">
         <SearchForm onSearch={handleSearch} loading={loading} districtMarkers={districtMarkers} isLoggedIn={!!user} externalCoords={externalCoords} collapseMap={!!result} locale={locale} />
 
+        {/* ベータ版（指標サマリー UI / β 版）への導線は一般ユーザー向けに非表示化。
+            再公開する場合は以下のブロックのコメントアウトを解除する。
         {!result && !loading && (
           <div className="rounded-2xl border border-teal-200 bg-teal-50 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
             <div className="flex-1 min-w-0">
@@ -771,6 +773,7 @@ function HomePageContent() {
             </a>
           </div>
         )}
+        */}
 
         {error && errorCode === "RATE_LIMITED" && (
           <div className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 px-5 py-4 shadow-sm">
