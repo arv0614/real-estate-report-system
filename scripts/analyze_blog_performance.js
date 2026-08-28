@@ -29,6 +29,13 @@
  *   GEMINI_ANALYSIS_MODEL  — 任意。既定: gemini-3.1-pro-preview
  *   BLOG_ANALYSIS_DAYS     — 任意。既定: 28（--days で上書き可）
  *   SLACK_WEBHOOK_URL      — 任意。設定時はSEO運用レポートをSlack Incoming Webhookに送信
+ *   FIREBASE_PROJECT_ID    — 任意。Firestore `seo_reports` 保存先 (なければ GCP_PROJECT_ID)
+ *   GCP_PROJECT_ID         — 任意。FIREBASE_PROJECT_ID 未設定時の Firestore 保存先
+ *
+ * Firestore 保存: firebase-admin と FIREBASE_PROJECT_ID (なければ GCP_PROJECT_ID) が
+ * 利用できる場合、実行結果 (GA4 集計値 + Gemini ガイドライン) を `seo_reports/{date}` に
+ * 保存する。管理画面 (/admin) の「SEOレポート」タブがこのコレクションを読み取る。
+ * いずれかが欠けている場合や保存に失敗した場合も、JSON 出力・Slack 通知は継続する。
  */
 
 const fs = require("fs");
@@ -453,6 +460,80 @@ async function sendSlack(text) {
   console.log("[SUCCESS] Slack に SEO運用レポートを送信しました");
 }
 
+// ─── Firestore 保存 (seo_reports/{date}) ────────────────────────────────────
+// summarize_ad_performance.js の saveAdReport と同じパターン。
+// 管理画面の GET /api/admin/seo-reports がこのコレクションを date 降順で読み取る。
+async function saveSeoReport({ guidelines, funnel }) {
+  const projectId = process.env.FIREBASE_PROJECT_ID || process.env.GCP_PROJECT_ID;
+  if (!projectId) {
+    console.warn("[WARN] FIREBASE_PROJECT_ID / GCP_PROJECT_ID 未設定のため Firestore seo_reports 保存をスキップ");
+    return;
+  }
+  let admin;
+  try {
+    admin = require("firebase-admin");
+  } catch (err) {
+    console.warn(`[WARN] firebase-admin ロード失敗のため Firestore 保存をスキップ: ${err.message}`);
+    return;
+  }
+
+  const cg = guidelines.contentGuidelines || {};
+  const doc = {
+    date: guidelines.period.endDate,
+    period: guidelines.period,
+    sampleSize: guidelines.sampleSize,
+    // GA4 の全体ファネル集計値（PV / CTAクリック / sign_up / CTR / CVR）
+    metrics: {
+      pageViews: funnel.pageViews,
+      clickCtaCount: funnel.clickCtaCount,
+      signUpCount: funnel.signUpCount,
+      ctr: funnel.ctr,
+      cvr: funnel.cvr,
+    },
+    // Gemini が生成した編集方針（振り返り・推奨テーマ・画像/グラフ挿入方針など）
+    guidelines: {
+      insufficientData: !!guidelines.insufficientData,
+      summary: guidelines.summary ?? null,
+      recommendedThemes: guidelines.recommendedThemes ?? [],
+      recommendedAreas: guidelines.recommendedAreas ?? [],
+      avoidThemes: guidelines.avoidThemes ?? [],
+      highPerformingPatterns: guidelines.highPerformingPatterns ?? null,
+      lowPerformingPatterns: guidelines.lowPerformingPatterns ?? null,
+      contentGuidelines: {
+        structure: cg.structure ?? [],
+        visuals: cg.visuals ?? [],
+        tone: cg.tone ?? null,
+        seoNotes: cg.seoNotes ?? null,
+      },
+    },
+    topArticles: (guidelines.topArticles ?? []).slice(0, 5),
+  };
+
+  if (DRY_RUN) {
+    console.log(`[DRY] Firestore seo_reports/${doc.date} への保存をスキップ（保存予定ドキュメント）:`);
+    console.log(JSON.stringify(doc, null, 2));
+    return;
+  }
+
+  try {
+    if (!admin.apps.length) admin.initializeApp({ projectId });
+    const db = admin.firestore();
+    // doc id = 日付。同日の再実行は merge して冪等にする。
+    await db.collection("seo_reports").doc(doc.date).set(
+      {
+        ...doc,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true },
+    );
+    console.log(`[SUCCESS] Firestore seo_reports/${doc.date} に保存しました (project=${projectId})`);
+  } catch (err) {
+    console.error(`[ERROR] Firestore seo_reports 保存に失敗: ${err.message}`);
+    // 保存失敗は致命的ではない（JSON 出力・Slack 通知は別途行う）ので throw しない
+  }
+}
+
 // ─── main ───────────────────────────────────────────────────────────────────
 async function main() {
   try {
@@ -510,9 +591,14 @@ async function main() {
       console.log(`[SUCCESS] ${path.relative(process.cwd(), OUTPUT_PATH)} に保存しました`);
     }
 
+    const funnel = computeOverallFunnel(articles);
+
+    // Firestore `seo_reports` に保存（管理画面「SEOレポート」タブが参照）。
+    // DRY_RUN 時は保存予定ドキュメントをログ出力するのみ（saveSeoReport 内で分岐）。
+    await saveSeoReport({ guidelines, funnel });
+
     // Slack 通知（①SEO運用ファネルレポート + ②編集・改善方針のアップデート）。
     // DRY_RUN 時は実送信せず送信予定の本文をログに出すのみ（sendSlack 内で分岐）。
-    const funnel = computeOverallFunnel(articles);
     await sendSlack(buildSlackText({ guidelines, funnel, days: DAYS }));
   } catch (err) {
     console.error(`[ERROR] ブログパフォーマンス分析に失敗しました: ${err.message}`);

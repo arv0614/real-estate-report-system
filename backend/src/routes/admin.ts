@@ -238,6 +238,52 @@ app.get("/ad-reports", async (c) => {
 });
 
 /**
+ * GET /api/admin/seo-reports
+ * Firestore `seo_reports` コレクションを date 降順で直近 N 件返す。
+ * 各ドキュメントは scripts/analyze_blog_performance.js が週次で保存する。
+ * フィールド: date (string "YYYY-MM-DD"), period (map: days/startDate/endDate),
+ *            sampleSize (number),
+ *            metrics (map: pageViews, clickCtaCount, signUpCount, ctr, cvr),
+ *            guidelines (map: summary, recommendedThemes, recommendedAreas,
+ *              avoidThemes, highPerformingPatterns, lowPerformingPatterns,
+ *              contentGuidelines{structure,visuals,tone,seoNotes}, insufficientData),
+ *            topArticles (array), createdAt (Timestamp)
+ * コレクション未作成でも 500 を返さずフォールバック（空配列）。
+ */
+app.get("/seo-reports", async (c) => {
+  const LIMIT = 30;
+  try {
+    const snap = await db
+      .collection("seo_reports")
+      .orderBy("date", "desc")
+      .limit(LIMIT)
+      .get()
+      .catch(() => null);
+
+    const docs = snap ? snap.docs : [];
+    const reports = docs.map((doc) => {
+      const data = doc.data();
+      const createdAt = data.createdAt as admin.firestore.Timestamp | undefined;
+      return {
+        id: doc.id,
+        date: (data.date as string | undefined) ?? doc.id,
+        period: (data.period as Record<string, unknown> | undefined) ?? null,
+        sampleSize: (data.sampleSize as number | undefined) ?? 0,
+        metrics: (data.metrics as Record<string, number> | undefined) ?? {},
+        guidelines: (data.guidelines as Record<string, unknown> | undefined) ?? {},
+        topArticles: (data.topArticles as unknown[] | undefined) ?? [],
+        createdAt: createdAt ? createdAt.toDate().toISOString() : null,
+      };
+    });
+
+    return c.json({ reports, count: reports.length });
+  } catch (err) {
+    console.error("[Admin] seo_reports 読み取り失敗:", err);
+    return c.json({ error: "Failed to load seo reports" }, 500);
+  }
+});
+
+/**
  * GET /api/admin/x-promotions
  * Firestore `social_templates` コレクションから X 投稿テンプレートを返す。
  *

@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { useRouter } from "@/i18n/navigation";
 import { auth } from "@/lib/firebase";
 import { useAuth } from "@/lib/useAuth";
@@ -75,12 +77,49 @@ type AdReportItem = {
   createdAt: string | null;
 };
 
+type SeoPatternGroup = {
+  themes?: string[];
+  areas?: string[];
+  insight?: string | null;
+};
+
+type SeoReportItem = {
+  id: string;
+  date: string;
+  period: { days?: number; startDate?: string; endDate?: string } | null;
+  sampleSize: number;
+  metrics: Record<string, number>;
+  guidelines: {
+    insufficientData?: boolean;
+    summary?: string | null;
+    recommendedThemes?: string[];
+    recommendedAreas?: string[];
+    avoidThemes?: string[];
+    highPerformingPatterns?: SeoPatternGroup | null;
+    lowPerformingPatterns?: SeoPatternGroup | null;
+    contentGuidelines?: {
+      structure?: string[];
+      visuals?: string[];
+      tone?: string | null;
+      seoNotes?: string | null;
+    } | null;
+  } | null;
+  topArticles: Array<{
+    slug: string;
+    title: string | null;
+    pageViews?: number;
+    clickCtaCount?: number;
+    signUpCount?: number;
+  }>;
+  createdAt: string | null;
+};
+
 const TEMPLATES_PAGE_SIZE = 10;
 
 type TemplatesSort = "newest" | "oldest";
 const TEMPLATES_SORT_OPTIONS: TemplatesSort[] = ["newest", "oldest"];
 
-type TabKey = "feedbacks" | "users" | "social" | "ad-reports";
+type TabKey = "feedbacks" | "users" | "social" | "ad-reports" | "seo-reports";
 
 type LoadState<T> =
   | { kind: "loading" }
@@ -165,6 +204,7 @@ export default function AdminClient() {
   const [usersState, setUsersState] = useState<LoadState<UserItem>>({ kind: "loading" });
   const [postsState, setPostsState] = useState<LoadState<SocialPostItem>>({ kind: "loading" });
   const [adReportsState, setAdReportsState] = useState<LoadState<AdReportItem>>({ kind: "loading" });
+  const [seoReportsState, setSeoReportsState] = useState<LoadState<SeoReportItem>>({ kind: "loading" });
   const [templatesState, setTemplatesState] = useState<TemplatesState>({ kind: "loading" });
   const [templatesPage, setTemplatesPage] = useState(1);
   const [templatesSearch, setTemplatesSearch] = useState("");
@@ -185,6 +225,10 @@ export default function AdminClient() {
   const loadAdReports = useCallback(async () => {
     setAdReportsState({ kind: "loading" });
     setAdReportsState(await fetchAdmin<AdReportItem>("/api/admin/ad-reports", "reports"));
+  }, []);
+  const loadSeoReports = useCallback(async () => {
+    setSeoReportsState({ kind: "loading" });
+    setSeoReportsState(await fetchAdmin<SeoReportItem>("/api/admin/seo-reports", "reports"));
   }, []);
   const loadTemplates = useCallback(async (page: number, search: string, sort: TemplatesSort) => {
     setTemplatesState({ kind: "loading" });
@@ -252,7 +296,19 @@ export default function AdminClient() {
     if (tab === "users" && usersState.kind === "loading") loadUsers();
     if (tab === "social" && postsState.kind === "loading") loadPosts();
     if (tab === "ad-reports" && adReportsState.kind === "loading") loadAdReports();
-  }, [tab, user, usersState.kind, postsState.kind, adReportsState.kind, loadUsers, loadPosts, loadAdReports]);
+    if (tab === "seo-reports" && seoReportsState.kind === "loading") loadSeoReports();
+  }, [
+    tab,
+    user,
+    usersState.kind,
+    postsState.kind,
+    adReportsState.kind,
+    seoReportsState.kind,
+    loadUsers,
+    loadPosts,
+    loadAdReports,
+    loadSeoReports,
+  ]);
 
   // テンプレートはページ/検索/ソートが変わったときに再取得（デバウンス）
   useEffect(() => {
@@ -268,6 +324,7 @@ export default function AdminClient() {
     if (tab === "feedbacks") loadFeedbacks();
     else if (tab === "users") loadUsers();
     else if (tab === "ad-reports") loadAdReports();
+    else if (tab === "seo-reports") loadSeoReports();
     else {
       loadPosts();
       loadTemplates(templatesPage, templatesSearch, templatesSort);
@@ -322,7 +379,9 @@ export default function AdminClient() {
         ? usersState
         : tab === "ad-reports"
           ? adReportsState
-          : postsState;
+          : tab === "seo-reports"
+            ? seoReportsState
+            : postsState;
 
   if (activeState.kind === "forbidden") {
     return (
@@ -362,6 +421,7 @@ export default function AdminClient() {
           <TabButton current={tab} value="users" onClick={setTab} label={t("tabUsers")} />
           <TabButton current={tab} value="social" onClick={setTab} label={t("tabSocialPosts")} />
           <TabButton current={tab} value="ad-reports" onClick={setTab} label={t("tabAdReports")} />
+          <TabButton current={tab} value="seo-reports" onClick={setTab} label={t("tabSeoReports")} />
         </div>
 
         {activeState.kind === "loading" && (
@@ -392,6 +452,9 @@ export default function AdminClient() {
         )}
         {activeState.kind === "ok" && tab === "ad-reports" && (
           <AdReportsList items={adReportsState.kind === "ok" ? adReportsState.items : []} />
+        )}
+        {activeState.kind === "ok" && tab === "seo-reports" && (
+          <SeoReportsList items={seoReportsState.kind === "ok" ? seoReportsState.items : []} />
         )}
         {activeState.kind === "ok" && tab === "social" && (
           <SocialPostsList
@@ -521,6 +584,165 @@ function AdReportCard({ report }: { report: AdReportItem }) {
         <pre className="text-xs text-slate-700 whitespace-pre-wrap break-words bg-slate-50 rounded-lg px-3 py-2 border border-slate-100 leading-relaxed font-sans">
           {report.summary}
         </pre>
+      )}
+    </div>
+  );
+}
+
+// ─── SEO レポート ─────────────────────────────────────────────
+// scripts/analyze_blog_performance.js が週次で Firestore `seo_reports` に保存する
+// 「GA4 実績数値 + Gemini 生成の編集方針ガイドライン」を、週ごとのアコーディオンで表示する。
+
+function formatInt(n: number | undefined): string {
+  if (typeof n !== "number" || Number.isNaN(n)) return "—";
+  return n.toLocaleString();
+}
+
+/** guidelines オブジェクトを Markdown 文字列に整形する（ReactMarkdown でレンダリング）。 */
+function seoGuidelinesToMarkdown(
+  g: SeoReportItem["guidelines"],
+  t: ReturnType<typeof useTranslations>
+): string {
+  if (!g) return "";
+  const lines: string[] = [];
+  const bullets = (heading: string, items?: string[]) => {
+    if (!items || items.length === 0) return;
+    lines.push(`### ${heading}`, ...items.map((x) => `- ${x}`), "");
+  };
+  const para = (heading: string, text?: string | null) => {
+    if (!text) return;
+    lines.push(`### ${heading}`, "", text, "");
+  };
+
+  if (g.insufficientData) lines.push(`> ${t("seoInsufficientData")}`, "");
+  para(t("seoSummaryHeading"), g.summary);
+  bullets(t("seoRecommendedThemes"), g.recommendedThemes);
+  bullets(t("seoRecommendedAreas"), g.recommendedAreas);
+  bullets(t("seoAvoidThemes"), g.avoidThemes);
+
+  const cg = g.contentGuidelines;
+  if (cg) {
+    bullets(t("seoStructure"), cg.structure);
+    bullets(t("seoVisuals"), cg.visuals);
+    para(t("seoTone"), cg.tone);
+    para(t("seoNotes"), cg.seoNotes);
+  }
+  para(t("seoHighPatterns"), g.highPerformingPatterns?.insight ?? null);
+  para(t("seoLowPatterns"), g.lowPerformingPatterns?.insight ?? null);
+
+  return lines.join("\n").trim();
+}
+
+function SeoReportsList({ items }: { items: SeoReportItem[] }) {
+  const t = useTranslations("Admin");
+  if (items.length === 0) {
+    return (
+      <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-sm text-slate-500">
+        {t("seoReportsEmpty")}
+      </div>
+    );
+  }
+  return (
+    <>
+      <div className="mb-4 text-xs text-slate-500">{t("adReportsCountLabel", { count: items.length })}</div>
+      <div className="space-y-3">
+        {items.map((r, i) => (
+          <SeoReportCard key={r.id} report={r} defaultOpen={i === 0} />
+        ))}
+      </div>
+    </>
+  );
+}
+
+function SeoReportCard({ report, defaultOpen }: { report: SeoReportItem; defaultOpen: boolean }) {
+  const t = useTranslations("Admin");
+  const [open, setOpen] = useState(defaultOpen);
+  const m = report.metrics ?? {};
+  const md = seoGuidelinesToMarkdown(report.guidelines, t);
+
+  const chips: { label: string; value: string }[] = [
+    { label: t("seoPv"), value: formatInt(m.pageViews) },
+    { label: t("seoCtaClicks"), value: formatInt(m.clickCtaCount) },
+    { label: t("seoSignups"), value: formatInt(m.signUpCount) },
+    { label: t("seoCtr"), value: formatPct(m.ctr) },
+    { label: t("seoCvr"), value: formatPct(m.cvr) },
+  ];
+
+  const periodLabel = report.period?.startDate && report.period?.endDate
+    ? `${report.period.startDate} 〜 ${report.period.endDate}`
+    : null;
+
+  return (
+    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="w-full flex items-center justify-between gap-3 px-4 sm:px-5 py-3 text-left hover:bg-slate-50 transition-colors"
+      >
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="text-sm font-bold text-slate-800 font-mono">{report.date}</h3>
+            {report.guidelines?.insufficientData && (
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">
+                {t("seoInsufficientBadge")}
+              </span>
+            )}
+            {periodLabel && <span className="text-[11px] text-slate-400">{periodLabel}</span>}
+          </div>
+          <p className="mt-0.5 text-[11px] text-slate-500">
+            {t("seoSampleSizeLabel", { count: report.sampleSize })}
+          </p>
+        </div>
+        <span className="shrink-0 text-xs text-slate-400">{open ? t("collapse") : t("expand")}</span>
+      </button>
+
+      {/* ① その週のパフォーマンス数値（常時表示） */}
+      <div className="px-4 sm:px-5 pb-3 flex flex-wrap gap-1.5">
+        {chips.map((c) => (
+          <span
+            key={c.label}
+            className="inline-flex items-baseline gap-1 text-[11px] bg-slate-50 border border-slate-200 rounded px-2 py-0.5"
+          >
+            <span className="text-slate-500">{c.label}</span>
+            <span className="font-semibold text-slate-800">{c.value}</span>
+          </span>
+        ))}
+      </div>
+
+      {/* ② Gemini による編集方針の振り返りと改善ガイドライン（アコーディオン展開時） */}
+      {open && (
+        <div className="border-t border-slate-100 bg-slate-50/60 px-4 sm:px-5 py-4">
+          <h4 className="text-xs font-bold text-slate-600 mb-2">{t("seoGuidelinesHeading")}</h4>
+          {md ? (
+            <div className="seo-guidelines-md text-sm text-slate-700 leading-relaxed [&_h3]:text-xs [&_h3]:font-bold [&_h3]:text-slate-700 [&_h3]:mt-3 [&_h3]:mb-1 [&_p]:mb-2 [&_ul]:list-disc [&_ul]:ml-5 [&_ul]:mb-2 [&_li]:mb-0.5 [&_blockquote]:border-l-4 [&_blockquote]:border-amber-300 [&_blockquote]:bg-amber-50 [&_blockquote]:pl-3 [&_blockquote]:py-1 [&_blockquote]:text-xs [&_blockquote]:text-slate-500 [&_blockquote]:my-2 [&_strong]:font-semibold [&_strong]:text-slate-800">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{md}</ReactMarkdown>
+            </div>
+          ) : (
+            <p className="text-xs text-slate-400">{t("seoNoGuidelines")}</p>
+          )}
+
+          {report.topArticles.length > 0 && (
+            <div className="mt-4">
+              <h4 className="text-xs font-bold text-slate-600 mb-1.5">{t("seoTopArticlesHeading")}</h4>
+              <ul className="space-y-1">
+                {report.topArticles.map((a) => (
+                  <li key={a.slug} className="text-[11px] text-slate-600 flex items-baseline gap-2">
+                    <span className="font-semibold text-slate-500 shrink-0">
+                      {t("seoPv")} {formatInt(a.pageViews)}
+                    </span>
+                    <span className="truncate">{a.title || a.slug}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {report.createdAt && (
+            <time className="mt-3 block text-[10px] text-slate-400" suppressHydrationWarning>
+              {formatDate(report.createdAt)}
+            </time>
+          )}
+        </div>
       )}
     </div>
   );
