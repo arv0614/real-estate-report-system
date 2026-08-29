@@ -108,7 +108,9 @@ test.describe("シナリオC: ゲスト検索フロー", () => {
     await page.getByRole("button", { name: /調査開始/ }).click();
   }
 
-  test("1回目の検索: 結果が表示されること", { timeout: 120_000 }, async ({ page }) => {
+  test("1回目の検索: 結果が表示されること", async ({ page }) => {
+    // Playwright の TestDetails には timeout が無いため、テスト本文で設定する
+    test.setTimeout(120_000);
     await page.goto(BASE, { waitUntil: "domcontentloaded" });
     await clearGuestLimit(page);
 

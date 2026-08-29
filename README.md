@@ -20,22 +20,23 @@
 2. [主な機能 (Key Features)](#-主な機能-key-features)
 3. [料金プランと利用制限](#-料金プランと利用制限)
 4. [システムアーキテクチャ](#-システムアーキテクチャ)
-5. [ブログ完全自動化基盤（メディア運用）](#-ブログ完全自動化基盤メディア運用)
-6. [GitHub Actions ワークフロー（CI/CD）](#-github-actions-ワークフローcicd)
-7. [技術スタック (Tech Stack)](#-技術スタック-tech-stack)
-8. [多言語対応（i18n）の仕組み](#-多言語対応i18nの仕組み)
-9. [セキュリティ・コンプライアンス対策](#-セキュリティコンプライアンス対策)
-10. [SEO 戦略と sitemap](#-seo-戦略と-sitemap)
-11. [テストと品質保証 (QA)](#-テストと品質保証-qa)
-12. [環境変数と GitHub Secrets](#-環境変数と-github-secrets)
-13. [ローカル開発環境のセットアップ](#-ローカル開発環境のセットアップ)
-14. [Cloud Run へのデプロイ](#-cloud-run-へのデプロイ)
-15. [Artifact Registry コスト最適化](#-artifact-registry-コスト最適化)
-16. [Lemon Squeezy 決済の運用手順](#-lemon-squeezy-決済の運用手順)
-17. [管理画面 (/admin)](#-管理画面-admin)
-18. [ディレクトリ構成](#-ディレクトリ構成)
-18. [注意事項](#-注意事項)
-19. [ライセンス](#-ライセンス)
+5. [MCP サーバー（外部 LLM 連携）](#-mcp-サーバー外部-llm-連携)
+6. [ブログ完全自動化基盤（メディア運用）](#-ブログ完全自動化基盤メディア運用)
+7. [GitHub Actions ワークフロー（CI/CD）](#-github-actions-ワークフローcicd)
+8. [技術スタック (Tech Stack)](#-技術スタック-tech-stack)
+9. [多言語対応（i18n）の仕組み](#-多言語対応i18nの仕組み)
+10. [セキュリティ・コンプライアンス対策](#-セキュリティコンプライアンス対策)
+11. [SEO 戦略と sitemap](#-seo-戦略と-sitemap)
+12. [テストと品質保証 (QA)](#-テストと品質保証-qa)
+13. [環境変数と GitHub Secrets](#-環境変数と-github-secrets)
+14. [ローカル開発環境のセットアップ](#-ローカル開発環境のセットアップ)
+15. [Cloud Run へのデプロイ](#-cloud-run-へのデプロイ)
+16. [Artifact Registry コスト最適化](#-artifact-registry-コスト最適化)
+17. [Lemon Squeezy 決済の運用手順](#-lemon-squeezy-決済の運用手順)
+18. [管理画面 (/admin)](#-管理画面-admin)
+19. [ディレクトリ構成](#-ディレクトリ構成)
+20. [注意事項](#-注意事項)
+21. [ライセンス](#-ライセンス)
 
 ---
 
@@ -133,6 +134,18 @@ node scripts/prepare-hoanrin.mjs --input-dir=/path/to/A13-by-pref/
 
 `scripts/prepare-hoanrin.mjs` の詳細と、ogr2ogr (GDAL) を使った SHP → GeoJSON 変換手順は同ファイルのコメントを参照してください。
 
+### 外部AI連携（MCP / Model Context Protocol）
+
+ユーザーが自分の **Claude Desktop や ChatGPT (GPTs) から、直接「Mekiki Research」の国交省データをツールとして呼び出せる** [MCP](https://modelcontextprotocol.io) サーバーをバックエンドに実装（SSE トランスポート）。
+
+- **提供ツール**: `get_real_estate_transactions`（取引事例の集計）/ `get_area_hazard_info`（洪水・土砂災害リスク）。内部で既存の国交省 API ロジック（XIT001 / XKT026 / XKT029）を呼び出す。
+- **規約遵守の自動化**: オープンデータの単純な横流しを防ぐため、**LLM へ返すレスポンスの末尾に「データ出典（国土交通省 不動産情報ライブラリ）＋免責事項」をシステム側で必ず自動結合**する。
+- **Free / Pro プラン限定**。APIキー（`mkr_live_…`、Firestore にはハッシュのみ保存）で認証し、`plan` が `free` / `pro` のユーザーのみ接続可。
+- **MCP レートリミットは Web 版の上限設定の 10 倍で動的連動**。Free プランの MCP 経由ツール呼び出し上限 = `FREE_DAILY_LIMIT`（Web版の無料検索上限）× 10 として計算し、ハードコードしない（Web 版の上限を変えれば MCP 側も自動で追随）。Pro プランは無制限。上限超過時はツール実行をブロックし、LLM にアップグレード案内のエラーテキストを返す。
+- **ユーザー向け導線**: [`/mcp-guide`](https://mekiki-research.com/mcp-guide) に設定ガイド（Claude Desktop の `claude_desktop_config.json` 例・ChatGPT コネクタ手順・プロンプト例）、`/[locale]/profile` に **APIキー発行 UI**（発行した平文キーは1回のみ表示＋コピー）。
+
+> 詳細は [MCP サーバー（外部 LLM 連携）](#-mcp-サーバー外部-llm-連携) セクションを参照。
+
 ### Pro プラン（¥980/月）— 商用リリース済み
 - 検索無制限 / PDF レポート出力 / 暮らしのイメージ画像生成
 - Firebase ID Token 認証 + HMAC-SHA256 Webhook 署名検証
@@ -223,7 +236,9 @@ Web 広告の出稿効果を **無料**（Looker Studio + GA4 標準）で可視
 
 ## 🏗 システムアーキテクチャ
 
-本リポジトリは **3つの責務** を1つの monorepo で管理しています。
+本リポジトリは **3つの責務** を1つの monorepo で管理しています。加えて、外部の
+LLM クライアント（Claude Desktop / ChatGPT 等）が **② Backend API の MCP エンドポイント**
+経由で同じ国交省データにツールとしてアクセスできます。
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -231,10 +246,11 @@ Web 広告の出稿効果を **無料**（Looker Studio + GA4 標準）で可視
 │     mekiki-research.com 本番ドメイン                                 │
 │     - App Router + next-intl で 4言語ルーティング                    │
 │     - ?lat=&lng= で検索を自動実行（ブログCTA・シェアURLから着地）  │
+│     - /[locale]/profile: MCP APIキー発行UI / /[locale]/mcp-guide: 設定ガイド │
 │     - HSTS / CSP / X-Frame-Options 等のセキュリティヘッダー出力     │
-└───────────────────┬─────────────────────────────────────────────────┘
-                    │ GET /api/property/transactions?lat=&lng=&zoom=15&locale=
-                    ▼
+└──────────┬──────────────────────────────────────────────────────────┘
+           │ GET /api/property/transactions?lat=&lng=&zoom=15&locale=
+           ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │  ② Backend API (Hono / Cloud Run / asia-northeast1)                │
 │     realestate-api-2hctlfcy6a-an.a.run.app                          │
@@ -246,6 +262,17 @@ Web 広告の出稿効果を **無料**（Looker Studio + GA4 標準）で可視
 │     - generateAreaReport → Gemini 3.6 Flash                          │
 │     - GCS キャッシュ（30日 TTL・ロケール別キー）                    │
 │     - Lemon Squeezy Checkout / Webhook (HMAC-SHA256 署名検証)       │
+│     ── MCP サーバー (SSE) ─────────────────────────────────────────  │
+│     - GET /api/mcp/sse ・ POST /api/mcp/messages（APIキー認証）      │
+│     - tools: get_real_estate_transactions / get_area_hazard_info    │
+│     - レスポンス末尾に出典＋免責を自動結合（withCompliance）        │
+│     - Free の日次上限 = Web版 FREE_DAILY_LIMIT × 10（動的）/ Pro 無制限 │
+└─────────────────────────────────────────────────────────────────────┘
+           ▲
+           │ Authorization: Bearer <mkr_live_…>   （MCP over SSE）
+┌──────────┴──────────────────────────────────────────────────────────┐
+│  外部 LLM クライアント: Claude Desktop / ChatGPT (GPTs) / Gemini 等  │
+│  ユーザーが自分の AI から国交省データをツールとして直接呼び出す      │
 └─────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -840,7 +867,7 @@ fetch(`/api/property/transactions?...`);
 
 `backend/src/routes/mcp.ts` の各ツールハンドラ冒頭で `enforceMcpQuota()` を実行。
 
-- **上限値はハードコードしない。** Web版の無料上限定数 `FREE_DAILY_LIMIT`（`backend/src/constants/limits.ts`、フロントの `frontend/lib/userPlan.ts` と同値に維持）を import し、`MCP_FREE_DAILY_LIMIT = FREE_DAILY_LIMIT * 10` として計算（現状 3 × 10 = **30回/日**）。
+- **上限値はハードコードしない。** Web版の無料上限定数 `FREE_DAILY_LIMIT`（`backend/src/constants/limits.ts`、フロントの `frontend/lib/limits.ts` と同値に維持）を import し、`MCP_FREE_DAILY_LIMIT = FREE_DAILY_LIMIT * 10` として計算（現状 3 × 10 = **30回/日**）。Web 版の無料上限を変更すれば MCP 側の上限も自動追随する。
 - Firestore `users/{uid}` の `mcpDailyCount` / `mcpLastCallDate` をトランザクションで日次カウント（`backend/src/services/mcpUsage.ts`）。判定ロジックは純粋関数 `decideMcpQuota()` に分離し `mcpUsage.test.ts` で単体テスト。
 - **Pro プランは無制限**（カウントのみ記録）。Firestore エラー時は fail-open。
 - Free が上限超過でツールを呼ぶと、実行をブロックし `isError: true` で以下のテキストを LLM に返す：
@@ -1056,6 +1083,20 @@ npx playwright test tests/production_e2e.spec.ts --reporter=list
 - ゲスト1回検索 → 結果表示（最大120秒タイムアウト：Cloud Run コールドスタート + MLIT API + Gemini 生成の合計を考慮）
 - ゲスト2回目 → `PlanComparisonModal` 表示
 - メタデータ（OGP・title）確認
+
+### バックエンド Jest ユニットテスト（`backend/` 配下）
+
+```bash
+cd backend
+npm test               # jest --forceExit（firebase-admin のオープンハンドル対策）
+```
+
+| テストファイル | 件数 | 内容 |
+|---|---|---|
+| `src/utils/tile.test.ts` | 6 | `latLngToTile` / `tileToLatLng` / `buildCacheKey`（`z/x/y/{locale}` 形式・locale サフィックス） |
+| `src/services/mcpUsage.test.ts` | 5 | MCP 日次上限 = `FREE_DAILY_LIMIT × 10`（=30）の乗算、`decideMcpQuota()` の許可/ブロック/Pro 無制限 |
+
+加えて `node backend/scripts/test_mcp.mjs` で MCP サーバーの結合検証（認証・`tools/list` ・`tools/call`・出典フッター強制付与・日次上限値）を実行できる。
 
 ### ブログ生成スクリプトのローカル検証
 

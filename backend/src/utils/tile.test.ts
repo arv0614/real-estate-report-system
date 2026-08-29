@@ -17,10 +17,16 @@ describe("latLngToTile", () => {
 });
 
 describe("buildCacheKey", () => {
-  it("正しい形式のキャッシュキーを生成する", () => {
+  it("正しい形式のキャッシュキーを生成する（末尾に locale を含む）", () => {
     const key = buildCacheKey(35.74, 139.86, 15);
-    expect(key).toMatch(/^z\d+\/x\d+\/y\d+$/);
-    expect(key).toBe("z15/x29114/y12896");
+    expect(key).toMatch(/^z\d+\/x\d+\/y\d+\/[a-zA-Z-]+$/);
+    // locale 省略時のデフォルトは "ja"
+    expect(key).toBe("z15/x29114/y12896/ja");
+  });
+
+  it("locale を指定するとキーの末尾に反映される", () => {
+    const key = buildCacheKey(35.74, 139.86, 15, "en");
+    expect(key).toBe("z15/x29114/y12896/en");
   });
 
   it("デフォルトzoomは15", () => {
