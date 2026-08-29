@@ -613,17 +613,19 @@ function HomePageContent() {
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="bg-white border-b border-slate-200 shadow-sm">
-        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center gap-3">
+        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center gap-3 overflow-hidden">
           <img
             src="/logo_mekiki_research.png"
             alt=""
             className="h-10 w-10 object-contain shrink-0"
           />
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-bold text-slate-800 leading-tight">
+          <div className="flex-1 min-w-0 overflow-hidden">
+            {/* whitespace-nowrap でモバイルでも縦折り返しを防ぐ。狭い場合は overflow-hidden で切り詰め */}
+            <h1 className="text-base sm:text-xl font-bold text-slate-800 leading-tight whitespace-nowrap">
               {t("Header.title")}
             </h1>
-            <p className="text-xs text-slate-500 mt-0.5">
+            {/* サブタイトルはモバイルでは右側ボタンのスペースを圧迫するため非表示 */}
+            <p className="hidden sm:block text-xs text-slate-500 mt-0.5">
               {t("Header.subtitle")}
             </p>
           </div>
@@ -672,7 +674,7 @@ function HomePageContent() {
           {/* 認証UI */}
           {!authLoading && (
             user ? (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 shrink-0">
                 <div className="hidden sm:flex items-center gap-2">
                   {user.photoURL && (
                     <img src={user.photoURL} alt="" className="w-7 h-7 rounded-full" referrerPolicy="no-referrer" />
@@ -717,28 +719,32 @@ function HomePageContent() {
                     </svg>
                   )}
                 </Link>
+                {/* ログアウトはモバイルではハンバーガーメニュー側に集約し、ヘッダー直出しは sm 以上のみ */}
                 <button
                   onClick={handleLogout}
-                  className="text-xs px-3 py-1.5 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
+                  className="hidden sm:inline-flex text-xs px-3 py-1.5 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
                 >
                   {t("Header.logoutButton")}
                 </button>
               </div>
             ) : (
-              <div className="flex items-center gap-2">
-                <span className="inline-flex text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">
+              <div className="flex items-center gap-2 shrink-0">
+                {/* ステータスバッジはモバイルでは非表示（スペース確保） */}
+                <span className="hidden sm:inline-flex text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">
                   Guest
                 </span>
               <button
                 onClick={handleLogin}
-                className="flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium shadow-sm"
+                aria-label={t("Header.loginButton")}
+                className="inline-flex items-center gap-2 text-sm px-2.5 sm:px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium shadow-sm shrink-0"
               >
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                   <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
                   <polyline points="10 17 15 12 10 7" />
                   <line x1="15" y1="12" x2="3" y2="12" />
                 </svg>
-                {t("Header.loginButton")}
+                {/* ラベルは sm 以上でのみ表示。モバイルはアイコンのみでヘッダー幅を節約 */}
+                <span className="hidden sm:inline whitespace-nowrap">{t("Header.loginButton")}</span>
               </button>
               </div>
             )
