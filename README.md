@@ -798,6 +798,61 @@ fetch(`/api/property/transactions?...`);
 
 ---
 
+## 🔌 MCP サーバー（外部 LLM 連携）
+
+ユーザーが自分の ChatGPT / Claude / Gemini から Mekiki Research の不動産データを**ツールとして呼び出せる**ように、バックエンドに [Model Context Protocol](https://modelcontextprotocol.io) サーバーを実装（`backend/src/routes/mcp.ts`）。公式 TypeScript SDK `@modelcontextprotocol/sdk` の **SSE トランスポート**を使用。
+
+### エンドポイント
+
+| メソッド | パス | 用途 | 認証 |
+|---|---|---|---|
+| `GET` | `/api/mcp/sse` | SSE ストリーム確立（`event: endpoint` で POST 先を通知） | `Authorization: Bearer <API_KEY>` |
+| `POST` | `/api/mcp/messages?sessionId=<id>` | クライアント→サーバーの JSON-RPC メッセージ | 同上（SSE 接続時に認証済みの `sessionId` でも可） |
+| `POST` | `/api/mcp/api-key` | ログイン済みユーザーが自分の APIキーを発行／ローテーション | `Authorization: Bearer <Firebase ID Token>` |
+| `DELETE` | `/api/mcp/api-key` | APIキーの失効 | 同上 |
+| `GET` | `/api/mcp` | サーバー情報（ツール一覧・稼働セッション数） | 不要 |
+
+### 認証とプラン制限
+
+- APIキーは `mkr_live_` + 48hex。Firestore `users/{uid}` には **SHA-256 ハッシュ（`mcpApiKeyHash`）と接頭辞のみ**保存し、平文は発行時に一度だけ返す。
+- `GET /sse`・`POST /messages` は `Authorization: Bearer <API_KEY>` を検証し、`mcpApiKeyHash` で該当ユーザーを引く。
+- 該当ユーザーの **`plan` が `free` または `pro` の場合のみ接続を許可**。それ以外・キー不一致・ヘッダ欠落は `401`、対象外プランは `403`。
+- レート制限（IP ベース 15分100req）は `/api/mcp/*` を**除外**（SSE 長時間接続＋多数の POST のため）。アクセス制御は APIキー＋プラン検証で担保。
+
+### 提供ツール
+
+| ツール名 | 説明 | 内部呼び出し |
+|---|---|---|
+| `get_real_estate_transactions` | 緯度経度を含む市区町村の過去取引事例（直近5年）を集計し、平均／中央値の取引価格・㎡単価、種類別内訳、サンプルを返す | `mlitApi.fetchTransactionPrices()`（XIT001） |
+| `get_area_hazard_info` | 緯度経度の洪水浸水想定区域・土砂災害警戒区域の該当有無／想定浸水深／現象種別を返す | `mlitApi.fetchHazardInfo()`（XKT026 / XKT029） |
+
+> `MLIT_API_KEY` 未設定時はモックデータで応答（`dataSource: "mock"` を明示）。
+
+### コンプライアンス強制（規約違反防止）
+
+オープンデータの単純な横流しを防ぐため、**両ツールの応答テキスト末尾に以下をシステム側で必ず結合**（`backend/src/routes/mcp.ts` の `COMPLIANCE_FOOTER` / `withCompliance()`）。
+
+```
+【データ出典】国土交通省 不動産情報ライブラリ
+【免責事項】本データは参考情報です。実際の不動産取引等の際は公式情報を確認してください。
+```
+
+### ローカル検証
+
+```bash
+cd backend
+npm run build
+node scripts/test_mcp.mjs   # モックキーで起動 → 認証・tools/list・tools/call・出典付与を検証
+```
+
+### 環境変数
+
+| 変数 | 用途 |
+|---|---|
+| `MCP_TEST_API_KEY` | **開発環境のみ**有効なモック APIキー（`NODE_ENV=production` では無視）。CI/ローカル検証用 |
+
+---
+
 ## 🔒 セキュリティ・コンプライアンス対策
 
 本番公開前にセキュリティ監査を実施し、以下の対策をすべて実装・デプロイ済みです。

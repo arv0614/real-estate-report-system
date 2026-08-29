@@ -13,6 +13,7 @@ import feedbackRoutes from "./routes/feedback";
 import adminRoutes from "./routes/admin";
 import bookmarksRoutes from "./routes/bookmarks";
 import forestRoutes from "./routes/forest";
+import mcpRoutes from "./routes/mcp";
 
 const app = new Hono();
 
@@ -52,6 +53,9 @@ app.use(
       c.req.header("x-real-ip") ??
       "unknown",
     message: { error: "アクセスが集中しています。しばらく待ってから再度お試しください。" },
+    // MCP は長時間の SSE 接続と多数の POST メッセージを伴うため IP ベースの
+    // レート制限から除外する（アクセス制御は APIキー + プラン検証で担保）。
+    skip: (c) => c.req.path.startsWith("/api/mcp"),
   })
 );
 
@@ -72,6 +76,7 @@ app.route("/api/feedback", feedbackRoutes);
 app.route("/api/admin", adminRoutes);
 app.route("/api/bookmarks", bookmarksRoutes);
 app.route("/api/forest", forestRoutes);
+app.route("/api/mcp", mcpRoutes);
 
 // 404
 app.notFound((c) => c.json({ error: "Not Found" }, 404));
