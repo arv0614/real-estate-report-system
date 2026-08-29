@@ -341,6 +341,13 @@ export default function ProfileClient() {
             <BookmarksSection uid={user.uid} />
           </div>
         )}
+
+        {/* 外部AI連携（MCP）— Free/Pro どちらのログインユーザーにも表示 */}
+        {!showLoadingState && user && (
+          <div className="mt-6">
+            <McpSection />
+          </div>
+        )}
       </div>
 
       <PlanComparisonModal
@@ -405,6 +412,175 @@ function FreeLockedCard({ onUpgrade }: { onUpgrade: () => void }) {
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * 外部AI連携（MCP / GPTs）用の APIキー管理セクション。
+ * - POST   /api/mcp/api-key で発行・再発行（平文キーは応答時に一度だけ受け取る）
+ * - DELETE /api/mcp/api-key で無効化
+ * いずれも Firebase ID トークンを Authorization: Bearer で送信する。
+ */
+function McpSection() {
+  const t = useTranslations("Profile");
+  const [issuing, setIssuing] = useState(false);
+  const [revoking, setRevoking] = useState(false);
+  const [plaintextKey, setPlaintextKey] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [revokedAt, setRevokedAt] = useState<number | null>(null);
+
+  const sseEndpoint = `${getApiBase()}/api/mcp/sse`;
+
+  async function buildAuthHeader(): Promise<Record<string, string> | null> {
+    const idToken = await auth.currentUser?.getIdToken();
+    if (!idToken) return null;
+    return { Authorization: `Bearer ${idToken}` };
+  }
+
+  async function handleIssue() {
+    setError(null);
+    setRevokedAt(null);
+    setIssuing(true);
+    try {
+      const authHeader = await buildAuthHeader();
+      if (!authHeader) {
+        setError(t("mcpError"));
+        return;
+      }
+      const res = await fetch(`${getApiBase()}/api/mcp/api-key`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeader },
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        console.error("[profile] issue mcp key failed:", body);
+        setError((body as { error?: string }).error ?? t("mcpError"));
+        return;
+      }
+      setPlaintextKey((body as { apiKey?: string }).apiKey ?? null);
+      setCopied(false);
+      gtagEvent({ action: "issue_mcp_key", category: "engagement", label: "profile" });
+    } catch (err) {
+      console.error("[profile] issue mcp key error:", err);
+      setError(t("mcpError"));
+    } finally {
+      setIssuing(false);
+    }
+  }
+
+  async function handleRevoke() {
+    if (!window.confirm(t("mcpRevokeConfirm"))) return;
+    setError(null);
+    setRevoking(true);
+    try {
+      const authHeader = await buildAuthHeader();
+      if (!authHeader) {
+        setError(t("mcpError"));
+        return;
+      }
+      const res = await fetch(`${getApiBase()}/api/mcp/api-key`, {
+        method: "DELETE",
+        headers: authHeader,
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        console.error("[profile] revoke mcp key failed:", body);
+        setError((body as { error?: string }).error ?? t("mcpError"));
+        return;
+      }
+      setPlaintextKey(null);
+      setRevokedAt(Date.now());
+      gtagEvent({ action: "revoke_mcp_key", category: "engagement", label: "profile" });
+    } catch (err) {
+      console.error("[profile] revoke mcp key error:", err);
+      setError(t("mcpError"));
+    } finally {
+      setRevoking(false);
+    }
+  }
+
+  async function handleCopy() {
+    if (!plaintextKey) return;
+    try {
+      await navigator.clipboard.writeText(plaintextKey);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch (err) {
+      console.warn("[profile] clipboard write failed:", err);
+    }
+  }
+
+  return (
+    <section className="bg-white rounded-xl border border-slate-200 p-6 space-y-4">
+      <div>
+        <h2 className="text-lg font-semibold text-slate-800">{t("mcpTitle")}</h2>
+        <p className="mt-1 text-sm text-slate-600">{t("mcpDescription")}</p>
+        <p className="mt-1 text-xs text-slate-500">{t("mcpNote")}</p>
+      </div>
+
+      {/* 接続情報 */}
+      <dl className="rounded-lg bg-slate-50 border border-slate-200 divide-y divide-slate-200 text-sm">
+        <div className="px-3 py-2">
+          <dt className="text-xs font-medium text-slate-500">{t("mcpEndpointLabel")}</dt>
+          <dd className="mt-0.5 font-mono text-xs break-all text-slate-700">{sseEndpoint}</dd>
+        </div>
+        <div className="px-3 py-2">
+          <dt className="text-xs font-medium text-slate-500">{t("mcpHeaderLabel")}</dt>
+          <dd className="mt-0.5 font-mono text-xs break-all text-slate-700">
+            Authorization: Bearer &lt;API_KEY&gt;
+          </dd>
+        </div>
+      </dl>
+
+      {/* 発行された平文キー（1回限り表示） */}
+      {plaintextKey && (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 space-y-2">
+          <p className="text-xs font-semibold text-amber-900">⚠️ {t("mcpKeyWarning")}</p>
+          <span className="block text-xs font-medium text-amber-900">{t("mcpKeyLabel")}</span>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 min-w-0 px-2 py-1.5 rounded border border-amber-300 bg-white font-mono text-xs break-all text-slate-800">
+              {plaintextKey}
+            </code>
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded border border-amber-400 bg-white text-amber-800 text-xs font-semibold hover:bg-amber-100 transition-colors"
+            >
+              {copied ? `✓ ${t("mcpCopied")}` : t("mcpCopy")}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+      {revokedAt && Date.now() - revokedAt < 4000 && (
+        <p className="text-sm text-green-600 font-medium">✓ {t("mcpRevoked")}</p>
+      )}
+
+      <div className="flex flex-wrap items-center gap-3 pt-1">
+        <button
+          type="button"
+          onClick={handleIssue}
+          disabled={issuing || revoking}
+          className="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-60 transition-colors shadow-sm"
+        >
+          {issuing ? t("mcpIssuing") : t("mcpIssueButton")}
+        </button>
+        <button
+          type="button"
+          onClick={handleRevoke}
+          disabled={issuing || revoking}
+          className="inline-flex items-center justify-center px-4 py-2 rounded-lg border border-red-200 text-red-600 text-sm font-semibold hover:bg-red-50 disabled:opacity-60 transition-colors"
+        >
+          {revoking ? t("mcpRevoking") : t("mcpRevokeButton")}
+        </button>
+      </div>
+    </section>
   );
 }
 
