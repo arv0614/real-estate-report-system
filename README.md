@@ -828,6 +828,10 @@ fetch(`/api/property/transactions?...`);
 
 > `MLIT_API_KEY` 未設定時はモックデータで応答（`dataSource: "mock"` を明示）。
 
+### APIキー管理 UI（フロントエンド）
+
+ログイン済みユーザーは **プロフィール画面（`/[locale]/profile` の「外部AI連携 (MCP / GPTs)」セクション）** から APIキーを発行・再発行・無効化できる（`frontend/app/[locale]/profile/ProfileClient.tsx` の `McpSection`）。発行時に返る平文キーは**1度だけ表示**しコピーボタンを提供、接続 URL（SSE）と認証ヘッダー形式も併記。文言は `messages/{ja,en,zh-TW,zh-CN}.json` の `Profile.mcp*` で i18n 対応。GA4: `issue_mcp_key` / `revoke_mcp_key`。
+
 ### コンプライアンス強制（規約違反防止）
 
 オープンデータの単純な横流しを防ぐため、**両ツールの応答テキスト末尾に以下をシステム側で必ず結合**（`backend/src/routes/mcp.ts` の `COMPLIANCE_FOOTER` / `withCompliance()`）。
