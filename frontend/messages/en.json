@@ -141,7 +141,9 @@
     "usageUnlimited": "Unlimited",
     "usageCount": "{used} / {limit}",
     "usageProNote": "You're on the Pro plan — everything is unlimited.",
-    "usageError": "Could not load your usage."
+    "usageError": "Could not load your usage.",
+    "usageUsedUnlimited": "{used} today · unlimited",
+    "usageTotal": "{total} total"
   },
   "WeatherInfo": {
     "title": "Climate & Sunshine",
@@ -854,7 +856,11 @@
     "pageInfo": "Page {page} / {total}",
     "sortLabel": "Sort",
     "sortNewest": "Newest first",
-    "sortOldest": "Oldest first"
+    "sortOldest": "Oldest first",
+    "colWebToday": "Web today (used/limit)",
+    "colMcpToday": "MCP today (used/limit)",
+    "colUsageTotal": "Total (Web/MCP)",
+    "colLimitUnlimited": "∞"
   },
   "LandingPage": {
     "navAppLink": "Open app",

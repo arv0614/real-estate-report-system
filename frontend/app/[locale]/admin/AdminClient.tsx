@@ -27,8 +27,19 @@ type UserItem = {
   email: string | null;
   displayName: string | null;
   plan: string;
+  /** 当日の Web 検索回数（日付リセット済み） */
   dailySearchCount: number;
   lastSearchDate: string | null;
+  /** Web の1日上限（Pro は null = 無制限） */
+  webDailyLimit: number | null;
+  /** 当日の MCP 呼び出し回数 */
+  mcpDailyCount: number;
+  /** MCP の1日上限（Pro は null = 無制限） */
+  mcpDailyLimit: number | null;
+  /** 登録以来の累積 Web 検索回数 */
+  totalSearchCount: number;
+  /** 登録以来の累積 MCP 呼び出し回数 */
+  mcpTotalCount: number;
   createdAt: string | null;
   planActivatedAt: string | null;
 };
@@ -1001,7 +1012,9 @@ function UsersTable({
               <th className="px-4 py-3 text-left font-semibold">{t("colEmail")}</th>
               <th className="px-4 py-3 text-left font-semibold">{t("colName")}</th>
               <th className="px-4 py-3 text-left font-semibold">{t("colPlan")}</th>
-              <th className="px-4 py-3 text-right font-semibold">{t("colSearchCount")}</th>
+              <th className="px-4 py-3 text-right font-semibold">{t("colWebToday")}</th>
+              <th className="px-4 py-3 text-right font-semibold">{t("colMcpToday")}</th>
+              <th className="px-4 py-3 text-right font-semibold">{t("colUsageTotal")}</th>
               <th className="px-4 py-3 text-left font-semibold">{t("colLastSearch")}</th>
               <th className="px-4 py-3 text-left font-semibold">{t("colCreatedAt")}</th>
               <th className="px-4 py-3 text-right font-semibold"> </th>
@@ -1084,7 +1097,8 @@ function UserRow({
           <PlanBadge plan={user.plan} />
         )}
       </td>
-      <td className="px-4 py-3 text-right text-slate-700 font-mono">
+      {/* 当日 Web 利用 / 上限（編集で当日カウントを調整可能） */}
+      <td className="px-4 py-3 text-right text-slate-700 font-mono whitespace-nowrap">
         {editing ? (
           <input
             type="number"
@@ -1094,8 +1108,28 @@ function UserRow({
             className="w-20 border border-slate-300 rounded px-2 py-1 bg-white text-right text-xs"
           />
         ) : (
-          user.dailySearchCount
+          <>
+            {user.dailySearchCount}
+            <span className="text-slate-400">
+              {" / "}
+              {user.webDailyLimit ?? t("colLimitUnlimited")}
+            </span>
+          </>
         )}
+      </td>
+      {/* 当日 MCP 利用 / 上限 */}
+      <td className="px-4 py-3 text-right text-slate-700 font-mono whitespace-nowrap">
+        {user.mcpDailyCount}
+        <span className="text-slate-400">
+          {" / "}
+          {user.mcpDailyLimit ?? t("colLimitUnlimited")}
+        </span>
+      </td>
+      {/* 累積（Web / MCP） */}
+      <td className="px-4 py-3 text-right text-slate-500 font-mono text-xs whitespace-nowrap">
+        <span title="Web">{user.totalSearchCount}</span>
+        <span className="text-slate-300"> / </span>
+        <span title="MCP">{user.mcpTotalCount}</span>
       </td>
       <td className="px-4 py-3 text-slate-700" suppressHydrationWarning>
         {user.lastSearchDate ?? "—"}

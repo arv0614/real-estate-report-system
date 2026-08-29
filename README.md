@@ -875,21 +875,22 @@ fetch(`/api/property/transactions?...`);
 
 ### 利用状況エンドポイント（Web / MCP）
 
-`GET /api/user/usage`（`backend/src/routes/user.ts`、認証: `Authorization: Bearer <Firebase ID Token>`）。ログインユーザーの本日の消費回数と上限を返す。
+`GET /api/user/usage`（`backend/src/routes/user.ts`、認証: `Authorization: Bearer <Firebase ID Token>`）。ログインユーザーの本日の消費回数・上限・累積回数を返す。
 
 ```jsonc
 {
   "plan": "free",
   "date": "2026-08-29",
-  "web": { "used": 1, "limit": 3,  "unlimited": false, "remaining": 2 },
-  "mcp": { "used": 5, "limit": 30, "unlimited": false, "remaining": 25 }
+  "web": { "used": 1, "limit": 3,  "unlimited": false, "remaining": 2,  "total": 42 },
+  "mcp": { "used": 5, "limit": 30, "unlimited": false, "remaining": 25, "total": 118 }
 }
 ```
 
-- Web = `dailySearchCount` / `lastSearchDate`、MCP = `mcpDailyCount` / `mcpLastCallDate`。日付が変わっていれば `used: 0`。
-- Pro プランは `unlimited: true` / `remaining: null`。
-- 組み立てロジックは純粋関数 `computeUsage()` に分離し `user.test.ts` で単体テスト。
-- フロント: `/[locale]/profile` の「本日の利用状況」セクション（`ProfileClient.tsx` の `UsageSection`）でプログレスバー表示。文言は `messages/*.json` の `Profile.usage*`。
+- 当日カウント: Web = `dailySearchCount` / `lastSearchDate`、MCP = `mcpDailyCount` / `mcpLastCallDate`。日付が変わっていれば `used: 0`。
+- 累積カウント: Web = `totalSearchCount`、MCP = `mcpTotalCount`（`FieldValue.increment(1)` で加算）。Web はクライアント（`frontend/lib/userPlan.ts` の `checkAndIncrementFreeSearch` / `recordProSearch`）、MCP はバックエンド（`mcpUsage.ts` のトランザクション）で書き込む。**Pro プランでも当日・累積カウントは記録**する（`recordProSearch` を `HomeClient.handleSearch` の Pro 分岐で呼ぶ）。
+- Pro プランは `unlimited: true` / `remaining: null`。`used` / `total` は常に返す。
+- 組み立てロジックは純粋関数 `computeUsage()` に分離し `user.test.ts` で単体テスト。`admin.ts` の `GET /api/admin/users` も同関数を再利用し、アカウントごとに当日利用回数 / 1日上限 / 累積回数（Web・MCP）を返す。
+- フロント: `/[locale]/profile` の「本日の利用状況」セクション（`ProfileClient.tsx` の `UsageSection`）でプログレスバー表示（無制限プランでも当日回数＋累計を表示）。`/admin` のユーザー一覧に「当日Web」「当日MCP」「累積 (Web/MCP)」列を追加。文言は `messages/*.json` の `Profile.usage*` / `Admin.col*`。
 
 ### コンプライアンス強制（規約違反防止）
 
@@ -1113,7 +1114,7 @@ npm test               # jest --forceExit（firebase-admin のオープンハン
 |---|---|---|
 | `src/utils/tile.test.ts` | 6 | `latLngToTile` / `tileToLatLng` / `buildCacheKey`（`z/x/y/{locale}` 形式・locale サフィックス） |
 | `src/services/mcpUsage.test.ts` | 5 | MCP 日次上限 = `FREE_DAILY_LIMIT × 10`（=30）の乗算、`decideMcpQuota()` の許可/ブロック/Pro 無制限 |
-| `src/routes/user.test.ts` | 5 | `GET /api/user/usage` の `computeUsage()`：Free/Pro・日付リセット・欠損フィールド・上限超過クランプ |
+| `src/routes/user.test.ts` | 5 | `computeUsage()`：Free/Pro・日付リセット（累積 total は据え置き）・欠損フィールド・上限超過クランプ |
 
 加えて `node backend/scripts/test_mcp.mjs` で MCP サーバーの結合検証（認証・`tools/list` ・`tools/call`・出典フッター強制付与・日次上限値）を実行できる。
 

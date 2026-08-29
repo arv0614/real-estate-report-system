@@ -141,7 +141,9 @@
     "usageUnlimited": "無制限",
     "usageCount": "{used} / {limit} 回",
     "usageProNote": "Proプランのため、すべて無制限でご利用いただけます。",
-    "usageError": "利用状況を取得できませんでした。"
+    "usageError": "利用状況を取得できませんでした。",
+    "usageUsedUnlimited": "本日 {used} 回・無制限",
+    "usageTotal": "累計 {total} 回"
   },
   "WeatherInfo": {
     "title": "気象・日照サマリー",
@@ -854,7 +856,11 @@
     "pageInfo": "{page} / {total} ページ",
     "sortLabel": "並び替え",
     "sortNewest": "新しい順",
-    "sortOldest": "古い順"
+    "sortOldest": "古い順",
+    "colWebToday": "当日Web (利用/上限)",
+    "colMcpToday": "当日MCP (利用/上限)",
+    "colUsageTotal": "累積 (Web/MCP)",
+    "colLimitUnlimited": "∞"
   },
   "LandingPage": {
     "navAppLink": "アプリを開く",

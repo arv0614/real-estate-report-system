@@ -5,6 +5,7 @@ import {
   getDoc,
   setDoc,
   updateDoc,
+  increment,
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -199,12 +200,17 @@ export async function checkAndIncrementFreeSearch(
 
     const newCount = count + 1;
     if (snap.exists()) {
-      await updateDoc(ref, { dailySearchCount: newCount, lastSearchDate: today });
+      await updateDoc(ref, {
+        dailySearchCount: newCount,
+        lastSearchDate: today,
+        totalSearchCount: increment(1),
+      });
     } else {
       await setDoc(ref, {
         plan: "free",
         dailySearchCount: newCount,
         lastSearchDate: today,
+        totalSearchCount: 1,
       });
     }
 
@@ -213,5 +219,45 @@ export async function checkAndIncrementFreeSearch(
     // Firestore エラー（権限不足など）→ 検索を許可してフォールバック
     console.error("[userPlan] checkAndIncrementFreeSearch failed, allowing search:", err);
     return { allowed: true, usedCount: 0 };
+  }
+}
+
+/**
+ * Pro プラン（回数無制限）ユーザーの検索を記録する。上限チェックは行わない。
+ * 当日カウント（dailySearchCount / lastSearchDate）と累積（totalSearchCount）を更新する。
+ * マイページ・/admin の利用状況表示のために、無制限でも回数を残す。
+ * Firestore エラーは握りつぶす（検索の妨げにしない）。
+ */
+export async function recordProSearch(uid: string): Promise<number> {
+  try {
+    const ref = doc(db, "users", uid);
+    const snap = await getDoc(ref);
+    const today = getTodayString();
+
+    let count = 0;
+    if (snap.exists()) {
+      const data = snap.data();
+      count = data.lastSearchDate === today ? (data.dailySearchCount ?? 0) : 0;
+    }
+    const newCount = count + 1;
+
+    if (snap.exists()) {
+      await updateDoc(ref, {
+        dailySearchCount: newCount,
+        lastSearchDate: today,
+        totalSearchCount: increment(1),
+      });
+    } else {
+      await setDoc(ref, {
+        plan: "free",
+        dailySearchCount: newCount,
+        lastSearchDate: today,
+        totalSearchCount: 1,
+      });
+    }
+    return newCount;
+  } catch (err) {
+    console.error("[userPlan] recordProSearch failed (ignored):", err);
+    return 0;
   }
 }

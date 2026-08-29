@@ -86,7 +86,12 @@ export async function checkAndIncrementMcpUsage(
       if (decision.allowed) {
         tx.set(
           ref,
-          { mcpDailyCount: decision.nextCount, mcpLastCallDate: today },
+          {
+            mcpDailyCount: decision.nextCount,
+            mcpLastCallDate: today,
+            // 登録以来の累積カウント（Pro / Free 問わず加算）
+            mcpTotalCount: admin.firestore.FieldValue.increment(1),
+          },
           { merge: true }
         );
       }

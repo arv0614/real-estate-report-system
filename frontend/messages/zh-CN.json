@@ -141,7 +141,9 @@
     "usageUnlimited": "无限制",
     "usageCount": "{used} / {limit} 次",
     "usageProNote": "您使用的是 Pro 方案，所有项目均无限制。",
-    "usageError": "无法获取使用情况。"
+    "usageError": "无法获取使用情况。",
+    "usageUsedUnlimited": "今日 {used} 次・无限制",
+    "usageTotal": "累计 {total} 次"
   },
   "WeatherInfo": {
     "title": "气候与日照摘要",
@@ -854,7 +856,11 @@
     "pageInfo": "第 {page} / {total} 页",
     "sortLabel": "排序",
     "sortNewest": "最新优先",
-    "sortOldest": "最早优先"
+    "sortOldest": "最早优先",
+    "colWebToday": "今日网页 (使用/上限)",
+    "colMcpToday": "今日 MCP (使用/上限)",
+    "colUsageTotal": "累积 (Web/MCP)",
+    "colLimitUnlimited": "∞"
   },
   "LandingPage": {
     "navAppLink": "打开应用",

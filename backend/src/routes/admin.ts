@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import * as admin from "firebase-admin";
 import { config, isAdminEmail } from "../config";
+import { computeUsage, todayString, type UserUsageDoc } from "./user";
 
 // ── Firebase Admin 初期化（冪等） ─────────────────────────────
 if (!admin.apps.length) {
@@ -119,6 +120,7 @@ app.get("/users", async (c) => {
       }
     }
 
+    const today = todayString();
     const users = snap.docs.map((doc) => {
       const data = doc.data();
       const uid = doc.id;
@@ -127,13 +129,26 @@ app.get("/users", async (c) => {
       const displayName: string | null = (data.displayName as string | undefined) ?? auth?.displayName ?? null;
       const createdAt = data.createdAt as admin.firestore.Timestamp | undefined;
       const planActivatedAt = data.planActivatedAt as admin.firestore.Timestamp | undefined;
+
+      // 当日の利用回数（日付リセット済み）／プラン上限／累積回数を Web・MCP それぞれ算出
+      const usage = computeUsage(data as UserUsageDoc, today);
+
       return {
         uid,
         email,
         displayName,
         plan: (data.plan as string | undefined) ?? "free",
-        dailySearchCount: (data.dailySearchCount as number | undefined) ?? 0,
+        // 当日 Web 利用回数（既存の編集 UI との互換のためキー名は維持）
+        dailySearchCount: usage.web.used,
         lastSearchDate: (data.lastSearchDate as string | undefined) ?? null,
+        // 1日の上限（Pro は null = 無制限）
+        webDailyLimit: usage.web.unlimited ? null : usage.web.limit,
+        mcpDailyLimit: usage.mcp.unlimited ? null : usage.mcp.limit,
+        // 当日 MCP 利用回数
+        mcpDailyCount: usage.mcp.used,
+        // 累積（登録以来）
+        totalSearchCount: usage.web.total,
+        mcpTotalCount: usage.mcp.total,
         createdAt: createdAt ? createdAt.toDate().toISOString() : null,
         planActivatedAt: planActivatedAt ? planActivatedAt.toDate().toISOString() : null,
       };

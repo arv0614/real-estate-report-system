@@ -374,6 +374,7 @@ type UsageChannel = {
   limit: number;
   unlimited: boolean;
   remaining: number | null;
+  total: number;
 };
 type UsageResponse = {
   plan: "free" | "pro";
@@ -385,7 +386,10 @@ type UsageResponse = {
 function UsageBar({ label, ch }: { label: string; ch: UsageChannel }) {
   const t = useTranslations("Profile");
   const ratio = !ch.unlimited && ch.limit > 0 ? ch.used / ch.limit : 0;
-  const pct = ch.unlimited ? 100 : Math.min(100, Math.round(ratio * 100));
+  // 無制限プランでも「今日どれだけ使ったか」が伝わるよう、上限 = 表示上の目安として塗る
+  const pct = ch.unlimited
+    ? Math.min(100, ch.limit > 0 ? Math.round((ch.used / ch.limit) * 100) : 0)
+    : Math.min(100, Math.round(ratio * 100));
   const near = !ch.unlimited && ratio >= 0.8;
   return (
     <div>
@@ -396,7 +400,9 @@ function UsageBar({ label, ch }: { label: string; ch: UsageChannel }) {
             ch.unlimited ? "text-amber-600" : near ? "text-red-600" : "text-slate-800"
           }`}
         >
-          {ch.unlimited ? t("usageUnlimited") : t("usageCount", { used: ch.used, limit: ch.limit })}
+          {ch.unlimited
+            ? t("usageUsedUnlimited", { used: ch.used })
+            : t("usageCount", { used: ch.used, limit: ch.limit })}
         </span>
       </div>
       <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-slate-100">
@@ -408,9 +414,12 @@ function UsageBar({ label, ch }: { label: string; ch: UsageChannel }) {
               ? "bg-red-500"
               : "bg-blue-500"
           }`}
-          style={{ width: `${pct}%` }}
+          style={{ width: `${ch.unlimited && pct === 0 ? 4 : pct}%` }}
         />
       </div>
+      <p className="mt-1 text-xs text-slate-400 tabular-nums">
+        {t("usageTotal", { total: ch.total })}
+      </p>
     </div>
   );
 }

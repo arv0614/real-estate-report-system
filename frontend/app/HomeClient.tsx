@@ -16,6 +16,7 @@ import {
   recordGuestSearch,
   getGuestSearchCountToday,
   checkAndIncrementFreeSearch,
+  recordProSearch,
   getWhiteLabelConfig,
   FREE_DAILY_LIMIT,
   GUEST_DAILY_LIMIT,
@@ -265,12 +266,15 @@ function HomePageContent() {
           return;
         }
         todayCount = usedCount;
+      } else if (plan === "pro") {
+        // Pro は回数無制限だが、マイページ／管理画面の利用状況表示のため回数は記録する
+        todayCount = await recordProSearch(user.uid);
       }
     } catch (limitErr) {
       // 制限チェック自体のエラーは無視して検索を続行
       console.error("[handleSearch] limit check error, proceeding:", limitErr);
     }
-    // plan === "pro" または planLoading 中 → 制限なしで続行
+    // planLoading 中（plan 未確定）→ 記録せず制限なしで続行
     // ─────────────────────────────────────────────────────
 
     // 検索座標を URL に反映（リロード時に地点を復元できるようにする）
