@@ -8,6 +8,11 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+// 検索上限の定数は "use client" を持たない ./limits に集約（サーバー側からも import 可能）。
+// このモジュール内でも使うため import しつつ、既存の参照経路（`@/lib/userPlan`）を壊さないよう再エクスポートする。
+import { FREE_DAILY_LIMIT, GUEST_DAILY_LIMIT } from "./limits";
+
+export { FREE_DAILY_LIMIT, GUEST_DAILY_LIMIT };
 
 export type UserPlan = "free" | "pro";
 
@@ -67,11 +72,6 @@ export async function saveWhiteLabelConfig(
     });
   }
 }
-
-/** 無料プランの1日の検索上限（通常時） */
-export const FREE_DAILY_LIMIT = 3;
-/** 未ログインの1日の検索上限 */
-export const GUEST_DAILY_LIMIT = 1;
 
 /**
  * Freeプラン 検索無制限キャンペーンフラグ

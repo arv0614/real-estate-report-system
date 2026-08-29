@@ -131,7 +131,8 @@
     "mcpKeyWarning": "セキュリティのため、このキーは一度しか表示されません。必ずコピーして安全な場所に保存してください。",
     "mcpCopy": "コピー",
     "mcpCopied": "コピーしました",
-    "mcpError": "操作に失敗しました。もう一度お試しください。"
+    "mcpError": "操作に失敗しました。もう一度お試しください。",
+    "mcpGuideLink": "設定方法をガイドで見る →"
   },
   "WeatherInfo": {
     "title": "気象・日照サマリー",
@@ -891,5 +892,37 @@
     "copyLink": "リンクをコピー",
     "copied": "コピーしました",
     "copyFailed": "コピーに失敗しました"
+  },
+  "McpGuide": {
+    "metaTitle": "外部AI連携（MCP）セットアップガイド | 物件目利きリサーチ",
+    "metaDescription": "ChatGPT・Claude・Gemini から物件目利きリサーチの不動産データを呼び出すための設定手順。APIキーの発行、Claude Desktop / ChatGPT の設定例、プロンプト例を解説します。",
+    "backHome": "← ホームに戻る",
+    "title": "外部AI連携（MCP）セットアップガイド",
+    "intro": "Model Context Protocol (MCP) に対応した AI クライアント（Claude Desktop、ChatGPT、Gemini など）から、物件目利きリサーチの不動産データ（取引事例の集計・ハザード情報）をツールとして呼び出せます。以下の手順で連携を設定してください。",
+    "step1Title": "1. APIキーを発行する",
+    "step1Body": "マイページの「外部AI連携 (MCP / GPTs)」セクションから APIキーを発行します。発行された平文キーは1度しか表示されないため、必ずコピーして安全な場所に保存してください。",
+    "step1Cta": "マイページでAPIキーを発行",
+    "connTitle": "接続情報",
+    "connEndpoint": "接続URL（SSE）",
+    "connHeader": "認証ヘッダー",
+    "step2Title": "2. Claude Desktop の設定",
+    "step2Body": "Claude Desktop はリモートの SSE サーバーへ mcp-remote ブリッジ経由で接続します。設定ファイル claude_desktop_config.json に以下を追記し、MEKIKI_MCP_KEY を発行したAPIキーに置き換えてください。",
+    "step2ConfigPath": "設定ファイルの場所 — macOS: ~/Library/Application Support/Claude/claude_desktop_config.json ／ Windows: %APPDATA%\\Claude\\claude_desktop_config.json",
+    "step2Note": "追記後は Claude Desktop を再起動してください。ツール一覧に get_real_estate_transactions と get_area_hazard_info が表示されれば連携完了です。",
+    "step3Title": "3. ChatGPT（GPTs／コネクタ）の設定",
+    "step3Body": "MCP コネクタに対応した ChatGPT では、以下の手順で追加できます（プランやUIにより名称が異なる場合があります）。",
+    "step3li1": "設定 →「コネクタ」、または GPT エディタの「アクション」を開く",
+    "step3li2": "MCP サーバーの URL に上記の「接続URL（SSE）」を入力する",
+    "step3li3": "認証方式で「API キー」／「Bearer」を選び、発行したAPIキーを貼り付ける",
+    "step3li4": "保存後、get_real_estate_transactions／get_area_hazard_info が呼び出せることを確認する",
+    "step3Note": "GPTs の従来の Actions（OpenAPI）ではなく、MCP コネクタ機能を使用してください。",
+    "step4Title": "4. 有効なプロンプトの例",
+    "step4Body": "緯度経度が分からなくても、地名を伝えれば AI 側が座標に変換してツールを呼び出します。",
+    "prompt1": "渋谷駅周辺の不動産相場とハザード情報を調べて",
+    "prompt2": "横浜市中区の中古マンションの平均㎡単価を、直近の取引事例から教えて",
+    "prompt3": "北緯35.68・東経139.76 の地点の洪水浸水想定と土砂災害リスクを確認して",
+    "limitsTitle": "利用回数の目安",
+    "limitsBody": "Free プランは MCP 経由のツール呼び出しが1日あたり {limit} 回までです（Web版の無料上限の10倍）。Pro プランは無制限で利用できます。上限に達すると、翌日のリセットまで AI 側にエラーメッセージが返ります。",
+    "footerProfileLink": "→ マイページでAPIキーを管理する"
   }
 }

@@ -131,7 +131,8 @@
     "mcpKeyWarning": "基於安全考量，此金鑰僅顯示一次。請務必複製並保存於安全的地方。",
     "mcpCopy": "複製",
     "mcpCopied": "已複製",
-    "mcpError": "操作失敗，請再試一次。"
+    "mcpError": "操作失敗，請再試一次。",
+    "mcpGuideLink": "查看設定指南 →"
   },
   "WeatherInfo": {
     "title": "氣候與日照摘要",
@@ -891,5 +892,37 @@
     "copyLink": "複製連結",
     "copied": "已複製",
     "copyFailed": "複製失敗"
+  },
+  "McpGuide": {
+    "metaTitle": "外部 AI 串接（MCP）設定指南 | 物件目利研究",
+    "metaDescription": "從 ChatGPT、Claude、Gemini 呼叫物件目利研究不動產資料的設定步驟。包含 API 金鑰發行、Claude Desktop／ChatGPT 設定範例與提示範例。",
+    "backHome": "← 返回首頁",
+    "title": "外部 AI 串接（MCP）設定指南",
+    "intro": "從支援 Model Context Protocol (MCP) 的 AI 用戶端（Claude Desktop、ChatGPT、Gemini 等），可將物件目利研究的不動產資料（成交案例彙整、災害風險資訊）當作工具呼叫。請依下列步驟完成串接。",
+    "step1Title": "1. 發行 API 金鑰",
+    "step1Body": "於個人頁面的「外部 AI 串接 (MCP / GPTs)」區塊發行 API 金鑰。發行的明文金鑰僅顯示一次，請務必複製並保存於安全的地方。",
+    "step1Cta": "前往個人頁面發行 API 金鑰",
+    "connTitle": "連線資訊",
+    "connEndpoint": "連線網址（SSE）",
+    "connHeader": "驗證標頭",
+    "step2Title": "2. 設定 Claude Desktop",
+    "step2Body": "Claude Desktop 透過 mcp-remote 橋接連線至遠端 SSE 伺服器。請在 claude_desktop_config.json 加入以下內容，並將 MEKIKI_MCP_KEY 替換為您發行的 API 金鑰。",
+    "step2ConfigPath": "設定檔位置 — macOS：~/Library/Application Support/Claude/claude_desktop_config.json ／ Windows：%APPDATA%\\Claude\\claude_desktop_config.json",
+    "step2Note": "編輯後請重新啟動 Claude Desktop。當工具清單出現 get_real_estate_transactions 與 get_area_hazard_info 即代表串接完成。",
+    "step3Title": "3. 設定 ChatGPT（GPTs／連接器）",
+    "step3Body": "在支援 MCP 連接器的 ChatGPT 中，可依下列步驟新增（名稱可能因方案與介面而異）：",
+    "step3li1": "開啟 設定 →「連接器」，或 GPT 編輯器的「動作」",
+    "step3li2": "在 MCP 伺服器網址輸入上方的「連線網址（SSE）」",
+    "step3li3": "驗證方式選擇「API 金鑰」／「Bearer」，並貼上您發行的 API 金鑰",
+    "step3li4": "儲存後，確認可呼叫 get_real_estate_transactions／get_area_hazard_info",
+    "step3Note": "請使用 MCP 連接器功能，而非傳統的 GPT Actions（OpenAPI）。",
+    "step4Title": "4. 有效的提示範例",
+    "step4Body": "即使不知道經緯度，只要提供地名，AI 會自行轉換座標並呼叫工具。",
+    "prompt1": "查一下澀谷車站周邊的不動產行情與災害風險資訊",
+    "prompt2": "根據近期成交案例，告訴我橫濱市中區中古大樓的平均每平方公尺單價",
+    "prompt3": "確認北緯 35.68、東經 139.76 地點的洪水淹水預想與土石流風險",
+    "limitsTitle": "使用次數上限",
+    "limitsBody": "Free 方案每日透過 MCP 呼叫工具最多 {limit} 次（為 Web 版免費上限的 10 倍）。Pro 方案則無限制。達到上限後，在隔日重設前 AI 會收到錯誤訊息。",
+    "footerProfileLink": "→ 前往個人頁面管理 API 金鑰"
   }
 }

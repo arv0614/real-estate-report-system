@@ -17,6 +17,12 @@ export const MCP_ALLOWED_PLANS = new Set<string>(["free", "pro"]);
 /** 発行する APIキーの接頭辞（Mekiki Research live key） */
 const API_KEY_PREFIX = "mkr_live_";
 
+/**
+ * 開発環境専用のモックユーザー uid（MCP_TEST_API_KEY 経由でのみ発生）。
+ * Firestore を持たないため、利用回数チェック等ではこの uid をスキップする。
+ */
+export const MCP_TEST_UID = "mcp-test-uid";
+
 export interface McpUser {
   uid: string;
   email: string | null;
@@ -106,7 +112,7 @@ export async function authenticateMcpRequest(
   // ── テスト用モックキー（本番環境では常に無効） ──────────────
   const testKey = process.env.MCP_TEST_API_KEY;
   if (config.nodeEnv !== "production" && testKey && token === testKey) {
-    return { ok: true, user: { uid: "mcp-test-uid", email: "mcp-test@example.com", plan: "free" } };
+    return { ok: true, user: { uid: MCP_TEST_UID, email: "mcp-test@example.com", plan: "free" } };
   }
 
   const hash = hashApiKey(token);

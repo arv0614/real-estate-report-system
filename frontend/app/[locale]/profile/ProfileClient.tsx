@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import Link from "next/link";
 import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { auth, storage } from "@/lib/firebase";
@@ -423,6 +423,8 @@ function FreeLockedCard({ onUpgrade }: { onUpgrade: () => void }) {
  */
 function McpSection() {
   const t = useTranslations("Profile");
+  const locale = useLocale();
+  const guideHref = locale === "ja" ? "/mcp-guide" : `/${locale}/mcp-guide`;
   const [issuing, setIssuing] = useState(false);
   const [revoking, setRevoking] = useState(false);
   const [plaintextKey, setPlaintextKey] = useState<string | null>(null);
@@ -517,6 +519,12 @@ function McpSection() {
         <h2 className="text-lg font-semibold text-slate-800">{t("mcpTitle")}</h2>
         <p className="mt-1 text-sm text-slate-600">{t("mcpDescription")}</p>
         <p className="mt-1 text-xs text-slate-500">{t("mcpNote")}</p>
+        <Link
+          href={guideHref}
+          className="mt-2 inline-block text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+        >
+          {t("mcpGuideLink")}
+        </Link>
       </div>
 
       {/* 接続情報 */}

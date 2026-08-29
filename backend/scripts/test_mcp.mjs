@@ -62,6 +62,18 @@ async function main() {
       await sleep(250);
     }
 
+    // ── Test 0: サーバー情報に「Web上限の10倍」の日次上限が出ている ──
+    {
+      const r = await fetch(`${BASE}/api/mcp`);
+      const info = await r.json().catch(() => ({}));
+      // FREE_DAILY_LIMIT(3) * 10 = 30 が動的に計算されていること
+      check(
+        `info: free daily tool-call limit is 30 (= web limit x10), got ${info?.dailyToolCallLimit?.free}`,
+        info?.dailyToolCallLimit?.free === 30
+      );
+      check("info: pro limit is unlimited", info?.dailyToolCallLimit?.pro === "unlimited");
+    }
+
     // ── Test 1: 認証なし → 401 ────────────────────────────────
     {
       const r = await fetch(`${BASE}/api/mcp/sse`);

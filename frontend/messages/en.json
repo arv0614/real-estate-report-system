@@ -131,7 +131,8 @@
     "mcpKeyWarning": "For security reasons, this key is shown only once. Be sure to copy it and store it in a safe place.",
     "mcpCopy": "Copy",
     "mcpCopied": "Copied",
-    "mcpError": "The operation failed. Please try again."
+    "mcpError": "The operation failed. Please try again.",
+    "mcpGuideLink": "See the setup guide →"
   },
   "WeatherInfo": {
     "title": "Climate & Sunshine",
@@ -891,5 +892,37 @@
     "copyLink": "Copy link",
     "copied": "Copied",
     "copyFailed": "Failed to copy"
+  },
+  "McpGuide": {
+    "metaTitle": "MCP Setup Guide (External AI Integration) | Mekiki Research",
+    "metaDescription": "How to call Mekiki Research real estate data from ChatGPT, Claude, and Gemini. API key issuance, Claude Desktop / ChatGPT config examples, and prompt examples.",
+    "backHome": "← Back to home",
+    "title": "MCP Setup Guide (External AI Integration)",
+    "intro": "From any MCP-compatible AI client (Claude Desktop, ChatGPT, Gemini, and more), you can call Mekiki Research real estate data — transaction summaries and hazard info — as tools. Follow the steps below to connect.",
+    "step1Title": "1. Generate an API key",
+    "step1Body": "Generate an API key from the \"External AI Integration (MCP / GPTs)\" section of your profile page. The plaintext key is shown only once, so be sure to copy it and store it somewhere safe.",
+    "step1Cta": "Generate an API key on your profile",
+    "connTitle": "Connection details",
+    "connEndpoint": "Connection URL (SSE)",
+    "connHeader": "Auth header",
+    "step2Title": "2. Configure Claude Desktop",
+    "step2Body": "Claude Desktop connects to a remote SSE server via the mcp-remote bridge. Add the following to claude_desktop_config.json and replace MEKIKI_MCP_KEY with the API key you generated.",
+    "step2ConfigPath": "Config file location — macOS: ~/Library/Application Support/Claude/claude_desktop_config.json / Windows: %APPDATA%\\Claude\\claude_desktop_config.json",
+    "step2Note": "Restart Claude Desktop after editing. The integration is ready once get_real_estate_transactions and get_area_hazard_info appear in the tool list.",
+    "step3Title": "3. Configure ChatGPT (GPTs / connectors)",
+    "step3Body": "On ChatGPT builds that support MCP connectors, add it as follows (names may vary by plan and UI):",
+    "step3li1": "Open Settings → \"Connectors\", or \"Actions\" in the GPT editor",
+    "step3li2": "Enter the \"Connection URL (SSE)\" above as the MCP server URL",
+    "step3li3": "Choose \"API Key\" / \"Bearer\" authentication and paste the API key you generated",
+    "step3li4": "Save, then confirm that get_real_estate_transactions / get_area_hazard_info can be called",
+    "step3Note": "Use the MCP connector feature, not the legacy GPT Actions (OpenAPI).",
+    "step4Title": "4. Example prompts",
+    "step4Body": "You don't need coordinates — give a place name and the AI will convert it and call the tools.",
+    "prompt1": "Look up the real estate market and hazard info around Shibuya Station.",
+    "prompt2": "From recent transactions, tell me the average price per square meter for used condos in Naka-ku, Yokohama.",
+    "prompt3": "Check the flood and landslide risk at latitude 35.68, longitude 139.76.",
+    "limitsTitle": "Usage limits",
+    "limitsBody": "The Free plan allows up to {limit} MCP tool calls per day (10x the web free limit). The Pro plan is unlimited. Once the limit is reached, the AI receives an error message until the limit resets the next day.",
+    "footerProfileLink": "→ Manage your API key on your profile"
   }
 }

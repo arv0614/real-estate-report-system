@@ -832,6 +832,20 @@ fetch(`/api/property/transactions?...`);
 
 ログイン済みユーザーは **プロフィール画面（`/[locale]/profile` の「外部AI連携 (MCP / GPTs)」セクション）** から APIキーを発行・再発行・無効化できる（`frontend/app/[locale]/profile/ProfileClient.tsx` の `McpSection`）。発行時に返る平文キーは**1度だけ表示**しコピーボタンを提供、接続 URL（SSE）と認証ヘッダー形式も併記。文言は `messages/{ja,en,zh-TW,zh-CN}.json` の `Profile.mcp*` で i18n 対応。GA4: `issue_mcp_key` / `revoke_mcp_key`。
 
+### セットアップガイドページ
+
+`/[locale]/mcp-guide`（`frontend/app/[locale]/mcp-guide/page.tsx`）で連携手順を解説：① APIキー発行（マイページ導線）② Claude Desktop（`claude_desktop_config.json` の `mcp-remote` 設定例）③ ChatGPT（MCP コネクタ設定手順）④ プロンプト例。文言は `messages/*.json` の `McpGuide` 名前空間（30キー×4言語）。プロフィールの `McpSection` からリンク（`Profile.mcpGuideLink`）。
+
+### MCP 経由の利用回数制限（Free プランのみ）
+
+`backend/src/routes/mcp.ts` の各ツールハンドラ冒頭で `enforceMcpQuota()` を実行。
+
+- **上限値はハードコードしない。** Web版の無料上限定数 `FREE_DAILY_LIMIT`（`backend/src/constants/limits.ts`、フロントの `frontend/lib/userPlan.ts` と同値に維持）を import し、`MCP_FREE_DAILY_LIMIT = FREE_DAILY_LIMIT * 10` として計算（現状 3 × 10 = **30回/日**）。
+- Firestore `users/{uid}` の `mcpDailyCount` / `mcpLastCallDate` をトランザクションで日次カウント（`backend/src/services/mcpUsage.ts`）。判定ロジックは純粋関数 `decideMcpQuota()` に分離し `mcpUsage.test.ts` で単体テスト。
+- **Pro プランは無制限**（カウントのみ記録）。Firestore エラー時は fail-open。
+- Free が上限超過でツールを呼ぶと、実行をブロックし `isError: true` で以下のテキストを LLM に返す：
+  `【エラー】Mekiki Researchの1日のMCP呼び出し上限に達しました。無制限に利用するにはProプランへアップグレードしてください。`
+
 ### コンプライアンス強制（規約違反防止）
 
 オープンデータの単純な横流しを防ぐため、**両ツールの応答テキスト末尾に以下をシステム側で必ず結合**（`backend/src/routes/mcp.ts` の `COMPLIANCE_FOOTER` / `withCompliance()`）。
@@ -846,7 +860,8 @@ fetch(`/api/property/transactions?...`);
 ```bash
 cd backend
 npm run build
-node scripts/test_mcp.mjs   # モックキーで起動 → 認証・tools/list・tools/call・出典付与を検証
+npx jest src/services/mcpUsage.test.ts   # Free上限 = FREE_DAILY_LIMIT × 10 の乗算と判定ロジック
+node scripts/test_mcp.mjs                # モックキーで起動 → 認証・tools/list・tools/call・出典付与・日次上限値(30)を検証
 ```
 
 ### 環境変数

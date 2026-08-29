@@ -16,7 +16,10 @@ import {
   issueApiKeyForUid,
   revokeApiKeyForUid,
   verifyFirebaseUid,
+  type McpUser,
 } from "../services/mcpAuth";
+import { checkAndIncrementMcpUsage } from "../services/mcpUsage";
+import { FREE_DAILY_LIMIT } from "../constants/limits";
 
 // @hono/node-server 経由で serve() すると c.env に生の Node
 // IncomingMessage / ServerResponse が注入される。SSE はこれを直接使う。
@@ -32,12 +35,35 @@ const COMPLIANCE_FOOTER =
   "【免責事項】本データは参考情報です。実際の不動産取引等の際は公式情報を確認してください。";
 
 /** ツール結果を text コンテンツ 1 件に整形し、必ず COMPLIANCE_FOOTER を付与する */
-function withCompliance(payload: unknown): {
-  content: Array<{ type: "text"; text: string }>;
-} {
+function withCompliance(payload: unknown): ToolResult {
   const body =
     typeof payload === "string" ? payload : JSON.stringify(payload, null, 2);
   return { content: [{ type: "text", text: `${body}${COMPLIANCE_FOOTER}` }] };
+}
+
+// ============================================================
+// MCP 経由の利用回数制限（Free プランのみ）
+// 制限値はハードコードせず、Web版の無料上限定数 FREE_DAILY_LIMIT を import し、
+// その 10 倍を MCP の上限とする（Web が 3 回なら MCP は 30 回）。Pro は無制限。
+// ============================================================
+const MCP_FREE_DAILY_LIMIT = FREE_DAILY_LIMIT * 10;
+
+/** 上限到達時に LLM へ返すテキスト（データは返さないため出典フッターは付けない） */
+const MCP_RATE_LIMIT_MESSAGE =
+  "【エラー】Mekiki Researchの1日のMCP呼び出し上限に達しました。無制限に利用するにはProプランへアップグレードしてください。";
+
+/**
+ * Free プランの日次上限を判定してカウントを進める。
+ * 上限到達時は isError なツール結果を返す（呼び出し側はそれを return するだけ）。
+ * 許可時は null を返す。
+ */
+async function enforceMcpQuota(user: McpUser): Promise<ToolResult | null> {
+  const quota = await checkAndIncrementMcpUsage(user, MCP_FREE_DAILY_LIMIT);
+  if (quota.allowed) return null;
+  console.warn(
+    `[MCP] daily limit reached: uid=${user.uid} plan=${user.plan} used=${quota.used}/${quota.limit}`
+  );
+  return { content: [{ type: "text", text: MCP_RATE_LIMIT_MESSAGE }], isError: true };
 }
 
 // ============================================================
@@ -106,7 +132,11 @@ function summarizeTransactions(records: TransactionRecord[], radiusMeters: numbe
   };
 }
 
-type ToolResult = { content: Array<{ type: "text"; text: string }> };
+type ToolResult = {
+  content: Array<{ type: "text"; text: string }>;
+  /** ツール実行がエラー（上限超過など）で終わったことを LLM に伝える MCP 標準フラグ */
+  isError?: boolean;
+};
 
 /**
  * server.tool() の型推論（MCP SDK の zod v3/v4 互換ジェネリクス）が
@@ -133,8 +163,9 @@ function registerTool(
 
 // ============================================================
 // MCP サーバー（接続ごとに 1 インスタンス生成）
+// user は SSE 接続時に認証済みの本人。ツール実行時の利用回数判定に使う。
 // ============================================================
-function buildMcpServer(): McpServer {
+function buildMcpServer(user: McpUser): McpServer {
   const server = new McpServer(
     { name: "mekiki-research-mlit", version: "1.0.0" },
     {
@@ -163,6 +194,9 @@ function buildMcpServer(): McpServer {
       "平均／中央値の取引価格・㎡単価、種類別の内訳、サンプルを返します。",
     transactionsInputShape,
     async ({ latitude, longitude, radius_meters }) => {
+      const blocked = await enforceMcpQuota(user);
+      if (blocked) return blocked;
+
       const radius = radius_meters ?? 3000;
       try {
         const useLiveApi = !!config.mlit.apiKey;
@@ -199,6 +233,9 @@ function buildMcpServer(): McpServer {
     "指定した緯度経度における洪水浸水想定区域および土砂災害警戒区域の該当有無・想定浸水深・現象種別を返します。",
     hazardInputShape,
     async ({ latitude, longitude }) => {
+      const blocked = await enforceMcpQuota(user);
+      if (blocked) return blocked;
+
       try {
         const useLiveApi = !!config.mlit.apiKey;
         const h = useLiveApi
@@ -265,6 +302,10 @@ app.get("/", (c) =>
     },
     auth: "Authorization: Bearer <API_KEY>  — Free / Pro プランのみ接続可",
     tools: ["get_real_estate_transactions", "get_area_hazard_info"],
+    dailyToolCallLimit: {
+      free: MCP_FREE_DAILY_LIMIT, // Web版無料上限（FREE_DAILY_LIMIT）の 10 倍
+      pro: "unlimited",
+    },
     activeSessions: transports.size,
   })
 );
@@ -291,7 +332,7 @@ app.get("/sse", async (c) => {
   transport.onclose = cleanup;
   outgoing.on("close", cleanup);
 
-  const server = buildMcpServer();
+  const server = buildMcpServer(auth.user);
   try {
     // connect() が transport.start() を呼び、200 + text/event-stream ヘッダを書き出す
     await server.connect(transport);
