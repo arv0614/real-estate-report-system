@@ -10,7 +10,8 @@
     "profileLink": "マイページ",
     "guestBadge": "Guest",
     "langSwitch": "EN",
-    "upgradeBtn": "Pro にアップグレード"
+    "upgradeBtn": "Pro にアップグレード",
+    "menuLabel": "メニュー"
   },
   "Bookmarks": {
     "save": "保存する（☆）",
@@ -228,7 +229,8 @@
     "ctaUpgradeBody": "検索回数の制限なし・商談用PDFレポート出力・AI暮らしイメージ生成。プロと同じ調査力を¥980/月で手に入れましょう。",
     "ctaUpgradeBtn": "今すぐ Pro にアップグレード →",
     "checkoutLoading": "処理中...",
-    "consentLabel": "利用規約とプライバシーポリシーに同意する"
+    "consentLabel": "利用規約とプライバシーポリシーに同意する",
+    "featureMcp": "外部AI連携 (MCP / GPTs)"
   },
   "ReportPage": {
     "backLink": "← トップへ戻る",
@@ -523,7 +525,8 @@
     "footerTerms": "利用規約",
     "footerPrivacy": "プライバシーポリシー",
     "footerLicenses": "OSSライセンス",
-    "footerCredit": "国土交通省「不動産情報ライブラリ」（CC BY 4.0）を加工して作成"
+    "footerCredit": "国土交通省「不動産情報ライブラリ」（CC BY 4.0）を加工して作成",
+    "plan0f7": "外部AI連携 (MCP / GPTs)"
   },
   "TermsPage": {
     "title": "利用規約",
@@ -923,6 +926,8 @@
     "prompt3": "北緯35.68・東経139.76 の地点の洪水浸水想定と土砂災害リスクを確認して",
     "limitsTitle": "利用回数の目安",
     "limitsBody": "Free プランは MCP 経由のツール呼び出しが1日あたり {limit} 回までです（Web版の無料上限の10倍）。Pro プランは無制限で利用できます。上限に達すると、翌日のリセットまで AI 側にエラーメッセージが返ります。",
-    "footerProfileLink": "→ マイページでAPIキーを管理する"
+    "footerProfileLink": "→ マイページでAPIキーを管理する",
+    "clientsTitle": "対応クライアント",
+    "clientsBody": "現在は Claude Desktop と ChatGPT (GPTs) に完全対応しています。※Gemini Web版は公式側のアップデート待ちです。"
   }
 }

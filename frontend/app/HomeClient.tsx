@@ -104,6 +104,7 @@ function HomePageContent() {
   const [lifestyleImageLoading, setLifestyleImageLoading] = useState(false);
   const [searchCoords, setSearchCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [planModalOpen, setPlanModalOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchCountToday, setSearchCountToday] = useState(0);
   const bookmarks = useBookmarks(user?.uid ?? null);
   const [bookmarkBusy, setBookmarkBusy] = useState(false);
@@ -742,7 +743,98 @@ function HomePageContent() {
               </div>
             )
           )}
+
+          {/* モバイル用ハンバーガーメニュー（料金プラン・各種リンクへの導線） */}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen((v) => !v)}
+            aria-label={t("Header.menuLabel")}
+            aria-expanded={mobileMenuOpen}
+            className="sm:hidden inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors shrink-0"
+          >
+            {mobileMenuOpen ? (
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+            )}
+          </button>
         </div>
+
+        {/* モバイルメニュー本体 */}
+        {mobileMenuOpen && (
+          <div className="sm:hidden border-t border-slate-200 bg-white px-4 py-3 space-y-1">
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                gtagEvent({ action: "view_plan_modal", category: "conversion_funnel", label: "mobile_menu" });
+                setPlanModalOpen(true);
+              }}
+              className="w-full text-left px-3 py-2.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-semibold shadow-sm"
+            >
+              {t("Header.betaLink")}
+            </button>
+            {!user && (
+              <button
+                onClick={() => { setMobileMenuOpen(false); handleLogin(); }}
+                className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-semibold shadow-sm"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                  <polyline points="10 17 15 12 10 7" />
+                  <line x1="15" y1="12" x2="3" y2="12" />
+                </svg>
+                {t("Header.loginButton")}
+              </button>
+            )}
+            <Link
+              href="/about"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block px-3 py-2.5 rounded-lg text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              {t("Header.aboutLink")}
+            </Link>
+            <Link
+              href={`${locale === "en" ? "/en" : ""}/blog`}
+              onClick={() => setMobileMenuOpen(false)}
+              className="block px-3 py-2.5 rounded-lg text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              {t("Header.blogLink")}
+            </Link>
+            {user && (
+              <Link
+                href="/profile"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-3 py-2.5 rounded-lg text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+              >
+                {t("Header.profileLink")}
+              </Link>
+            )}
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                intlRouter.replace(pathname, { locale: locale === "en" ? "ja" : "en" });
+              }}
+              className="w-full text-left px-3 py-2.5 rounded-lg text-sm text-slate-700 hover:bg-slate-50 transition-colors font-medium"
+            >
+              {t("Header.langSwitch")}
+            </button>
+            {user && (
+              <button
+                onClick={() => { setMobileMenuOpen(false); handleLogout(); }}
+                className="w-full text-left px-3 py-2.5 rounded-lg text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+              >
+                {t("Header.logoutButton")}
+              </button>
+            )}
+          </div>
+        )}
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-8 space-y-6">

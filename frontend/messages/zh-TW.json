@@ -10,7 +10,8 @@
     "profileLink": "我的頁面",
     "guestBadge": "訪客",
     "langSwitch": "EN",
-    "upgradeBtn": "升級至 Pro"
+    "upgradeBtn": "升級至 Pro",
+    "menuLabel": "選單"
   },
   "Bookmarks": {
     "save": "收藏(☆)",
@@ -228,7 +229,8 @@
     "ctaUpgradeBody": "搜尋次數無限制、商談用 PDF 報告輸出、AI 生活意象生成。每月 ¥980 即可獲得專業同等的調查能力。",
     "ctaUpgradeBtn": "立即升級至 Pro →",
     "checkoutLoading": "處理中...",
-    "consentLabel": "我同意使用條款及隱私權政策"
+    "consentLabel": "我同意使用條款及隱私權政策",
+    "featureMcp": "外部 AI 串接 (MCP / GPTs)"
   },
   "ReportPage": {
     "backLink": "← 返回首頁",
@@ -523,7 +525,8 @@
     "footerTerms": "服務條款",
     "footerPrivacy": "隱私權政策",
     "footerLicenses": "OSS 授權",
-    "footerCredit": "由國土交通省「不動產資訊資料庫」(CC BY 4.0) 加工製作"
+    "footerCredit": "由國土交通省「不動產資訊資料庫」(CC BY 4.0) 加工製作",
+    "plan0f7": "外部 AI 串接 (MCP / GPTs)"
   },
   "TermsPage": {
     "title": "服務條款",
@@ -923,6 +926,8 @@
     "prompt3": "確認北緯 35.68、東經 139.76 地點的洪水淹水預想與土石流風險",
     "limitsTitle": "使用次數上限",
     "limitsBody": "Free 方案每日透過 MCP 呼叫工具最多 {limit} 次（為 Web 版免費上限的 10 倍）。Pro 方案則無限制。達到上限後，在隔日重設前 AI 會收到錯誤訊息。",
-    "footerProfileLink": "→ 前往個人頁面管理 API 金鑰"
+    "footerProfileLink": "→ 前往個人頁面管理 API 金鑰",
+    "clientsTitle": "支援的用戶端",
+    "clientsBody": "目前已完整支援 Claude Desktop 與 ChatGPT (GPTs)。※Gemini 網頁版正在等待官方更新。"
   }
 }

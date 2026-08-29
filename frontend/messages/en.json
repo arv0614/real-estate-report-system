@@ -10,7 +10,8 @@
     "profileLink": "My Page",
     "guestBadge": "Guest",
     "langSwitch": "日本語",
-    "upgradeBtn": "Upgrade to Pro"
+    "upgradeBtn": "Upgrade to Pro",
+    "menuLabel": "Menu"
   },
   "Bookmarks": {
     "save": "Save (☆)",
@@ -228,7 +229,8 @@
     "ctaUpgradeBody": "Unlimited research, PDF reports for clients, AI lifestyle images — all for ¥980/month. Same tools the pros use.",
     "ctaUpgradeBtn": "Upgrade to Pro Now →",
     "checkoutLoading": "Processing...",
-    "consentLabel": "I agree to the Terms of Service and Privacy Policy"
+    "consentLabel": "I agree to the Terms of Service and Privacy Policy",
+    "featureMcp": "External AI integration (MCP / GPTs)"
   },
   "ReportPage": {
     "backLink": "← Back to Home",
@@ -523,7 +525,8 @@
     "footerTerms": "Terms of Service",
     "footerPrivacy": "Privacy Policy",
     "footerLicenses": "OSS Licenses",
-    "footerCredit": "Uses Japan MLIT Property Information Library data (CC BY 4.0)"
+    "footerCredit": "Uses Japan MLIT Property Information Library data (CC BY 4.0)",
+    "plan0f7": "External AI integration (MCP / GPTs)"
   },
   "TermsPage": {
     "title": "Terms of Service",
@@ -923,6 +926,8 @@
     "prompt3": "Check the flood and landslide risk at latitude 35.68, longitude 139.76.",
     "limitsTitle": "Usage limits",
     "limitsBody": "The Free plan allows up to {limit} MCP tool calls per day (10x the web free limit). The Pro plan is unlimited. Once the limit is reached, the AI receives an error message until the limit resets the next day.",
-    "footerProfileLink": "→ Manage your API key on your profile"
+    "footerProfileLink": "→ Manage your API key on your profile",
+    "clientsTitle": "Supported clients",
+    "clientsBody": "Currently fully supported on Claude Desktop and ChatGPT (GPTs). *The Gemini web app is pending an official update on Google's side."
   }
 }

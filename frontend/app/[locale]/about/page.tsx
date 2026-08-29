@@ -82,6 +82,7 @@ export default async function LocaleAboutPage({ params }: PageProps) {
     { text: t("plan0f4"), ok: false },
     { text: t("plan0f5"), ok: false },
     { text: t("plan0f6"), ok: false },
+    { text: t("plan0f7"), ok: false },
   ];
   const PLAN_FEATURES_1 = [
     { text: IS_FREE_UNLIMITED_CAMPAIGN ? t("plan1f0cp") : t("plan1f0"), ok: true },
@@ -91,6 +92,7 @@ export default async function LocaleAboutPage({ params }: PageProps) {
     { text: t("plan0f4"), ok: false },
     { text: t("plan0f5"), ok: true },
     { text: t("plan0f6"), ok: false },
+    { text: t("plan0f7"), ok: true },
   ];
   const PLAN_FEATURES_2 = [
     { text: t("plan2f0"), ok: true },
@@ -100,6 +102,7 @@ export default async function LocaleAboutPage({ params }: PageProps) {
     { text: t("plan0f4"), ok: true },
     { text: t("plan0f5"), ok: true },
     { text: t("plan2f6"), ok: true },
+    { text: t("plan0f7"), ok: true },
   ];
 
   // Operator legal table rows (text values are locale-independent facts)

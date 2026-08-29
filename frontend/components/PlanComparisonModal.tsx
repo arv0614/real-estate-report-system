@@ -62,6 +62,7 @@ export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail
     { label: t("featureLifestyleImage"), guest: t("featureNone"), free: t("featureAvail"), pro: t("featureAvail") },
     { label: t("featurePdf"),          guest: t("featureNone"), free: t("featureNone"), pro: t("featureAvail") },
     { label: t("featureHistory"),      guest: t("featureNone"), free: t("featureAvail"), pro: t("featureAvail") },
+    { label: t("featureMcp"),          guest: t("featureNone"), free: t("featureAvail"), pro: t("featureAvail") },
   ];
 
   function handleSignInClick() {

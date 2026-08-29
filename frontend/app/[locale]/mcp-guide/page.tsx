@@ -83,6 +83,12 @@ export default async function McpGuidePage({ params }: PageProps) {
           <p className="mt-2 text-sm leading-relaxed text-slate-600">{t("intro")}</p>
         </header>
 
+        {/* 対応クライアントの案内（Claude / ChatGPT 完全対応、Gemini は待ち） */}
+        <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-4">
+          <p className="text-sm font-semibold text-blue-900">{t("clientsTitle")}</p>
+          <p className="mt-1 text-sm leading-relaxed text-blue-800">{t("clientsBody")}</p>
+        </div>
+
         <div className="space-y-6">
           {/* Step 1: APIキーの発行 */}
           <section className="rounded-xl border border-slate-200 bg-white p-6">
