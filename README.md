@@ -867,11 +867,29 @@ fetch(`/api/property/transactions?...`);
 
 `backend/src/routes/mcp.ts` の各ツールハンドラ冒頭で `enforceMcpQuota()` を実行。
 
-- **上限値はハードコードしない。** Web版の無料上限定数 `FREE_DAILY_LIMIT`（`backend/src/constants/limits.ts`、フロントの `frontend/lib/limits.ts` と同値に維持）を import し、`MCP_FREE_DAILY_LIMIT = FREE_DAILY_LIMIT * 10` として計算（現状 3 × 10 = **30回/日**）。Web 版の無料上限を変更すれば MCP 側の上限も自動追随する。
+- **上限値はハードコードしない。** `backend/src/constants/limits.ts` で `MCP_FREE_DAILY_LIMIT = FREE_DAILY_LIMIT * 10` として定義（`FREE_DAILY_LIMIT` は Web版の無料上限＝フロントの `frontend/lib/limits.ts` と同値に維持。現状 3 × 10 = **30回/日**）。Web 版の無料上限を変更すれば MCP 側の上限も自動追随する。
 - Firestore `users/{uid}` の `mcpDailyCount` / `mcpLastCallDate` をトランザクションで日次カウント（`backend/src/services/mcpUsage.ts`）。判定ロジックは純粋関数 `decideMcpQuota()` に分離し `mcpUsage.test.ts` で単体テスト。
 - **Pro プランは無制限**（カウントのみ記録）。Firestore エラー時は fail-open。
 - Free が上限超過でツールを呼ぶと、実行をブロックし `isError: true` で以下のテキストを LLM に返す：
   `【エラー】Mekiki Researchの1日のMCP呼び出し上限に達しました。無制限に利用するにはProプランへアップグレードしてください。`
+
+### 利用状況エンドポイント（Web / MCP）
+
+`GET /api/user/usage`（`backend/src/routes/user.ts`、認証: `Authorization: Bearer <Firebase ID Token>`）。ログインユーザーの本日の消費回数と上限を返す。
+
+```jsonc
+{
+  "plan": "free",
+  "date": "2026-08-29",
+  "web": { "used": 1, "limit": 3,  "unlimited": false, "remaining": 2 },
+  "mcp": { "used": 5, "limit": 30, "unlimited": false, "remaining": 25 }
+}
+```
+
+- Web = `dailySearchCount` / `lastSearchDate`、MCP = `mcpDailyCount` / `mcpLastCallDate`。日付が変わっていれば `used: 0`。
+- Pro プランは `unlimited: true` / `remaining: null`。
+- 組み立てロジックは純粋関数 `computeUsage()` に分離し `user.test.ts` で単体テスト。
+- フロント: `/[locale]/profile` の「本日の利用状況」セクション（`ProfileClient.tsx` の `UsageSection`）でプログレスバー表示。文言は `messages/*.json` の `Profile.usage*`。
 
 ### コンプライアンス強制（規約違反防止）
 
@@ -1095,6 +1113,7 @@ npm test               # jest --forceExit（firebase-admin のオープンハン
 |---|---|---|
 | `src/utils/tile.test.ts` | 6 | `latLngToTile` / `tileToLatLng` / `buildCacheKey`（`z/x/y/{locale}` 形式・locale サフィックス） |
 | `src/services/mcpUsage.test.ts` | 5 | MCP 日次上限 = `FREE_DAILY_LIMIT × 10`（=30）の乗算、`decideMcpQuota()` の許可/ブロック/Pro 無制限 |
+| `src/routes/user.test.ts` | 5 | `GET /api/user/usage` の `computeUsage()`：Free/Pro・日付リセット・欠損フィールド・上限超過クランプ |
 
 加えて `node backend/scripts/test_mcp.mjs` で MCP サーバーの結合検証（認証・`tools/list` ・`tools/call`・出典フッター強制付与・日次上限値）を実行できる。
 

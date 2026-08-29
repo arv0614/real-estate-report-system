@@ -14,6 +14,7 @@ import adminRoutes from "./routes/admin";
 import bookmarksRoutes from "./routes/bookmarks";
 import forestRoutes from "./routes/forest";
 import mcpRoutes from "./routes/mcp";
+import userRoutes from "./routes/user";
 
 const app = new Hono();
 
@@ -77,6 +78,7 @@ app.route("/api/admin", adminRoutes);
 app.route("/api/bookmarks", bookmarksRoutes);
 app.route("/api/forest", forestRoutes);
 app.route("/api/mcp", mcpRoutes);
+app.route("/api/user", userRoutes);
 
 // 404
 app.notFound((c) => c.json({ error: "Not Found" }, 404));

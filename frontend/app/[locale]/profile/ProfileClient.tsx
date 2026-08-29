@@ -207,6 +207,13 @@ export default function ProfileClient() {
           </div>
         )}
 
+        {/* 本日の利用状況（Free / Pro どちらのログインユーザーにも上部に表示） */}
+        {!showLoadingState && user && (
+          <div className="mb-6">
+            <UsageSection />
+          </div>
+        )}
+
         {!showLoadingState && user && !isPro && (
           <FreeLockedCard
             onUpgrade={() => {
@@ -358,6 +365,124 @@ export default function ProfileClient() {
         userEmail={user?.email}
       />
     </main>
+  );
+}
+
+// ── 本日の利用状況 ─────────────────────────────────────────
+type UsageChannel = {
+  used: number;
+  limit: number;
+  unlimited: boolean;
+  remaining: number | null;
+};
+type UsageResponse = {
+  plan: "free" | "pro";
+  date: string;
+  web: UsageChannel;
+  mcp: UsageChannel;
+};
+
+function UsageBar({ label, ch }: { label: string; ch: UsageChannel }) {
+  const t = useTranslations("Profile");
+  const ratio = !ch.unlimited && ch.limit > 0 ? ch.used / ch.limit : 0;
+  const pct = ch.unlimited ? 100 : Math.min(100, Math.round(ratio * 100));
+  const near = !ch.unlimited && ratio >= 0.8;
+  return (
+    <div>
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-sm font-medium text-slate-700">{label}</span>
+        <span
+          className={`text-sm font-semibold tabular-nums ${
+            ch.unlimited ? "text-amber-600" : near ? "text-red-600" : "text-slate-800"
+          }`}
+        >
+          {ch.unlimited ? t("usageUnlimited") : t("usageCount", { used: ch.used, limit: ch.limit })}
+        </span>
+      </div>
+      <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+        <div
+          className={`h-full rounded-full transition-all ${
+            ch.unlimited
+              ? "bg-gradient-to-r from-amber-400 to-orange-400"
+              : near
+              ? "bg-red-500"
+              : "bg-blue-500"
+          }`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function UsageSection() {
+  const t = useTranslations("Profile");
+  const [usage, setUsage] = useState<UsageResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const idToken = await auth.currentUser?.getIdToken();
+        if (!idToken) {
+          if (!cancelled) {
+            setError(true);
+            setLoading(false);
+          }
+          return;
+        }
+        const res = await fetch(`${getApiBase()}/api/user/usage`, {
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
+        if (!res.ok) throw new Error(`usage ${res.status}`);
+        const data = (await res.json()) as UsageResponse;
+        if (!cancelled) {
+          setUsage(data);
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error("[profile] usage fetch failed:", err);
+        if (!cancelled) {
+          setError(true);
+          setLoading(false);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return (
+    <section className="rounded-xl border border-slate-200 bg-white p-6">
+      <div className="flex items-baseline justify-between gap-2">
+        <h2 className="text-lg font-semibold text-slate-800">{t("usageTitle")}</h2>
+        <span className="text-xs text-slate-400">{t("usageSubtitle")}</span>
+      </div>
+
+      {loading && (
+        <div className="mt-4 space-y-4">
+          <div className="h-2 w-full animate-pulse rounded-full bg-slate-100" />
+          <div className="h-2 w-full animate-pulse rounded-full bg-slate-100" />
+        </div>
+      )}
+
+      {!loading && error && (
+        <p className="mt-3 text-sm text-slate-500">{t("usageError")}</p>
+      )}
+
+      {!loading && !error && usage && (
+        <div className="mt-4 space-y-4">
+          <UsageBar label={t("usageWeb")} ch={usage.web} />
+          <UsageBar label={t("usageMcp")} ch={usage.mcp} />
+          {usage.plan === "pro" && (
+            <p className="text-xs text-amber-600">{t("usageProNote")}</p>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
 

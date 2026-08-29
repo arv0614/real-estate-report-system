@@ -19,7 +19,7 @@ import {
   type McpUser,
 } from "../services/mcpAuth";
 import { checkAndIncrementMcpUsage } from "../services/mcpUsage";
-import { FREE_DAILY_LIMIT } from "../constants/limits";
+import { MCP_FREE_DAILY_LIMIT } from "../constants/limits";
 
 // @hono/node-server 経由で serve() すると c.env に生の Node
 // IncomingMessage / ServerResponse が注入される。SSE はこれを直接使う。
@@ -43,10 +43,9 @@ function withCompliance(payload: unknown): ToolResult {
 
 // ============================================================
 // MCP 経由の利用回数制限（Free プランのみ）
-// 制限値はハードコードせず、Web版の無料上限定数 FREE_DAILY_LIMIT を import し、
-// その 10 倍を MCP の上限とする（Web が 3 回なら MCP は 30 回）。Pro は無制限。
+// 上限は constants/limits.ts で「Web版上限 FREE_DAILY_LIMIT × 10」として定義。
+// ハードコードせず、Web が 3 回なら MCP は 30 回。Pro は無制限。
 // ============================================================
-const MCP_FREE_DAILY_LIMIT = FREE_DAILY_LIMIT * 10;
 
 /** 上限到達時に LLM へ返すテキスト（データは返さないため出典フッターは付けない） */
 const MCP_RATE_LIMIT_MESSAGE =

@@ -1,11 +1,10 @@
 import { decideMcpQuota } from "./mcpUsage";
-import { FREE_DAILY_LIMIT } from "../constants/limits";
+import { FREE_DAILY_LIMIT, MCP_FREE_DAILY_LIMIT } from "../constants/limits";
 
 /**
  * MCP の Free 上限は「Web版無料上限 × 10」で計算される（ハードコード禁止）。
  * ここではその乗算と判定ロジックを検証する。
  */
-const MCP_FREE_DAILY_LIMIT = FREE_DAILY_LIMIT * 10;
 
 describe("MCP daily limit = 10x web free limit", () => {
   it("is exactly FREE_DAILY_LIMIT * 10", () => {

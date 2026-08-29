@@ -78,10 +78,16 @@ export default async function McpGuidePage({ params }: PageProps) {
           </Link>
         </div>
 
-        <header className="mb-8">
+        <header className="mb-6">
           <h1 className="text-2xl font-bold text-slate-800 sm:text-3xl">{t("title")}</h1>
           <p className="mt-2 text-sm leading-relaxed text-slate-600">{t("intro")}</p>
         </header>
+
+        {/* 非エンジニア向け：コピペだけで設定できることを最初に強調 */}
+        <div className="mb-4 flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+          <span className="text-lg leading-none" aria-hidden>✅</span>
+          <p className="text-sm font-medium leading-relaxed text-emerald-900">{t("noCodeBanner")}</p>
+        </div>
 
         {/* 対応クライアントの案内（Claude / ChatGPT 完全対応、Gemini は待ち） */}
         <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-4">
