@@ -34,13 +34,17 @@ resource "google_cloud_run_v2_service" "api" {
         cpu_idle = true
       }
 
-      env {
-        name  = "NODE_ENV"
-        value = "production"
-      }
+      # NOTE: NODE_ENV=production は backend/Dockerfile の `ENV` で設定済みのため
+      # Cloud Run の env には出さない（稼働中サービスにも無い）。
+      # env ブロックの順序は稼働中サービスと一致させること（google_cloud_run_v2_service は
+      # env を順序ありリストとして扱うため、順序が違うと apply が差分を出す）。
       env {
         name  = "GCP_PROJECT_ID"
         value = var.project_id
+      }
+      env {
+        name  = "GCP_REGION"
+        value = var.region
       }
       env {
         name  = "GCS_CACHE_BUCKET"
@@ -55,8 +59,24 @@ resource "google_cloud_run_v2_service" "api" {
         value = tostring(var.cache_ttl_days)
       }
       env {
-        name  = "GCP_REGION"
-        value = var.region
+        name  = "MLIT_API_KEY"
+        value = var.mlit_api_key
+      }
+      env {
+        name  = "GEMINI_API_KEY"
+        value = var.gemini_api_key
+      }
+      env {
+        name  = "ALLOWED_ORIGINS"
+        value = var.allowed_origins
+      }
+      env {
+        name  = "ADMIN_EMAILS"
+        value = var.admin_emails
+      }
+      env {
+        name  = "FIREBASE_PROJECT_ID"
+        value = var.firebase_project_id
       }
     }
   }
@@ -105,6 +125,14 @@ resource "google_cloud_run_v2_service" "frontend" {
           memory = "512Mi"
         }
         cpu_idle = true
+      }
+
+      # e-Stat API キー。元は deploy.yml / deploy_frontend.sh が --set-env-vars で付与。
+      # NEXT_PUBLIC_* のビルド時変数は Cloud Build 側 (cloudbuild.yaml) で焼き込むため
+      # ここには出さない。稼働時に読む env はこの 1 件のみ。
+      env {
+        name  = "ESTAT_API_KEY"
+        value = var.estat_api_key
       }
     }
   }

@@ -23,6 +23,12 @@ fi
 : "${GCP_REGION:?GCP_REGION が未設定です}"
 : "${GCS_CACHE_BUCKET:?GCS_CACHE_BUCKET が未設定です}"
 : "${CLOUD_RUN_SERVICE_NAME:?CLOUD_RUN_SERVICE_NAME が未設定です}"
+: "${MLIT_API_KEY:?MLIT_API_KEY が未設定です}"
+: "${GEMINI_API_KEY:?GEMINI_API_KEY が未設定です}"
+: "${ESTAT_API_KEY:?ESTAT_API_KEY が未設定です}"
+: "${ALLOWED_ORIGINS:?ALLOWED_ORIGINS が未設定です}"
+: "${ADMIN_EMAILS:?ADMIN_EMAILS が未設定です}"
+: "${FIREBASE_PROJECT_ID:?FIREBASE_PROJECT_ID が未設定です}"
 
 ACTION="${1:-plan}"
 
@@ -34,13 +40,21 @@ echo "========================================"
 
 cd "$TF_DIR"
 
-# terraform.tfvars を .env から自動生成
+# terraform.tfvars を .env から自動生成（.gitignore 済み・コミット禁止）
 cat > terraform.tfvars <<EOF
 project_id             = "${GCP_PROJECT_ID}"
 region                 = "${GCP_REGION}"
 cache_bucket_name      = "${GCS_CACHE_BUCKET}"
 cloud_run_service_name = "${CLOUD_RUN_SERVICE_NAME}"
 cache_ttl_days         = ${CACHE_TTL_DAYS:-30}
+
+# Cloud Run コンテナ env（稼働中サービスと一致させ apply を no-op に保つ）
+mlit_api_key        = "${MLIT_API_KEY}"
+gemini_api_key      = "${GEMINI_API_KEY}"
+estat_api_key       = "${ESTAT_API_KEY}"
+allowed_origins     = "${ALLOWED_ORIGINS}"
+admin_emails        = "${ADMIN_EMAILS}"
+firebase_project_id = "${FIREBASE_PROJECT_ID}"
 EOF
 
 echo "✅ terraform.tfvars を自動生成しました"
