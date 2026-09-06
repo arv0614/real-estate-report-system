@@ -169,3 +169,35 @@ body.pdf-export .pdf-hide {
 .animate-fade-in {
   animation: fadeIn 0.25s ease-out forwards;
 }
+
+/*
+ * MapLibre GL: 既定の角ばったコントロール/ポップアップを、アプリの Tailwind デザイン
+ * （rounded-xl / shadow-lg 相当）に統一する（2026-09-06、BlogMap / BlogMiniMap 対象）。
+ * MapLibre 自身の CSS (maplibre-gl.css) はこのファイルより前に import されているため、
+ * 同じセレクタで後勝ちする通常のケースが多いが、コントロール直下の border 等は
+ * インラインに近い詳細度で当たっているため !important で確実に上書きする。
+ */
+.maplibregl-ctrl-group {
+  border-radius: 0.75rem !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12) !important;
+  border: none !important;
+  overflow: hidden;
+}
+.maplibregl-ctrl-group button + button {
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+}
+.maplibregl-popup-content {
+  border-radius: 1rem !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.16) !important;
+  border: none !important;
+  padding: 14px 16px !important;
+}
+.maplibregl-popup-close-button {
+  font-size: 16px;
+  color: #94a3b8;
+  padding: 4px 8px;
+}
+.maplibregl-popup-close-button:hover {
+  color: #334155;
+  background: transparent;
+}

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { PostMeta } from "@/lib/blog";
-import { OSM_RASTER_STYLE } from "@/lib/blog/mapStyle";
+import { MAP_STYLE_URL } from "@/lib/blog/mapStyle";
 
 interface Props {
   posts: PostMeta[];
@@ -33,46 +33,46 @@ function formatDate(iso: string): string {
   });
 }
 
-const PIN_SIZE = 26;
+const PIN_SIZE = 22;
+const BRAND_COLOR = "bg-teal-600";
+const LATEST_COLOR = "bg-rose-600";
 
-/** Marker DOM with optional NEW badge — rendered as a circular pin.
- *  The wrap is sized exactly to the pin so MapLibre's `anchor: 'center'`
- *  centers on the pin (not on the visual extent of the absolute-positioned badge).
- *  We avoid setting `position` inline because MapLibre's `.maplibregl-marker`
- *  class applies `position: absolute; left: 0; top: 0` — overriding it would
- *  put the marker at its flow position and offset it from the coordinate. */
+/**
+ * Marker DOM with optional NEW badge — a Tailwind-styled circular dot, not
+ * MapLibre's default teardrop image. `wrap` is sized exactly to the pin so
+ * MapLibre's `anchor: 'center'` centers on the pin (not on the visual extent
+ * of the absolute-positioned badge/ping ring). We avoid setting `position`
+ * inline on `wrap` because MapLibre's `.maplibregl-marker` class already
+ * applies `position: absolute; left: 0; top: 0` — overriding it would put
+ * the marker at its flow position and offset it from the coordinate.
+ *
+ * Only "latest" posts get the pulsing ring (`animate-ping`): with dozens of
+ * posts plotted at once, pulsing every single pin would look noisy rather
+ * than refined — reserving it for what's actually new keeps it meaningful.
+ */
 function buildMarkerEl(isLatest: boolean): HTMLElement {
+  const color = isLatest ? LATEST_COLOR : BRAND_COLOR;
+
   const wrap = document.createElement("div");
   wrap.style.width = `${PIN_SIZE}px`;
   wrap.style.height = `${PIN_SIZE}px`;
-  wrap.style.cursor = "pointer";
+  wrap.className = "relative cursor-pointer";
 
-  const pin = document.createElement("div");
-  pin.style.position = "absolute";
-  pin.style.inset = "0";
-  pin.style.borderRadius = "50%";
-  pin.style.border = "2px solid white";
-  pin.style.boxShadow = "0 2px 6px rgba(0,0,0,0.25)";
-  pin.style.background = isLatest ? "#e11d48" : "#0d9488";
+  if (isLatest) {
+    const ping = document.createElement("span");
+    ping.className = `absolute inset-0 rounded-full opacity-60 animate-ping ${color}`;
+    wrap.appendChild(ping);
+  }
+
+  const pin = document.createElement("span");
+  pin.className = `absolute inset-0 rounded-full border-2 border-white shadow-lg ${color}`;
   wrap.appendChild(pin);
 
   if (isLatest) {
     const badge = document.createElement("span");
     badge.textContent = "NEW";
-    badge.style.position = "absolute";
-    badge.style.top = "-10px";
-    badge.style.left = "50%";
-    badge.style.transform = "translateX(-50%)";
-    badge.style.fontSize = "9px";
-    badge.style.fontWeight = "700";
-    badge.style.letterSpacing = "0.05em";
-    badge.style.color = "white";
-    badge.style.background = "#e11d48";
-    badge.style.padding = "1px 5px";
-    badge.style.borderRadius = "8px";
-    badge.style.whiteSpace = "nowrap";
-    badge.style.boxShadow = "0 1px 3px rgba(0,0,0,0.25)";
-    badge.style.pointerEvents = "none";
+    badge.className =
+      "absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-rose-600 px-1.5 py-0.5 text-[9px] font-bold tracking-wide text-white shadow pointer-events-none";
     wrap.appendChild(badge);
   }
 
@@ -97,9 +97,10 @@ export default function BlogMap({ posts, locale, latestSlugs }: Props) {
 
       const map = new maplibregl.Map({
         container: containerRef.current,
-        style: OSM_RASTER_STYLE,
+        style: MAP_STYLE_URL,
         center: [137.5, 37.5],
         zoom: 4.5,
+        attributionControl: { compact: true },
       });
 
       mapRef.current = map;
@@ -108,7 +109,7 @@ export default function BlogMap({ posts, locale, latestSlugs }: Props) {
         console.error("[BlogMap] MapLibre error:", e);
       });
 
-      map.addControl(new maplibregl.NavigationControl(), "top-right");
+      map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
 
       map.on("load", () => {
         if (cancelled) return;
@@ -155,7 +156,7 @@ export default function BlogMap({ posts, locale, latestSlugs }: Props) {
   return (
     <div
       ref={containerRef}
-      className="w-full rounded-2xl overflow-hidden border border-slate-200"
+      className="w-full rounded-2xl overflow-hidden border border-slate-200 shadow-sm"
       style={{ height: "clamp(300px, 40vw, 400px)" }}
     />
   );

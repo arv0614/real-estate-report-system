@@ -1063,7 +1063,7 @@ node scripts/test_mcp.mjs                # モックキーで起動 → 認証�
 | 〃 | `assets.lemonsqueezy.com` | Lemon Squeezy 画像 |
 | 〃 | `www.googletagmanager.com`, `www.google-analytics.com`, `*.google-analytics.com`, `analytics.google.com`, `www.google.com` | GTM / GA4 ピクセルビーコン |
 | 〃 | `*.omtrdc.net`, `*.sc.omtrdc.net`, `*.2o7.net` | **Adobe Analytics** ビーコン |
-| 〃 | `*.tile.openstreetmap.org` | OSM タイル（fallback） |
+| 〃 | `*.cartocdn.com`, `*.basemaps.cartocdn.com` | CARTO Positron ベースマップ（BlogMap/BlogMiniMap） |
 | `font-src` | `'self'`, `fonts.gstatic.com`, `assets.lemonsqueezy.com` | Google Fonts / LS フォント |
 | `connect-src` | `'self'` | XHR/fetch/WebSocket オリジン |
 | 〃 | `*.googleapis.com`, `identitytoolkit.googleapis.com`, `securetoken.googleapis.com`, `firestore.googleapis.com`, `firebasestorage.googleapis.com`, `storage.googleapis.com` | Firebase / GCS |
@@ -1074,7 +1074,7 @@ node scripts/test_mcp.mjs                # モックキーで起動 → 認証�
 | 〃 | `app.lemonsqueezy.com`, `api.lemonsqueezy.com` | LS チェックアウト + API |
 | 〃 | `www.googletagmanager.com`, `www.google-analytics.com`, `*.google-analytics.com`, `analytics.google.com`, `www.google.com`, `region1.google-analytics.com` | **GTM + GA4** データ収集（リージョン分割対応） |
 | 〃 | `*.omtrdc.net`, `*.sc.omtrdc.net`, `*.2o7.net` | **Adobe Analytics** データ収集 |
-| 〃 | `*.tile.openstreetmap.org` | MapLibre OSM タイル fetch |
+| 〃 | `*.cartocdn.com`, `*.basemaps.cartocdn.com` | MapLibre: CARTO Positron style/tiles/sprite/glyphs fetch |
 | `frame-src` | `'self'` | iframe 同一オリジン |
 | 〃 | `accounts.google.com` | Google OAuth ポップアップ |
 | 〃 | `*.firebaseapp.com` | Firebase Auth hidden iframe |
