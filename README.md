@@ -14,29 +14,67 @@
 
 ---
 
+## 🎯 プロダクト概要とターゲット層
+
+**物件目利きリサーチ（Mekiki Research）は、「無料の一般消費者向けツール」を入口に、「有料の不動産業者向けB2Bツール」で収益化する、2層構造のマネタイズ戦略で設計されている。**
+
+### ターゲット層
+
+| 層 | 想定ユーザー | 主な動機 | 課金意向 |
+|---|---|---|---|
+| **B2C（集客層）** | 住宅購入・エリア移住を検討している一般消費者 | 気になるエリアの取引価格・災害リスク・住環境を自分で調べたい | 低（無料利用が前提） |
+| **B2B（収益層）** | 不動産仲介業者・営業担当、税理士・FP等の士業 | 顧客提案の説得力向上、公的データに基づくエビデンス作成の時短 | 高（業務効率化への対価として¥980/月を許容） |
+
+### B2C 集客 → B2B マネタイズのファネル戦略
+
+```
+① オウンドメディア（ブログ自動生成・SEO）
+   毎朝4言語で記事を自動投稿 → 検索流入・自然検索で無料集客
+              ↓
+② ゲスト体験（登録不要・1回/日）
+   ブログのCTAリンク（?lat=&lng=）からそのまま検索体験 → 製品価値を無料で即体感
+              ↓
+③ Free 会員登録（3回/日、検索履歴保存）
+   ゲスト上限到達時にプランモーダルを表示しアカウント作成を促す
+              ↓
+④ Pro 有料転換（¥980/月、検索無制限 + PDF出力 + AI顧客提案ジェネレーター等）
+   Free 上限到達 or B2B機能（AI顧客提案ジェネレーター等）のペイウォールで転換を促す
+```
+
+各段階の転換率は GA4 カスタムイベント（`generate_report` / `reach_limit` / `sign_up` / `begin_checkout`）で計測し、
+`scripts/summarize_user_conversion.js` が毎朝 Slack と `/admin`「無料転換レポート」タブに転換率（CVR）を配信する
+（詳細: [無料転換ファネルモニタリング](#-無料転換ファネルモニタリング広告運用モニタリング)）。
+
+**B2C ツール（無料）が SEO 経由の集客エンジンとして機能し、そこで生まれたトラフィックの一部を B2B キラー機能
+（AI顧客提案ジェネレーター等、Pro限定）が収益化する** — この一気通貫の設計が本プロダクトの中核戦略である。
+
+---
+
 ## 📋 目次
 
-1. [使い方 (How to Use)](#-使い方-how-to-use)
-2. [主な機能 (Key Features)](#-主な機能-key-features)
-3. [料金プランと利用制限](#-料金プランと利用制限)
-4. [システムアーキテクチャ](#-システムアーキテクチャ)
-5. [MCP サーバー（外部 LLM 連携）](#-mcp-サーバー外部-llm-連携)
-6. [ブログ完全自動化基盤（メディア運用）](#-ブログ完全自動化基盤メディア運用)
-7. [GitHub Actions ワークフロー（CI/CD）](#-github-actions-ワークフローcicd)
-8. [技術スタック (Tech Stack)](#-技術スタック-tech-stack)
-9. [多言語対応（i18n）の仕組み](#-多言語対応i18nの仕組み)
-10. [セキュリティ・コンプライアンス対策](#-セキュリティコンプライアンス対策)
-11. [SEO 戦略と sitemap](#-seo-戦略と-sitemap)
-12. [テストと品質保証 (QA)](#-テストと品質保証-qa)
-13. [環境変数と GitHub Secrets](#-環境変数と-github-secrets)
-14. [ローカル開発環境のセットアップ](#-ローカル開発環境のセットアップ)
-15. [Cloud Run へのデプロイ](#-cloud-run-へのデプロイ)
-16. [Artifact Registry コスト最適化](#-artifact-registry-コスト最適化)
-17. [Lemon Squeezy 決済の運用手順](#-lemon-squeezy-決済の運用手順)
-18. [管理画面 (/admin)](#-管理画面-admin)
-19. [ディレクトリ構成](#-ディレクトリ構成)
-20. [注意事項](#-注意事項)
-21. [ライセンス](#-ライセンス)
+1. [プロダクト概要とターゲット層](#-プロダクト概要とターゲット層)
+2. [使い方 (How to Use)](#-使い方-how-to-use)
+3. [主な機能 (Key Features)](#-主な機能-key-features)
+4. [料金プランと利用制限](#-料金プランと利用制限)
+5. [システムアーキテクチャ](#-システムアーキテクチャ)
+6. [無料転換ファネルモニタリング・広告運用モニタリング](#-無料転換ファネルモニタリング広告運用モニタリング)
+7. [MCP サーバー（外部 LLM 連携）](#-mcp-サーバー外部-llm-連携)
+8. [ブログ完全自動化基盤（メディア運用）](#-ブログ完全自動化基盤メディア運用)
+9. [GitHub Actions ワークフロー（CI/CD）](#-github-actions-ワークフローcicd)
+10. [技術スタック (Tech Stack)](#-技術スタック-tech-stack)
+11. [多言語対応（i18n）の仕組み](#-多言語対応i18nの仕組み)
+12. [セキュリティ・コンプライアンス対策](#-セキュリティコンプライアンス対策)
+13. [SEO 戦略と sitemap](#-seo-戦略と-sitemap)
+14. [テストと品質保証 (QA)](#-テストと品質保証-qa)
+15. [環境変数と GitHub Secrets](#-環境変数と-github-secrets)
+16. [ローカル開発環境のセットアップ](#-ローカル開発環境のセットアップ)
+17. [Cloud Run へのデプロイ](#-cloud-run-へのデプロイ)
+18. [Artifact Registry コスト最適化](#-artifact-registry-コスト最適化)
+19. [Lemon Squeezy 決済の運用手順](#-lemon-squeezy-決済の運用手順)
+20. [管理画面 (/admin)](#-管理画面-admin)
+21. [ディレクトリ構成](#-ディレクトリ構成)
+22. [注意事項](#-注意事項)
+23. [ライセンス](#-ライセンス)
 
 ---
 
@@ -219,7 +257,30 @@ GA4 の **Enhanced Measurement** が自動的に収集するイベント。コ�
 
 ---
 
-## 📈 広告運用モニタリング（無料ダッシュボード基盤）
+## 📈 無料転換ファネルモニタリング・広告運用モニタリング
+
+GA4 Data API を軸にした、**追加コストゼロ**（Looker Studio + GA4 標準 API）の計測・監視自動化スイート。
+広告効果測定と、[プロダクト概要](#-プロダクト概要とターゲット層)で述べた B2C→B2B ファネルの転換率計測の 2 本柱。
+
+### 無料転換ファネルモニタリング（ゲスト → Free 転換）
+
+`scripts/summarize_user_conversion.js` が毎朝 JST 09:15（`daily_conversion_report.yml`）に前日分を集計する。
+
+1. **取得指標**（GA4 Data API `runReport`）: 検索利用 `generate_report`件数 / 上限到達 `reach_limit`件数 / 無料登録
+   `sign_up`件数。それぞれ「検索利用→上限到達」「上限到達→無料登録」の CVR を算出。
+2. **ゲスト限定の絞り込み**: `reach_limit` は本来ゲスト・Free 両方のプラン上限到達で発火するイベントのため、
+   GA4 のイベントパラメータ `user_plan`（`frontend/lib/gtag.ts` の `gtagEvent` 経由で送信）を
+   event-scoped custom dimension `customEvent:user_plan` として使い、`DimensionFilter` で
+   `user_plan="guest"` のみに絞り込む。この custom dimension が GA4 property 側に未登録の場合は
+   起動時に GA4 Admin API 経由で自動登録を試みる（`analytics.edit` 権限が必要。権限が無い/失敗時は
+   致命的にはせず guest/free 合算値にフォールバックし、要約に「合算値である」旨を明記する）。
+3. **配信先**: (a) Firestore `conversion_reports/{date}` に保存 → `/admin`「無料転換レポート」タブで
+   日次カード＋30日推移グラフ（Recharts）として閲覧可能。(b) Slack Incoming Webhook（設定時）に
+   テキスト要約＋QuickChart 棒グラフを送信。`SLACK_WEBHOOK_URL` 未設定時は標準出力にのみ表示。
+4. **ローカル検証**: `--dry-run` / `--input <fixture.json>`（GA4 認証なしでロジック確認）、
+   `--date YYYY-MM-DD` / `--period N`（データ反映ラグを避けて過去日・長期間で検証）。
+
+### 広告パフォーマンスモニタリング（無料ダッシュボード基盤）
 
 Web 広告の出稿効果を **無料**（Looker Studio + GA4 標準）で可視化・監視する自動化スイート。
 
@@ -227,8 +288,8 @@ Web 広告の出稿効果を **無料**（Looker Studio + GA4 標準）で可視
 |---|---|---|
 | `scripts/setup_marketing_dashboard.js` | Looker Studio + GA4 のセットアップ手順を生成: `docs/marketing_dashboard.md`（概念編：接続手順・指標定義）と `docs/looker_studio_setup_guide.md`（実装編：各グラフの具体設定・計算フィールドのコピペ集・GA4 探索での計測確認手順） | 手動 (`npm run dashboard:setup`) |
 | `scripts/monitor_traffic_anomalies.js` | Cloud Run ログを解析し、同一IPから 1分あたり閾値（既定10）以上のアクセスを検知 → Bot 不正クリック監視 | `monitor_traffic.yml`（30分毎 cron） |
-| `scripts/summarize_ad_performance.js` | GA4 Data API から前日の広告指標を取得しテキスト要約を Slack 送信 | `ad_daily_report.yml`（毎朝 JST 09:00 cron） |
-| `scripts/summarize_user_conversion.js` | GA4 Data API から前日のゲスト→無料転換ファネル（検索利用 `generate_report` / 上限到達 `reach_limit` / 無料登録 `sign_up` と各段階のCVR）を取得しテキスト要約を Slack 送信、Firestore `conversion_reports` に保存 | `daily_conversion_report.yml`（毎朝 JST 09:15 cron） |
+| `scripts/summarize_ad_performance.js` | GA4 Data API から前日の広告指標（インプレッション/CTR/CVR/サインアップ等）を取得しテキスト要約を Slack 送信、Firestore `ad_reports` に保存 → `/admin`「広告レポート」タブ | `ad_daily_report.yml`（毎朝 JST 09:00 cron） |
+| `scripts/summarize_user_conversion.js` | 上記「無料転換ファネルモニタリング」参照 | `daily_conversion_report.yml`（毎朝 JST 09:15 cron） |
 
 **アラート経路**: 異常検知時、監視スクリプトは終了コード1で失敗し、GitHub のジョブ失敗通知（メール）がそのままアラートになります。`SLACK_WEBHOOK_URL` を設定すれば Slack 通知も飛びます。
 
@@ -242,15 +303,21 @@ Web 広告の出稿効果を **無料**（Looker Studio + GA4 標準）で可視
 
 | 機能 | ゲスト（未ログイン） | Free（無料） | Pro（¥980/月） |
 |---|:---:|:---:|:---:|
-| エリア調査 | 1回/日 | 3回/日 | **無制限** |
+| エリア調査（Web検索） | 1回/日 | 3回/日※ | **無制限** |
 | 取引価格サマリー・グラフ | ✅ | ✅ | ✅ |
 | ハザード情報 | ✅ | ✅ | ✅ |
 | AI レポート（全10項目） | ✅ | ✅ | ✅ |
 | 暮らしのイメージ画像生成 | ❌ | ✅ | ✅ |
 | PDF エクスポート | ❌ | ❌ | **✅** |
 | 検索履歴の保存 | ❌ | ✅ | ✅ |
+| MCP（外部LLM連携）ツール呼び出し | ❌ 接続不可 | 30回/日（Web版上限×10、動的連動） | **無制限** |
+| AI 顧客提案ジェネレーター | 🔒 入力・生成ボタンは押せるがサンプル結果のみ（実行するとアップグレードモーダル） | 同上（🔒） | **✅ 生成し放題** |
 
 利用制限は localStorage（ゲスト）と Firestore（ログイン済み）で管理。
+
+> ※ 2026年時点、Free プランは **検索無制限キャンペーン中**（`IS_FREE_UNLIMITED_CAMPAIGN = true` in
+> `frontend/lib/userPlan.ts`）のため、実際には Free の日次上限チェックはバイパスされている
+> （利用回数の記録自体は継続、フラグを `false` に戻すだけで通常の 3回/日 制限に復帰する）。
 
 ---
 
@@ -267,6 +334,9 @@ LLM クライアント（Claude Desktop / ChatGPT 等）が **② Backend API �
 │     - App Router + next-intl で 4言語ルーティング                    │
 │     - ?lat=&lng= で検索を自動実行（ブログCTA・シェアURLから着地）  │
 │     - /[locale]/profile: MCP APIキー発行UI / /[locale]/mcp-guide: 設定ガイド │
+│     - /[locale]/proposal-generator: AI顧客提案ジェネレーター(Pro限定) │
+│     - /[locale]/admin: 管理者ダッシュボード（フィードバック・ユーザー・ │
+│       各種日次/週次レポート閲覧、ADMIN_EMAILS 認可）                 │
 │     - HSTS / CSP / X-Frame-Options 等のセキュリティヘッダー出力     │
 └──────────┬──────────────────────────────────────────────────────────┘
            │ GET /api/property/transactions?lat=&lng=&zoom=15&locale=
@@ -282,6 +352,8 @@ LLM クライアント（Claude Desktop / ChatGPT 等）が **② Backend API �
 │     - generateAreaReport → Gemini 3.6 Flash                          │
 │     - GCS キャッシュ（30日 TTL・ロケール別キー）                    │
 │     - Lemon Squeezy Checkout / Webhook (HMAC-SHA256 署名検証)       │
+│     - POST /api/pro/generate-proposal → Gemini 3.6 Flash            │
+│       （AI顧客提案ジェネレーター。Pro限定・responseSchemaでJSON強制）│
 │     ── MCP サーバー (SSE) ─────────────────────────────────────────  │
 │     - GET /api/mcp/sse ・ POST /api/mcp/messages（APIキー認証）      │
 │     - tools: get_real_estate_transactions / get_area_hazard_info    │
@@ -310,7 +382,8 @@ LLM クライアント（Claude Desktop / ChatGPT 等）が **② Backend API �
 │     - deploy.sh / deploy_frontend.sh: Cloud Run 手動デプロイ         │
 └─────────────────────────────────────────────────────────────────────┘
 
-[Firebase]  Authentication / Firestore (users, history) / Storage (images)
+[Firebase]  Authentication / Firestore (users, history, ad_reports, conversion_reports, feedbacks等) / Storage (images)
+            ※ Firebase プロジェクトは GCP プロジェクトと別（クロスプロジェクト構成）。詳細は「管理画面」章参照。
 [GA4 + GTM] click_lp_cta / sign_up / generate_report / reach_limit / view_plan_modal / begin_checkout / purchase
 [PostHog]   行動ログ計測（Webhook 署名検証付き）
 [Terraform] Cloud Run / Artifact Registry / GCS / IAM の IaC 管理
@@ -750,8 +823,9 @@ jobs:
 | Hono | 軽量 Web フレームワーク |
 | hono/secure-headers | HTTP セキュリティヘッダーミドルウェア |
 | Zod | リクエストバリデーション |
-| Firebase Admin SDK | サーバー側 ID Token 検証 |
-| hono-rate-limiter | IP ベースのレートリミット（15分/100req） |
+| Firebase Admin SDK | サーバー側 ID Token 検証・Firestore アクセス |
+| `@google/generative-ai` | Gemini 3.6 Flash 呼び出し（エリア分析レポート・フィードバック要件定義書生成・AI顧客提案ジェネレーター。`responseSchema` でJSON構造化出力を強制） |
+| hono-rate-limiter | IP ベースのレートリミット（グローバル15分/100req + フィードバック/AI顧客提案は1時間/10〜20reqの個別レートリミットを二重適用） |
 
 ### 自動化スクリプト
 
