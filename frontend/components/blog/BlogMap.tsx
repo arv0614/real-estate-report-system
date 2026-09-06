@@ -35,7 +35,9 @@ function formatDate(iso: string): string {
 
 const PIN_SIZE = 22;
 const BRAND_COLOR = "bg-teal-600";
-const LATEST_COLOR = "bg-rose-600";
+// 最新記事ピン専用のアクセントカラー。通常ピン(teal)と混同されないよう、密集地帯でも
+// 一目でわかる強めのアンバーにする（2026-09-06、視認性改善）。
+const LATEST_COLOR = "bg-amber-500";
 
 /**
  * Marker DOM with optional NEW badge — a Tailwind-styled circular dot, not
@@ -49,6 +51,12 @@ const LATEST_COLOR = "bg-rose-600";
  * Only "latest" posts get the pulsing ring (`animate-ping`): with dozens of
  * posts plotted at once, pulsing every single pin would look noisy rather
  * than refined — reserving it for what's actually new keeps it meaningful.
+ *
+ * `z-50` on the latest wrap matters in dense clusters: MapLibre's own
+ * `.maplibregl-marker` CSS sets `position: absolute` but no `z-index`, so
+ * without an explicit one, stacking falls back to DOM/add order — a latest
+ * post added before a nearby regular post would otherwise render underneath
+ * it. `z-50` guarantees the latest pin always wins regardless of add order.
  */
 function buildMarkerEl(isLatest: boolean): HTMLElement {
   const color = isLatest ? LATEST_COLOR : BRAND_COLOR;
@@ -56,7 +64,7 @@ function buildMarkerEl(isLatest: boolean): HTMLElement {
   const wrap = document.createElement("div");
   wrap.style.width = `${PIN_SIZE}px`;
   wrap.style.height = `${PIN_SIZE}px`;
-  wrap.className = "relative cursor-pointer";
+  wrap.className = isLatest ? "relative z-50 cursor-pointer" : "relative cursor-pointer";
 
   if (isLatest) {
     const ping = document.createElement("span");
@@ -72,7 +80,7 @@ function buildMarkerEl(isLatest: boolean): HTMLElement {
     const badge = document.createElement("span");
     badge.textContent = "NEW";
     badge.className =
-      "absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-rose-600 px-1.5 py-0.5 text-[9px] font-bold tracking-wide text-white shadow pointer-events-none";
+      "absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-amber-500 px-1.5 py-0.5 text-[9px] font-bold tracking-wide text-white shadow pointer-events-none";
     wrap.appendChild(badge);
   }
 
@@ -121,7 +129,7 @@ export default function BlogMap({ posts, locale, latestSlugs }: Props) {
           const blogHref = `${localePrefix}/blog/${post.slug}`;
           const isLatest = latestSet.has(post.slug);
           const newBadgeHtml = isLatest
-            ? `<span style="display:inline-block;font-size:10px;font-weight:700;letter-spacing:0.05em;color:white;background:#e11d48;padding:1px 6px;border-radius:8px;margin-left:6px;vertical-align:middle">NEW</span>`
+            ? `<span style="display:inline-block;font-size:10px;font-weight:700;letter-spacing:0.05em;color:white;background:#f59e0b;padding:1px 6px;border-radius:8px;margin-left:6px;vertical-align:middle">NEW</span>`
             : "";
 
           const popup = new maplibregl.Popup({ offset: 25, maxWidth: "260px" }).setHTML(`
