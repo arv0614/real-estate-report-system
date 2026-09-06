@@ -9,10 +9,10 @@
     "logoutButton": "ログアウト",
     "profileLink": "マイページ",
     "guestBadge": "Guest",
-    "langSwitch": "EN",
     "upgradeBtn": "Pro にアップグレード",
     "menuLabel": "メニュー",
-    "proposalLink": "AI顧客提案"
+    "proposalLink": "AI顧客提案",
+    "languageLabel": "言語"
   },
   "Bookmarks": {
     "save": "保存する（☆）",

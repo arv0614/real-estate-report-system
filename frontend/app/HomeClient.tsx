@@ -3,7 +3,6 @@
 import { Suspense } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
-import { usePathname, useRouter as useIntlRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { flushSync } from "react-dom";
 import Link from "next/link";
@@ -47,6 +46,8 @@ import { EnvironmentInfoCard } from "@/components/EnvironmentInfo";
 import { WeatherInfoCard } from "@/components/WeatherInfoCard";
 import { AiReport } from "@/components/AiReport";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import LanguageToggle from "@/components/LanguageToggle";
+import type { Locale } from "@/lib/locale";
 import { ShareActions } from "@/components/ShareActions";
 import { PlanComparisonModal } from "@/components/PlanComparisonModal";
 import nextDynamic from "next/dynamic";
@@ -79,8 +80,6 @@ const PDF_SECTION_KEYS: { key: keyof PdfSections; msgKey: string }[] = [
 function HomePageContent() {
   const t = useTranslations();
   const locale = useLocale();
-  const pathname = usePathname();
-  const intlRouter = useIntlRouter();
   const { user, loading: authLoading, plan, planLoading } = useAuth();
   const { open: openAuthModal } = useAuthModal();
   const searchParams = useSearchParams();
@@ -704,14 +703,10 @@ function HomePageContent() {
             </button>
           )}
 
-          {/* 言語切り替え */}
-          <button
-            onClick={() => intlRouter.replace(pathname, { locale: locale === "en" ? "ja" : "en" })}
-            className="hidden sm:inline-flex text-xs px-3 py-1.5 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors font-medium"
-            aria-label="Switch language"
-          >
-            {t("Header.langSwitch")}
-          </button>
+          {/* 言語切り替え（4言語対応） */}
+          <div className="hidden sm:inline-flex">
+            <LanguageToggle currentLocale={locale as Locale} />
+          </div>
 
           {/* 認証UI */}
           {!authLoading && (
@@ -871,15 +866,13 @@ function HomePageContent() {
                 {t("Header.profileLink")}
               </Link>
             )}
-            <button
-              onClick={() => {
-                setMobileMenuOpen(false);
-                intlRouter.replace(pathname, { locale: locale === "en" ? "ja" : "en" });
-              }}
-              className="w-full text-left px-3 py-2.5 rounded-lg text-sm text-slate-700 hover:bg-slate-50 transition-colors font-medium"
-            >
-              {t("Header.langSwitch")}
-            </button>
+            {/* 言語切り替え（4言語対応）。タップで即遷移するため、選択後にメニューを閉じる */}
+            <div className="px-3 py-2">
+              <p className="text-xs font-semibold text-slate-400 mb-1.5">{t("Header.languageLabel")}</p>
+              <div onClick={() => setMobileMenuOpen(false)}>
+                <LanguageToggle currentLocale={locale as Locale} />
+              </div>
+            </div>
             {user && (
               <button
                 onClick={() => { setMobileMenuOpen(false); handleLogout(); }}

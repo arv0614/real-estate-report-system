@@ -9,10 +9,10 @@
     "logoutButton": "Sign out",
     "profileLink": "My Page",
     "guestBadge": "Guest",
-    "langSwitch": "日本語",
     "upgradeBtn": "Upgrade to Pro",
     "menuLabel": "Menu",
-    "proposalLink": "AI Proposal"
+    "proposalLink": "AI Proposal",
+    "languageLabel": "Language"
   },
   "Bookmarks": {
     "save": "Save (☆)",

@@ -9,10 +9,10 @@
     "logoutButton": "登出",
     "profileLink": "我的頁面",
     "guestBadge": "訪客",
-    "langSwitch": "EN",
     "upgradeBtn": "升級至 Pro",
     "menuLabel": "選單",
-    "proposalLink": "AI 客戶提案"
+    "proposalLink": "AI 客戶提案",
+    "languageLabel": "語言"
   },
   "Bookmarks": {
     "save": "收藏(☆)",
