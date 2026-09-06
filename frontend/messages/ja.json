@@ -376,8 +376,8 @@
     "genError": "生成に失敗しました",
     "lifestyleAlt": "{municipality}の暮らしイメージ",
     "lifestyleAltExpanded": "暮らしイメージ 拡大",
-    "analyzing": "AI がこのエリアを分析中…",
-    "analyzingNote": "全10セクションのエリアデータ集計レポートを生成しています。通常 20〜60 秒ほどかかります。",
+    "analyzing": "AI がこのエリアを深く分析中…",
+    "analyzingNote": "全10セクションのエリアデータ集計レポートを生成しています。通常20〜60秒ほどですが、初回は立ち上がりに1分ほどかかる場合があります。",
     "loadErrorTitle": "AI レポートの生成に失敗しました"
   },
   "HistoryList": {
@@ -1005,6 +1005,11 @@
     "areaSaitama": "埼玉県",
     "areaKansai": "関西エリア",
     "areaOther": "その他",
-    "viewDetailsBtn": "このエリアの相場・ハザード詳細を見る"
+    "viewDetailsBtn": "このエリアの相場・ハザード詳細を見る",
+    "budgetPresetPlaceholder": "＋ よくある予算・条件を選んで追加...",
+    "budgetPreset1": "3,000万円台, 中古",
+    "budgetPreset2": "5,000万円台, 駅徒歩10分以内",
+    "budgetPreset3": "8,000万円台, 新築・築浅",
+    "budgetPreset4": "1億円〜, 資産価値重視"
   }
 }

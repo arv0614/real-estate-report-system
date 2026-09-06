@@ -25,6 +25,16 @@ const MAX_BUDGET = 300;
 /** 「よくある条件」プリセット。選択するとテキストエリアに追記される（自由記述と併用可）。 */
 const PRESET_KEYS = ["preset1", "preset2", "preset3", "preset4", "preset5", "preset6"] as const;
 
+/** 「よくある予算・条件」プリセット。選択すると予算欄に追記される（自由記述と併用可）。 */
+const BUDGET_PRESET_KEYS = ["budgetPreset1", "budgetPreset2", "budgetPreset3", "budgetPreset4"] as const;
+
+/** 既存の値を上書きせず、末尾に追記する（重複追加は防止）。プリセット選択の共通ロジック。 */
+function appendPreset(current: string, addition: string, maxLen: number): string {
+  const trimmed = current.trim();
+  const next = !trimmed ? addition : trimmed.includes(addition) ? current : `${trimmed}、${addition}`;
+  return next.slice(0, maxLen);
+}
+
 /** 対象の広域エリア。バックエンドにはここで選ばれたラベルをそのまま送信する。 */
 const TARGET_AREA_KEYS = [
   "areaTokyo23",
@@ -56,11 +66,15 @@ export default function ProposalGeneratorClient() {
   function handlePresetSelect(e: React.ChangeEvent<HTMLSelectElement>) {
     const value = e.target.value;
     if (!value) return;
-    setTargetProfile((prev) => {
-      const trimmed = prev.trim();
-      const next = !trimmed ? value : trimmed.includes(value) ? prev : `${trimmed}、${value}`;
-      return next.slice(0, MAX_TARGET_PROFILE);
-    });
+    setTargetProfile((prev) => appendPreset(prev, value, MAX_TARGET_PROFILE));
+    e.target.value = "";
+  }
+
+  /** 予算プリセットを選ぶと予算欄に追記する（自由記述を上書きしない）。選択後は毎回リセットして再選択可能にする。 */
+  function handleBudgetPresetSelect(e: React.ChangeEvent<HTMLSelectElement>) {
+    const value = e.target.value;
+    if (!value) return;
+    setBudget((prev) => appendPreset(prev, value, MAX_BUDGET));
     e.target.value = "";
   }
 
@@ -199,6 +213,21 @@ export default function ProposalGeneratorClient() {
                 placeholder={t("budgetPlaceholder")}
                 className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-400"
               />
+              <select
+                defaultValue=""
+                onChange={handleBudgetPresetSelect}
+                aria-label={t("budgetPresetPlaceholder")}
+                className="mt-1.5 text-xs border border-slate-300 rounded-lg px-2 py-1.5 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-400"
+              >
+                <option value="" disabled>
+                  {t("budgetPresetPlaceholder")}
+                </option>
+                {BUDGET_PRESET_KEYS.map((key) => (
+                  <option key={key} value={t(key)}>
+                    {t(key)}
+                  </option>
+                ))}
+              </select>
             </label>
 
             <label className="block">

@@ -8,8 +8,14 @@ import type { TransactionApiResponse, TransactionSummary, TransactionRecord } fr
  */
 const PROD_API_FALLBACK = "https://realestate-api-2hctlfcy6a-an.a.run.app";
 
-/** バックエンド呼び出し時のデフォルトタイムアウト (ms)。Cloud Run のコールドスタート + MLIT/Gemini 生成を許容。 */
-export const DEFAULT_FETCH_TIMEOUT_MS = 90_000;
+/**
+ * バックエンド呼び出し時のデフォルトタイムアウト (ms)。
+ * Cloud Run のコールドスタート + MLIT/Gemini 生成を許容。
+ * 初回（コールドスタート時・新規エリア分析でキャッシュが無い場合）に 90秒でも
+ * タイムアウトする事例が確認されたため 150秒に延長（バックエンド Cloud Run 自体の
+ * timeoutSeconds=300 は十分に余裕があるため、フロント側のみの調整で対応可能）。
+ */
+export const DEFAULT_FETCH_TIMEOUT_MS = 150_000;
 
 /**
  * API ベース URL を解決する（クライアント・サーバー両対応）
@@ -41,9 +47,10 @@ export function getApiBase(): string {
  * AbortController でタイムアウト付きの fetch を行う薄いラッパ。
  * 既存の RequestInit と組み合わせ可能（Next.js 16 の `next.revalidate` など）。
  *
- * Cloud Run のコールドスタート (≈ 数十秒) と MLIT API + Gemini 生成 (合計 60〜90秒)
- * を考慮し、デフォルトタイムアウトは 90 秒に設定。これより短い既定では SSR/ISR で
- * 自動的にアボートされ「データ取得失敗」状態に落ちるリスクがある。
+ * Cloud Run のコールドスタート (≈ 数十秒) と MLIT API + Gemini 生成 (初回・新規エリアは
+ * キャッシュが無く合計 90〜120秒程度かかることがある) を考慮し、デフォルトタイムアウトは
+ * 150 秒に設定。これより短い既定では SSR/ISR や初回調査時に自動的にアボートされ
+ * 「データ取得失敗」状態に落ちるリスクがある。
  */
 export async function fetchWithTimeout(
   url: string,

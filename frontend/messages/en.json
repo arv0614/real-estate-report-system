@@ -376,8 +376,8 @@
     "genError": "Image generation failed",
     "lifestyleAlt": "{municipality} lifestyle image",
     "lifestyleAltExpanded": "Lifestyle image — enlarged",
-    "analyzing": "AI is analyzing this area…",
-    "analyzingNote": "Generating the 10-section area data report. This usually takes 20–60 seconds.",
+    "analyzing": "AI is deeply analyzing this area…",
+    "analyzingNote": "Generating the 10-section area data report. This usually takes 20–60 seconds, though the very first request can take about a minute to spin up.",
     "loadErrorTitle": "Failed to generate AI report"
   },
   "HistoryList": {
@@ -1005,6 +1005,11 @@
     "areaSaitama": "Saitama",
     "areaKansai": "Kansai area",
     "areaOther": "Other",
-    "viewDetailsBtn": "View market data & hazard details for this area"
+    "viewDetailsBtn": "View market data & hazard details for this area",
+    "budgetPresetPlaceholder": "+ Pick a common budget to add...",
+    "budgetPreset1": "¥30M range, resale",
+    "budgetPreset2": "¥50M range, within 10 min walk of station",
+    "budgetPreset3": "¥80M range, new-build",
+    "budgetPreset4": "¥100M+, focus on asset value"
   }
 }

@@ -376,8 +376,8 @@
     "genError": "生成失敗",
     "lifestyleAlt": "{municipality} 的生活意象",
     "lifestyleAltExpanded": "生活意象 放大圖",
-    "analyzing": "AI 正在分析該區域…",
-    "analyzingNote": "正在生成 10 個章節的區域資料報告，通常需要 20–60 秒。",
+    "analyzing": "AI 正在深入分析該區域…",
+    "analyzingNote": "正在生成 10 個章節的區域資料報告，通常需要 20–60 秒，首次啟動可能需要約1分鐘。",
     "loadErrorTitle": "AI 報告生成失敗"
   },
   "HistoryList": {
@@ -1005,6 +1005,11 @@
     "areaSaitama": "埼玉縣",
     "areaKansai": "關西地區",
     "areaOther": "其他",
-    "viewDetailsBtn": "查看此區域的行情・災害風險詳情"
+    "viewDetailsBtn": "查看此區域的行情・災害風險詳情",
+    "budgetPresetPlaceholder": "＋ 選擇常見預算・條件並新增...",
+    "budgetPreset1": "3,000萬日圓左右，中古屋",
+    "budgetPreset2": "5,000萬日圓左右，車站徒步10分鐘內",
+    "budgetPreset3": "8,000萬日圓左右，新成屋",
+    "budgetPreset4": "1億日圓以上，重視資產價值"
   }
 }
