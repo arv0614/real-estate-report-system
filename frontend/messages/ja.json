@@ -860,7 +860,16 @@
     "colWebToday": "当日Web (利用/上限)",
     "colMcpToday": "当日MCP (利用/上限)",
     "colUsageTotal": "累積 (Web/MCP)",
-    "colLimitUnlimited": "∞"
+    "colLimitUnlimited": "∞",
+    "tabConversionReports": "無料転換レポート",
+    "conversionReportsEmpty": "無料転換レポートはまだありません。日次バッチ (summarize_user_conversion.js) が生成すると表示されます。",
+    "convChartAlt": "ゲスト→無料転換ファネルのグラフ",
+    "convSearches": "検索利用",
+    "convLimitReached": "上限到達",
+    "convSignups": "無料登録",
+    "convCvrLimitReached": "検索→上限到達 CVR",
+    "convCvrSignUp": "上限到達→登録 CVR",
+    "convTrendTitle": "直近30日間の推移（{days}日分）"
   },
   "LandingPage": {
     "navAppLink": "アプリを開く",

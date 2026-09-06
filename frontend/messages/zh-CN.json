@@ -860,7 +860,16 @@
     "colWebToday": "今日网页 (使用/上限)",
     "colMcpToday": "今日 MCP (使用/上限)",
     "colUsageTotal": "累积 (Web/MCP)",
-    "colLimitUnlimited": "∞"
+    "colLimitUnlimited": "∞",
+    "tabConversionReports": "免费转化报告",
+    "conversionReportsEmpty": "暂无免费转化报告。每日批处理 (summarize_user_conversion.js) 生成后即会显示。",
+    "convChartAlt": "访客转免费会员漏斗图表",
+    "convSearches": "搜索使用",
+    "convLimitReached": "达到上限",
+    "convSignups": "免费注册",
+    "convCvrLimitReached": "搜索→达上限 CVR",
+    "convCvrSignUp": "达上限→注册 CVR",
+    "convTrendTitle": "近30天趋势（{days}天）"
   },
   "LandingPage": {
     "navAppLink": "打开应用",

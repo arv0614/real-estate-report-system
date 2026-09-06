@@ -860,7 +860,16 @@
     "colWebToday": "今日網頁 (使用/上限)",
     "colMcpToday": "今日 MCP (使用/上限)",
     "colUsageTotal": "累積 (Web/MCP)",
-    "colLimitUnlimited": "∞"
+    "colLimitUnlimited": "∞",
+    "tabConversionReports": "免費轉換報告",
+    "conversionReportsEmpty": "尚無免費轉換報告。每日批次 (summarize_user_conversion.js) 產生後即會顯示。",
+    "convChartAlt": "訪客轉免費會員漏斗圖表",
+    "convSearches": "搜尋使用",
+    "convLimitReached": "達到上限",
+    "convSignups": "免費註冊",
+    "convCvrLimitReached": "搜尋→達上限 CVR",
+    "convCvrSignUp": "達上限→註冊 CVR",
+    "convTrendTitle": "近30天趨勢（{days}天）"
   },
   "LandingPage": {
     "navAppLink": "開啟應用",

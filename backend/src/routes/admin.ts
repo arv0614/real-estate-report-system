@@ -299,6 +299,46 @@ app.get("/seo-reports", async (c) => {
 });
 
 /**
+ * GET /api/admin/conversion-reports
+ * Firestore `conversion_reports` コレクションを date 降順で直近 N 件返す。
+ * 各ドキュメントは scripts/summarize_user_conversion.js が日次で保存する。
+ * フィールド: date (string "YYYY-MM-DD"), summary (string), chartUrl (string),
+ *            metrics (map: searches, limitReached, signups, cvrLimitReached, cvrSignUp),
+ *            createdAt (Timestamp)
+ * コレクション未作成でも 500 を返さずフォールバック（空配列）。
+ */
+app.get("/conversion-reports", async (c) => {
+  const LIMIT = 30;
+  try {
+    const snap = await db
+      .collection("conversion_reports")
+      .orderBy("date", "desc")
+      .limit(LIMIT)
+      .get()
+      .catch(() => null);
+
+    const docs = snap ? snap.docs : [];
+    const reports = docs.map((doc) => {
+      const data = doc.data();
+      const createdAt = data.createdAt as admin.firestore.Timestamp | undefined;
+      return {
+        id: doc.id,
+        date: (data.date as string | undefined) ?? doc.id,
+        summary: (data.summary as string | undefined) ?? "",
+        chartUrl: (data.chartUrl as string | undefined) ?? null,
+        metrics: (data.metrics as Record<string, number> | undefined) ?? {},
+        createdAt: createdAt ? createdAt.toDate().toISOString() : null,
+      };
+    });
+
+    return c.json({ reports, count: reports.length });
+  } catch (err) {
+    console.error("[Admin] conversion_reports 読み取り失敗:", err);
+    return c.json({ error: "Failed to load conversion reports" }, 500);
+  }
+});
+
+/**
  * GET /api/admin/x-promotions
  * Firestore `social_templates` コレクションから X 投稿テンプレートを返す。
  *

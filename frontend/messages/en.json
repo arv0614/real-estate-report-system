@@ -860,7 +860,16 @@
     "colWebToday": "Web today (used/limit)",
     "colMcpToday": "MCP today (used/limit)",
     "colUsageTotal": "Total (Web/MCP)",
-    "colLimitUnlimited": "∞"
+    "colLimitUnlimited": "∞",
+    "tabConversionReports": "Free Conversion Report",
+    "conversionReportsEmpty": "No conversion reports yet. They appear once the daily batch (summarize_user_conversion.js) runs.",
+    "convChartAlt": "Guest-to-free conversion funnel chart",
+    "convSearches": "Searches",
+    "convLimitReached": "Limit reached",
+    "convSignups": "Sign-ups",
+    "convCvrLimitReached": "Search→Limit CVR",
+    "convCvrSignUp": "Limit→Signup CVR",
+    "convTrendTitle": "30-Day Trend ({days} days)"
   },
   "LandingPage": {
     "navAppLink": "Open app",

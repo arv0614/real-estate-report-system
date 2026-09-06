@@ -9,6 +9,7 @@ import { auth } from "@/lib/firebase";
 import { useAuth } from "@/lib/useAuth";
 import { getApiBase } from "@/lib/api";
 import { AdTrendChart } from "@/components/AdTrendChart";
+import { ConversionTrendChart } from "@/components/ConversionTrendChart";
 
 type FeedbackItem = {
   id: string;
@@ -88,6 +89,15 @@ type AdReportItem = {
   createdAt: string | null;
 };
 
+type ConversionReportItem = {
+  id: string;
+  date: string;
+  summary: string;
+  chartUrl: string | null;
+  metrics: Record<string, number>;
+  createdAt: string | null;
+};
+
 type SeoPatternGroup = {
   themes?: string[];
   areas?: string[];
@@ -130,7 +140,7 @@ const TEMPLATES_PAGE_SIZE = 10;
 type TemplatesSort = "newest" | "oldest";
 const TEMPLATES_SORT_OPTIONS: TemplatesSort[] = ["newest", "oldest"];
 
-type TabKey = "feedbacks" | "users" | "social" | "ad-reports" | "seo-reports";
+type TabKey = "feedbacks" | "users" | "social" | "ad-reports" | "seo-reports" | "conversion-reports";
 
 type LoadState<T> =
   | { kind: "loading" }
@@ -216,6 +226,9 @@ export default function AdminClient() {
   const [postsState, setPostsState] = useState<LoadState<SocialPostItem>>({ kind: "loading" });
   const [adReportsState, setAdReportsState] = useState<LoadState<AdReportItem>>({ kind: "loading" });
   const [seoReportsState, setSeoReportsState] = useState<LoadState<SeoReportItem>>({ kind: "loading" });
+  const [conversionReportsState, setConversionReportsState] = useState<LoadState<ConversionReportItem>>({
+    kind: "loading",
+  });
   const [templatesState, setTemplatesState] = useState<TemplatesState>({ kind: "loading" });
   const [templatesPage, setTemplatesPage] = useState(1);
   const [templatesSearch, setTemplatesSearch] = useState("");
@@ -240,6 +253,12 @@ export default function AdminClient() {
   const loadSeoReports = useCallback(async () => {
     setSeoReportsState({ kind: "loading" });
     setSeoReportsState(await fetchAdmin<SeoReportItem>("/api/admin/seo-reports", "reports"));
+  }, []);
+  const loadConversionReports = useCallback(async () => {
+    setConversionReportsState({ kind: "loading" });
+    setConversionReportsState(
+      await fetchAdmin<ConversionReportItem>("/api/admin/conversion-reports", "reports")
+    );
   }, []);
   const loadTemplates = useCallback(async (page: number, search: string, sort: TemplatesSort) => {
     setTemplatesState({ kind: "loading" });
@@ -308,6 +327,7 @@ export default function AdminClient() {
     if (tab === "social" && postsState.kind === "loading") loadPosts();
     if (tab === "ad-reports" && adReportsState.kind === "loading") loadAdReports();
     if (tab === "seo-reports" && seoReportsState.kind === "loading") loadSeoReports();
+    if (tab === "conversion-reports" && conversionReportsState.kind === "loading") loadConversionReports();
   }, [
     tab,
     user,
@@ -315,10 +335,12 @@ export default function AdminClient() {
     postsState.kind,
     adReportsState.kind,
     seoReportsState.kind,
+    conversionReportsState.kind,
     loadUsers,
     loadPosts,
     loadAdReports,
     loadSeoReports,
+    loadConversionReports,
   ]);
 
   // テンプレートはページ/検索/ソートが変わったときに再取得（デバウンス）
@@ -336,6 +358,7 @@ export default function AdminClient() {
     else if (tab === "users") loadUsers();
     else if (tab === "ad-reports") loadAdReports();
     else if (tab === "seo-reports") loadSeoReports();
+    else if (tab === "conversion-reports") loadConversionReports();
     else {
       loadPosts();
       loadTemplates(templatesPage, templatesSearch, templatesSort);
@@ -392,7 +415,9 @@ export default function AdminClient() {
           ? adReportsState
           : tab === "seo-reports"
             ? seoReportsState
-            : postsState;
+            : tab === "conversion-reports"
+              ? conversionReportsState
+              : postsState;
 
   if (activeState.kind === "forbidden") {
     return (
@@ -433,6 +458,12 @@ export default function AdminClient() {
           <TabButton current={tab} value="social" onClick={setTab} label={t("tabSocialPosts")} />
           <TabButton current={tab} value="ad-reports" onClick={setTab} label={t("tabAdReports")} />
           <TabButton current={tab} value="seo-reports" onClick={setTab} label={t("tabSeoReports")} />
+          <TabButton
+            current={tab}
+            value="conversion-reports"
+            onClick={setTab}
+            label={t("tabConversionReports")}
+          />
         </div>
 
         {activeState.kind === "loading" && (
@@ -466,6 +497,11 @@ export default function AdminClient() {
         )}
         {activeState.kind === "ok" && tab === "seo-reports" && (
           <SeoReportsList items={seoReportsState.kind === "ok" ? seoReportsState.items : []} />
+        )}
+        {activeState.kind === "ok" && tab === "conversion-reports" && (
+          <ConversionReportsList
+            items={conversionReportsState.kind === "ok" ? conversionReportsState.items : []}
+          />
         )}
         {activeState.kind === "ok" && tab === "social" && (
           <SocialPostsList
@@ -586,6 +622,81 @@ function AdReportCard({ report }: { report: AdReportItem }) {
         <img
           src={report.chartUrl}
           alt={t("adChartAlt")}
+          loading="lazy"
+          className="w-full rounded-lg border border-slate-100 bg-white mb-3"
+        />
+      )}
+
+      {report.summary && (
+        <pre className="text-xs text-slate-700 whitespace-pre-wrap break-words bg-slate-50 rounded-lg px-3 py-2 border border-slate-100 leading-relaxed font-sans">
+          {report.summary}
+        </pre>
+      )}
+    </div>
+  );
+}
+
+// ─── 無料転換レポート（ゲスト→Free ファネル）───────────────────
+function ConversionReportsList({ items }: { items: ConversionReportItem[] }) {
+  const t = useTranslations("Admin");
+  if (items.length === 0) {
+    return (
+      <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-sm text-slate-500">
+        {t("conversionReportsEmpty")}
+      </div>
+    );
+  }
+  return (
+    <>
+      <ConversionTrendChart items={items} />
+      <div className="mb-4 text-xs text-slate-500">{t("adReportsCountLabel", { count: items.length })}</div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {items.map((r) => (
+          <ConversionReportCard key={r.id} report={r} />
+        ))}
+      </div>
+    </>
+  );
+}
+
+function ConversionReportCard({ report }: { report: ConversionReportItem }) {
+  const t = useTranslations("Admin");
+  const m = report.metrics ?? {};
+  const chips: { label: string; value: string }[] = [
+    { label: t("convSearches"), value: String(m.searches ?? 0) },
+    { label: t("convLimitReached"), value: String(m.limitReached ?? 0) },
+    { label: t("convSignups"), value: String(m.signups ?? 0) },
+    { label: t("convCvrLimitReached"), value: formatPct(m.cvrLimitReached) },
+    { label: t("convCvrSignUp"), value: formatPct(m.cvrSignUp) },
+  ];
+  return (
+    <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 flex flex-col">
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <h3 className="text-sm font-bold text-slate-800 font-mono">{report.date}</h3>
+        {report.createdAt && (
+          <time className="text-[10px] text-slate-400" suppressHydrationWarning>
+            {formatDate(report.createdAt)}
+          </time>
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-1.5 mb-3">
+        {chips.map((c) => (
+          <span
+            key={c.label}
+            className="inline-flex items-baseline gap-1 text-[11px] bg-slate-50 border border-slate-200 rounded px-2 py-0.5"
+          >
+            <span className="text-slate-500">{c.label}</span>
+            <span className="font-semibold text-slate-800">{c.value}</span>
+          </span>
+        ))}
+      </div>
+
+      {report.chartUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={report.chartUrl}
+          alt={t("convChartAlt")}
           loading="lazy"
           className="w-full rounded-lg border border-slate-100 bg-white mb-3"
         />
