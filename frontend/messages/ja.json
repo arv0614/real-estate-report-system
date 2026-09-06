@@ -986,6 +986,25 @@
     "copyBtn": "コピー",
     "copiedBtn": "コピーしました",
     "errorGeneric": "提案の生成に失敗しました。しばらく後にお試しください。",
-    "errorValidation": "顧客のライフスタイルと予算の両方を入力してください。"
+    "errorValidation": "顧客のライフスタイル・予算・対象エリアをすべて入力してください。",
+    "backToTop": "Mekiki Research TOPへ戻る",
+    "presetLabel": "よくある条件から追加",
+    "presetPlaceholder": "＋ 条件を選んで追加...",
+    "preset1": "夫婦2人・リモートワーク中心",
+    "preset2": "ファミリー（子育て中）・車あり",
+    "preset3": "ファミリー（子育て中）・車なし",
+    "preset4": "シングル・通勤重視",
+    "preset5": "シニア世代・静かな環境希望",
+    "preset6": "DINKs（共働き・子なし）・利便性重視",
+    "targetAreaLabel": "対象の広域エリア",
+    "targetAreaPlaceholder": "選択してください",
+    "areaTokyo23": "東京23区",
+    "areaTokyoOutskirts": "東京都下",
+    "areaKanagawa": "神奈川県",
+    "areaChiba": "千葉県",
+    "areaSaitama": "埼玉県",
+    "areaKansai": "関西エリア",
+    "areaOther": "その他",
+    "viewDetailsBtn": "このエリアの相場・ハザード詳細を見る"
   }
 }

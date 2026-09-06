@@ -986,6 +986,25 @@
     "copyBtn": "复制",
     "copiedBtn": "已复制",
     "errorGeneric": "提案生成失败，请稍后再试。",
-    "errorValidation": "请同时输入客户的生活方式与预算。"
+    "errorValidation": "请同时输入客户的生活方式、预算与目标区域。",
+    "backToTop": "返回 Mekiki Research 首页",
+    "presetLabel": "从常见条件添加",
+    "presetPlaceholder": "＋ 选择条件并添加...",
+    "preset1": "夫妻两人・以远程办公为主",
+    "preset2": "育儿家庭・有车",
+    "preset3": "育儿家庭・无车",
+    "preset4": "单身・重视通勤",
+    "preset5": "银发族・希望安静环境",
+    "preset6": "丁克族（双薪无子）・重视便利性",
+    "targetAreaLabel": "目标的广域区域",
+    "targetAreaPlaceholder": "请选择",
+    "areaTokyo23": "东京23区",
+    "areaTokyoOutskirts": "东京都下（多摩地区等）",
+    "areaKanagawa": "神奈川县",
+    "areaChiba": "千叶县",
+    "areaSaitama": "埼玉县",
+    "areaKansai": "关西地区",
+    "areaOther": "其他",
+    "viewDetailsBtn": "查看此区域的行情・灾害风险详情"
   }
 }

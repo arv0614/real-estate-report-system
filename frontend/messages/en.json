@@ -986,6 +986,25 @@
     "copyBtn": "Copy",
     "copiedBtn": "Copied",
     "errorGeneric": "Failed to generate the proposal. Please try again later.",
-    "errorValidation": "Please fill in both the client lifestyle and budget fields."
+    "errorValidation": "Please fill in the client lifestyle, budget, and target area fields.",
+    "backToTop": "Back to Mekiki Research",
+    "presetLabel": "Add a common profile",
+    "presetPlaceholder": "+ Pick a preset to add...",
+    "preset1": "Couple, remote-first",
+    "preset2": "Family with kids, has a car",
+    "preset3": "Family with kids, no car",
+    "preset4": "Single, commute-focused",
+    "preset5": "Senior, wants a quiet area",
+    "preset6": "DINKs (dual income, no kids), convenience-focused",
+    "targetAreaLabel": "Target broad area",
+    "targetAreaPlaceholder": "Select an area",
+    "areaTokyo23": "Tokyo 23 Wards",
+    "areaTokyoOutskirts": "Tokyo (outside 23 wards)",
+    "areaKanagawa": "Kanagawa",
+    "areaChiba": "Chiba",
+    "areaSaitama": "Saitama",
+    "areaKansai": "Kansai area",
+    "areaOther": "Other",
+    "viewDetailsBtn": "View market data & hazard details for this area"
   }
 }

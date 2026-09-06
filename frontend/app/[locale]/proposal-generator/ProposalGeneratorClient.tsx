@@ -2,21 +2,39 @@
 
 import { useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
+import Link from "next/link";
 import { auth } from "@/lib/firebase";
 import { useAuth } from "@/lib/useAuth";
 import { getApiBase } from "@/lib/api";
 import { gtagEvent } from "@/lib/gtag";
 import { PlanComparisonModal } from "@/components/PlanComparisonModal";
+import BlogMiniMapWrapper from "@/components/blog/BlogMiniMapWrapper";
 
 interface ProposalArea {
   areaName: string;
   reasons: string[];
   salesScript: string;
   catchcopy: string;
+  lat: number;
+  lng: number;
 }
 
 const MAX_TARGET_PROFILE = 1000;
 const MAX_BUDGET = 300;
+
+/** 「よくある条件」プリセット。選択するとテキストエリアに追記される（自由記述と併用可）。 */
+const PRESET_KEYS = ["preset1", "preset2", "preset3", "preset4", "preset5", "preset6"] as const;
+
+/** 対象の広域エリア。バックエンドにはここで選ばれたラベルをそのまま送信する。 */
+const TARGET_AREA_KEYS = [
+  "areaTokyo23",
+  "areaTokyoOutskirts",
+  "areaKanagawa",
+  "areaChiba",
+  "areaSaitama",
+  "areaKansai",
+  "areaOther",
+] as const;
 
 export default function ProposalGeneratorClient() {
   const t = useTranslations("ProposalGenerator");
@@ -25,18 +43,32 @@ export default function ProposalGeneratorClient() {
 
   const [targetProfile, setTargetProfile] = useState("");
   const [budget, setBudget] = useState("");
+  const [targetArea, setTargetArea] = useState("");
   const [areas, setAreas] = useState<ProposalArea[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [planModalOpen, setPlanModalOpen] = useState(false);
 
   const isPro = plan === "pro";
+  const homeHref = locale === "en" ? "/en" : "/";
+
+  /** プリセットを選ぶとテキストエリアに追記する（自由記述を上書きしない）。選択後は毎回リセットして再選択可能にする。 */
+  function handlePresetSelect(e: React.ChangeEvent<HTMLSelectElement>) {
+    const value = e.target.value;
+    if (!value) return;
+    setTargetProfile((prev) => {
+      const trimmed = prev.trim();
+      const next = !trimmed ? value : trimmed.includes(value) ? prev : `${trimmed}、${value}`;
+      return next.slice(0, MAX_TARGET_PROFILE);
+    });
+    e.target.value = "";
+  }
 
   async function handleGenerate(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
-    if (!targetProfile.trim() || !budget.trim()) {
+    if (!targetProfile.trim() || !budget.trim() || !targetArea) {
       setError(t("errorValidation"));
       return;
     }
@@ -69,6 +101,7 @@ export default function ProposalGeneratorClient() {
         body: JSON.stringify({
           targetProfile: targetProfile.trim(),
           budget: budget.trim(),
+          targetArea,
           locale: locale === "en" ? "en" : "ja",
         }),
       });
@@ -89,6 +122,20 @@ export default function ProposalGeneratorClient() {
 
   return (
     <main className="min-h-screen bg-slate-50">
+      {/* 迷子防止: TOPへ戻る導線 */}
+      <div className="bg-white border-b border-slate-200">
+        <div className="max-w-6xl mx-auto px-4 py-3">
+          <Link
+            href={homeHref}
+            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo_mekiki_research.png" alt="" className="h-7 w-7 object-contain" />
+            <span>{t("backToTop")}</span>
+          </Link>
+        </div>
+      </div>
+
       <div className="max-w-6xl mx-auto px-4 py-8 sm:py-12">
         <header className="mb-8 max-w-3xl">
           <div className="flex items-center gap-2 mb-2">
@@ -119,9 +166,26 @@ export default function ProposalGeneratorClient() {
                 rows={5}
                 className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-400"
               />
-              <span className="block mt-1 text-[11px] text-slate-400 text-right">
-                {targetProfile.length}/{MAX_TARGET_PROFILE}
-              </span>
+              <div className="mt-1.5 flex items-center justify-between gap-2">
+                <select
+                  defaultValue=""
+                  onChange={handlePresetSelect}
+                  aria-label={t("presetLabel")}
+                  className="text-xs border border-slate-300 rounded-lg px-2 py-1.5 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                >
+                  <option value="" disabled>
+                    {t("presetPlaceholder")}
+                  </option>
+                  {PRESET_KEYS.map((key) => (
+                    <option key={key} value={t(key)}>
+                      {t(key)}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-[11px] text-slate-400 shrink-0">
+                  {targetProfile.length}/{MAX_TARGET_PROFILE}
+                </span>
+              </div>
             </label>
 
             <label className="block">
@@ -135,6 +199,26 @@ export default function ProposalGeneratorClient() {
                 placeholder={t("budgetPlaceholder")}
                 className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-400"
               />
+            </label>
+
+            <label className="block">
+              <span className="block text-sm font-semibold text-slate-700 mb-1.5">
+                {t("targetAreaLabel")}
+              </span>
+              <select
+                value={targetArea}
+                onChange={(e) => setTargetArea(e.target.value)}
+                className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-400"
+              >
+                <option value="" disabled>
+                  {t("targetAreaPlaceholder")}
+                </option>
+                {TARGET_AREA_KEYS.map((key) => (
+                  <option key={key} value={t(key)}>
+                    {t(key)}
+                  </option>
+                ))}
+              </select>
             </label>
 
             {error && (
@@ -173,7 +257,7 @@ export default function ProposalGeneratorClient() {
             ) : areas && areas.length > 0 ? (
               <div className="space-y-4">
                 {areas.map((area, i) => (
-                  <ProposalAreaCard key={`${area.areaName}-${i}`} area={area} t={t} />
+                  <ProposalAreaCard key={`${area.areaName}-${i}`} area={area} t={t} locale={locale} />
                 ))}
               </div>
             ) : (
@@ -200,11 +284,18 @@ export default function ProposalGeneratorClient() {
 function ProposalAreaCard({
   area,
   t,
+  locale,
 }: {
   area: ProposalArea;
   t: ReturnType<typeof useTranslations>;
+  locale: string;
 }) {
   const [copied, setCopied] = useState(false);
+  const hasCoords =
+    typeof area.lat === "number" &&
+    typeof area.lng === "number" &&
+    Number.isFinite(area.lat) &&
+    Number.isFinite(area.lng);
 
   async function copyAll() {
     const text = [
@@ -241,6 +332,16 @@ function ProposalAreaCard({
         </button>
       </div>
 
+      {/* 位置関係を視覚化する小さな地図（駅名だけでは掴みにくいエリア感を補う） */}
+      {hasCoords && (
+        <div className="mb-4">
+          <BlogMiniMapWrapper
+            primaryLocation={{ lat: area.lat, lng: area.lng, name: area.areaName }}
+            zoom={13}
+          />
+        </div>
+      )}
+
       <div className="mb-4">
         <p className="text-xs font-bold text-slate-500 mb-1.5">{t("reasonsLabel")}</p>
         <ul className="space-y-1">
@@ -260,12 +361,25 @@ function ProposalAreaCard({
         </p>
       </div>
 
-      <div>
+      <div className="mb-4">
         <p className="text-xs font-bold text-slate-500 mb-1.5">{t("catchcopyLabel")}</p>
         <p className="text-base font-bold text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2.5">
           {area.catchcopy}
         </p>
       </div>
+
+      {/* トップページの分析機能（取引価格・ハザード等）へ別タブで遷移 */}
+      {hasCoords && (
+        <a
+          href={`${locale === "en" ? "/en" : ""}/?lat=${area.lat}&lng=${area.lng}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-colors"
+        >
+          {t("viewDetailsBtn")}
+          <span aria-hidden>↗</span>
+        </a>
+      )}
     </div>
   );
 }

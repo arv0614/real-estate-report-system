@@ -510,6 +510,8 @@ export interface CustomerProposalInput {
   targetProfile: string;
   /** 予算等の条件（例: 4000万円台, 駅徒歩10分以内） */
   budget: string;
+  /** 対象の広域エリア（例: 東京23区, 東京都下, 神奈川県, 千葉県, 埼玉県, 関西エリア, その他） */
+  targetArea: string;
   locale?: string;
 }
 
@@ -518,6 +520,10 @@ export interface ProposalArea {
   reasons: string[];
   salesScript: string;
   catchcopy: string;
+  /** 提案エリア（代表的な駅など）のおおよその緯度 */
+  lat: number;
+  /** 提案エリア（代表的な駅など）のおおよその経度 */
+  lng: number;
 }
 
 export interface CustomerProposalResult {
@@ -553,8 +559,16 @@ const CUSTOMER_PROPOSAL_SCHEMA: ResponseSchema = {
             type: SchemaType.STRING,
             description: "チラシ・マイソク（物件概要書）用のキャッチコピー（1文、20〜40字程度）",
           },
+          lat: {
+            type: SchemaType.NUMBER,
+            description: "提案エリアの代表地点（最寄り駅など）のおおよその緯度（10進数、例: 35.6895）",
+          },
+          lng: {
+            type: SchemaType.NUMBER,
+            description: "提案エリアの代表地点（最寄り駅など）のおおよその経度（10進数、例: 139.6917）",
+          },
         },
-        required: ["areaName", "reasons", "salesScript", "catchcopy"],
+        required: ["areaName", "reasons", "salesScript", "catchcopy", "lat", "lng"],
       },
     },
   },
@@ -571,7 +585,11 @@ ${input.targetProfile}
 【予算・条件】
 ${input.budget}
 
-上記の条件に適した「穴場」エリアを、根拠のある形で最大3つ提案してください。知名度だけが高い人気エリアではなく、
+【対象の広域エリア】
+${input.targetArea}
+
+上記の広域エリアの範囲内で、顧客の条件に適した「穴場」エリアを、根拠のある形で最大3つ提案してください。
+指定された広域エリアの外は提案しないでください。知名度だけが高い人気エリアではなく、
 顧客の条件（ライフスタイル・予算）に照らして合理的な「狙い目」のエリアを優先してください。
 
 各エリアについて、以下を作成してください。
@@ -579,6 +597,8 @@ ${input.budget}
 - reasons: そのエリアを推薦する具体的な理由（利便性・価格帯・住環境・将来性など、顧客の条件と関連付けて記述）
 - salesScript: 営業担当がそのまま顧客に話せる提案トーク
 - catchcopy: チラシ・マイソクに使えるキャッチコピー
+- lat / lng: 提案するエリア（代表的な駅など）のおおよその緯度・経度を必ず数値で出力すること（分からない場合も
+  一般的に知られている地理情報から可能な限り正確な推定値を出力し、絶対に省略しないこと）
 
 出力は指定のJSONスキーマに厳密に従い、日本語で記述してください。誇大広告や「確実に値上がりする」等の断定的な将来予測は避け、
 根拠を示しながら訴求力のある文章にしてください。`;
@@ -594,14 +614,20 @@ ${input.targetProfile}
 **Budget / conditions**
 ${input.budget}
 
-Based on the above, recommend up to 3 well-reasoned "hidden gem" areas — prioritise areas that are a rational fit for the
-client's stated lifestyle and budget over areas that are merely famous or popular.
+**Target broad area**
+${input.targetArea}
+
+Within that broad area only, recommend up to 3 well-reasoned "hidden gem" areas — prioritise areas that are a rational
+fit for the client's stated lifestyle and budget over areas that are merely famous or popular. Do not suggest areas
+outside the specified broad area.
 
 For each area, produce:
 - areaName: the area name
 - reasons: specific, evidence-based reasons to recommend it (convenience, price range, living environment, future outlook, etc.), tied to the client's stated conditions
 - salesScript: a sales pitch the agent can read aloud to the client as-is
 - catchcopy: a short catchphrase suitable for a flyer / property summary sheet
+- lat / lng: you MUST output the approximate latitude/longitude of the recommended area (e.g. its representative
+  station) as numbers. Never omit these — provide your best geographic estimate even if uncertain.
 
 Follow the given JSON schema strictly and write in English. Avoid exaggerated claims or definitive predictions of future
 price increases; keep the copy persuasive but grounded in the stated reasons.`;
@@ -629,7 +655,9 @@ export async function generateCustomerProposal(
   });
 
   const prompt = input.locale === "en" ? buildProposalPromptEn(input) : buildProposalPromptJa(input);
-  console.log(`[Gemini] 顧客提案生成開始: profileLen=${input.targetProfile.length}, budgetLen=${input.budget.length}`);
+  console.log(
+    `[Gemini] 顧客提案生成開始: profileLen=${input.targetProfile.length}, budgetLen=${input.budget.length}, targetArea=${input.targetArea}`
+  );
 
   const result = await model.generateContent(prompt);
   const text = result.response.text();

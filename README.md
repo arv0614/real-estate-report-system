@@ -194,7 +194,12 @@ node scripts/prepare-hoanrin.mjs --input-dir=/path/to/A13-by-pref/
 推薦理由・そのまま使える営業トーク・チラシ/マイソク用キャッチコピーを構造化 JSON で生成する。
 
 - **画面**: `/[locale]/proposal-generator`（`ProposalGeneratorClient.tsx`）。左に条件入力フォーム、右に結果表示。
-  ヘッダーのナビゲーションリンク（`Header.proposalLink`）から誰でも導線に入れる。
+  ヘッダーのナビゲーションリンク（`Header.proposalLink`）から誰でも導線に入れる。ページ上部に
+  「Mekiki Research TOPへ戻る」リンク（ロゴ付き）を常設し、迷子防止の導線を確保。
+- **入力フォーム**: 「顧客のライフスタイル・要望」欄は自由記述＋「よくある条件」プリセット（プルダウンで
+  選ぶとテキストへ追記、複数回選択可）の併用。加えて「対象の広域エリア」（東京23区/東京都下/神奈川県/
+  千葉県/埼玉県/関西エリア/その他）をプルダウンで指定し、`targetArea` としてバックエンドに送信、
+  Gemini にはその広域エリア内のみを提案するよう指示する。
 - **ペイウォール**: ゲスト・Free でもフォーム入力とボタン押下は可能。押すとバックエンドを呼ばずに
   `PlanComparisonModal`（アップグレードモーダル）を表示し、右側にはブラー処理した固定サンプル結果＋
   ロック解除オーバーレイを常時表示する（実データではなく `ProposalGenerator.sample*` の固定文言）。
@@ -203,7 +208,12 @@ node scripts/prepare-hoanrin.mjs --input-dir=/path/to/A13-by-pref/
   （フロントの表示制御とは独立にバックエンドでも必ず検証）。IPベースで1時間20件のレート制限。
 - **Gemini 呼び出し**: `generateCustomerProposal()`（`backend/src/services/geminiApi.ts`）。
   `responseMimeType: "application/json"` + `responseSchema` で JSON 出力を強制するため、
-  Markdown コードフェンス等の後処理は不要。`locale` により日本語/英語のプロンプトを切替。
+  Markdown コードフェンス等の後処理は不要。`locale` により日本語/英語のプロンプトを切替。各エリアの
+  オブジェクトには `areaName` / `reasons` / `salesScript` / `catchcopy` に加え `lat` / `lng`
+  （代表地点のおおよその緯度経度、必須項目としてプロンプトで明示指示）を含める。
+- **結果カード**: `lat`/`lng` を使い `BlogMiniMapWrapper`（MapLibre、`components/blog/`配下を流用）で
+  位置関係を可視化する小さな地図を表示。「このエリアの相場・ハザード詳細を見る」ボタンから
+  `/?lat=&lng=` 形式でトップページの分析機能（取引価格・ハザード等）へ別タブ遷移できる。
 
 ### GA4 イベント一覧（全量）
 

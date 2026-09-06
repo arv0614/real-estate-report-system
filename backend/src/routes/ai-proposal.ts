@@ -33,6 +33,7 @@ app.use(
 const bodySchema = z.object({
   targetProfile: z.string().trim().min(1).max(1000),
   budget: z.string().trim().min(1).max(300),
+  targetArea: z.string().trim().min(1).max(50),
   locale: z.enum(["ja", "en"]).optional(),
 });
 

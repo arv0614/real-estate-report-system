@@ -986,6 +986,25 @@
     "copyBtn": "複製",
     "copiedBtn": "已複製",
     "errorGeneric": "提案生成失敗，請稍後再試。",
-    "errorValidation": "請同時輸入顧客的生活型態與預算。"
+    "errorValidation": "請同時輸入顧客的生活型態、預算與對象區域。",
+    "backToTop": "返回 Mekiki Research 首頁",
+    "presetLabel": "從常見條件新增",
+    "presetPlaceholder": "＋ 選擇條件並新增...",
+    "preset1": "夫妻兩人・以遠端工作為主",
+    "preset2": "育兒家庭・有車",
+    "preset3": "育兒家庭・無車",
+    "preset4": "單身・重視通勤",
+    "preset5": "銀髮族・希望安靜環境",
+    "preset6": "頂客族（雙薪無子）・重視便利性",
+    "targetAreaLabel": "對象的廣域區域",
+    "targetAreaPlaceholder": "請選擇",
+    "areaTokyo23": "東京23區",
+    "areaTokyoOutskirts": "東京都下（多摩地區等）",
+    "areaKanagawa": "神奈川縣",
+    "areaChiba": "千葉縣",
+    "areaSaitama": "埼玉縣",
+    "areaKansai": "關西地區",
+    "areaOther": "其他",
+    "viewDetailsBtn": "查看此區域的行情・災害風險詳情"
   }
 }
