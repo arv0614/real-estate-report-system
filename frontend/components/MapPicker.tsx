@@ -64,10 +64,8 @@ export function MapPicker({ lat, lng, onChange, districtMarkers = [], readOnly =
       className="rounded-lg border border-slate-200"
     >
       <TileLayer
-        attribution='&copy; <a href="https://carto.com/about-carto/" target="_blank" rel="noopener">CARTO</a>, &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
-        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-        subdomains="abcd"
-        detectRetina
+        attribution='&copy; <a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院</a>'
+        url="https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png"
       />
       <MapController lat={lat} lng={lng} />
       {!readOnly && <ClickHandler onChange={onChange} />}
