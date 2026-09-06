@@ -11,7 +11,8 @@
     "guestBadge": "訪客",
     "langSwitch": "EN",
     "upgradeBtn": "升級至 Pro",
-    "menuLabel": "選單"
+    "menuLabel": "選單",
+    "proposalLink": "AI 客戶提案"
   },
   "Bookmarks": {
     "save": "收藏(☆)",
@@ -953,5 +954,38 @@
     "clientsTitle": "支援的用戶端",
     "clientsBody": "目前已完整支援 Claude Desktop 與 ChatGPT (GPTs)。※Gemini 網頁版正在等待官方更新。",
     "noCodeBanner": "不需要程式知識。只要複製下方文字並貼上即可。"
+  },
+  "ProposalGenerator": {
+    "metaTitle": "AI 客戶提案產生器 | 物件目利研究",
+    "metaDescription": "只需輸入顧客的生活型態，AI 就能提出口袋名單區域、業務話術與宣傳文案（限 Pro 方案）。",
+    "pageTitle": "AI 客戶提案產生器",
+    "pageSubtitle": "只需輸入顧客的生活型態與預算，AI 就能生成推薦的口袋名單區域，以及可直接使用的業務話術與宣傳文案。",
+    "formTitle": "輸入顧客條件",
+    "targetProfileLabel": "顧客的生活型態・需求",
+    "targetProfilePlaceholder": "例: 夫妻兩人, 一週遠端工作3天, 無車, 計劃生小孩",
+    "budgetLabel": "預算・條件",
+    "budgetPlaceholder": "例: 4000萬日圓左右, 車站徒步10分鐘內, 希望新成屋",
+    "generateBtn": "以 AI 產生提案",
+    "generatingBtn": "生成中...",
+    "resultsTitle": "提案結果",
+    "emptyStateTitle": "請在左側表單輸入條件",
+    "emptyStateBody": "輸入顧客的生活型態與預算後，按下「以 AI 產生提案」即可看到推薦區域。",
+    "sampleBadge": "範例",
+    "sampleAreaName": "東京都〇〇區",
+    "sampleReason1": "雖然距車站徒步12分鐘，但因再開發計畫，未來便利性可望提升",
+    "sampleReason2": "同條件物件行情比鄰近車站便宜約一成",
+    "sampleReason3": "步行範圍內有多所小學・幼兒園，適合育兒家庭",
+    "sampleSalesScript": "這個區域雖然沿線再開發正在推進之中，但價格目前仍相對親民，對貴府的生活型態來說可說是絕佳的口袋名單。",
+    "sampleCatchcopy": "「尚未被發現、即將崛起的城鎮」",
+    "unlockOverlayTitle": "此功能僅限 Pro 方案使用",
+    "unlockOverlayBody": "升級至 Pro 方案，即可無限次生成針對個別顧客客製化的 AI 提案（口袋名單區域・業務話術・宣傳文案）。",
+    "unlockOverlayBtn": "查看 Pro 方案",
+    "reasonsLabel": "推薦理由",
+    "salesScriptLabel": "業務話術",
+    "catchcopyLabel": "宣傳文案",
+    "copyBtn": "複製",
+    "copiedBtn": "已複製",
+    "errorGeneric": "提案生成失敗，請稍後再試。",
+    "errorValidation": "請同時輸入顧客的生活型態與預算。"
   }
 }

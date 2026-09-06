@@ -647,6 +647,13 @@ function HomePageContent() {
           >
             {t("Header.blogLink")}
           </Link>
+          {/* AI顧客提案ジェネレーター（Pro限定機能への導線。ゲスト/Freeにも見せてペイウォールで訴求する） */}
+          <Link
+            href={`${locale === "en" ? "/en" : ""}/proposal-generator`}
+            className="hidden sm:inline-flex text-xs px-3 py-1.5 rounded border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors font-semibold"
+          >
+            {t("Header.proposalLink")}
+          </Link>
           {/* Free ユーザー向けアップグレードボタン */}
           {!planLoading && plan === "free" && (
             <button
@@ -816,6 +823,13 @@ function HomePageContent() {
               className="block px-3 py-2.5 rounded-lg text-sm text-slate-700 hover:bg-slate-50 transition-colors"
             >
               {t("Header.blogLink")}
+            </Link>
+            <Link
+              href={`${locale === "en" ? "/en" : ""}/proposal-generator`}
+              onClick={() => setMobileMenuOpen(false)}
+              className="block px-3 py-2.5 rounded-lg text-sm text-amber-700 font-semibold hover:bg-amber-50 transition-colors"
+            >
+              {t("Header.proposalLink")}
             </Link>
             {user && (
               <Link

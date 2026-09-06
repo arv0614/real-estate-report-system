@@ -11,7 +11,8 @@
     "guestBadge": "Guest",
     "langSwitch": "EN",
     "upgradeBtn": "Pro にアップグレード",
-    "menuLabel": "メニュー"
+    "menuLabel": "メニュー",
+    "proposalLink": "AI顧客提案"
   },
   "Bookmarks": {
     "save": "保存する（☆）",
@@ -953,5 +954,38 @@
     "clientsTitle": "対応クライアント",
     "clientsBody": "現在は Claude Desktop と ChatGPT (GPTs) に完全対応しています。※Gemini Web版は公式側のアップデート待ちです。",
     "noCodeBanner": "プログラミング知識は不要です。以下のテキストをコピーして貼り付けるだけです。"
+  },
+  "ProposalGenerator": {
+    "metaTitle": "AI顧客提案ジェネレーター | 物件目利きリサーチ",
+    "metaDescription": "顧客のライフスタイルを入力するだけで、AIが穴場エリアと営業トーク・キャッチコピーを提案します（Proプラン限定）。",
+    "pageTitle": "AI顧客提案ジェネレーター",
+    "pageSubtitle": "顧客のライフスタイルを入力するだけで、おすすめの穴場エリアとそのまま使える営業トーク・キャッチコピーをAIが生成します。",
+    "formTitle": "顧客条件を入力",
+    "targetProfileLabel": "顧客のライフスタイル・要望",
+    "targetProfilePlaceholder": "例: 夫婦2人, 週3日リモートワーク, 車なし, 子育て予定あり",
+    "budgetLabel": "予算・条件",
+    "budgetPlaceholder": "例: 4000万円台, 駅徒歩10分以内, 新築希望",
+    "generateBtn": "AIで提案を生成",
+    "generatingBtn": "生成中...",
+    "resultsTitle": "提案結果",
+    "emptyStateTitle": "左のフォームに条件を入力してください",
+    "emptyStateBody": "顧客のライフスタイルと予算を入力し、「AIで提案を生成」を押すと、おすすめエリアの提案が表示されます。",
+    "sampleBadge": "サンプル",
+    "sampleAreaName": "東京都〇〇区",
+    "sampleReason1": "駅徒歩12分ながら再開発計画により将来の利便性向上が見込める",
+    "sampleReason2": "同条件の物件相場が近隣駅と比べて1割程度抑えられている",
+    "sampleReason3": "小学校・保育園が徒歩圏内に複数あり子育て世帯に適した環境",
+    "sampleSalesScript": "こちらのエリアは、沿線の中でも再開発が進んでいるにもかかわらず、価格はまだ手が届きやすい水準です。ご家族の暮らし方にぴったりの穴場だと思いますよ。",
+    "sampleCatchcopy": "「まだ知られていない、これから伸びる街」",
+    "unlockOverlayTitle": "この機能はProプラン限定です",
+    "unlockOverlayBody": "Proプランにアップグレードすると、顧客ごとにカスタマイズされたAI提案（穴場エリア・営業トーク・キャッチコピー）が生成し放題になります。",
+    "unlockOverlayBtn": "Proプランを見る",
+    "reasonsLabel": "推薦理由",
+    "salesScriptLabel": "営業トーク",
+    "catchcopyLabel": "キャッチコピー",
+    "copyBtn": "コピー",
+    "copiedBtn": "コピーしました",
+    "errorGeneric": "提案の生成に失敗しました。しばらく後にお試しください。",
+    "errorValidation": "顧客のライフスタイルと予算の両方を入力してください。"
   }
 }

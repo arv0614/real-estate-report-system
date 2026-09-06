@@ -11,7 +11,8 @@
     "guestBadge": "访客",
     "langSwitch": "EN",
     "upgradeBtn": "升级至 Pro",
-    "menuLabel": "菜单"
+    "menuLabel": "菜单",
+    "proposalLink": "AI 客户提案"
   },
   "Bookmarks": {
     "save": "收藏(☆)",
@@ -953,5 +954,38 @@
     "clientsTitle": "支持的客户端",
     "clientsBody": "目前已完整支持 Claude Desktop 与 ChatGPT (GPTs)。※Gemini 网页版正在等待官方更新。",
     "noCodeBanner": "不需要编程知识。只要复制下方文字并粘贴即可。"
+  },
+  "ProposalGenerator": {
+    "metaTitle": "AI 客户提案生成器 | 物件目利研究",
+    "metaDescription": "只需输入客户的生活方式，AI 即可提出口袋名单区域、销售话术与宣传文案（限 Pro 方案）。",
+    "pageTitle": "AI 客户提案生成器",
+    "pageSubtitle": "只需输入客户的生活方式与预算，AI 就能生成推荐的口袋名单区域，以及可直接使用的销售话术与宣传文案。",
+    "formTitle": "输入客户条件",
+    "targetProfileLabel": "客户的生活方式・需求",
+    "targetProfilePlaceholder": "例: 夫妻两人, 每周远程办公3天, 无车, 计划要孩子",
+    "budgetLabel": "预算・条件",
+    "budgetPlaceholder": "例: 4000万日元左右, 车站步行10分钟内, 希望新房",
+    "generateBtn": "用 AI 生成提案",
+    "generatingBtn": "生成中...",
+    "resultsTitle": "提案结果",
+    "emptyStateTitle": "请在左侧表单输入条件",
+    "emptyStateBody": "输入客户的生活方式与预算后，点击「用 AI 生成提案」即可看到推荐区域。",
+    "sampleBadge": "示例",
+    "sampleAreaName": "东京都〇〇区",
+    "sampleReason1": "虽然距车站步行12分钟，但因再开发计划，未来便利性有望提升",
+    "sampleReason2": "同条件房源行情比邻近车站便宜约一成",
+    "sampleReason3": "步行范围内有多所小学・幼儿园，适合育儿家庭",
+    "sampleSalesScript": "这个区域沿线再开发正在推进之中，但价格目前仍相对亲民，对您客户的生活方式来说可以说是绝佳的口袋名单。",
+    "sampleCatchcopy": "「尚未被发现、即将崛起的街区」",
+    "unlockOverlayTitle": "此功能仅限 Pro 方案使用",
+    "unlockOverlayBody": "升级至 Pro 方案，即可无限次生成针对每位客户定制的 AI 提案（口袋名单区域・销售话术・宣传文案）。",
+    "unlockOverlayBtn": "查看 Pro 方案",
+    "reasonsLabel": "推荐理由",
+    "salesScriptLabel": "销售话术",
+    "catchcopyLabel": "宣传文案",
+    "copyBtn": "复制",
+    "copiedBtn": "已复制",
+    "errorGeneric": "提案生成失败，请稍后再试。",
+    "errorValidation": "请同时输入客户的生活方式与预算。"
   }
 }

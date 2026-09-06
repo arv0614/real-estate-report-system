@@ -11,7 +11,8 @@
     "guestBadge": "Guest",
     "langSwitch": "日本語",
     "upgradeBtn": "Upgrade to Pro",
-    "menuLabel": "Menu"
+    "menuLabel": "Menu",
+    "proposalLink": "AI Proposal"
   },
   "Bookmarks": {
     "save": "Save (☆)",
@@ -953,5 +954,38 @@
     "clientsTitle": "Supported clients",
     "clientsBody": "Currently fully supported on Claude Desktop and ChatGPT (GPTs). *The Gemini web app is pending an official update on Google's side.",
     "noCodeBanner": "No coding required. Just copy the text below and paste it in."
+  },
+  "ProposalGenerator": {
+    "metaTitle": "AI Customer Proposal Generator | Mekiki Research",
+    "metaDescription": "Describe your client's lifestyle and get AI-generated hidden-gem area picks, a sales script, and flyer copy (Pro plan).",
+    "pageTitle": "AI Customer Proposal Generator",
+    "pageSubtitle": "Just describe your client's lifestyle and AI will suggest hidden-gem areas along with a ready-to-use sales script and flyer catchphrase.",
+    "formTitle": "Enter client details",
+    "targetProfileLabel": "Client lifestyle / requirements",
+    "targetProfilePlaceholder": "e.g. Couple, remote work 3 days/week, no car, planning for kids",
+    "budgetLabel": "Budget / conditions",
+    "budgetPlaceholder": "e.g. ¥40M range, within 10 min walk of station, new-build preferred",
+    "generateBtn": "Generate with AI",
+    "generatingBtn": "Generating...",
+    "resultsTitle": "Proposal results",
+    "emptyStateTitle": "Fill in the form on the left",
+    "emptyStateBody": "Enter your client's lifestyle and budget, then click “Generate with AI” to see recommended areas.",
+    "sampleBadge": "Sample",
+    "sampleAreaName": "Example Ward, Tokyo",
+    "sampleReason1": "12-min walk to the station, but a redevelopment plan should improve convenience over time",
+    "sampleReason2": "Comparable listings run roughly 10% below nearby stations",
+    "sampleReason3": "Multiple elementary schools and nurseries within walking distance — great for families",
+    "sampleSalesScript": "This area is still affordable even though redevelopment is already underway along the line — it could be exactly the hidden gem that fits your family's lifestyle.",
+    "sampleCatchcopy": "“The up-and-coming neighborhood nobody's talking about yet.”",
+    "unlockOverlayTitle": "This feature is Pro-plan only",
+    "unlockOverlayBody": "Upgrade to Pro for unlimited AI-generated, client-specific proposals — hidden-gem areas, sales scripts, and flyer copy.",
+    "unlockOverlayBtn": "View Pro plan",
+    "reasonsLabel": "Why this area",
+    "salesScriptLabel": "Sales script",
+    "catchcopyLabel": "Catchphrase",
+    "copyBtn": "Copy",
+    "copiedBtn": "Copied",
+    "errorGeneric": "Failed to generate the proposal. Please try again later.",
+    "errorValidation": "Please fill in both the client lifestyle and budget fields."
   }
 }

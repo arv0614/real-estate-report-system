@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, SchemaType, type ResponseSchema } from "@google/generative-ai";
 import { config } from "../config";
 import type { WeatherSummary } from "./openMeteo";
 
@@ -499,4 +499,151 @@ ${prefecture}${municipality}は、利便性と住環境のバランスが取れ�
 
 **本レポートは公的データの集計・整理であり、購入・売却・投資の推奨や不動産鑑定評価ではありません。**`;
 
+}
+
+// ============================================================
+// AI 顧客提案ジェネレーター（Pro プラン限定、backend/src/routes/ai-proposal.ts が使用）
+// ============================================================
+
+export interface CustomerProposalInput {
+  /** 顧客のライフスタイル・要望（例: 夫婦2人, 週3リモート, 車なし） */
+  targetProfile: string;
+  /** 予算等の条件（例: 4000万円台, 駅徒歩10分以内） */
+  budget: string;
+  locale?: string;
+}
+
+export interface ProposalArea {
+  areaName: string;
+  reasons: string[];
+  salesScript: string;
+  catchcopy: string;
+}
+
+export interface CustomerProposalResult {
+  areas: ProposalArea[];
+}
+
+const CUSTOMER_PROPOSAL_SCHEMA: ResponseSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    areas: {
+      type: SchemaType.ARRAY,
+      minItems: 1,
+      maxItems: 3,
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          areaName: {
+            type: SchemaType.STRING,
+            description: "推薦エリア名（都道府県+市区町村、または沿線+駅名など具体的に）",
+          },
+          reasons: {
+            type: SchemaType.ARRAY,
+            minItems: 2,
+            maxItems: 5,
+            items: { type: SchemaType.STRING },
+            description: "データ・エリア特性に基づく具体的な推薦理由（箇条書き、顧客の条件と紐づけて記述）",
+          },
+          salesScript: {
+            type: SchemaType.STRING,
+            description: "営業担当がそのまま顧客に読み上げられる提案トーク（2〜4文、丁寧語）",
+          },
+          catchcopy: {
+            type: SchemaType.STRING,
+            description: "チラシ・マイソク（物件概要書）用のキャッチコピー（1文、20〜40字程度）",
+          },
+        },
+        required: ["areaName", "reasons", "salesScript", "catchcopy"],
+      },
+    },
+  },
+  required: ["areas"],
+};
+
+function buildProposalPromptJa(input: CustomerProposalInput): string {
+  return `あなたは日本の不動産仲介業界で長年の実績を持つベテラン営業コンサルタントです。
+不動産仲介業者（エンドユーザー）が担当する顧客に「穴場エリア」を提案する際、そのまま使える営業資料の作成を手伝ってください。
+
+【顧客のライフスタイル・要望】
+${input.targetProfile}
+
+【予算・条件】
+${input.budget}
+
+上記の条件に適した「穴場」エリアを、根拠のある形で最大3つ提案してください。知名度だけが高い人気エリアではなく、
+顧客の条件（ライフスタイル・予算）に照らして合理的な「狙い目」のエリアを優先してください。
+
+各エリアについて、以下を作成してください。
+- areaName: エリア名
+- reasons: そのエリアを推薦する具体的な理由（利便性・価格帯・住環境・将来性など、顧客の条件と関連付けて記述）
+- salesScript: 営業担当がそのまま顧客に話せる提案トーク
+- catchcopy: チラシ・マイソクに使えるキャッチコピー
+
+出力は指定のJSONスキーマに厳密に従い、日本語で記述してください。誇大広告や「確実に値上がりする」等の断定的な将来予測は避け、
+根拠を示しながら訴求力のある文章にしてください。`;
+}
+
+function buildProposalPromptEn(input: CustomerProposalInput): string {
+  return `You are a veteran sales consultant with deep experience in the Japanese real estate brokerage industry.
+Help a real estate agent (the end user) prepare ready-to-use sales material recommending "hidden gem" areas to their client.
+
+**Client lifestyle / requirements**
+${input.targetProfile}
+
+**Budget / conditions**
+${input.budget}
+
+Based on the above, recommend up to 3 well-reasoned "hidden gem" areas — prioritise areas that are a rational fit for the
+client's stated lifestyle and budget over areas that are merely famous or popular.
+
+For each area, produce:
+- areaName: the area name
+- reasons: specific, evidence-based reasons to recommend it (convenience, price range, living environment, future outlook, etc.), tied to the client's stated conditions
+- salesScript: a sales pitch the agent can read aloud to the client as-is
+- catchcopy: a short catchphrase suitable for a flyer / property summary sheet
+
+Follow the given JSON schema strictly and write in English. Avoid exaggerated claims or definitive predictions of future
+price increases; keep the copy persuasive but grounded in the stated reasons.`;
+}
+
+/**
+ * Gemini APIを使って「AI顧客提案」を構造化 JSON で生成する（Pro プラン限定機能）。
+ * responseSchema で JSON 出力を強制するため、Markdown コードフェンス等の後処理は不要。
+ */
+export async function generateCustomerProposal(
+  input: CustomerProposalInput
+): Promise<CustomerProposalResult> {
+  if (!config.gemini.apiKey) {
+    throw new Error("[Gemini] APIキー未設定");
+  }
+
+  const genAI = new GoogleGenerativeAI(config.gemini.apiKey);
+  const model = genAI.getGenerativeModel({
+    model: config.gemini.model,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: CUSTOMER_PROPOSAL_SCHEMA,
+      temperature: 0.8,
+    },
+  });
+
+  const prompt = input.locale === "en" ? buildProposalPromptEn(input) : buildProposalPromptJa(input);
+  console.log(`[Gemini] 顧客提案生成開始: profileLen=${input.targetProfile.length}, budgetLen=${input.budget.length}`);
+
+  const result = await model.generateContent(prompt);
+  const text = result.response.text();
+
+  let parsed: CustomerProposalResult;
+  try {
+    parsed = JSON.parse(text) as CustomerProposalResult;
+  } catch (err) {
+    throw new Error(`[Gemini] JSON解析失敗: ${err instanceof Error ? err.message : String(err)}`);
+  }
+  if (!Array.isArray(parsed.areas)) {
+    throw new Error("[Gemini] レスポンス形式が不正です（areas 配列がありません）");
+  }
+
+  console.log(`[Gemini] 顧客提案生成完了 (${parsed.areas.length}件)`);
+  return parsed;
 }

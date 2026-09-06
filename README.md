@@ -150,6 +150,23 @@ node scripts/prepare-hoanrin.mjs --input-dir=/path/to/A13-by-pref/
 - 検索無制限 / PDF レポート出力 / 暮らしのイメージ画像生成
 - Firebase ID Token 認証 + HMAC-SHA256 Webhook 署名検証
 
+#### AI 顧客提案ジェネレーター（Pro 限定・B2B キラー機能）
+
+不動産仲介業者が顧客のライフスタイル・予算を入力するだけで、Gemini が「おすすめの穴場エリア（最大3件）」＋各エリアの
+推薦理由・そのまま使える営業トーク・チラシ/マイソク用キャッチコピーを構造化 JSON で生成する。
+
+- **画面**: `/[locale]/proposal-generator`（`ProposalGeneratorClient.tsx`）。左に条件入力フォーム、右に結果表示。
+  ヘッダーのナビゲーションリンク（`Header.proposalLink`）から誰でも導線に入れる。
+- **ペイウォール**: ゲスト・Free でもフォーム入力とボタン押下は可能。押すとバックエンドを呼ばずに
+  `PlanComparisonModal`（アップグレードモーダル）を表示し、右側にはブラー処理した固定サンプル結果＋
+  ロック解除オーバーレイを常時表示する（実データではなく `ProposalGenerator.sample*` の固定文言）。
+- **API**: `POST /api/pro/generate-proposal`（`backend/src/routes/ai-proposal.ts`）。
+  Firebase ID Token 必須（未認証 401）、Firestore `users/{uid}.plan !== "pro"` は 403 で拒否
+  （フロントの表示制御とは独立にバックエンドでも必ず検証）。IPベースで1時間20件のレート制限。
+- **Gemini 呼び出し**: `generateCustomerProposal()`（`backend/src/services/geminiApi.ts`）。
+  `responseMimeType: "application/json"` + `responseSchema` で JSON 出力を強制するため、
+  Markdown コードフェンス等の後処理は不要。`locale` により日本語/英語のプロンプトを切替。
+
 ### GA4 イベント一覧（全量）
 
 GA4 へのイベント送信は `frontend/lib/gtag.ts` の `gtagEvent()` / `gtagPurchase()` と、GTM DataLayer への `dataLayerPush()` (`frontend/lib/analytics.ts`) の 2 経路で行っています。
@@ -164,7 +181,7 @@ GA4 へのイベント送信は `frontend/lib/gtag.ts` の `gtagEvent()` / `gtag
 | `sign_up` | engagement | `"google"` / `"email"` | AuthModal | Google OAuth / メール認証でサインアップ完了直後 |
 | `generate_report` | engagement | 都道府県＋市区町村名（例: `"東京都葛飾区"`） | HomeClient | 検索 API が成功しレポート結果が表示された瞬間。追加パラメータ `user_plan`: `"guest"`/`"free"`/`"pro"`。SearchForm 側では発火しない（上限到達で弾かれた試行まで「検索利用」として二重計上しないため、実際に成功した `HomeClient.handleSearch` 内だけで発火） |
 | `reach_limit` | conversion_funnel | `"guest"` / `"free"` | HomeClient | 日次検索上限に達したとき（ゲスト1回・Free 3回）。追加パラメータ `user_plan`: `"guest"`/`"free"`（`scripts/summarize_user_conversion.js` がゲスト限定の上限到達数を `customEvent:user_plan` の DimensionFilter で絞り込むために使用。GA4 property 側にこの event-scoped custom dimension が未登録の場合は起動時に自動登録を試みる（要 analytics.edit 権限）、失敗時は guest/free 合算値にフォールバックする） |
-| `view_plan_modal` | conversion_funnel | `"limit_modal"` / `"header"` / `"header_upgrade"` / `"pdf"` / `"rate_limit_banner"` / `"walk_time_filter"` / `"profile"` | HomeClient / ProfileClient | 料金モーダルが開く直前。label でどこから開かれたかを区別 |
+| `view_plan_modal` | conversion_funnel | `"limit_modal"` / `"header"` / `"header_upgrade"` / `"pdf"` / `"rate_limit_banner"` / `"walk_time_filter"` / `"profile"` / `"proposal_generator"` | HomeClient / ProfileClient / ProposalGeneratorClient | 料金モーダルが開く直前。label でどこから開かれたかを区別（`"proposal_generator"` は AI顧客提案ジェネレーターのペイウォールでゲスト/Freeがボタンを押したとき） |
 | `begin_checkout` | conversion_funnel | `"Pro"` | PlanComparisonModal | 「Pro にアップグレード」ボタンクリック → Lemon Squeezy API 呼び出し前 |
 | `generate_lifestyle_image` | engagement | （なし） | AiReport | 「暮らしのイメージ生成」ボタンクリック |
 | `bookmark_add` | engagement | ブックマークしたエリア名 | HomeClient | ピン留め（ブックマーク追加）操作 |
