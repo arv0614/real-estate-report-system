@@ -209,6 +209,7 @@ Web 広告の出稿効果を **無料**（Looker Studio + GA4 標準）で可視
 | `scripts/setup_marketing_dashboard.js` | Looker Studio + GA4 のセットアップ手順を生成: `docs/marketing_dashboard.md`（概念編：接続手順・指標定義）と `docs/looker_studio_setup_guide.md`（実装編：各グラフの具体設定・計算フィールドのコピペ集・GA4 探索での計測確認手順） | 手動 (`npm run dashboard:setup`) |
 | `scripts/monitor_traffic_anomalies.js` | Cloud Run ログを解析し、同一IPから 1分あたり閾値（既定10）以上のアクセスを検知 → Bot 不正クリック監視 | `monitor_traffic.yml`（30分毎 cron） |
 | `scripts/summarize_ad_performance.js` | GA4 Data API から前日の広告指標を取得しテキスト要約を Slack 送信 | `ad_daily_report.yml`（毎朝 JST 09:00 cron） |
+| `scripts/summarize_user_conversion.js` | GA4 Data API から前日のゲスト→無料転換ファネル（検索利用 `generate_report` / 上限到達 `reach_limit` / 無料登録 `sign_up` と各段階のCVR）を取得しテキスト要約を Slack 送信、Firestore `conversion_reports` に保存 | `daily_conversion_report.yml`（毎朝 JST 09:15 cron） |
 
 **アラート経路**: 異常検知時、監視スクリプトは終了コード1で失敗し、GitHub のジョブ失敗通知（メール）がそのままアラートになります。`SLACK_WEBHOOK_URL` を設定すれば Slack 通知も飛びます。
 
@@ -284,12 +285,14 @@ LLM クライアント（Claude Desktop / ChatGPT 等）が **② Backend API �
 │     - post_to_x.js: 旧 X 自動投稿（現在は無効化）                    │
 │     - monitor_traffic_anomalies.js: 30分毎に不正クリック監視         │
 │     - summarize_ad_performance.js: 毎朝 GA4 日次広告レポート → Slack │
+│     - summarize_user_conversion.js: 毎朝 GA4 ゲスト→無料転換レポート │
+│       → Slack (検索利用/上限到達/無料登録 と CVR)                    │
 │     - setup_marketing_dashboard.js: Looker Studio 手順書を生成       │
 │     - deploy.sh / deploy_frontend.sh: Cloud Run 手動デプロイ         │
 └─────────────────────────────────────────────────────────────────────┘
 
 [Firebase]  Authentication / Firestore (users, history) / Storage (images)
-[GA4 + GTM] click_lp_cta / sign_up / generate_report / view_plan_modal / begin_checkout / purchase
+[GA4 + GTM] click_lp_cta / sign_up / generate_report / reach_limit / view_plan_modal / begin_checkout / purchase
 [PostHog]   行動ログ計測（Webhook 署名検証付き）
 [Terraform] Cloud Run / Artifact Registry / GCS / IAM の IaC 管理
 ```
@@ -1435,6 +1438,7 @@ curl -X POST http://localhost:8080/api/lemonsqueezy/webhook \
 | ユーザー管理 | 登録ユーザー一覧（メール・名前・プラン・利用回数）・プラン変更 |
 | SNS 投稿 | X 投稿テンプレート一覧・下書き作成・投稿履歴 |
 | 広告レポート | GA4 連携の日次広告パフォーマンスレポート |
+| 無料転換レポート | ゲスト→無料会員の転換ファネル（検索利用・上限到達・無料登録件数と各段階のCVR）の日次レポート・30日推移グラフ |
 
 ### ユーザー管理の仕組み
 
