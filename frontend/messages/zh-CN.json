@@ -378,7 +378,10 @@
     "lifestyleAltExpanded": "生活意象 放大图",
     "analyzing": "AI 正在深入分析该区域…",
     "analyzingNote": "正在生成 10 个章节的区域数据报告，通常需要 20–60 秒，首次启动可能需要约1分钟。",
-    "loadErrorTitle": "AI 报告生成失败"
+    "loadErrorTitle": "AI 报告生成失败",
+    "fetchErrorTitle": "AI 分析获取失败",
+    "retryBtn": "重新获取",
+    "renderErrorMessage": "显示 AI 分析时发生问题，请重新获取。"
   },
   "HistoryList": {
     "title": "搜索记录",

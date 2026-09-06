@@ -378,7 +378,10 @@
     "lifestyleAltExpanded": "暮らしイメージ 拡大",
     "analyzing": "AI がこのエリアを深く分析中…",
     "analyzingNote": "全10セクションのエリアデータ集計レポートを生成しています。通常20〜60秒ほどですが、初回は立ち上がりに1分ほどかかる場合があります。",
-    "loadErrorTitle": "AI レポートの生成に失敗しました"
+    "loadErrorTitle": "AI レポートの生成に失敗しました",
+    "fetchErrorTitle": "AI分析の取得に失敗しました",
+    "retryBtn": "再取得",
+    "renderErrorMessage": "AI分析の表示中に問題が発生しました。再取得をお試しください。"
   },
   "HistoryList": {
     "title": "検索履歴",

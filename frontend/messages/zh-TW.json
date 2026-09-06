@@ -378,7 +378,10 @@
     "lifestyleAltExpanded": "生活意象 放大圖",
     "analyzing": "AI 正在深入分析該區域…",
     "analyzingNote": "正在生成 10 個章節的區域資料報告，通常需要 20–60 秒，首次啟動可能需要約1分鐘。",
-    "loadErrorTitle": "AI 報告生成失敗"
+    "loadErrorTitle": "AI 報告生成失敗",
+    "fetchErrorTitle": "AI 分析取得失敗",
+    "retryBtn": "重新取得",
+    "renderErrorMessage": "顯示 AI 分析時發生問題，請重新取得。"
   },
   "HistoryList": {
     "title": "搜尋紀錄",

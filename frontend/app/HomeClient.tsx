@@ -46,6 +46,7 @@ import { PriceTrendChart } from "@/components/PriceTrendChart";
 import { EnvironmentInfoCard } from "@/components/EnvironmentInfo";
 import { WeatherInfoCard } from "@/components/WeatherInfoCard";
 import { AiReport } from "@/components/AiReport";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ShareActions } from "@/components/ShareActions";
 import { PlanComparisonModal } from "@/components/PlanComparisonModal";
 import nextDynamic from "next/dynamic";
@@ -97,6 +98,10 @@ function HomePageContent() {
   // 並列実行された /ai-report が、別検索の結果に上書きしてしまわないよう
   // 直前のリクエスト ID を保持して照合する。
   const aiReportRequestRef = useRef(0);
+  // <AiReport> を囲む ErrorBoundary の再マウント用キー。ErrorBoundary は一度
+  // hasError になると内部状態が自動リセットされないため、再取得のたびに
+  // インクリメントして key を変え、強制的に作り直す。
+  const [aiReportRenderKey, setAiReportRenderKey] = useState(0);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [autoDistrict, setAutoDistrict] = useState<string>("");
   const [districtMarkers, setDistrictMarkers] = useState<DistrictMarker[]>([]);
@@ -417,6 +422,32 @@ function HomePageContent() {
   function handleReplay(lat: number, lng: number) {
     setExternalCoords({ lat, lng });
     handleSearch(lat, lng);
+  }
+
+  /**
+   * AIレポート取得の再試行（「再取得」ボタン）。
+   * エラーをクリアし、直前と同じ座標で fetchAiReport をやり直す。
+   * ErrorBoundary の key も更新し、内部レンダーで例外が起きていた場合でも
+   * 確実に作り直してから再表示する。
+   */
+  function retryAiReportFetch() {
+    if (!searchCoords) return;
+    const aiReqId = ++aiReportRequestRef.current;
+    setAiReportError(null);
+    setAiReportLoading(true);
+    setAiReportRenderKey((k) => k + 1);
+    fetchAiReport(searchCoords.lat, searchCoords.lng, 15, locale)
+      .then((rep) => {
+        if (aiReqId !== aiReportRequestRef.current) return;
+        setResult((prev) => (prev ? { ...prev, aiReport: rep.aiReport } : prev));
+        setAiReportLoading(false);
+      })
+      .catch((err) => {
+        if (aiReqId !== aiReportRequestRef.current) return;
+        console.error("[HomeClient] AI report retry failed:", err);
+        setAiReportError(err instanceof Error ? err.message : String(err));
+        setAiReportLoading(false);
+      });
   }
 
   async function handleDownloadPdf() {
@@ -1254,25 +1285,47 @@ function HomePageContent() {
 
               {(result.aiReport || aiReportLoading || aiReportError) && (
                 <div className={pdfHide(pdfSections.aiReport)}>
-                  <AiReport
-                    report={result.aiReport ?? ""}
-                    loading={aiReportLoading && !result.aiReport}
-                    loadError={!result.aiReport ? aiReportError : null}
-                    user={user}
-                    plan={plan}
-                    cityCode={result.data.cityCode}
-                    prefecture={result.data.data[0]?.prefecture ?? ""}
-                    municipality={
-                      result.data.data[0]?.municipality ??
-                      result.data.geocodedDistrict ??
-                      ""
-                    }
-                    lifestyleImage={lifestyleImage}
-                    imageGenerating={lifestyleImageLoading}
-                    onImageSaved={setLifestyleImage}
-                    onLoginRequest={handleLogin}
-                    onPlanModalOpen={() => setPlanModalOpen(true)}
-                  />
+                  {aiReportError && !result.aiReport ? (
+                    // AIレポート取得自体が失敗 → <AiReport> はマウントせず、
+                    // ここで完結するシンプルな警告 + 再取得 UI を表示する。
+                    <AiReportErrorFallback
+                      message={aiReportError}
+                      onRetry={retryAiReportFetch}
+                      t={t}
+                    />
+                  ) : (
+                    // ErrorBoundary: 取得は成功したがレンダー中に例外が起きた場合の保険。
+                    // key を変えることで再取得のたびに確実に作り直す。
+                    <ErrorBoundary
+                      key={aiReportRenderKey}
+                      fallback={
+                        <AiReportErrorFallback
+                          message={t("AiReport.renderErrorMessage")}
+                          onRetry={retryAiReportFetch}
+                          t={t}
+                        />
+                      }
+                    >
+                      <AiReport
+                        report={result.aiReport ?? ""}
+                        loading={aiReportLoading && !result.aiReport}
+                        user={user}
+                        plan={plan}
+                        cityCode={result.data.cityCode}
+                        prefecture={result.data.data[0]?.prefecture ?? ""}
+                        municipality={
+                          result.data.data[0]?.municipality ??
+                          result.data.geocodedDistrict ??
+                          ""
+                        }
+                        lifestyleImage={lifestyleImage}
+                        imageGenerating={lifestyleImageLoading}
+                        onImageSaved={setLifestyleImage}
+                        onLoginRequest={handleLogin}
+                        onPlanModalOpen={() => setPlanModalOpen(true)}
+                      />
+                    </ErrorBoundary>
+                  )}
                 </div>
               )}
 
@@ -1374,6 +1427,39 @@ function HomePageContent() {
           </nav>
         </div>
       </footer>
+    </div>
+  );
+}
+
+/**
+ * AIレポートが表示できない（取得失敗 or レンダー中の例外）ときの共通フォールバック UI。
+ * <AiReport> 自体はマウントせず、警告文と「再取得」ボタンだけを表示する。
+ */
+function AiReportErrorFallback({
+  message,
+  onRetry,
+  t,
+}: {
+  message: string;
+  onRetry: () => void;
+  t: ReturnType<typeof useTranslations>;
+}) {
+  return (
+    <div className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-5">
+      <div className="flex items-start gap-3 mb-3">
+        <span className="text-xl shrink-0">⚠️</span>
+        <div>
+          <h3 className="text-sm font-semibold text-amber-800 mb-1">{t("AiReport.fetchErrorTitle")}</h3>
+          <p className="text-xs text-amber-700 break-words">{message}</p>
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="text-xs px-3 py-1.5 rounded-lg border border-amber-300 bg-white text-amber-800 hover:bg-amber-100 transition-colors font-semibold"
+      >
+        🔄 {t("AiReport.retryBtn")}
+      </button>
     </div>
   );
 }

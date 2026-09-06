@@ -378,7 +378,10 @@
     "lifestyleAltExpanded": "Lifestyle image — enlarged",
     "analyzing": "AI is deeply analyzing this area…",
     "analyzingNote": "Generating the 10-section area data report. This usually takes 20–60 seconds, though the very first request can take about a minute to spin up.",
-    "loadErrorTitle": "Failed to generate AI report"
+    "loadErrorTitle": "Failed to generate AI report",
+    "fetchErrorTitle": "Failed to fetch the AI analysis",
+    "retryBtn": "Retry",
+    "renderErrorMessage": "Something went wrong displaying the AI analysis. Please try fetching it again."
   },
   "HistoryList": {
     "title": "Search History",

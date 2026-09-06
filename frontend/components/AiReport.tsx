@@ -198,6 +198,17 @@ export function AiReport({
 }: Props) {
   const t = useTranslations("AiReport");
 
+  // ── フック呼び出しはすべて早期 return より前に置く ──────────────
+  // (React の Rules of Hooks: 呼び出し回数はレンダーごとに常に同じでなければならない。
+  //  以前はこれらの useState が early return の後にあり、loading/loadError で
+  //  0個のフックしか呼ばれない状態から通常レンダー(5個呼ばれる)へ遷移すると
+  //  "Rendered more hooks than during the previous render" で画面全体がクラッシュしていた。)
+  const [openSet, setOpenSet] = useState<Set<string>>(() => new Set([IMAGE_KEY, "1"]));
+  const [generating, setGenerating] = useState(false);
+  const [genError, setGenError] = useState<string | null>(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [isMockImage, setIsMockImage] = useState(false);
+
   // ── ローディング: スケルトン表示 ─────────────────────────────
   // 「軽量データは表示済み・AIレポートは生成中」状態で呼ばれる。
   if (loading) {
@@ -222,16 +233,18 @@ export function AiReport({
   // Gemini 出力の bold 記号 `**` / `__` をパース前に全て除去。閉じタグが欠けた
   // 裸の `**` が画面にそのまま出る問題を防ぐ。
   const sanitizedReport = stripBoldMarkdown(report);
-  const sections = parseSections(sanitizedReport);
+  // parseSections は純粋な文字列処理だが、万一 Gemini 出力が想定外の形式で
+  // 例外を投げても画面全体をクラッシュさせないよう防御的に try-catch する。
+  let sections: Section[];
+  try {
+    sections = parseSections(sanitizedReport);
+  } catch (err) {
+    console.error("[AiReport] parseSections failed:", err);
+    sections = [];
+  }
   const allKeys = [IMAGE_KEY, ...sections.map((s) => s.number)];
 
   const areaFeatures = sections.find((s) => s.number === "1")?.content.trim() || undefined;
-
-  const [openSet, setOpenSet] = useState<Set<string>>(() => new Set([IMAGE_KEY, "1"]));
-  const [generating, setGenerating] = useState(false);
-  const [genError, setGenError] = useState<string | null>(null);
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [isMockImage, setIsMockImage] = useState(false);
 
   function toggle(key: string) {
     setOpenSet((prev) => {
