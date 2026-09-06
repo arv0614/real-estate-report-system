@@ -154,14 +154,16 @@ node scripts/prepare-hoanrin.mjs --input-dir=/path/to/A13-by-pref/
 
 GA4 へのイベント送信は `frontend/lib/gtag.ts` の `gtagEvent()` / `gtagPurchase()` と、GTM DataLayer への `dataLayerPush()` (`frontend/lib/analytics.ts`) の 2 経路で行っています。
 
+**`gtagEvent`/`gtagPurchase` は gtag.js を GTM とは別に直接読み込むことで GA4 に届く**（`frontend/app/layout.tsx`）。GTM (`<GoogleTagManager>`) だけでは `window.gtag` が定義されないため、以前はこれらの呼び出しが黙って no-op になっていた（2026-09-06 に発見・修正）。GTM 側は既に page_view 等の自動収集を担っているため、直接読み込む gtag.js の `config` では `send_page_view: false` を指定し二重計測を防いでいる。GTM 側のタグ/トリガー設定（外部の Google Tag Manager コンソール）には依存しないため、コードだけでカスタムイベントの到達を保証できる。
+
 #### ① カスタムイベント（`gtagEvent` 経由）
 
 | イベント名 | `event_category` | `event_label` の値 | 発火場所 | 発火タイミング |
 |---|---|---|---|---|
 | `click_lp_cta` | acquisition | `"heroCta"` / `"bottomCta"` | `/lp` ページ CTA | LP の「無料で試す」ボタンクリック |
 | `sign_up` | engagement | `"google"` / `"email"` | AuthModal | Google OAuth / メール認証でサインアップ完了直後 |
-| `generate_report` | engagement | 都道府県＋市区町村名（例: `"東京都葛飾区"`） | HomeClient / SearchForm | 検索 API が成功しレポート結果が表示された瞬間。HomeClient は座標検索、SearchForm はフォーム入力検索 |
-| `reach_limit` | conversion_funnel | `"guest"` / `"free"` | HomeClient | 日次検索上限に達したとき（ゲスト1回・Free 3回） |
+| `generate_report` | engagement | 都道府県＋市区町村名（例: `"東京都葛飾区"`） | HomeClient | 検索 API が成功しレポート結果が表示された瞬間。追加パラメータ `user_plan`: `"guest"`/`"free"`/`"pro"`。SearchForm 側では発火しない（上限到達で弾かれた試行まで「検索利用」として二重計上しないため、実際に成功した `HomeClient.handleSearch` 内だけで発火） |
+| `reach_limit` | conversion_funnel | `"guest"` / `"free"` | HomeClient | 日次検索上限に達したとき（ゲスト1回・Free 3回）。追加パラメータ `user_plan`: `"guest"`/`"free"`（`scripts/summarize_user_conversion.js` がゲスト限定の上限到達数を `customEvent:user_plan` の DimensionFilter で絞り込むために使用。GA4 property 側にこの event-scoped custom dimension が未登録の場合は起動時に自動登録を試みる（要 analytics.edit 権限）、失敗時は guest/free 合算値にフォールバックする） |
 | `view_plan_modal` | conversion_funnel | `"limit_modal"` / `"header"` / `"header_upgrade"` / `"pdf"` / `"rate_limit_banner"` / `"walk_time_filter"` / `"profile"` | HomeClient / ProfileClient | 料金モーダルが開く直前。label でどこから開かれたかを区別 |
 | `begin_checkout` | conversion_funnel | `"Pro"` | PlanComparisonModal | 「Pro にアップグレード」ボタンクリック → Lemon Squeezy API 呼び出し前 |
 | `generate_lifestyle_image` | engagement | （なし） | AiReport | 「暮らしのイメージ生成」ボタンクリック |
@@ -1177,9 +1179,9 @@ GA4_PROPERTY_ID=... GEMINI_API_KEY=... SLACK_WEBHOOK_URL=... node scripts/analyz
 |---|---|---|
 | **`PAT_TOKEN`** | `generate-blog.yml` | repo + workflow スコープの Personal Access Token。デフォルトの `GITHUB_TOKEN` では他ワークフローを連鎖トリガーできない仕様への対処。push 後に `deploy.yml` を発火させるために必須 |
 | **`GEMINI_API_KEY`** | `generate-blog.yml`, `analyze_blog_seo.yml` | Gemini API キー（企画会議・画像プロンプト生成: 3.6 Flash / 記事生成・翻訳・GA4実績分析: 3.1 Pro Preview / アイキャッチ画像生成: 3.1 Flash Image） |
-| `GA4_PROPERTY_ID` | `ad_daily_report.yml`, `analyze_blog_seo.yml` | GA4 プロパティ番号。Data API 呼び出しに使用 |
-| `SLACK_WEBHOOK_URL` | `ad_daily_report.yml`, `analyze_blog_seo.yml`, `monitor_traffic.yml`（任意） | Slack Incoming Webhook URL。日次広告レポート・週次SEO運用レポート・異常検知アラートの通知先（未設定でも各ジョブは正常終了し標準出力にのみ表示） |
-| `GCP_SA_KEY` | `deploy.yml`, `ad_daily_report.yml`, `analyze_blog_seo.yml` | Cloud Run / Artifact Registry / Cloud Build へのデプロイ権限、および GA4 Data API 呼び出し用アクセストークン取得（`analytics.readonly` スコープ）を持つサービスアカウントの JSON キー |
+| `GA4_PROPERTY_ID` | `ad_daily_report.yml`, `analyze_blog_seo.yml`, `daily_conversion_report.yml` | GA4 プロパティ番号。Data API 呼び出しに使用 |
+| `SLACK_WEBHOOK_URL` | `ad_daily_report.yml`, `analyze_blog_seo.yml`, `monitor_traffic.yml`, `daily_conversion_report.yml`（任意） | Slack Incoming Webhook URL。日次広告レポート・週次SEO運用レポート・異常検知アラート・ゲスト→無料転換レポートの通知先（未設定でも各ジョブは正常終了し標準出力にのみ表示） |
+| `GCP_SA_KEY` | `deploy.yml`, `ad_daily_report.yml`, `analyze_blog_seo.yml`, `daily_conversion_report.yml` | Cloud Run / Artifact Registry / Cloud Build へのデプロイ権限、GA4 Data API 呼び出し用アクセストークン取得（`analytics.readonly` スコープ）、および `summarize_user_conversion.js` の `user_plan` カスタムディメンション自動登録（`analytics.edit` スコープ、要 GA4 property 側で当該 SA に Editor 権限付与。無い場合は自動登録をスキップし guest/free 合算値にフォールバック）を持つサービスアカウントの JSON キー |
 | `GCP_PROJECT_ID` | `deploy.yml` | GCP プロジェクト ID |
 | `GCP_REGION` | `deploy.yml` | デプロイリージョン（`asia-northeast1`） |
 | `NEXT_PUBLIC_API_URL` | `deploy.yml` | バックエンド Cloud Run の URL（ビルド時にバンドル焼き込み） |
@@ -1239,6 +1241,17 @@ GA4_PROPERTY_ID=... GEMINI_API_KEY=... SLACK_WEBHOOK_URL=... node scripts/analyz
 | `GEMINI_ANALYSIS_MODEL` | ❌ | `gemini-3.1-pro-preview` | 分析モデル切替 |
 | `BLOG_ANALYSIS_DAYS` | ❌ | `28` | 分析の遡及日数（`--days` で上書き可） |
 | `SLACK_WEBHOOK_URL` | ❌ | — | 設定時、SEO運用レポート（ファネル + 編集・改善方針）をSlackに通知 |
+
+`scripts/summarize_user_conversion.js` で利用：
+
+| 変数名 | 必須 | 既定値 | 用途 |
+|---|---|---|---|
+| `GA4_PROPERTY_ID` | ✅（`--input` フィクスチャ利用時を除く） | — | GA4 プロパティ番号 |
+| `GA4_ACCESS_TOKEN` | ❌ | — | 未設定時は `gcloud auth print-access-token --scopes=analytics.readonly` から取得 |
+| `GA4_EDIT_ACCESS_TOKEN` | ❌ | — | `user_plan` カスタムディメンションの自動登録用。未設定時は `gcloud auth print-access-token --scopes=analytics.edit` から取得。失敗しても致命的にせず reach_limit は guest/free 合算値にフォールバック |
+| `SLACK_WEBHOOK_URL` | ❌ | — | 設定時、転換ファネルレポートをSlackに通知 |
+| `FIREBASE_PROJECT_ID` | △ | `GCP_PROJECT_ID` | Firestore `conversion_reports` 保存先 |
+| （CLIフラグ）`--period` | ❌ | `1` | 集計期間（日数）。`--date` を期間の終端として遡る。データ反映ラグ回避のテスト等に使用 |
 
 ---
 

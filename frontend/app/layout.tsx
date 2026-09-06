@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import { GoogleTagManager } from "@next/third-parties/google";
 import PostHogInit from "@/components/PostHogInit";
+import { GA_MEASUREMENT_ID } from "@/lib/gtag";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -32,6 +34,30 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <GoogleTagManager gtmId={process.env.NEXT_PUBLIC_GTM_ID || "GTM-5ZNNGVZQ"} />
+      {/*
+        gtag.js を GTM と並行して直接読み込む。
+        GTM 側は既に GA4 設定タグ / Enhanced Measurement で自動収集（page_view 等）を
+        担っているため、ここでの config は send_page_view:false で二重計測を防ぎ、
+        window.gtag("event", ...) （lib/gtag.ts の gtagEvent）が直接 GA4 に届く経路だけを
+        追加する（GTM コンテナ側のカスタムイベント設定に依存しない）。
+      */}
+      <Script
+        id="ga4-init"
+        strategy="afterInteractive"
+        dangerouslySetInnerHTML={{
+          __html: `
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){window.dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${GA_MEASUREMENT_ID}', { send_page_view: false });
+          `,
+        }}
+      />
+      <Script
+        id="ga4-src"
+        strategy="afterInteractive"
+        src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+      />
       <body className="min-h-full flex flex-col">
         <PostHogInit />
         {children}

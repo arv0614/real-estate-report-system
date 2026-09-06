@@ -14,6 +14,10 @@ on:
         description: "対象日 (YYYY-MM-DD, 空なら前日)"
         required: false
         default: ""
+      period:
+        description: "集計期間（日数、空なら1日）。データ反映ラグ回避のテスト等に使用"
+        required: false
+        default: ""
 
 concurrency:
   group: daily-conversion-report
@@ -77,9 +81,9 @@ jobs:
           FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
           TZ: Asia/Tokyo
         run: |
+          ARGS=()
           DATE_ARG="${{ github.event.inputs.date }}"
-          if [ -n "$DATE_ARG" ]; then
-            node scripts/summarize_user_conversion.js --date "$DATE_ARG"
-          else
-            node scripts/summarize_user_conversion.js
-          fi
+          PERIOD_ARG="${{ github.event.inputs.period }}"
+          [ -n "$DATE_ARG" ] && ARGS+=(--date "$DATE_ARG")
+          [ -n "$PERIOD_ARG" ] && ARGS+=(--period "$PERIOD_ARG")
+          node scripts/summarize_user_conversion.js "${ARGS[@]}"

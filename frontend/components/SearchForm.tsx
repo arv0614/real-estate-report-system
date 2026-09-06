@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
-import { gtagEvent } from "@/lib/gtag";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -137,7 +136,9 @@ export function SearchForm({ onSearch, loading, districtMarkers, isLoggedIn = fa
       return;
     }
     setValidationError(null);
-    gtagEvent({ action: "generate_report", category: "engagement" });
+    // generate_report は onSearch (HomeClient.handleSearch) 側で、検索回数上限チェック
+    // 通過後・取得成功後にのみ発火する。ここで先に発火すると上限到達で弾かれた試行まで
+    // 「検索利用」としてカウントされ、転換ファネルの分母が水増しされてしまうため呼ばない。
     onSearch(latNum, lngNum);
   }
 

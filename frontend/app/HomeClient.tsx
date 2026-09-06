@@ -247,7 +247,7 @@ function HomePageContent() {
         if (!checkGuestSearchAllowed()) {
           trackLimitReached({ plan: "guest" });
           dataLayerPush({ event: "limit_reached", user_plan: "guest", search_count_today: GUEST_DAILY_LIMIT });
-          gtagEvent({ action: "reach_limit", category: "conversion_funnel", label: "guest" });
+          gtagEvent({ action: "reach_limit", category: "conversion_funnel", label: "guest", params: { user_plan: "guest" } });
           gtagEvent({ action: "view_plan_modal", category: "conversion_funnel", label: "limit_modal" });
           setPlanModalOpen(true);
           return;
@@ -260,7 +260,7 @@ function HomePageContent() {
         if (!IS_FREE_UNLIMITED_CAMPAIGN && !allowed) {
           trackLimitReached({ plan: "free", uid: user.uid });
           dataLayerPush({ event: "limit_reached", user_plan: "free", search_count_today: FREE_DAILY_LIMIT });
-          gtagEvent({ action: "reach_limit", category: "conversion_funnel", label: "free" });
+          gtagEvent({ action: "reach_limit", category: "conversion_funnel", label: "free", params: { user_plan: "free" } });
           gtagEvent({ action: "view_plan_modal", category: "conversion_funnel", label: "limit_modal" });
           setPlanModalOpen(true);
           return;
@@ -321,7 +321,7 @@ function HomePageContent() {
       const locationName = data.data.data[0]
         ? `${data.data.data[0].prefecture}${data.data.data[0].municipality}`
         : "";
-      gtagEvent({ action: "generate_report", category: "engagement", label: locationName });
+      gtagEvent({ action: "generate_report", category: "engagement", label: locationName, params: { user_plan: userPlanDL } });
 
       // Firestore に検索履歴を保存（ログイン中のみ）
       if (user) {

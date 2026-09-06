@@ -5,14 +5,17 @@ interface GtagEventParams {
   category: string;
   label?: string;
   value?: number;
+  /** GA4 カスタムイベントパラメータ（例: { user_plan: "guest" }）。event_category/event_label とは別に送る */
+  params?: Record<string, string | number>;
 }
 
-export function gtagEvent({ action, category, label, value }: GtagEventParams) {
+export function gtagEvent({ action, category, label, value, params }: GtagEventParams) {
   if (typeof window === "undefined" || typeof window.gtag !== "function") return;
   window.gtag("event", action, {
     event_category: category,
     ...(label !== undefined && { event_label: label }),
     ...(value !== undefined && { value }),
+    ...params,
   });
 }
 
