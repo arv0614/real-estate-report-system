@@ -873,7 +873,11 @@
     "convSignups": "免費註冊",
     "convCvrLimitReached": "搜尋→達上限 CVR",
     "convCvrSignUp": "達上限→註冊 CVR",
-    "convTrendTitle": "近30天趨勢（{days}天）"
+    "convTrendTitle": "近30天趨勢（{days}天）",
+    "tabBlogPolicy": "部落格編輯方針",
+    "blogPolicyTitle": "部落格編輯方針（目標客群・語氣）",
+    "blogPolicyDesc": "每日自動生成部落格文章（generate_daily_blog.js）時，會將此方針注入 Gemini 提示詞。儲存後將於下次生成時套用。",
+    "blogPolicyUpdatedAt": "最後更新："
   },
   "LandingPage": {
     "navAppLink": "開啟應用",

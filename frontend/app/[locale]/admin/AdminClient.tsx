@@ -140,7 +140,26 @@ const TEMPLATES_PAGE_SIZE = 10;
 type TemplatesSort = "newest" | "oldest";
 const TEMPLATES_SORT_OPTIONS: TemplatesSort[] = ["newest", "oldest"];
 
-type TabKey = "feedbacks" | "users" | "social" | "ad-reports" | "seo-reports" | "conversion-reports";
+type BlogPolicy = {
+  editorialGuidelines: string;
+  updatedAt: string | null;
+  updatedBy: string | null;
+};
+
+type BlogPolicyState =
+  | { kind: "loading" }
+  | { kind: "ok"; policy: BlogPolicy }
+  | { kind: "forbidden" }
+  | { kind: "error"; message: string };
+
+type TabKey =
+  | "feedbacks"
+  | "users"
+  | "social"
+  | "ad-reports"
+  | "seo-reports"
+  | "conversion-reports"
+  | "blog-policy";
 
 type LoadState<T> =
   | { kind: "loading" }
@@ -229,6 +248,7 @@ export default function AdminClient() {
   const [conversionReportsState, setConversionReportsState] = useState<LoadState<ConversionReportItem>>({
     kind: "loading",
   });
+  const [blogPolicyState, setBlogPolicyState] = useState<BlogPolicyState>({ kind: "loading" });
   const [templatesState, setTemplatesState] = useState<TemplatesState>({ kind: "loading" });
   const [templatesPage, setTemplatesPage] = useState(1);
   const [templatesSearch, setTemplatesSearch] = useState("");
@@ -259,6 +279,33 @@ export default function AdminClient() {
     setConversionReportsState(
       await fetchAdmin<ConversionReportItem>("/api/admin/conversion-reports", "reports")
     );
+  }, []);
+  const loadBlogPolicy = useCallback(async () => {
+    setBlogPolicyState({ kind: "loading" });
+    const idToken = await auth.currentUser?.getIdToken().catch(() => null);
+    if (!idToken) {
+      setBlogPolicyState({ kind: "forbidden" });
+      return;
+    }
+    try {
+      const res = await fetch(`${getApiBase()}/api/admin/blog-policy`, {
+        headers: { Authorization: `Bearer ${idToken}` },
+        cache: "no-store",
+      });
+      if (res.status === 401 || res.status === 403) {
+        setBlogPolicyState({ kind: "forbidden" });
+        return;
+      }
+      if (!res.ok) {
+        const body = await res.text().catch(() => "");
+        setBlogPolicyState({ kind: "error", message: `${res.status} ${body}` });
+        return;
+      }
+      const data = (await res.json()) as BlogPolicy;
+      setBlogPolicyState({ kind: "ok", policy: data });
+    } catch (err) {
+      setBlogPolicyState({ kind: "error", message: err instanceof Error ? err.message : String(err) });
+    }
   }, []);
   const loadTemplates = useCallback(async (page: number, search: string, sort: TemplatesSort) => {
     setTemplatesState({ kind: "loading" });
@@ -328,6 +375,7 @@ export default function AdminClient() {
     if (tab === "ad-reports" && adReportsState.kind === "loading") loadAdReports();
     if (tab === "seo-reports" && seoReportsState.kind === "loading") loadSeoReports();
     if (tab === "conversion-reports" && conversionReportsState.kind === "loading") loadConversionReports();
+    if (tab === "blog-policy" && blogPolicyState.kind === "loading") loadBlogPolicy();
   }, [
     tab,
     user,
@@ -336,11 +384,13 @@ export default function AdminClient() {
     adReportsState.kind,
     seoReportsState.kind,
     conversionReportsState.kind,
+    blogPolicyState.kind,
     loadUsers,
     loadPosts,
     loadAdReports,
     loadSeoReports,
     loadConversionReports,
+    loadBlogPolicy,
   ]);
 
   // テンプレートはページ/検索/ソートが変わったときに再取得（デバウンス）
@@ -359,6 +409,7 @@ export default function AdminClient() {
     else if (tab === "ad-reports") loadAdReports();
     else if (tab === "seo-reports") loadSeoReports();
     else if (tab === "conversion-reports") loadConversionReports();
+    else if (tab === "blog-policy") loadBlogPolicy();
     else {
       loadPosts();
       loadTemplates(templatesPage, templatesSearch, templatesSort);
@@ -417,7 +468,9 @@ export default function AdminClient() {
             ? seoReportsState
             : tab === "conversion-reports"
               ? conversionReportsState
-              : postsState;
+              : tab === "blog-policy"
+                ? blogPolicyState
+                : postsState;
 
   if (activeState.kind === "forbidden") {
     return (
@@ -464,6 +517,7 @@ export default function AdminClient() {
             onClick={setTab}
             label={t("tabConversionReports")}
           />
+          <TabButton current={tab} value="blog-policy" onClick={setTab} label={t("tabBlogPolicy")} />
         </div>
 
         {activeState.kind === "loading" && (
@@ -501,6 +555,12 @@ export default function AdminClient() {
         {activeState.kind === "ok" && tab === "conversion-reports" && (
           <ConversionReportsList
             items={conversionReportsState.kind === "ok" ? conversionReportsState.items : []}
+          />
+        )}
+        {activeState.kind === "ok" && tab === "blog-policy" && blogPolicyState.kind === "ok" && (
+          <BlogPolicyEditor
+            policy={blogPolicyState.policy}
+            onSaved={(policy) => setBlogPolicyState({ kind: "ok", policy })}
           />
         )}
         {activeState.kind === "ok" && tab === "social" && (
@@ -707,6 +767,89 @@ function ConversionReportCard({ report }: { report: ConversionReportItem }) {
           {report.summary}
         </pre>
       )}
+    </div>
+  );
+}
+
+// ─── ブログ編集方針 ─────────────────────────────────────────────
+// scripts/generate_daily_blog.js が日次ブログ生成の直前にこの値を Firestore
+// settings/blog_policy から取得し、Gemini への jaMetaPrompt/jaBodyPrompt に注入する。
+function BlogPolicyEditor({
+  policy,
+  onSaved,
+}: {
+  policy: BlogPolicy;
+  onSaved: (policy: BlogPolicy) => void;
+}) {
+  const t = useTranslations("Admin");
+  const [text, setText] = useState(policy.editorialGuidelines);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [savedFlash, setSavedFlash] = useState(false);
+
+  const dirty = text !== policy.editorialGuidelines;
+
+  const save = async () => {
+    setSaving(true);
+    setError(null);
+    const err = await patchAdmin("/api/admin/blog-policy", { editorialGuidelines: text });
+    setSaving(false);
+    if (err) {
+      setError(err);
+      return;
+    }
+    onSaved({ editorialGuidelines: text, updatedAt: new Date().toISOString(), updatedBy: policy.updatedBy });
+    setSavedFlash(true);
+    setTimeout(() => setSavedFlash(false), 1500);
+  };
+
+  return (
+    <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5">
+      <h2 className="text-sm font-bold text-slate-800 mb-1">{t("blogPolicyTitle")}</h2>
+      <p className="text-xs text-slate-500 mb-3">{t("blogPolicyDesc")}</p>
+
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        rows={10}
+        maxLength={4000}
+        className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-400 leading-relaxed"
+      />
+      <div className="mt-1 flex items-center justify-between text-[11px] text-slate-400">
+        <span>{text.length}/4000</span>
+        {policy.updatedAt && (
+          <span suppressHydrationWarning>
+            {t("blogPolicyUpdatedAt")} {formatDate(policy.updatedAt)}
+            {policy.updatedBy ? ` (${policy.updatedBy})` : ""}
+          </span>
+        )}
+      </div>
+
+      {error && (
+        <div className="mt-3 text-xs text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2 break-words">
+          {t("saveFailed")}: {error}
+        </div>
+      )}
+
+      <div className="mt-3 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={save}
+          disabled={saving || !dirty || text.trim().length === 0}
+          className="px-4 py-2 rounded-lg bg-slate-800 text-white text-sm font-semibold hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {saving ? t("saving") : savedFlash ? `✓ ${t("saved")}` : t("save")}
+        </button>
+        {dirty && !saving && (
+          <button
+            type="button"
+            onClick={() => setText(policy.editorialGuidelines)}
+            className="px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-colors"
+          >
+            {t("cancel")}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

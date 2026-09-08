@@ -873,7 +873,11 @@
     "convSignups": "Sign-ups",
     "convCvrLimitReached": "Search→Limit CVR",
     "convCvrSignUp": "Limit→Signup CVR",
-    "convTrendTitle": "30-Day Trend ({days} days)"
+    "convTrendTitle": "30-Day Trend ({days} days)",
+    "tabBlogPolicy": "Blog Policy",
+    "blogPolicyTitle": "Blog Editorial Policy (Target Audience & Tone)",
+    "blogPolicyDesc": "This guidance is injected into the Gemini prompt used by the daily blog auto-generation (generate_daily_blog.js). Saving takes effect starting with the next run.",
+    "blogPolicyUpdatedAt": "Last updated:"
   },
   "LandingPage": {
     "navAppLink": "Open app",

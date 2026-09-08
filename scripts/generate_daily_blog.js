@@ -115,6 +115,53 @@ function loadGuidelines() {
   }
 }
 
+// ─── ブログ編集方針（/admin「ブログ編集方針」タブが Firestore settings/blog_policy を編集） ──
+// backend/src/routes/admin.ts の DEFAULT_BLOG_EDITORIAL_GUIDELINES と同じデフォルト文言を
+// ここでも独立して保持する（plain JS のため TypeScript 側の定数を直接 import できない。要同期）。
+const DEFAULT_EDITORIAL_GUIDELINES =
+  "ターゲット: 不動産投資家だけでなく、実需のマイホーム購入層（ファミリー、単身者など）も含む。" +
+  "専門用語を減らし、暮らしやすさや生活環境のインサイトを多めに盛り込むこと。";
+
+/**
+ * Firestore `settings/blog_policy` から editorialGuidelines（管理画面で編集された編集方針）
+ * を取得する。GCP_PROJECT_ID 未設定・firebase-admin 読み込み失敗・ドキュメント未作成など、
+ * いかなる失敗時もデフォルト文言にフォールバックし、ブログ生成自体は止めない
+ * （tryWriteSocialTemplate と同じ「失敗してもブログ生成は成立させる」方針）。
+ */
+async function loadEditorialPolicy() {
+  const projectId = process.env.FIREBASE_PROJECT_ID || process.env.GCP_PROJECT_ID;
+  if (!projectId) {
+    console.warn("[WARN] GCP_PROJECT_ID 未設定のため blog_policy 取得をスキップし、デフォルトの編集方針を使用します。");
+    return DEFAULT_EDITORIAL_GUIDELINES;
+  }
+
+  let adminMod;
+  try {
+    adminMod = require("firebase-admin");
+  } catch (err) {
+    console.warn(`[WARN] firebase-admin ロード失敗のため blog_policy 取得をスキップ: ${err.message}`);
+    return DEFAULT_EDITORIAL_GUIDELINES;
+  }
+
+  try {
+    if (!adminMod.apps.length) {
+      adminMod.initializeApp({ projectId });
+    }
+    const db = adminMod.firestore();
+    const snap = await db.collection("settings").doc("blog_policy").get();
+    const text = snap.exists ? snap.data()?.editorialGuidelines : null;
+    if (typeof text === "string" && text.trim()) {
+      console.log("[INFO] Firestore settings/blog_policy から編集方針を取得しました");
+      return text.trim();
+    }
+    console.log("[INFO] settings/blog_policy 未設定のためデフォルトの編集方針を使用します");
+    return DEFAULT_EDITORIAL_GUIDELINES;
+  } catch (err) {
+    console.warn(`[WARN] blog_policy 取得失敗 (デフォルトにフォールバック): ${err.message}`);
+    return DEFAULT_EDITORIAL_GUIDELINES;
+  }
+}
+
 // 企画会議の決定結果を反映してコンテキストを更新する。
 // isSeriesContinuation は AI の判断をそのまま信頼するが、テーマ名の完全一致では
 // 判定しない（「○○（完結編）」のような表記揺れで継続と誤認されなくなるのを防ぐため）。
@@ -371,10 +418,16 @@ ${perfBlock}
 }`;
 }
 
-function jaMetaPrompt({ today, recentSlugs, plan }) {
+function jaMetaPrompt({ today, recentSlugs, plan, editorialGuidelines }) {
+  const policyBlock = editorialGuidelines
+    ? `
+# 編集方針・ターゲット層（管理画面で設定・必ず遵守すること）
+${editorialGuidelines}
+`
+    : "";
   return `あなたは日本の不動産市場に精通したベテラン不動産アナリストで、B2B SaaS「物件目利きリサーチ」(https://mekiki-research.com) のオウンドメディアを執筆しています。
 本日 ${today} 付の不動産ブログ記事1件のメタデータを日本語で生成してください。
-
+${policyBlock}
 # 本日の企画（編集長決定済み・厳守）
 - テーマ: ${plan.theme}
 - 切り口: ${plan.angle}
@@ -396,11 +449,17 @@ function jaMetaPrompt({ today, recentSlugs, plan }) {
 }`;
 }
 
-function jaBodyPrompt({ today, meta, areaData, plan, guidelines, heroImage, chart }) {
+function jaBodyPrompt({ today, meta, areaData, plan, guidelines, editorialGuidelines, heroImage, chart }) {
   const lat = Number(meta.primaryLocation?.lat);
   const lng = Number(meta.primaryLocation?.lng);
   const locName = meta.primaryLocation?.name || "対象エリア";
   const ctaUrl = `${SITE_BASE_URL}/?lat=${lat}&lng=${lng}&zoom=15&ref=blog_cta`;
+  const policyBlock = editorialGuidelines
+    ? `
+# 編集方針・ターゲット層（管理画面で設定・必ず遵守すること）
+${editorialGuidelines}
+本文の語り口・専門用語の量・盛り込む観点は、上記の編集方針に厳密に従うこと。`
+    : "";
   const themeBlock = plan
     ? `
 # 本日の企画（編集長決定済み・厳守）
@@ -468,6 +527,7 @@ ${JSON.stringify(areaData, null, 2)}
 `;
 
   return `あなたは日本の不動産市場に精通したベテラン不動産アナリストです。「物件目利きリサーチ」(${SITE_BASE_URL}) のオウンドメディア向けに、本日 ${today} 付の以下の記事の本文を Markdown で執筆してください。
+${policyBlock}
 ${themeBlock}
 ${evidenceBlock}
 ${guidelinesBlock}
@@ -904,6 +964,7 @@ async function main() {
   const recentSlugs = existingSlugs();
   const context = loadContext();
   const guidelines = loadGuidelines();
+  const editorialGuidelines = await loadEditorialPolicy();
   console.log(`[INFO] 対象日 (JST): ${today}`);
   console.log(`[INFO] 既存記事 base 数: ${recentSlugs.length}`);
   console.log(`[INFO] 過去テーマ記録数: ${context.recentThemes.length}, 進行中の連載: ${context.currentSeries?.theme || "(なし)"}`);
@@ -912,6 +973,7 @@ async function main() {
       ? `[INFO] SEO・CVR改善ガイドライン読み込み済み (生成日時=${guidelines.generatedAt || "?"}, insufficientData=${Boolean(guidelines.insufficientData)})`
       : "[INFO] SEO・CVR改善ガイドラインなし（data/blog_seo_guidelines.json 未生成のためスキップ）",
   );
+  console.log(`[INFO] 編集方針（/admin 設定）: ${editorialGuidelines.slice(0, 80)}${editorialGuidelines.length > 80 ? "..." : ""}`);
   console.log(`[INFO] 企画モデル: ${PLANNING_MODEL} / 執筆モデル: ${MODEL}${DRY_RUN ? " (DRY RUN)" : ""}`);
 
   if (DRY_RUN && !process.env.GEMINI_API_KEY) {
@@ -940,7 +1002,7 @@ async function main() {
 
   if (DRY_RUN) {
     console.log("[DRY] [JA] メタデータ生成中...");
-    const jaMeta = await callJson(ai, jaMetaPrompt({ today, recentSlugs, plan }));
+    const jaMeta = await callJson(ai, jaMetaPrompt({ today, recentSlugs, plan, editorialGuidelines }));
     console.log("[DRY] メタデータ:", JSON.stringify(jaMeta, null, 2));
     jaMeta.primaryLocation = { lat: plan.lat, lng: plan.lng, name: plan.targetArea };
     jaMeta.slug = sanitizeSlug(jaMeta.slug) || "dry-run-preview";
@@ -960,7 +1022,7 @@ async function main() {
     console.log(`[DRY] heroImage=${heroImage ? heroImage.path : "(なし)"}`);
 
     console.log("[DRY] [JA] 本文 Markdown 生成中...");
-    const jaBody = await callText(ai, jaBodyPrompt({ today, meta: jaMeta, areaData, plan, guidelines, heroImage, chart }));
+    const jaBody = await callText(ai, jaBodyPrompt({ today, meta: jaMeta, areaData, plan, guidelines, editorialGuidelines, heroImage, chart }));
     console.log("[DRY] 本文 Markdown:\n" + jaBody);
     console.log("[DRY] (dry-run のため .md ファイル書き込み・コンテキスト保存・翻訳・Firestore書き込みはスキップしました)");
     return;
@@ -969,7 +1031,7 @@ async function main() {
   const primaryLocation = { lat: plan.lat, lng: plan.lng, name: plan.targetArea };
 
   console.log("[INFO] [JA] メタデータ生成中...");
-  const jaMeta = await callJson(ai, jaMetaPrompt({ today, recentSlugs, plan }));
+  const jaMeta = await callJson(ai, jaMetaPrompt({ today, recentSlugs, plan, editorialGuidelines }));
   for (const k of ["slug", "title", "description", "tags"]) {
     if (!jaMeta[k]) throw new Error(`日本語メタの必須フィールド '${k}' が欠けています`);
   }
@@ -993,7 +1055,7 @@ async function main() {
   const chart = buildAreaChartUrl(areaData, jaMeta.primaryLocation.name);
 
   console.log("[INFO] [JA] 本文 Markdown 生成中...");
-  const jaBody = await callText(ai, jaBodyPrompt({ today, meta: jaMeta, areaData, plan, guidelines, heroImage, chart }));
+  const jaBody = await callText(ai, jaBodyPrompt({ today, meta: jaMeta, areaData, plan, guidelines, editorialGuidelines, heroImage, chart }));
   if (jaBody.length < 1500) {
     throw new Error(`日本語本文が短すぎます: ${jaBody.length} chars`);
   }

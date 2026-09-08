@@ -338,6 +338,74 @@ app.get("/conversion-reports", async (c) => {
   }
 });
 
+// ─── ブログ編集方針（Firestore settings/blog_policy） ─────────────────────────
+// scripts/generate_daily_blog.js が日次ブログ生成の直前にこの値を取得し、
+// Gemini へのメタ/本文プロンプトへ「編集方針・ターゲット層」として注入する。
+// スクリプト側も同じデフォルト文言を独自に保持している（要同期。plain JS のため
+// TypeScript 側の定数を直接 import できない）。
+const DEFAULT_BLOG_EDITORIAL_GUIDELINES =
+  "ターゲット: 不動産投資家だけでなく、実需のマイホーム購入層（ファミリー、単身者など）も含む。" +
+  "専門用語を減らし、暮らしやすさや生活環境のインサイトを多めに盛り込むこと。";
+
+/**
+ * GET /api/admin/blog-policy
+ * Firestore `settings/blog_policy` から editorialGuidelines を返す。
+ * ドキュメント未作成でもデフォルト文言をそのまま返す（Firestore へは書き込まない）。
+ */
+app.get("/blog-policy", async (c) => {
+  try {
+    const snap = await db.collection("settings").doc("blog_policy").get().catch(() => null);
+    const data = snap?.exists ? snap.data() : undefined;
+    const updatedAt = data?.updatedAt as admin.firestore.Timestamp | undefined;
+    return c.json({
+      editorialGuidelines:
+        (data?.editorialGuidelines as string | undefined) ?? DEFAULT_BLOG_EDITORIAL_GUIDELINES,
+      updatedAt: updatedAt ? updatedAt.toDate().toISOString() : null,
+      updatedBy: (data?.updatedBy as string | undefined) ?? null,
+    });
+  } catch (err) {
+    console.error("[Admin] blog_policy 読み取り失敗:", err);
+    return c.json({ error: "Failed to load blog policy" }, 500);
+  }
+});
+
+/**
+ * PATCH /api/admin/blog-policy
+ * Body: { editorialGuidelines: string }
+ * Firestore `settings/blog_policy` を更新（merge）。次回の日次ブログ生成
+ * (scripts/generate_daily_blog.js, ad_daily_report と同様 GitHub Actions cron) から反映される。
+ */
+app.patch("/blog-policy", async (c) => {
+  let body: Record<string, unknown>;
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "Invalid JSON body" }, 400);
+  }
+
+  if (typeof body.editorialGuidelines !== "string" || body.editorialGuidelines.trim().length === 0) {
+    return c.json({ error: "editorialGuidelines is required" }, 400);
+  }
+  if (body.editorialGuidelines.length > 4000) {
+    return c.json({ error: "editorialGuidelines is too long (max 4000 chars)" }, 400);
+  }
+
+  try {
+    await db.collection("settings").doc("blog_policy").set(
+      {
+        editorialGuidelines: body.editorialGuidelines,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedBy: c.get("adminEmail"),
+      },
+      { merge: true }
+    );
+    return c.json({ ok: true });
+  } catch (err) {
+    console.error("[Admin] blog_policy 更新失敗:", err);
+    return c.json({ error: "Failed to update blog policy" }, 500);
+  }
+});
+
 /**
  * GET /api/admin/x-promotions
  * Firestore `social_templates` コレクションから X 投稿テンプレートを返す。

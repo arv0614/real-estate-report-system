@@ -654,6 +654,10 @@ useEffect(() => {
 - `editorialPlanPrompt()`: `recommendedThemes` / `recommendedAreas` / `avoidThemes` / `highPerformingPatterns.insight` を「決定方針」の4番目（季節ネタ・連載継続・地域多様性の**後**）の参考材料として提示。季節ネタや連載継続のルールを上書きしない位置づけ。
 - `jaBodyPrompt()`: `contentGuidelines`（structure / visuals / tone / seoNotes）を本文執筆時の構成・トーン方針として提示。`visuals` はグラフ・画像の**配置方針の参考**として渡すのみで、実際に挿入する画像・グラフの実体（URL）は次項「7. 図表の自動生成・挿入」で生成した実アセットを使う。
 
+### 管理画面からの編集方針制御（`/admin`「ブログ編集方針」タブ）
+
+上記6の GA4 分析（データドリブン・自動）とは別に、**人が直接指定する編集方針**を Firestore `settings/blog_policy` ドキュメント（`editorialGuidelines` フィールド、文字列）として持ち、`/admin`「ブログ編集方針」タブ（`GET`/`PATCH /api/admin/blog-policy`）から編集できる。`generate_daily_blog.js` は生成の直前に `loadEditorialPolicy()` でこの値を取得し、`jaMetaPrompt()`（タイトル・description・タグ・アウトライン生成）と `jaBodyPrompt()`（本文執筆、プロンプト冒頭付近に挿入し優先度を高くしている）の両方に「編集方針・ターゲット層（必ず遵守すること）」として注入する。Firestore 未設定・読み取り失敗時は既定文言（不動産投資家に加え実需のマイホーム購入層も対象、専門用語を減らし暮らしやすさのインサイトを盛り込む）にフォールバックし、生成は止めない。ローカルで `node scripts/generate_daily_blog.js` を `BLOG_DRY_RUN=1` 実行し確認したところ、投資家向けテーマ（データセンター集積と地価）でも本文にファミリー層向けセクションが自然に追加された。
+
 ### 7. ★ 図表の自動生成・挿入：QuickChartグラフ + Gemini生成アイキャッチ画像
 
 本文生成の**前**に、記事ごとに (a) 実データに基づく取引価格グラフと (b) エリア・テーマに合わせたアイキャッチ画像を実際に生成し、
@@ -1553,6 +1557,7 @@ curl -X POST http://localhost:8080/api/lemonsqueezy/webhook \
 | SNS 投稿 | X 投稿テンプレート一覧・下書き作成・投稿履歴 |
 | 広告レポート | GA4 連携の日次広告パフォーマンスレポート |
 | 無料転換レポート | ゲスト→無料会員の転換ファネル（検索利用・上限到達・無料登録件数と各段階のCVR）の日次レポート・30日推移グラフ |
+| ブログ編集方針 | `scripts/generate_daily_blog.js` の Gemini プロンプトに注入される「編集方針・ターゲット層」テキストを編集（`GET`/`PATCH /api/admin/blog-policy`、Firestore `settings/blog_policy`）。保存すると次回の日次生成から反映される。デフォルトは実需層（ファミリー・単身者）も含めるよう指定済み |
 
 ### ユーザー管理の仕組み
 
