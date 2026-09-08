@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI, SchemaType, type ResponseSchema } from "@google/generative-ai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { config } from "../config";
 import type { WeatherSummary } from "./openMeteo";
 
@@ -530,50 +530,62 @@ export interface CustomerProposalResult {
   areas: ProposalArea[];
 }
 
-const CUSTOMER_PROPOSAL_SCHEMA: ResponseSchema = {
-  type: SchemaType.OBJECT,
-  properties: {
-    areas: {
-      type: SchemaType.ARRAY,
-      minItems: 1,
-      maxItems: 3,
-      items: {
-        type: SchemaType.OBJECT,
-        properties: {
-          areaName: {
-            type: SchemaType.STRING,
-            description: "推薦エリア名（都道府県+市区町村、または沿線+駅名など具体的に）",
+// generateCustomerProposal は Google 検索グラウンディング（tools: [{ googleSearch: {} }]）を
+// 使うため、その機能を提供する現行 SDK `@google/genai`（ESM専用パッケージ）を使う。
+// 本ファイルの他の関数が使う `@google/generative-ai`（旧SDK）は googleSearch ツールの型を
+// 持たないため、この関数専用に動的 import する（scripts/generate_daily_blog.js と同じ手法。
+// backend は tsconfig で module: commonjs だが、Node 20 は require(esm) に対応済みのため
+// コンパイル後の動的 import も問題なく動作することを実機確認済み）。
+type GenAiTypeEnum = typeof import("@google/genai").Type;
+
+function buildCustomerProposalSchema(Type: GenAiTypeEnum) {
+  return {
+    type: Type.OBJECT,
+    properties: {
+      areas: {
+        type: Type.ARRAY,
+        minItems: 1,
+        maxItems: 3,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            areaName: {
+              type: Type.STRING,
+              description: "推薦エリア名（都道府県+市区町村、または沿線+駅名など具体的に）",
+            },
+            reasons: {
+              type: Type.ARRAY,
+              minItems: 2,
+              maxItems: 5,
+              items: { type: Type.STRING },
+              description:
+                "データ・エリア特性に基づく具体的な推薦理由（箇条書き、顧客の条件と紐づけて記述）。Google検索で調査した最新の再開発計画・新設インフラ・商業施設・住宅補助金や子育て支援情報の具体的なファクトを含めること",
+            },
+            salesScript: {
+              type: Type.STRING,
+              description:
+                "営業担当がそのまま顧客に読み上げられる提案トーク（2〜4文、丁寧語）。Google検索で調査した最新ファクトを根拠として盛り込むこと",
+            },
+            catchcopy: {
+              type: Type.STRING,
+              description: "チラシ・マイソク（物件概要書）用のキャッチコピー（1文、20〜40字程度）",
+            },
+            lat: {
+              type: Type.NUMBER,
+              description: "提案エリアの代表地点（最寄り駅など）のおおよその緯度（10進数、例: 35.6895）",
+            },
+            lng: {
+              type: Type.NUMBER,
+              description: "提案エリアの代表地点（最寄り駅など）のおおよその経度（10進数、例: 139.6917）",
+            },
           },
-          reasons: {
-            type: SchemaType.ARRAY,
-            minItems: 2,
-            maxItems: 5,
-            items: { type: SchemaType.STRING },
-            description: "データ・エリア特性に基づく具体的な推薦理由（箇条書き、顧客の条件と紐づけて記述）",
-          },
-          salesScript: {
-            type: SchemaType.STRING,
-            description: "営業担当がそのまま顧客に読み上げられる提案トーク（2〜4文、丁寧語）",
-          },
-          catchcopy: {
-            type: SchemaType.STRING,
-            description: "チラシ・マイソク（物件概要書）用のキャッチコピー（1文、20〜40字程度）",
-          },
-          lat: {
-            type: SchemaType.NUMBER,
-            description: "提案エリアの代表地点（最寄り駅など）のおおよその緯度（10進数、例: 35.6895）",
-          },
-          lng: {
-            type: SchemaType.NUMBER,
-            description: "提案エリアの代表地点（最寄り駅など）のおおよその経度（10進数、例: 139.6917）",
-          },
+          required: ["areaName", "reasons", "salesScript", "catchcopy", "lat", "lng"],
         },
-        required: ["areaName", "reasons", "salesScript", "catchcopy", "lat", "lng"],
       },
     },
-  },
-  required: ["areas"],
-};
+    required: ["areas"],
+  };
+}
 
 function buildProposalPromptJa(input: CustomerProposalInput): string {
   return `あなたは日本の不動産仲介業界で長年の実績を持つベテラン営業コンサルタントです。
@@ -591,6 +603,9 @@ ${input.targetArea}
 上記の広域エリアの範囲内で、顧客の条件に適した「穴場」エリアを、根拠のある形で最大3つ提案してください。
 指定された広域エリアの外は提案しないでください。知名度だけが高い人気エリアではなく、
 顧客の条件（ライフスタイル・予算）に照らして合理的な「狙い目」のエリアを優先してください。
+
+対象エリア（都道府県・自治体・駅周辺）に関する最新の再開発計画、新設インフラ・商業施設、自治体の最新の住宅補助金や
+子育て支援情報をGoogle検索で調査し、その具体的なファクトを reasons および salesScript に必ず含めること。
 
 各エリアについて、以下を作成してください。
 - areaName: エリア名
@@ -621,6 +636,10 @@ Within that broad area only, recommend up to 3 well-reasoned "hidden gem" areas 
 fit for the client's stated lifestyle and budget over areas that are merely famous or popular. Do not suggest areas
 outside the specified broad area.
 
+Use Google Search to research the latest redevelopment plans, newly built infrastructure/commercial facilities, and the
+municipality's current housing subsidies or child-rearing support programmes for the target area (prefecture /
+municipality / around the station), and be sure to include those specific, current facts in reasons and salesScript.
+
 For each area, produce:
 - areaName: the area name
 - reasons: specific, evidence-based reasons to recommend it (convenience, price range, living environment, future outlook, etc.), tied to the client's stated conditions
@@ -633,35 +652,7 @@ Follow the given JSON schema strictly and write in English. Avoid exaggerated cl
 price increases; keep the copy persuasive but grounded in the stated reasons.`;
 }
 
-/**
- * Gemini APIを使って「AI顧客提案」を構造化 JSON で生成する（Pro プラン限定機能）。
- * responseSchema で JSON 出力を強制するため、Markdown コードフェンス等の後処理は不要。
- */
-export async function generateCustomerProposal(
-  input: CustomerProposalInput
-): Promise<CustomerProposalResult> {
-  if (!config.gemini.apiKey) {
-    throw new Error("[Gemini] APIキー未設定");
-  }
-
-  const genAI = new GoogleGenerativeAI(config.gemini.apiKey);
-  const model = genAI.getGenerativeModel({
-    model: config.gemini.model,
-    generationConfig: {
-      responseMimeType: "application/json",
-      responseSchema: CUSTOMER_PROPOSAL_SCHEMA,
-      temperature: 0.8,
-    },
-  });
-
-  const prompt = input.locale === "en" ? buildProposalPromptEn(input) : buildProposalPromptJa(input);
-  console.log(
-    `[Gemini] 顧客提案生成開始: profileLen=${input.targetProfile.length}, budgetLen=${input.budget.length}, targetArea=${input.targetArea}`
-  );
-
-  const result = await model.generateContent(prompt);
-  const text = result.response.text();
-
+function parseCustomerProposalResult(text: string): CustomerProposalResult {
   let parsed: CustomerProposalResult;
   try {
     parsed = JSON.parse(text) as CustomerProposalResult;
@@ -671,7 +662,71 @@ export async function generateCustomerProposal(
   if (!Array.isArray(parsed.areas)) {
     throw new Error("[Gemini] レスポンス形式が不正です（areas 配列がありません）");
   }
+  return parsed;
+}
 
-  console.log(`[Gemini] 顧客提案生成完了 (${parsed.areas.length}件)`);
+/**
+ * Gemini APIを使って「AI顧客提案」を構造化 JSON で生成する（Pro プラン限定機能）。
+ * Google 検索グラウンディング（tools: [{ googleSearch: {} }]）を有効にし、対象エリアの
+ * 最新の再開発計画・新設インフラ・自治体の補助金情報等を調査した上で、responseSchema で
+ * JSON 出力を強制する（Markdown コードフェンス等の後処理は不要）。
+ * ツール利用時にエラーが発生した場合は、検索なし（通常の推論のみ）にフォールバックして
+ * 処理を継続する安全設計とする。
+ */
+export async function generateCustomerProposal(
+  input: CustomerProposalInput
+): Promise<CustomerProposalResult> {
+  if (!config.gemini.apiKey) {
+    throw new Error("[Gemini] APIキー未設定");
+  }
+
+  const { GoogleGenAI, Type } = await import("@google/genai");
+  const ai = new GoogleGenAI({ apiKey: config.gemini.apiKey });
+  const schema = buildCustomerProposalSchema(Type);
+  const prompt = input.locale === "en" ? buildProposalPromptEn(input) : buildProposalPromptJa(input);
+
+  console.log(
+    `[Gemini] 顧客提案生成開始（Google検索グラウンディング有効）: profileLen=${input.targetProfile.length}, budgetLen=${input.budget.length}, targetArea=${input.targetArea}`
+  );
+
+  try {
+    const result = await ai.models.generateContent({
+      model: config.gemini.model,
+      contents: prompt,
+      config: {
+        tools: [{ googleSearch: {} }],
+        responseMimeType: "application/json",
+        responseSchema: schema,
+        temperature: 0.8,
+      },
+    });
+    const text = result.text;
+    if (!text) {
+      throw new Error("[Gemini] 応答が空です");
+    }
+    const parsed = parseCustomerProposalResult(text);
+    console.log(`[Gemini] 顧客提案生成完了（Google検索グラウンディング） (${parsed.areas.length}件)`);
+    return parsed;
+  } catch (err) {
+    console.warn(
+      `[WARN] Google検索グラウンディング付き生成に失敗したため、検索なしの通常推論にフォールバックします: ${err instanceof Error ? err.message : String(err)}`
+    );
+  }
+
+  const fallback = await ai.models.generateContent({
+    model: config.gemini.model,
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: schema,
+      temperature: 0.8,
+    },
+  });
+  const fallbackText = fallback.text;
+  if (!fallbackText) {
+    throw new Error("[Gemini] フォールバック応答も空です");
+  }
+  const parsed = parseCustomerProposalResult(fallbackText);
+  console.log(`[Gemini] 顧客提案生成完了（フォールバック・検索なし） (${parsed.areas.length}件)`);
   return parsed;
 }

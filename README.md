@@ -211,6 +211,15 @@ node scripts/prepare-hoanrin.mjs --input-dir=/path/to/A13-by-pref/
   Markdown コードフェンス等の後処理は不要。`locale` により日本語/英語のプロンプトを切替。各エリアの
   オブジェクトには `areaName` / `reasons` / `salesScript` / `catchcopy` に加え `lat` / `lng`
   （代表地点のおおよその緯度経度、必須項目としてプロンプトで明示指示）を含める。
+- **Google 検索グラウンディング（2026-09-08導入）**: `tools: [{ googleSearch: {} }]` を有効にし、
+  対象エリアの最新の再開発計画・新設インフラ・自治体の住宅補助金/子育て支援情報を Google 検索で
+  調査した上で `reasons`/`salesScript` に具体的なファクトとして反映させる。この関数のみ SDK を
+  `@google/generative-ai`（旧SDK、他の Gemini 呼び出しで使用中。`googleSearch` ツールの型を持たない）
+  から現行の `@google/genai`（ESM専用パッケージ、`await import()` で動的読み込み）に切り替えている。
+  ツール利用時にエラーが発生した場合は、同じ `responseSchema` を維持したまま `tools` を外した
+  通常推論にフォールバックして処理を継続する（安全設計）。実リクエストで検証済み: グラウンディング有効時は
+  「連続立体交差事業」「モリタウン」等の具体的な現地施設名・進捗年月を含む結果が返り、意図的にモデル名を
+  不正にしてエラーを誘発した場合もフォールバックが正常完走することを確認。
 - **結果カード**: `lat`/`lng` を使い `BlogMiniMapWrapper`（MapLibre、`components/blog/`配下を流用）で
   位置関係を可視化する小さな地図を表示。「このエリアの相場・ハザード詳細を見る」ボタンから
   `/?lat=&lng=` 形式でトップページの分析機能（取引価格・ハザード等）へ別タブ遷移できる。
