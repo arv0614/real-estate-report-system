@@ -347,7 +347,27 @@ async function callJson(ai, prompt, model = MODEL) {
   throw new Error(`Gemini JSON 応答の取得に ${JSON_CALL_MAX_ATTEMPTS} 回失敗しました: ${lastErr?.message}`);
 }
 
-async function callText(ai, prompt) {
+// grounding: true の場合、Google検索グラウンディング（tools: [{ googleSearch: {} }]）を有効にする。
+// ツール利用時にエラーが発生した場合は、検索なしの通常推論にフォールバックして記事生成を止めない
+// （backend/src/services/geminiApi.ts の generateCustomerProposal と同じ安全設計）。
+async function callText(ai, prompt, { grounding = false } = {}) {
+  if (grounding) {
+    try {
+      const response = await generateContentWithRetry(ai, {
+        model: MODEL,
+        contents: prompt,
+        config: { temperature: 0.85, tools: [{ googleSearch: {} }] },
+      });
+      const text = response?.text;
+      if (!text) throw new Error("Gemini からの応答が空でした (text, grounding)");
+      return stripFences(text);
+    } catch (err) {
+      console.warn(
+        `[WARN] Google検索グラウンディング付き本文生成に失敗したため、検索なしにフォールバックします: ${err.message}`,
+      );
+    }
+  }
+
   const response = await generateContentWithRetry(ai, {
     model: MODEL,
     contents: prompt,
@@ -551,12 +571,22 @@ ${JSON.stringify(areaData, null, 2)}
 特定の取引価格や駅乗降客数など具体的な数値を断定的に提示することは避け、「○○程度と見られる」「公示地価は…の傾向」など、出典の確実性に応じた表現を用いること。
 `;
 
+  // Google検索グラウンディング（tools: [{ googleSearch: {} }]、callText 呼び出し側で有効化）。
+  // 上記の実データ（国交省API・ハザード情報）だけではカバーできない「直近の再開発・新施設・
+  // 補助金制度」といった時事的なファクトを検索で補うための指示。
+  const groundingBlock = `
+# Google検索による最新情報のリサーチ（厳守）
+記事の対象エリア（${locName}を含む自治体・駅周辺）に関して、直近1〜2年で完了・進行中の再開発計画、
+新設された商業施設や公共インフラ、自治体の最新の住宅補助金や子育て支援制度をGoogle検索でリサーチし、
+具体的な施設名・計画名・制度名を本文中に必ず引用して執筆すること。`;
+
   return `あなたは日本の不動産市場に精通したベテラン不動産アナリストです。「物件目利きリサーチ」(${SITE_BASE_URL}) のオウンドメディア向けに、本日 ${today} 付の以下の記事の本文を Markdown で執筆してください。
 ${policyBlock}
 ${guidelinesBlock}
 ${priorityBlock}
 ${themeBlock}
 ${evidenceBlock}
+${groundingBlock}
 ${assetBlock}
 # 記事メタデータ
 - タイトル: ${meta.title}
@@ -1048,7 +1078,7 @@ async function main() {
     console.log(`[DRY] heroImage=${heroImage ? heroImage.path : "(なし)"}`);
 
     console.log("[DRY] [JA] 本文 Markdown 生成中...");
-    const jaBody = await callText(ai, jaBodyPrompt({ today, meta: jaMeta, areaData, plan, guidelines, editorialGuidelines, heroImage, chart }));
+    const jaBody = await callText(ai, jaBodyPrompt({ today, meta: jaMeta, areaData, plan, guidelines, editorialGuidelines, heroImage, chart }), { grounding: true });
     console.log("[DRY] 本文 Markdown:\n" + jaBody);
     console.log("[DRY] (dry-run のため .md ファイル書き込み・コンテキスト保存・翻訳・Firestore書き込みはスキップしました)");
     return;
@@ -1081,7 +1111,7 @@ async function main() {
   const chart = buildAreaChartUrl(areaData, jaMeta.primaryLocation.name);
 
   console.log("[INFO] [JA] 本文 Markdown 生成中...");
-  const jaBody = await callText(ai, jaBodyPrompt({ today, meta: jaMeta, areaData, plan, guidelines, editorialGuidelines, heroImage, chart }));
+  const jaBody = await callText(ai, jaBodyPrompt({ today, meta: jaMeta, areaData, plan, guidelines, editorialGuidelines, heroImage, chart }), { grounding: true });
   if (jaBody.length < 1500) {
     throw new Error(`日本語本文が短すぎます: ${jaBody.length} chars`);
   }
