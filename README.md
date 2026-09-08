@@ -656,7 +656,13 @@ useEffect(() => {
 
 ### 管理画面からの編集方針制御（`/admin`「ブログ編集方針」タブ）
 
-上記6の GA4 分析（データドリブン・自動）とは別に、**人が直接指定する編集方針**を Firestore `settings/blog_policy` ドキュメント（`editorialGuidelines` フィールド、文字列）として持ち、`/admin`「ブログ編集方針」タブ（`GET`/`PATCH /api/admin/blog-policy`）から編集できる。`generate_daily_blog.js` は生成の直前に `loadEditorialPolicy()` でこの値を取得し、`jaMetaPrompt()`（タイトル・description・タグ・アウトライン生成）と `jaBodyPrompt()`（本文執筆、プロンプト冒頭付近に挿入し優先度を高くしている）の両方に「編集方針・ターゲット層（必ず遵守すること）」として注入する。Firestore 未設定・読み取り失敗時は既定文言（不動産投資家に加え実需のマイホーム購入層も対象、専門用語を減らし暮らしやすさのインサイトを盛り込む）にフォールバックし、生成は止めない。ローカルで `node scripts/generate_daily_blog.js` を `BLOG_DRY_RUN=1` 実行し確認したところ、投資家向けテーマ（データセンター集積と地価）でも本文にファミリー層向けセクションが自然に追加された。
+上記6の GA4 分析（データドリブン・自動）とは別に、**人が直接指定する編集方針**を Firestore `settings/blog_policy` ドキュメント（`editorialGuidelines` フィールド、文字列）として持ち、`/admin`「ブログ編集方針」タブ（`GET`/`PATCH /api/admin/blog-policy`）から編集できる。`generate_daily_blog.js` は生成の直前に `loadEditorialPolicy()` でこの値を取得し、`jaMetaPrompt()`（タイトル・description・タグ・アウトライン生成）と `jaBodyPrompt()`（本文執筆）の両方に注入する。Firestore 未設定・読み取り失敗時は既定文言（不動産投資家に加え実需のマイホーム購入層も対象、専門用語を減らし暮らしやすさのインサイトを盛り込む）にフォールバックし、生成は止めない。
+
+**人の指示（大方針）と自己進化ループ（データ）の優先順位を明示した二段構成** — `jaBodyPrompt()` では、この編集方針を上記6の `guidelines`（GA4分析フィードバック）と単純に並置せず、明確な優先順位を持つ2ブロックとしてプロンプト冒頭にこの順で配置している:
+1. `【絶対的な編集大方針（人間からの指示・最優先で遵守）】` — `editorialGuidelines`。ターゲット層・テーマの枠組みを決める最上位の指示。
+2. `【前回の振り返りと本日の改善点（AI/データからの指示）】` — `guidelines.summary`（前回までの振り返り）と `guidelines.contentGuidelines`（本日反映すべき構成・トーン等の改善点）。
+
+直後に `【重要: 指示の優先順位（厳守）】` ブロックを置き、「1のターゲット層・テーマの枠組みを厳守した上で、2にある表現の工夫や反省点を適用して執筆すること。矛盾する場合は1を優先する」と明記することで、両者が競合して効果を打ち消し合わないようにしている（`jaMetaPrompt()` は `guidelines` を受け取らないため1のみ）。ローカルで `node scripts/generate_daily_blog.js` を `BLOG_DRY_RUN=1` 実行し確認したところ、投資家向けテーマ（軽井沢の高級リゾート）でも本文にファミリー・実需層向けセクションが自然に追加され（大方針の反映）、同時に `guidelines.summary` が指摘していた「CTAクリック率が低い」課題に対応する形で本文中に複数のCTAコールアウトが新たに追加された（振り返り・改善点の反映）——両方のシグナルが競合せず共存することを確認した。
 
 ### 7. ★ 図表の自動生成・挿入：QuickChartグラフ + Gemini生成アイキャッチ画像
 

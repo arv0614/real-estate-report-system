@@ -419,9 +419,13 @@ ${perfBlock}
 }
 
 function jaMetaPrompt({ today, recentSlugs, plan, editorialGuidelines }) {
+  // 【絶対的な編集大方針（人間からの指示）】: /admin で設定された Firestore
+  // settings/blog_policy.editorialGuidelines。この関数には自己進化ループ側の
+  // フィードバック（guidelines）は渡していないため、ここでは大方針のみを最優先で提示する
+  // （jaBodyPrompt では両方が渡されるため、優先順位を明記した二段構成にしている）。
   const policyBlock = editorialGuidelines
     ? `
-# 編集方針・ターゲット層（管理画面で設定・必ず遵守すること）
+# 【絶対的な編集大方針（人間からの指示・最優先で遵守）】
 ${editorialGuidelines}
 `
     : "";
@@ -454,29 +458,50 @@ function jaBodyPrompt({ today, meta, areaData, plan, guidelines, editorialGuidel
   const lng = Number(meta.primaryLocation?.lng);
   const locName = meta.primaryLocation?.name || "対象エリア";
   const ctaUrl = `${SITE_BASE_URL}/?lat=${lat}&lng=${lng}&zoom=15&ref=blog_cta`;
+  // 【絶対的な編集大方針（人間からの指示）】: /admin で設定された Firestore
+  // settings/blog_policy.editorialGuidelines。ターゲット層・トーンの大枠を決める、
+  // 他のどの指示より優先される「憲法」的な位置づけ。
   const policyBlock = editorialGuidelines
     ? `
-# 編集方針・ターゲット層（管理画面で設定・必ず遵守すること）
+# 【絶対的な編集大方針（人間からの指示・最優先で遵守）】
 ${editorialGuidelines}
-本文の語り口・専門用語の量・盛り込む観点は、上記の編集方針に厳密に従うこと。`
+本文の語り口・専門用語の量・盛り込む観点は、上記の編集大方針に厳密に従うこと。`
     : "";
+
+  // 【前回の振り返りと本日の改善点（AI/データからの指示）】: scripts/analyze_blog_performance.js
+  // が GA4 実績分析から週次生成する data/blog_seo_guidelines.json。summary（前回までの
+  // 振り返り）と contentGuidelines（本日反映すべき構成・トーン等の改善点）を提示する。
+  // これは【絶対的な編集大方針】の枠内で「どう書けばより読まれるか」を補助する位置づけであり、
+  // ターゲット層やテーマそのものを上書きしてはならない（下記メタ指示で明示）。
+  const cg = guidelines && !guidelines.insufficientData ? guidelines.contentGuidelines : null;
+  const guidelinesBlock = guidelines && !guidelines.insufficientData
+    ? `
+# 【前回の振り返りと本日の改善点（AI/データからの指示）】
+（GA4実績分析ベース、scripts/analyze_blog_performance.js が週次生成）
+- 前回までの振り返り: ${guidelines.summary || "(なし)"}
+- 本日反映すべき改善点:
+  - 構成: ${(cg?.structure || []).map((s) => `\n    - ${s}`).join("") || "(なし)"}
+  - 画像・グラフの配置方針（参考。実際に挿入する画像・グラフの実体は下記「実画像・グラフの挿入」を参照）: ${(cg?.visuals || []).map((s) => `\n    - ${s}`).join("") || "(なし)"}
+  - トーン: ${cg?.tone || "(指定なし)"}
+  - SEO留意点: ${cg?.seoNotes || "(指定なし)"}`
+    : "";
+
+  // 【重要】両指示の優先順位を明示するメタ指示。editorialGuidelines と guidelines の
+  // 両方が存在する場合のみ意味を持つため、どちらか一方でも欠けていれば省略する。
+  const priorityBlock = editorialGuidelines && guidelinesBlock
+    ? `
+# 【重要: 指示の優先順位（厳守）】
+【絶対的な編集大方針】のターゲット層とテーマの枠組みを厳守した上で、【前回の振り返りと本日の改善点】にある
+表現の工夫や反省点を適用して執筆すること。両者が矛盾する場合は必ず【絶対的な編集大方針】を優先し、
+【前回の振り返りと本日の改善点】はその範囲内で表現力・読了率を高めるための補助的な指示として扱うこと。`
+    : "";
+
   const themeBlock = plan
     ? `
 # 本日の企画（編集長決定済み・厳守）
 - テーマ: ${plan.theme}
 - 切り口: ${plan.angle}
 本文全体を通して、上記テーマ・切り口を軸に据えて執筆すること。`
-    : "";
-
-  const cg = guidelines && !guidelines.insufficientData ? guidelines.contentGuidelines : null;
-  const guidelinesBlock = cg
-    ? `
-# SEO・CVR改善ガイドライン（GA4実績分析ベース、scripts/analyze_blog_performance.js が生成・週次更新）
-過去の記事実績分析から得られた、以下の構成・表現方針を今回の本文に反映すること:
-- 構成: ${(cg.structure || []).map((s) => `\n  - ${s}`).join("") || "(なし)"}
-- 画像・グラフの配置方針（参考。実際に挿入する画像・グラフの実体は下記「実画像・グラフの挿入」を参照）: ${(cg.visuals || []).map((s) => `\n  - ${s}`).join("") || "(なし)"}
-- トーン: ${cg.tone || "(指定なし)"}
-- SEO留意点: ${cg.seoNotes || "(指定なし)"}`
     : "";
 
   // 本文生成前に実データ・AI画像生成から用意済みの実アセット（QuickChartグラフURL /
@@ -528,9 +553,10 @@ ${JSON.stringify(areaData, null, 2)}
 
   return `あなたは日本の不動産市場に精通したベテラン不動産アナリストです。「物件目利きリサーチ」(${SITE_BASE_URL}) のオウンドメディア向けに、本日 ${today} 付の以下の記事の本文を Markdown で執筆してください。
 ${policyBlock}
+${guidelinesBlock}
+${priorityBlock}
 ${themeBlock}
 ${evidenceBlock}
-${guidelinesBlock}
 ${assetBlock}
 # 記事メタデータ
 - タイトル: ${meta.title}
