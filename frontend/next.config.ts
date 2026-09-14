@@ -83,10 +83,15 @@ const nextConfig: NextConfig = {
     // (= `[locale]` を含む app router の動的ルート) より **後** に評価される。
     // 結果として `/sitemap.xml` は先に `[locale]=sitemap.xml` でマッチして
     // notFound に到達してしまうため、`beforeFiles` で確実に先回りする。
+    // /lifelog も同じ理由（`[locale]` 動的ルートに先取りされて 404 になる）で
+    // beforeFiles に置く。サブサービス mekiki-lifelog の Cloud Run に丸ごとプロキシ。
+    const LIFELOG_ORIGIN = "https://mekiki-lifelog-133806934491.asia-northeast1.run.app";
     return {
       beforeFiles: [
         { source: "/sitemap.xml", destination: "/api/sitemap" },
         { source: "/robots.txt", destination: "/api/robots" },
+        { source: "/lifelog", destination: `${LIFELOG_ORIGIN}/lifelog` },
+        { source: "/lifelog/:path*", destination: `${LIFELOG_ORIGIN}/lifelog/:path*` },
       ],
       afterFiles: [],
       fallback: [],
