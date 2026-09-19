@@ -21,11 +21,10 @@ import {
   GUEST_DAILY_LIMIT,
   IS_FREE_UNLIMITED_CAMPAIGN,
 } from "@/lib/userPlan";
-import { dataLayerPush } from "@/lib/analytics";
+import { dataLayerPush, trackEvent, trackPurchase } from "@/lib/analytics";
 import { fetchTransactions, fetchAiReport, calcSummary } from "@/lib/api";
 import { TOKYO_23_WARDS } from "@/lib/areas";
 import { trackLimitReached } from "@/lib/posthog";
-import { gtagEvent, gtagPurchase } from "@/lib/gtag";
 import { exportToPdf, DEFAULT_PDF_OPTIONS } from "@/lib/exportPdf";
 import type { PdfExportOptions } from "@/lib/exportPdf";
 import { getLifestyleCache, saveLifestyleCache } from "@/lib/lifestyleCache";
@@ -169,7 +168,7 @@ function HomePageContent() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [settingsOpen]);
 
-  // 決済成功リダイレクト検知 → GA4 purchase イベント（セッション内重複防止）
+  // 決済成功リダイレクト検知 → dataLayer へ purchase イベント（セッション内重複防止）
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("payment") !== "success") return;
@@ -177,7 +176,7 @@ function HomePageContent() {
     const DEDUP_KEY = "ga4_purchase_fired";
     if (!sessionStorage.getItem(DEDUP_KEY)) {
       sessionStorage.setItem(DEDUP_KEY, "1");
-      gtagPurchase(`ls_${Date.now()}`, 980, "JPY");
+      trackPurchase(`ls_${Date.now()}`, 980, "JPY");
     }
 
     // URL から ?payment=success を除去してリロード時の重複を防ぐ
@@ -251,8 +250,8 @@ function HomePageContent() {
         if (!checkGuestSearchAllowed()) {
           trackLimitReached({ plan: "guest" });
           dataLayerPush({ event: "limit_reached", user_plan: "guest", search_count_today: GUEST_DAILY_LIMIT });
-          gtagEvent({ action: "reach_limit", category: "conversion_funnel", label: "guest", params: { user_plan: "guest" } });
-          gtagEvent({ action: "view_plan_modal", category: "conversion_funnel", label: "limit_modal" });
+          trackEvent({ action: "reach_limit", category: "conversion_funnel", label: "guest", params: { user_plan: "guest" } });
+          trackEvent({ action: "view_plan_modal", category: "conversion_funnel", label: "limit_modal" });
           setPlanModalOpen(true);
           return;
         }
@@ -264,8 +263,8 @@ function HomePageContent() {
         if (!IS_FREE_UNLIMITED_CAMPAIGN && !allowed) {
           trackLimitReached({ plan: "free", uid: user.uid });
           dataLayerPush({ event: "limit_reached", user_plan: "free", search_count_today: FREE_DAILY_LIMIT });
-          gtagEvent({ action: "reach_limit", category: "conversion_funnel", label: "free", params: { user_plan: "free" } });
-          gtagEvent({ action: "view_plan_modal", category: "conversion_funnel", label: "limit_modal" });
+          trackEvent({ action: "reach_limit", category: "conversion_funnel", label: "free", params: { user_plan: "free" } });
+          trackEvent({ action: "view_plan_modal", category: "conversion_funnel", label: "limit_modal" });
           setPlanModalOpen(true);
           return;
         }
@@ -325,7 +324,7 @@ function HomePageContent() {
       const locationName = data.data.data[0]
         ? `${data.data.data[0].prefecture}${data.data.data[0].municipality}`
         : "";
-      gtagEvent({ action: "generate_report", category: "engagement", label: locationName, params: { user_plan: userPlanDL } });
+      trackEvent({ action: "generate_report", category: "engagement", label: locationName, params: { user_plan: userPlanDL } });
 
       // Firestore に検索履歴を保存（ログイン中のみ）
       if (user) {
@@ -451,7 +450,7 @@ function HomePageContent() {
 
   async function handleDownloadPdf() {
     if (plan !== "pro") {
-      gtagEvent({ action: "view_plan_modal", category: "conversion_funnel", label: "pdf" });
+      trackEvent({ action: "view_plan_modal", category: "conversion_funnel", label: "pdf" });
       setPlanModalOpen(true);
       return;
     }
@@ -609,11 +608,11 @@ function HomePageContent() {
     try {
       if (currentBookmark) {
         await bookmarks.remove(currentBookmark.id);
-        gtagEvent({ action: "bookmark_remove", category: "engagement", label: currentBookmark.title });
+        trackEvent({ action: "bookmark_remove", category: "engagement", label: currentBookmark.title });
       } else {
         const title = `${firstRecord.prefecture ?? ""}${firstRecord.municipality ?? ""}`.trim() || t("Bookmarks.untitled");
         await bookmarks.add({ lat: searchCoords.lat, lng: searchCoords.lng, zoom: 15, title });
-        gtagEvent({ action: "bookmark_add", category: "engagement", label: title });
+        trackEvent({ action: "bookmark_add", category: "engagement", label: title });
       }
     } catch (err) {
       console.error("[HomeClient] bookmark toggle failed:", err);
@@ -687,7 +686,7 @@ function HomePageContent() {
           {/* Free ユーザー向けアップグレードボタン */}
           {!planLoading && plan === "free" && (
             <button
-              onClick={() => { gtagEvent({ action: "view_plan_modal", category: "conversion_funnel", label: "header_upgrade" }); setPlanModalOpen(true); }}
+              onClick={() => { trackEvent({ action: "view_plan_modal", category: "conversion_funnel", label: "header_upgrade" }); setPlanModalOpen(true); }}
               className="hidden sm:inline-flex text-xs px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold hover:from-amber-600 hover:to-orange-600 transition-colors shadow-sm"
             >
               {t("Header.upgradeBtn")}
@@ -696,7 +695,7 @@ function HomePageContent() {
           {/* ゲスト・未ログイン時はベータ情報ボタン */}
           {!user && (
             <button
-              onClick={() => { gtagEvent({ action: "view_plan_modal", category: "conversion_funnel", label: "header" }); setPlanModalOpen(true); }}
+              onClick={() => { trackEvent({ action: "view_plan_modal", category: "conversion_funnel", label: "header" }); setPlanModalOpen(true); }}
               className="hidden sm:inline-flex text-xs px-3 py-1.5 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
             >
               {t("Header.betaLink")}
@@ -816,7 +815,7 @@ function HomePageContent() {
             <button
               onClick={() => {
                 setMobileMenuOpen(false);
-                gtagEvent({ action: "view_plan_modal", category: "conversion_funnel", label: "mobile_menu" });
+                trackEvent({ action: "view_plan_modal", category: "conversion_funnel", label: "mobile_menu" });
                 setPlanModalOpen(true);
               }}
               className="w-full text-left px-3 py-2.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-semibold shadow-sm"
@@ -929,7 +928,7 @@ function HomePageContent() {
                 <button
                   type="button"
                   onClick={() => {
-                    gtagEvent({ action: "view_plan_modal", category: "conversion_funnel", label: "rate_limit_banner" });
+                    trackEvent({ action: "view_plan_modal", category: "conversion_funnel", label: "rate_limit_banner" });
                     setPlanModalOpen(true);
                   }}
                   className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-sm font-semibold shadow-md hover:shadow-lg transition-all"
@@ -1238,7 +1237,7 @@ function HomePageContent() {
                             <button
                               type="button"
                               onClick={() => {
-                                gtagEvent({ action: "view_plan_modal", category: "conversion_funnel", label: "walk_time_filter" });
+                                trackEvent({ action: "view_plan_modal", category: "conversion_funnel", label: "walk_time_filter" });
                                 setPlanModalOpen(true);
                               }}
                               title={t("WalkTimeFilter.lockedHint")}

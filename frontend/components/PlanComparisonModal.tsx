@@ -6,8 +6,7 @@ import { getApiBase } from "@/lib/api";
 import { auth } from "@/lib/firebase";
 import { useAuthModal } from "./AuthModalContext";
 import { FREE_DAILY_LIMIT, GUEST_DAILY_LIMIT, IS_FREE_UNLIMITED_CAMPAIGN } from "@/lib/userPlan";
-import { gtagEvent } from "@/lib/gtag";
-import { dataLayerPush } from "@/lib/analytics";
+import { dataLayerPush, trackEvent } from "@/lib/analytics";
 import type { UserPlan } from "@/lib/userPlan";
 
 interface Props {
@@ -71,7 +70,7 @@ export function PlanComparisonModal({ open, onClose, currentPlan, uid, userEmail
   }
 
   async function handleUpgrade() {
-    gtagEvent({ action: "begin_checkout", category: "conversion_funnel", label: "Pro" });
+    trackEvent({ action: "begin_checkout", category: "conversion_funnel", label: "Pro" });
     dataLayerPush({ event: "begin_checkout", user_plan: currentPlan ?? "guest", search_count_today: searchCountToday });
     if (!uid) return;
     setCheckoutLoading(true);

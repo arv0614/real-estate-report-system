@@ -16,7 +16,7 @@ import {
   type WhiteLabelConfig,
 } from "@/lib/userPlan";
 import { PlanComparisonModal } from "@/components/PlanComparisonModal";
-import { gtagEvent } from "@/lib/gtag";
+import { trackEvent } from "@/lib/analytics";
 
 const MAX_LOGO_SIZE = 2 * 1024 * 1024; // 2MB
 const ALLOWED_MIME = ["image/png", "image/jpeg", "image/jpg", "image/svg+xml"];
@@ -156,7 +156,7 @@ export default function ProfileClient() {
       await saveWhiteLabelConfig(user.uid, trimmed);
       setConfig(trimmed);
       setSavedAt(Date.now());
-      gtagEvent({ action: "save_whitelabel", category: "engagement", label: trimmed.companyLogoUrl ? "with_logo" : "name_only" });
+      trackEvent({ action: "save_whitelabel", category: "engagement", label: trimmed.companyLogoUrl ? "with_logo" : "name_only" });
     } catch (err) {
       console.error("[profile] save failed:", err);
       setError(t("errorSave"));
@@ -217,7 +217,7 @@ export default function ProfileClient() {
         {!showLoadingState && user && !isPro && (
           <FreeLockedCard
             onUpgrade={() => {
-              gtagEvent({ action: "view_plan_modal", category: "conversion_funnel", label: "profile" });
+              trackEvent({ action: "view_plan_modal", category: "conversion_funnel", label: "profile" });
               setPlanModalOpen(true);
             }}
           />
@@ -596,7 +596,7 @@ function McpSection() {
       }
       setPlaintextKey((body as { apiKey?: string }).apiKey ?? null);
       setCopied(false);
-      gtagEvent({ action: "issue_mcp_key", category: "engagement", label: "profile" });
+      trackEvent({ action: "issue_mcp_key", category: "engagement", label: "profile" });
     } catch (err) {
       console.error("[profile] issue mcp key error:", err);
       setError(t("mcpError"));
@@ -627,7 +627,7 @@ function McpSection() {
       }
       setPlaintextKey(null);
       setRevokedAt(Date.now());
-      gtagEvent({ action: "revoke_mcp_key", category: "engagement", label: "profile" });
+      trackEvent({ action: "revoke_mcp_key", category: "engagement", label: "profile" });
     } catch (err) {
       console.error("[profile] revoke mcp key error:", err);
       setError(t("mcpError"));

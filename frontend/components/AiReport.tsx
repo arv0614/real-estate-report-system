@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { gtagEvent } from "@/lib/gtag";
+import { trackEvent } from "@/lib/analytics";
 import type { User } from "firebase/auth";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -257,7 +257,7 @@ export function AiReport({
 
   async function handleGenerate() {
     if (!user || !cityCode || !prefecture || !municipality) return;
-    gtagEvent({ action: "generate_lifestyle_image", category: "engagement" });
+    trackEvent({ action: "generate_lifestyle_image", category: "engagement" });
     setGenerating(true);
     setGenError(null);
     try {

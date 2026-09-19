@@ -10,7 +10,7 @@ import {
   signInWithGoogle,
   sendPasswordReset,
 } from "@/lib/firebase";
-import { gtagEvent } from "@/lib/gtag";
+import { trackEvent } from "@/lib/analytics";
 import type { AuthModalMode } from "./AuthModalContext";
 
 interface Props {
@@ -115,7 +115,7 @@ export function AuthModal({ open, mode, onModeChange, onClose }: Props) {
       if (mode === "signup") {
         await signUpWithEmail(trimmedEmail, password);
         // createUserWithEmailAndPassword は常に新規ユーザー作成なので無条件で計測
-        gtagEvent({ action: "sign_up", category: "engagement", label: "email" });
+        trackEvent({ action: "sign_up", category: "engagement", label: "email" });
       } else {
         await signInWithEmail(trimmedEmail, password);
       }
@@ -135,7 +135,7 @@ export function AuthModal({ open, mode, onModeChange, onClose }: Props) {
       const cred = await signInWithGoogle();
       // 既存ユーザーのログインは除外し、新規サインアップ時のみ計測する
       if (getAdditionalUserInfo(cred)?.isNewUser) {
-        gtagEvent({ action: "sign_up", category: "engagement", label: "google" });
+        trackEvent({ action: "sign_up", category: "engagement", label: "google" });
       }
       onClose();
     } catch (err) {
