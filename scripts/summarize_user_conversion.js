@@ -31,7 +31,8 @@
  *   node scripts/summarize_user_conversion.js --input fix.json # GA4 を叩かずフィクスチャで要約 (テスト用)
  *
  * 環境変数:
- *   GA4_PROPERTY_ID      — 必須 (gcloud 取得時)。GA4 プロパティ番号
+ *   GA4_PROPERTY_ID      — 任意。参照する GA4 プロパティ番号の上書き用
+ *                          （既定: scripts/ga4_config.js の 312222045 = Mekiki-Research - GA4）
  *   GA4_ACCESS_TOKEN     — 任意。OAuth アクセストークン (未設定時 gcloud から取得、analytics.readonly)
  *   GA4_EDIT_ACCESS_TOKEN — 任意。user_plan カスタムディメンション自動登録用 (未設定時 gcloud から取得、analytics.edit)
  *   SLACK_WEBHOOK_URL    — 任意。設定時は要約を Slack Incoming Webhook に送信
@@ -50,7 +51,7 @@ const DRY_RUN = args.includes("--dry-run");
 const NO_SAVE = args.includes("--no-save");
 const INPUT_FILE = flagValue("--input", null);
 const PERIOD_DAYS = Math.max(1, Number(flagValue("--period", 1)) || 1);
-const PROPERTY_ID = process.env.GA4_PROPERTY_ID;
+const { GA4_PROPERTY_ID: PROPERTY_ID } = require("./ga4_config");
 const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
 const USER_PLAN_DIMENSION = "customEvent:user_plan";
 

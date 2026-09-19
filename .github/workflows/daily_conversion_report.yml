@@ -75,7 +75,9 @@ jobs:
       - name: Generate & send daily report
         if: steps.gcp_creds.outputs.has_key == 'true'
         env:
-          GA4_PROPERTY_ID: ${{ secrets.GA4_PROPERTY_ID }}
+          # GA4 プロパティ「Mekiki-Research - GA4」(properties/312222045)。
+          # 旧プロパティを指したままの secrets.GA4_PROPERTY_ID は使わない。
+          GA4_PROPERTY_ID: "312222045"
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
           FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}

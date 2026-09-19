@@ -76,7 +76,9 @@ jobs:
       - name: Run blog performance analysis
         if: steps.gcp_creds.outputs.has_key == 'true'
         env:
-          GA4_PROPERTY_ID: ${{ secrets.GA4_PROPERTY_ID }}
+          # GA4 プロパティ「Mekiki-Research - GA4」(properties/312222045)。
+          # 旧プロパティを指したままの secrets.GA4_PROPERTY_ID は使わない。
+          GA4_PROPERTY_ID: "312222045"
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}

@@ -317,7 +317,7 @@ Web 広告の出稿効果を **無料**（Looker Studio + GA4 標準）で可視
 
 **アラート経路**: 異常検知時、監視スクリプトは終了コード1で失敗し、GitHub のジョブ失敗通知（メール）がそのままアラートになります。`SLACK_WEBHOOK_URL` を設定すれば Slack 通知も飛びます。
 
-**必要な Secrets / 環境変数**: `GCP_SA_KEY`, `GCP_PROJECT_ID`, `GA4_PROPERTY_ID`, `SLACK_WEBHOOK_URL`（任意）, `FRONTEND_CLOUD_RUN_SERVICE_NAME`（任意）。SA には対象 GA4 プロパティの「閲覧者」権限と Analytics Data API の有効化が必要。詳細は `.env.example` 参照。
+**必要な Secrets / 環境変数**: `GCP_SA_KEY`, `GCP_PROJECT_ID`, `SLACK_WEBHOOK_URL`（任意）, `FRONTEND_CLOUD_RUN_SERVICE_NAME`（任意）。参照先の GA4 プロパティ（「Mekiki-Research - GA4」= `312222045`）は `scripts/ga4_config.js` に定義してあり Secret 不要（`GA4_PROPERTY_ID` を設定した場合のみ上書き）。SA には対象 GA4 プロパティの「閲覧者」権限と Analytics Data API の有効化が必要。詳細は `.env.example` 参照。
 
 各スクリプトは `--dry-run` / `--input <file>` でローカル検証可能（GCP/GA4 認証なしでロジック確認）。
 
@@ -1286,21 +1286,22 @@ BLOG_DATE=2026-12-31 GEMINI_API_KEY=... node scripts/generate_daily_blog.js
 ### SEOパフォーマンス分析スクリプトのローカル検証
 
 ```bash
-# GA4 を叩かずフィクスチャで分析（GA4_PROPERTY_ID 不要、GEMINI_API_KEY は必要）
+# GA4 を叩かずフィクスチャで分析（GA4 認証不要、GEMINI_API_KEY は必要）
 node scripts/analyze_blog_performance.js --input fixtures/ga4_sample.json --dry-run
 
 # 実際の GA4 プロパティに接続してドライラン（gcloud auth login 済み、または GA4_ACCESS_TOKEN 設定）
-GA4_PROPERTY_ID=... GEMINI_API_KEY=... node scripts/analyze_blog_performance.js --dry-run
+# プロパティは scripts/ga4_config.js の既定値（312222045）を使う。別プロパティなら GA4_PROPERTY_ID= で上書き
+GEMINI_API_KEY=... node scripts/analyze_blog_performance.js --dry-run
 
 # 遡及日数を指定
-GA4_PROPERTY_ID=... GEMINI_API_KEY=... node scripts/analyze_blog_performance.js --days 14 --dry-run
+GEMINI_API_KEY=... node scripts/analyze_blog_performance.js --days 14 --dry-run
 
 # 実行（data/blog_seo_guidelines.json に保存）
-GA4_PROPERTY_ID=... GEMINI_API_KEY=... node scripts/analyze_blog_performance.js
+GEMINI_API_KEY=... node scripts/analyze_blog_performance.js
 
 # Slack通知内容のプレビュー（SLACK_WEBHOOK_URL を設定しても --dry-run 中は実送信されず、
 # 送信予定の本文が [DRY] Slack 送信内容: として標準出力に表示されるだけ）
-GA4_PROPERTY_ID=... GEMINI_API_KEY=... SLACK_WEBHOOK_URL=... node scripts/analyze_blog_performance.js --dry-run
+GEMINI_API_KEY=... SLACK_WEBHOOK_URL=... node scripts/analyze_blog_performance.js --dry-run
 ```
 
 `--input` フィクスチャの形式は `{ "pageReport": {...}, "eventReport": {...} }`（GA4 `runReport` の生レスポンス2件）。
@@ -1316,7 +1317,6 @@ GA4_PROPERTY_ID=... GEMINI_API_KEY=... SLACK_WEBHOOK_URL=... node scripts/analyz
 |---|---|---|
 | **`PAT_TOKEN`** | `generate-blog.yml` | repo + workflow スコープの Personal Access Token。デフォルトの `GITHUB_TOKEN` では他ワークフローを連鎖トリガーできない仕様への対処。push 後に `deploy.yml` を発火させるために必須 |
 | **`GEMINI_API_KEY`** | `generate-blog.yml`, `analyze_blog_seo.yml` | Gemini API キー（企画会議・画像プロンプト生成: 3.6 Flash / 記事生成・翻訳・GA4実績分析: 3.1 Pro Preview / アイキャッチ画像生成: 3.1 Flash Image） |
-| `GA4_PROPERTY_ID` | `ad_daily_report.yml`, `analyze_blog_seo.yml`, `daily_conversion_report.yml` | GA4 プロパティ番号。Data API 呼び出しに使用 |
 | `SLACK_WEBHOOK_URL` | `ad_daily_report.yml`, `analyze_blog_seo.yml`, `monitor_traffic.yml`, `daily_conversion_report.yml`（任意） | Slack Incoming Webhook URL。日次広告レポート・週次SEO運用レポート・異常検知アラート・ゲスト→無料転換レポートの通知先（未設定でも各ジョブは正常終了し標準出力にのみ表示） |
 | `GCP_SA_KEY` | `deploy.yml`, `ad_daily_report.yml`, `analyze_blog_seo.yml`, `daily_conversion_report.yml` | Cloud Run / Artifact Registry / Cloud Build へのデプロイ権限、GA4 Data API 呼び出し用アクセストークン取得（`analytics.readonly` スコープ）、および `summarize_user_conversion.js` の `user_plan` カスタムディメンション自動登録（`analytics.edit` スコープ、要 GA4 property 側で当該 SA に Editor 権限付与。無い場合は自動登録をスキップし guest/free 合算値にフォールバック）を持つサービスアカウントの JSON キー |
 | `GCP_PROJECT_ID` | `deploy.yml` | GCP プロジェクト ID |
@@ -1372,7 +1372,7 @@ GA4_PROPERTY_ID=... GEMINI_API_KEY=... SLACK_WEBHOOK_URL=... node scripts/analyz
 
 | 変数名 | 必須 | 既定値 | 用途 |
 |---|---|---|---|
-| `GA4_PROPERTY_ID` | ✅（`--input` フィクスチャ利用時を除く） | — | GA4 プロパティ番号 |
+| `GA4_PROPERTY_ID` | ❌ | `312222045`（`scripts/ga4_config.js`） | 参照する GA4 プロパティ番号の上書き用 |
 | `GEMINI_API_KEY` | ✅（分析対象記事3件未満の場合を除く） | — | Gemini API キー |
 | `GA4_ACCESS_TOKEN` | ❌ | — | 未設定時は `gcloud auth print-access-token` から取得 |
 | `GEMINI_ANALYSIS_MODEL` | ❌ | `gemini-3.1-pro-preview` | 分析モデル切替 |
@@ -1383,7 +1383,7 @@ GA4_PROPERTY_ID=... GEMINI_API_KEY=... SLACK_WEBHOOK_URL=... node scripts/analyz
 
 | 変数名 | 必須 | 既定値 | 用途 |
 |---|---|---|---|
-| `GA4_PROPERTY_ID` | ✅（`--input` フィクスチャ利用時を除く） | — | GA4 プロパティ番号 |
+| `GA4_PROPERTY_ID` | ❌ | `312222045`（`scripts/ga4_config.js`） | 参照する GA4 プロパティ番号の上書き用 |
 | `GA4_ACCESS_TOKEN` | ❌ | — | 未設定時は `gcloud auth print-access-token --scopes=analytics.readonly` から取得 |
 | `GA4_EDIT_ACCESS_TOKEN` | ❌ | — | `user_plan` カスタムディメンションの自動登録用。未設定時は `gcloud auth print-access-token --scopes=analytics.edit` から取得。失敗しても致命的にせず reach_limit は guest/free 合算値にフォールバック |
 | `SLACK_WEBHOOK_URL` | ❌ | — | 設定時、転換ファネルレポートをSlackに通知 |

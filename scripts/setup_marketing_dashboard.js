@@ -14,8 +14,9 @@
  *   node scripts/setup_marketing_dashboard.js --out path # 概念編(marketing_dashboard.md) の出力先を指定
  *
  * 任意の環境変数 (未設定でもプレースホルダで生成する):
- *   GA4_MEASUREMENT_ID  — GA4 測定ID (例: G-MF8SLJ81D2)
- *   GA4_PROPERTY_ID     — GA4 プロパティ番号 (例: 123456789) — Data API / 接続で使用
+ *   GA4_MEASUREMENT_ID  — GA4 測定ID の上書き用 (既定: G-4Y1CLF7J2P)
+ *   GA4_PROPERTY_ID     — GA4 プロパティ番号の上書き用 (既定: 312222045) — Data API / 接続で使用
+ *                         既定値は scripts/ga4_config.js（Mekiki-Research - GA4）
  *   NEXT_PUBLIC_SITE_URL — 本番サイトURL (例: https://mekiki-research.com)
  */
 
@@ -30,8 +31,7 @@ const OUT_PATH =
     ? path.resolve(process.cwd(), args[outIdx + 1])
     : path.resolve(__dirname, "../docs/marketing_dashboard.md");
 
-const MEASUREMENT_ID = process.env.GA4_MEASUREMENT_ID || "G-MF8SLJ81D2";
-const PROPERTY_ID = process.env.GA4_PROPERTY_ID || "<GA4_PROPERTY_ID>";
+const { GA4_PROPERTY_ID: PROPERTY_ID, GA4_MEASUREMENT_ID: MEASUREMENT_ID } = require("./ga4_config");
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://mekiki-research.com").replace(/\/$/, "");
 
 const GENERATED_AT = new Date().toISOString();

@@ -2,10 +2,10 @@
 
 > このファイルは `scripts/setup_marketing_dashboard.js` により自動生成されています。
 > 直接編集せず、スクリプト側を更新して再生成してください。
-> 生成日時: 2026-05-24T11:34:18.543Z
+> 生成日時: 2026-09-19T04:54:50.283Z
 
 Web 広告の出稿効果を **無料** (Looker Studio + GA4 標準) で可視化するためのテンプレート構成です。
-GA4 の測定ID `G-MF8SLJ81D2` / プロパティ `<GA4_PROPERTY_ID>` を前提とします。
+GA4 の測定ID `G-4Y1CLF7J2P` / プロパティ `312222045` を前提とします。
 
 ---
 
@@ -19,7 +19,7 @@ GA4 の測定ID `G-MF8SLJ81D2` / プロパティ `<GA4_PROPERTY_ID>` を前提�
         │                              │
         └──────────────┬───────────────┘
                        ▼
-              [GA4 プロパティ <GA4_PROPERTY_ID>]
+              [GA4 プロパティ 312222045]
                        │ (標準データソースコネクタ)
                        ▼
               [Looker Studio レポート]  ← 本手順で構築
@@ -66,7 +66,7 @@ https://mekiki-research.com/lp?utm_source=google&utm_medium=cpc&utm_campaign=202
 
 1. [Looker Studio](https://lookerstudio.google.com/) を開き **「空のレポートを作成」**。
 2. データソース選択で **「Google アナリティクス」** コネクタを選ぶ。
-3. アカウント → プロパティ `<GA4_PROPERTY_ID>` (測定ID `G-MF8SLJ81D2`) を選択して **「追加」**。
+3. アカウント → プロパティ `312222045` (測定ID `G-4Y1CLF7J2P`) を選択して **「追加」**。
 4. レポートに GA4 データソースが接続される。以降の表・グラフはこのデータソースを参照する。
 
 > GA4 の標準コネクタは **SQL を書きません**。ディメンション / 指標 / 計算フィールドを
@@ -172,7 +172,7 @@ CVR = Sign Ups / NARY_MAX(LP CTA Clicks, 1)
 ## 6. (任意) BigQuery Export を使う場合の SQL 相当クエリ
 
 GA4 → BigQuery Export を有効化している場合、Looker Studio で「カスタムクエリ」として
-以下を貼り付けると同じ指標を取得できます (テーブルは `analytics_<GA4_PROPERTY_ID>.events_*`)。
+以下を貼り付けると同じ指標を取得できます (テーブルは `analytics_312222045.events_*`)。
 
 ```sql
 SELECT
@@ -187,7 +187,7 @@ SELECT
               NULLIF(COUNTIF(event_name = 'session_start'), 0)) AS ctr,
   SAFE_DIVIDE(COUNTIF(event_name = 'sign_up'),
               NULLIF(COUNTIF(event_name = 'click_lp_cta'), 0))  AS cvr
-FROM `analytics_<GA4_PROPERTY_ID>.events_*`
+FROM `analytics_312222045.events_*`
 WHERE _TABLE_SUFFIX BETWEEN
   FORMAT_DATE('%Y%m%d', DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY))
   AND FORMAT_DATE('%Y%m%d', CURRENT_DATE())
