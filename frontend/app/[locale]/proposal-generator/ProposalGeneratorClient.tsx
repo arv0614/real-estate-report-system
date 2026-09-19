@@ -6,7 +6,7 @@ import Link from "next/link";
 import { auth } from "@/lib/firebase";
 import { useAuth } from "@/lib/useAuth";
 import { getApiBase } from "@/lib/api";
-import { gtagEvent } from "@/lib/gtag";
+import { trackEvent } from "@/lib/analytics";
 import { PlanComparisonModal } from "@/components/PlanComparisonModal";
 import BlogMiniMapWrapper from "@/components/blog/BlogMiniMapWrapper";
 
@@ -91,7 +91,7 @@ export default function ProposalGeneratorClient() {
     // Pro プラン以外はここでブロックしアップグレードモーダルを表示する。
     // バックエンドへの API コールは Pro のときだけ行う（未Proでは絶対に叩かない）。
     if (!isPro) {
-      gtagEvent({
+      trackEvent({
         action: "view_plan_modal",
         category: "conversion_funnel",
         label: "proposal_generator",

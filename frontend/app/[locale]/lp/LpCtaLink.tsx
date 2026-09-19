@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { gtagEvent } from "@/lib/gtag";
+import { trackEvent } from "@/lib/analytics";
 
 interface Props {
   href: string;
@@ -12,7 +12,7 @@ interface Props {
 }
 
 /**
- * LP の「無料で試す」CTA。クリック時に GA4 へ click_lp_cta（acquisition）を発火しつつ
+ * LP の「無料で試す」CTA。クリック時に dataLayer へ click_lp_cta（acquisition）を積みつつ
  * 通常の next/link 遷移を行う。Server Component の lp/page.tsx から利用するため client 境界を切る。
  */
 export function LpCtaLink({ href, label, className, children }: Props) {
@@ -20,7 +20,7 @@ export function LpCtaLink({ href, label, className, children }: Props) {
     <Link
       href={href}
       className={className}
-      onClick={() => gtagEvent({ action: "click_lp_cta", category: "acquisition", label })}
+      onClick={() => trackEvent({ action: "click_lp_cta", category: "acquisition", label })}
     >
       {children}
     </Link>

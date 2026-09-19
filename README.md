@@ -226,11 +226,16 @@ node scripts/prepare-hoanrin.mjs --input-dir=/path/to/A13-by-pref/
 
 ### GA4 イベント一覧（全量）
 
-GA4 へのイベント送信は `frontend/lib/gtag.ts` の `gtagEvent()` / `gtagPurchase()` と、GTM DataLayer への `dataLayerPush()` (`frontend/lib/analytics.ts`) の 2 経路で行っています。
+GA4 への計測は **Google Tag Manager に一本化**しています。アプリ側は `frontend/lib/analytics.ts` の
+`trackEvent()` / `trackPurchase()` / `dataLayerPush()` で `window.dataLayer` にイベントを積むだけで、
+GA4 への送信は GTM コンテナ（`<GoogleTagManager gtmId={NEXT_PUBLIC_GTM_ID}>`、`frontend/app/layout.tsx`）側の
+タグ／トリガー設定が担当します。
 
-**`gtagEvent`/`gtagPurchase` は gtag.js を GTM とは別に直接読み込むことで GA4 に届く**（`frontend/app/layout.tsx`）。GTM (`<GoogleTagManager>`) だけでは `window.gtag` が定義されないため、以前はこれらの呼び出しが黙って no-op になっていた（2026-09-06 に発見・修正）。GTM 側は既に page_view 等の自動収集を担っているため、直接読み込む gtag.js の `config` では `send_page_view: false` を指定し二重計測を防いでいる。GTM 側のタグ/トリガー設定（外部の Google Tag Manager コンソール）には依存しないため、コードだけでカスタムイベントの到達を保証できる。
+以前は gtag.js を GTM と並行して直接読み込んでいましたが、GTM 側の GA4 設定タグと二重計測になるため
+削除しました（`frontend/lib/gtag.ts` と `window.gtag` 依存のコードは撤去済み）。そのため **下記の
+イベントを GA4 に届けるには、GTM コンテナ側にカスタムイベントトリガー + GA4 イベントタグの設定が必要**です。
 
-#### ① カスタムイベント（`gtagEvent` 経由）
+#### ① カスタムイベント（`trackEvent` 経由）
 
 | イベント名 | `event_category` | `event_label` の値 | 発火場所 | 発火タイミング |
 |---|---|---|---|---|
@@ -245,25 +250,25 @@ GA4 へのイベント送信は `frontend/lib/gtag.ts` の `gtagEvent()` / `gtag
 | `bookmark_remove` | engagement | 削除したエリア名 | HomeClient | ピン留め解除（ブックマーク削除）操作 |
 | `save_whitelabel` | engagement | `"with_logo"` / `"name_only"` | ProfileClient | プロフィール画面でホワイトラベル設定を保存したとき |
 
-#### ② 標準 purchase イベント（`gtagPurchase` 経由）
+#### ② 標準 purchase イベント（`trackPurchase` 経由）
 
 | イベント名 | パラメータ | 発火タイミング |
 |---|---|---|
 | `purchase` | `transaction_id`: `ls_<timestamp>`, `value`: 980, `currency`: "JPY" | `?payment=success` クエリ検知時（Pro 決済完了・初回のみ） |
 
-#### ③ GTM DataLayer イベント（`dataLayerPush` 経由）
+#### ③ 検索ファネル専用の DataLayer イベント（`dataLayerPush` 経由）
 
-`window.dataLayer.push()` で GTM に送り、GTM タグ設定次第で GA4 へ転送できるイベント。
+①②とは別に、GTM のトリガー条件用として `user_plan` / `search_count_today` を必ず含む形で積むイベント。
 
 | `event` 値 | 追加パラメータ | 発火タイミング |
 |---|---|---|
-| `generate_report` | `user_plan`: "guest"/"free"/"pro", `search_count_today`: 数値 | 検索 API 成功直後（`gtagEvent` の `generate_report` と同時に発火） |
+| `generate_report` | `user_plan`: "guest"/"free"/"pro", `search_count_today`: 数値 | 検索 API 成功直後（`trackEvent` の `generate_report` と同時に発火） |
 | `limit_reached` | `user_plan`: "guest"/"free", `search_count_today`: 数値 | 日次上限到達時（`reach_limit` と同時に発火） |
 | `begin_checkout` | `user_plan`: 現在のプラン, `search_count_today`: 数値 | 決済ボタンクリック時（`begin_checkout` と同時に発火） |
 
 #### ④ GA4 自動収集イベント（コードから送信していない）
 
-GA4 の **Enhanced Measurement** が自動的に収集するイベント。コードに `gtagEvent` 等の記述はない。
+GA4 の **Enhanced Measurement** が自動的に収集するイベント（GTM の GA4 設定タグ経由）。コードに送信処理はない。
 
 | イベント名 | GA4 が自動収集する条件 |
 |---|---|
@@ -288,7 +293,7 @@ GA4 Data API を軸にした、**追加コストゼロ**（Looker Studio + GA4 �
 1. **取得指標**（GA4 Data API `runReport`）: 検索利用 `generate_report`件数 / 上限到達 `reach_limit`件数 / 無料登録
    `sign_up`件数。それぞれ「検索利用→上限到達」「上限到達→無料登録」の CVR を算出。
 2. **ゲスト限定の絞り込み**: `reach_limit` は本来ゲスト・Free 両方のプラン上限到達で発火するイベントのため、
-   GA4 のイベントパラメータ `user_plan`（`frontend/lib/gtag.ts` の `gtagEvent` 経由で送信）を
+   GA4 のイベントパラメータ `user_plan`（`frontend/lib/analytics.ts` の `trackEvent` → GTM 経由で送信）を
    event-scoped custom dimension `customEvent:user_plan` として使い、`DimensionFilter` で
    `user_plan="guest"` のみに絞り込む。この custom dimension が GA4 property 側に未登録の場合は
    起動時に GA4 Admin API 経由で自動登録を試みる（`analytics.edit` 権限が必要。権限が無い/失敗時は
