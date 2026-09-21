@@ -6,6 +6,7 @@ import type { User } from "firebase/auth";
 import { generateHouseImages, type HouseAreaDataPayload, type HouseImagesResponse } from "@/lib/api";
 import { trackEvent } from "@/lib/analytics";
 import { TagInput } from "@/components/TagInput";
+import { ImageLightbox, DownloadIcon } from "@/components/ImageLightbox";
 import type { UserPlan } from "@/lib/userPlan";
 
 interface Props {
@@ -47,10 +48,14 @@ export function LifestyleGenerator({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [images, setImages] = useState<HouseImagesResponse | null>(null);
+  /** 拡大表示中の画像。null なら Lightbox を閉じている */
+  const [lightbox, setLightbox] = useState<"exterior" | "floorPlan" | null>(null);
   /** ユーザーがこの画面でタグを触ったら、後から届く初期値で上書きしない */
   const editedRef = useRef(false);
 
   const isPro = plan === "pro";
+  // ダウンロードファイル名に使うエリア名（パス区切りなど使えない文字だけ除去）
+  const areaSlug = `${prefecture}${municipality}`.replace(/[\\/:*?"<>|\s]+/g, "-");
 
   // マイページ保存分（Firestore）は検索より後に届くことがあるため、届いた時点で反映する。
   // ただしユーザーが既に編集していれば尊重する。
@@ -98,6 +103,7 @@ export function LifestyleGenerator({
 
     setLoading(true);
     setError(null);
+    setLightbox(null);
     try {
       const result = await generateHouseImages({
         prefecture,
@@ -198,33 +204,99 @@ export function LifestyleGenerator({
         {!loading && images && (
           <div style={{ animation: "fadeInUp 0.5s ease both" }}>
             <div className="grid gap-4 sm:grid-cols-2">
-              <figure className="overflow-hidden rounded-lg border border-slate-200">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={`data:${images.exterior.mimeType};base64,${images.exterior.imageBase64}`}
-                  alt={t("exteriorAlt", { area: `${prefecture}${municipality}` })}
-                  className="w-full bg-slate-50 object-cover"
-                />
-                <figcaption className="bg-slate-50 px-3 py-2 text-center text-xs font-semibold text-slate-600">
-                  {t("exteriorCaption")}
-                </figcaption>
-              </figure>
-              <figure className="overflow-hidden rounded-lg border border-slate-200">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={`data:${images.floorPlan.mimeType};base64,${images.floorPlan.imageBase64}`}
-                  alt={t("floorPlanAlt")}
-                  className="w-full bg-white object-cover"
-                />
-                <figcaption className="bg-slate-50 px-3 py-2 text-center text-xs font-semibold text-slate-600">
-                  {t("floorPlanCaption")}
-                </figcaption>
-              </figure>
+              <GeneratedImageCard
+                src={`data:${images.exterior.mimeType};base64,${images.exterior.imageBase64}`}
+                alt={t("exteriorAlt", { area: `${prefecture}${municipality}` })}
+                caption={t("exteriorCaption")}
+                downloadName={buildDownloadName("exterior", areaSlug, images.exterior.mimeType)}
+                imageClassName="bg-slate-50"
+                onExpand={() => setLightbox("exterior")}
+              />
+              <GeneratedImageCard
+                src={`data:${images.floorPlan.mimeType};base64,${images.floorPlan.imageBase64}`}
+                alt={t("floorPlanAlt")}
+                caption={t("floorPlanCaption")}
+                downloadName={buildDownloadName("floor-plan", areaSlug, images.floorPlan.mimeType)}
+                imageClassName="bg-white"
+                onExpand={() => setLightbox("floorPlan")}
+              />
             </div>
             <p className="mt-3 text-center text-xs text-slate-400">{t("imageNote")}</p>
           </div>
         )}
       </div>
+
+      {/* ── 拡大表示（Lightbox） ───────────────────── */}
+      {images && lightbox && (
+        <ImageLightbox
+          src={`data:${images[lightbox].mimeType};base64,${images[lightbox].imageBase64}`}
+          alt={
+            lightbox === "exterior"
+              ? t("exteriorAlt", { area: `${prefecture}${municipality}` })
+              : t("floorPlanAlt")
+          }
+          caption={lightbox === "exterior" ? t("exteriorCaption") : t("floorPlanCaption")}
+          downloadName={buildDownloadName(
+            lightbox === "exterior" ? "exterior" : "floor-plan",
+            areaSlug,
+            images[lightbox].mimeType,
+          )}
+          onClose={() => setLightbox(null)}
+        />
+      )}
     </div>
   );
+}
+
+/** 生成画像1枚のカード。クリックで拡大、下部にダウンロードボタンを持つ。 */
+function GeneratedImageCard({
+  src,
+  alt,
+  caption,
+  downloadName,
+  imageClassName,
+  onExpand,
+}: {
+  src: string;
+  alt: string;
+  caption: string;
+  downloadName: string;
+  imageClassName: string;
+  onExpand: () => void;
+}) {
+  const t = useTranslations("LifestyleGenerator");
+
+  return (
+    <figure className="overflow-hidden rounded-lg border border-slate-200">
+      <button
+        type="button"
+        onClick={onExpand}
+        aria-label={t("expandImage", { caption })}
+        className="group relative block w-full cursor-zoom-in focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={src} alt={alt} className={`w-full object-cover ${imageClassName}`} />
+        <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 text-xs font-semibold text-white opacity-0 transition-all group-hover:bg-black/35 group-hover:opacity-100">
+          🔍 {t("expandHint")}
+        </span>
+      </button>
+      <figcaption className="flex items-center justify-between gap-2 bg-slate-50 px-3 py-2">
+        <span className="truncate text-xs font-semibold text-slate-600">{caption}</span>
+        <a
+          href={src}
+          download={downloadName}
+          className="inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700 transition-colors hover:border-indigo-400 hover:text-indigo-700"
+        >
+          <DownloadIcon />
+          {t("downloadBtn")}
+        </a>
+      </figcaption>
+    </figure>
+  );
+}
+
+/** `mekiki-exterior-tokyo-minato.png` のようなダウンロードファイル名を組み立てる */
+function buildDownloadName(kind: string, areaSlug: string, mimeType: string): string {
+  const ext = mimeType.includes("jpeg") || mimeType.includes("jpg") ? "jpg" : "png";
+  return `mekiki-${kind}${areaSlug ? `-${areaSlug}` : ""}.${ext}`;
 }

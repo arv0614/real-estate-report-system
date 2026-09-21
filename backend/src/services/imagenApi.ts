@@ -249,10 +249,10 @@ export interface HouseAreaData {
 
 export interface HouseImagePrompts {
   /**
-   * 外観・間取り図に共通する建築仕様（階数 / 外壁のメインカラー / 屋根形状 /
-   * ガレージの有無と位置）。2枚の画像が別の家に見えないよう、両プロンプトの
-   * 冒頭に必ずこの文字列がそのまま入る。
-   * 例: "3-story, flat roof, white exterior, built-in garage on the ground floor left"
+   * 外観・間取り図に共通する建築仕様（階数 / 屋根形状 / 外壁のメインカラー /
+   * 駐車場の有無・正確な収容台数・位置）。2枚の画像が別の家に見えないよう、
+   * 両プロンプトの冒頭に必ずこの文字列がそのまま入る。
+   * 例: "3-story, flat roof, white exterior, built-in garage for exactly 2 cars on the ground floor left"
    */
   spec: string;
   exterior: string;
@@ -276,15 +276,30 @@ Before writing any prompt, fix the shared "spec" of the building. It MUST state,
   1. number of stories (e.g. "2-story", "3-story")
   2. roof shape (e.g. "flat roof", "gabled roof", "steep snow-shedding gabled roof")
   3. main exterior wall colour and material (e.g. "white stucco exterior", "charcoal grey siding exterior")
-  4. garage: presence AND position, or its explicit absence
-     (e.g. "built-in garage on the ground floor left", "carport on the right side", "no garage, open parking pad in front")
+  4. parking: whether there is any, the EXACT car capacity as a number (0, 1, 2, ...), and its position
+     - with parking: name the type, the exact count and where it is, e.g.
+       "built-in garage for exactly 2 cars on the ground floor left",
+       "carport for exactly 1 car on the right side",
+       "open parking pad for exactly 2 cars in front of the entrance"
+     - without parking: say so explicitly, e.g. "no parking space, 0 cars"
+     - Never write a vague or ranged capacity ("some parking", "1-2 cars", "multi-car garage"). Always one exact number.
+     - If the user's wishes name a number of parking spaces, that number IS the capacity; never change it.
 Write it as one short comma-separated English phrase, e.g.:
-  "3-story, flat roof, white exterior, built-in garage on the ground floor left"
+  "3-story, flat roof, white exterior, built-in garage for exactly 2 cars on the ground floor left"
 
 ## STEP 2: write the two prompts
 - BOTH prompts MUST begin with the EXACT spec string from step 1, character for character, followed by ", ".
   The exterior photo and the floor plan must depict the same number of stories, the same roof, the same wall colour
-  and the same garage in the same position. Never let the two prompts disagree on any of the four items.
+  and the same parking (same exact car count, same type, same position). Never let the two prompts disagree on any
+  of the four items.
+- ABSOLUTE CONSTRAINT: the exterior image and the floor plan must NEVER contradict each other on the number of parking
+  spaces or the number of stories. The exact car count and the story count fixed in the spec must be reflected strictly
+  and identically in BOTH prompts. If the spec says 2 cars, the exterior shows parking for exactly 2 cars AND the floor
+  plan draws exactly 2 car bays — not 1, not 3. If the spec says 0 cars, neither image shows any car, garage or carport.
+  If the spec says 3-story, both the photograph and the plan show exactly 3 stories.
+- To make this unambiguous for the image model, restate the count inside each prompt in its own words:
+  in "exterior" write e.g. "exactly 2 cars parked in the built-in garage on the ground floor left";
+  in "floorPlan" write e.g. "ground floor plan includes a garage with exactly 2 car bays on the left".
 - The floor plan is a plan of that same building: if the spec says a built-in garage on the ground floor left, the plan
   shows that garage on the ground floor left; if the spec says 3-story, the plan covers those 3 stories.
 
@@ -296,7 +311,7 @@ Output rules:
 Design rules (blend A and B without contradiction):
 - The environmental data is authoritative for climate, disaster resilience and building regulations. The user's wishes are authoritative for style, rooms and amenities.
 - When a wish conflicts with the environment, DO NOT drop it — adapt it so both hold (e.g. "large windows" in a heavy-snow region -> large triple-glazed insulated windows with snow-shedding eaves; "open terrace" in a flood-risk area -> elevated terrace above the raised ground floor).
-- A wish about stories, roof, wall colour or garage must be reflected in the step-1 spec itself, not only in one of the prompts.
+- A wish about stories, roof, wall colour or parking must be reflected in the step-1 spec itself, not only in one of the prompts. A wish like "駐車場2台" (parking for 2 cars) or "平屋" (single-story) fixes that exact number in the spec.
 - Cold / heavy-snow area (low winter temperature) -> steep or snow-shedding roof, insulated envelope, carport or snow-melting approach.
 - Hot / high-sunshine area -> deep eaves, shading louvers, cross ventilation, heat-reflective roof.
 - Flood risk -> raised floor level / piloti parking / elevated entrance. Landslide risk -> reinforced retaining wall, solid foundation.
@@ -360,28 +375,48 @@ function buildFallbackHousePrompts(area: HouseAreaData, tags: string[]): HouseIm
   const wishes = tags.length > 0 ? `, incorporating: ${tags.join(", ")}` : "";
   const cold = (area.weather?.winterAvgMinTemp ?? 99) <= 0;
   const flood = area.hazard?.floodRisk === true;
-  // 容積率が高い（都市部）ほど狭小3階建て寄りに倒す
+  const tagText = tags.join(" ");
+
+  // 階数: タグ（平屋 / N階建て）が最優先。無ければ容積率が高い都市部ほど3階建て寄りに倒す
   const far = parseInt(String(area.zoning?.floorAreaRatio ?? "").replace(/[^0-9]/g, ""), 10);
-  const stories = Number.isFinite(far) && far >= 300 ? "3-story" : "2-story";
+  const storyTag = /平屋/.test(tagText) ? 1 : Number(tagText.match(/([1-9])\s*階建/)?.[1] ?? 0);
+  const storyCount = storyTag || (Number.isFinite(far) && far >= 300 ? 3 : 2);
+
+  // 駐車台数: タグ（駐車場N台 / ガレージN台）を尊重し、指定が無ければ1台
+  const carTag = tagText.match(/(?:駐車|ガレージ|車庫)[^0-9]{0,4}([0-9]+)\s*台/)?.[1];
+  const carCount = carTag != null ? Number(carTag) : 1;
+
   const roof = cold ? "steep snow-shedding gabled roof" : "gabled roof";
-  const garage = flood
-    ? "piloti garage on the raised ground floor left"
-    : "built-in garage on the ground floor left";
-  // 外観・間取り図の両方の冒頭に入れる共通の建築仕様
-  const spec = `${stories}, ${roof}, white stucco exterior, ${garage}`;
+  const parking =
+    carCount <= 0
+      ? "no parking space, 0 cars"
+      : `${flood ? "piloti garage" : "built-in garage"} for exactly ${carCount} car${carCount > 1 ? "s" : ""} on the ground floor left`;
+  // 外観・間取り図の両方の冒頭に入れる共通の建築仕様（階数と駐車台数を両者で一致させる）
+  const spec = `${storyCount}-story, ${roof}, white stucco exterior, ${parking}`;
 
   const resilience =
     (cold ? ", highly insulated envelope" : "") + (flood ? ", raised floor level, elevated entrance" : "");
+
+  // 階数と駐車台数は両プロンプトで言い換えて再指定し、外観と間取り図が食い違わないようにする
+  const exteriorParking =
+    carCount <= 0
+      ? "no garage and no parked car anywhere on the site"
+      : `exactly ${carCount} car${carCount > 1 ? "s" : ""} parked in the garage on the ground floor left`;
+  const planParking =
+    carCount <= 0
+      ? "no garage and no car bay in the plan"
+      : `ground floor plan includes a garage with exactly ${carCount} car bay${carCount > 1 ? "s" : ""} on the left`;
 
   return {
     spec,
     exterior:
       `${spec}, photorealistic architectural photograph of a modern Japanese detached house in ` +
-      `${area.municipality}, ${area.prefecture}, Japan${resilience}${wishes}, surrounding local streetscape, ` +
-      `daylight, high-quality photography, 16:9 landscape`,
+      `${area.municipality}, ${area.prefecture}, Japan, exactly ${storyCount} stories, ${exteriorParking}` +
+      `${resilience}${wishes}, surrounding local streetscape, daylight, high-quality photography, 16:9 landscape`,
     floorPlan:
-      `${spec}, 2D top-down architectural floor plan of the same modern Japanese detached house${wishes}, ` +
-      `orthographic projection, clean black line drawing on white background, room partitions, furniture layout, ` +
+      `${spec}, 2D top-down architectural floor plan of the same modern Japanese detached house, ` +
+      `exactly ${storyCount} stories, ${planParking}${wishes}, orthographic projection, ` +
+      `clean black line drawing on white background, room partitions, furniture layout, ` +
       `dimension lines, no text labels, blueprint style, high resolution`,
   };
 }
