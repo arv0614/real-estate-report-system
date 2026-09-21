@@ -413,6 +413,7 @@
     "generateNote": "Runs only when you press the button (2 images: exterior & floor plan, approx. 20-40s)",
     "loadingText": "AI is drafting the architectural plan",
     "exteriorCaption": "Exterior",
+    "conceptTitle": "The design concept behind this plan",
     "floorPlanCaption": "Floor plan",
     "exteriorAlt": "AI-generated house exterior suited to the environment of {area}",
     "floorPlanAlt": "AI-generated floor plan of the house",
