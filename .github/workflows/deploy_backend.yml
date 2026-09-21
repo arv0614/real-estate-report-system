@@ -2,9 +2,17 @@ name: Deploy Backend to Cloud Run
 
 # バックエンド API (realestate-api) を Cloud Run にデプロイする。
 #
-# ビルド方式: `gcloud run deploy --source backend` （backend/Dockerfile を
-# Cloud Build がそのまま使う）。既存サービスへの更新なので、環境変数・
-# サービスアカウント・スケーリング設定など既存の構成はそのまま引き継がれる。
+# ビルド方式: scripts/deploy.sh と同じ「Terraform 管理のイメージタグに build & push
+# してから --image でデプロイ」方式。タグは terraform/cloud_run.tf の
+# local.image_url（<region>-docker.pkg.dev/<project>/realestate-api/backend:latest）と
+# 一致させてあるため、後から terraform apply してもイメージが巻き戻らない。
+# （gcloud run deploy --source は cloud-run-source-deploy リポジトリに別タグで
+#   push するため Terraform と drift する。そのため採用していない。）
+#
+# 環境変数について: Cloud Run の env は Terraform (cloud_run.tf) が正。
+# ここでは --set-env-vars を渡さず既存サービスの設定をそのまま引き継ぐ
+# （scripts/deploy.sh はローカル .env から注入するが、CI に同じ値は無いため
+#   注入すると本番の環境変数を空で上書きしてしまう）。
 #
 # トリガー:
 # - push (main) で backend/** または本ワークフロー自身が変更されたとき
@@ -43,38 +51,59 @@ jobs:
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
 
-      - name: Deploy to Cloud Run (--source)
+      - name: Resolve deployment target
         env:
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
           GCP_REGION: ${{ secrets.GCP_REGION }}
           CLOUD_RUN_SERVICE_NAME: ${{ secrets.CLOUD_RUN_SERVICE_NAME }}
         run: |
           set -euo pipefail
+          # secrets 未設定時は terraform/variables.tf の既定値にフォールバック
           REGION="${GCP_REGION:-asia-northeast1}"
           SERVICE="${CLOUD_RUN_SERVICE_NAME:-realestate-api}"
+          IMAGE="${REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/realestate-api/backend:latest"
+
+          {
+            echo "REGION=${REGION}"
+            echo "SERVICE=${SERVICE}"
+            echo "IMAGE=${IMAGE}"
+          } >> "$GITHUB_ENV"
 
           echo "Project : ${GCP_PROJECT_ID}"
           echo "Region  : ${REGION}"
           echo "Service : ${SERVICE}"
+          echo "Image   : ${IMAGE}"
 
-          # 既存サービスの更新。--set-env-vars を渡さないため、稼働中の
-          # 環境変数（GEMINI_API_KEY 等）とサービスアカウントは維持される。
+      - name: Build & push image (Cloud Build)
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          # backend/Dockerfile をそのまま使い、Terraform と同じタグへ push する
+          # （アップロード対象は backend/.gcloudignore で絞られる）
+          gcloud builds submit backend \
+            --tag "${IMAGE}" \
+            --project "${GCP_PROJECT_ID}" \
+            --quiet
+
+      - name: Deploy to Cloud Run
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          # --set-env-vars は渡さない（環境変数は Terraform 管理・既存設定を維持）
           gcloud run deploy "${SERVICE}" \
-            --source backend \
+            --image "${IMAGE}" \
             --region "${REGION}" \
             --project "${GCP_PROJECT_ID}" \
+            --platform managed \
             --quiet
 
       - name: Verify the new revision serves traffic
         env:
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-          GCP_REGION: ${{ secrets.GCP_REGION }}
-          CLOUD_RUN_SERVICE_NAME: ${{ secrets.CLOUD_RUN_SERVICE_NAME }}
         run: |
           set -euo pipefail
-          REGION="${GCP_REGION:-asia-northeast1}"
-          SERVICE="${CLOUD_RUN_SERVICE_NAME:-realestate-api}"
-
           DESCRIBE() {
             gcloud run services describe "${SERVICE}" \
               --region "${REGION}" --project "${GCP_PROJECT_ID}" "$@"
@@ -82,10 +111,12 @@ jobs:
 
           LATEST_READY=$(DESCRIBE --format='value(status.latestReadyRevisionName)')
           TRAFFIC=$(DESCRIBE --format='value(status.traffic[0].revisionName)')
+          SERVING_IMAGE=$(DESCRIBE --format='value(spec.template.spec.containers[0].image)')
           URL=$(DESCRIBE --format='value(status.url)')
 
           echo "Latest ready revision : ${LATEST_READY}"
           echo "Serving revision      : ${TRAFFIC}"
+          echo "Serving image         : ${SERVING_IMAGE}"
           echo "Service URL           : ${URL}"
 
           if [ -z "${LATEST_READY}" ]; then
