@@ -261,3 +261,65 @@ export async function recordProSearch(uid: string): Promise<number> {
     return 0;
   }
 }
+
+// ============================================================
+// AI建築・こだわり条件（lifestylePreferences）
+// ============================================================
+
+/** 保存できるこだわり条件タグの上限。UI（TagInput）とバックエンドの zod 制約に合わせる */
+export const MAX_LIFESTYLE_TAGS = 12;
+/** 1タグあたりの最大文字数 */
+export const MAX_LIFESTYLE_TAG_LENGTH = 40;
+
+/** 未知の値を「トリム済み・重複なし・上限内の文字列配列」に正規化する */
+function normalizeLifestyleTags(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const result: string[] = [];
+  for (const item of value) {
+    if (typeof item !== "string") continue;
+    const tag = item.trim().slice(0, MAX_LIFESTYLE_TAG_LENGTH);
+    if (!tag || result.includes(tag)) continue;
+    result.push(tag);
+    if (result.length >= MAX_LIFESTYLE_TAGS) break;
+  }
+  return result;
+}
+
+/**
+ * users/{uid} の lifestylePreferences（AI建築・こだわり条件）を取得する。
+ * 未設定・取得失敗時は空配列を返し、呼び出し元をクラッシュさせない。
+ */
+export async function getLifestylePreferences(uid: string): Promise<string[]> {
+  try {
+    const ref = doc(db, "users", uid);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return [];
+    return normalizeLifestyleTags(snap.data().lifestylePreferences);
+  } catch (err) {
+    console.error("[userPlan] getLifestylePreferences failed:", err);
+    return [];
+  }
+}
+
+/**
+ * users/{uid} に lifestylePreferences を書き込む。
+ * ドキュメント未作成のユーザーでも保存できるよう、無ければ初期値付きで作成する。
+ */
+export async function saveLifestylePreferences(
+  uid: string,
+  tags: string[]
+): Promise<void> {
+  const lifestylePreferences = normalizeLifestyleTags(tags);
+  const ref = doc(db, "users", uid);
+  const snap = await getDoc(ref);
+  if (snap.exists()) {
+    await updateDoc(ref, { lifestylePreferences });
+  } else {
+    await setDoc(ref, {
+      plan: "free",
+      dailySearchCount: 0,
+      lastSearchDate: getTodayString(),
+      lifestylePreferences,
+    });
+  }
+}

@@ -105,6 +105,8 @@
     "companyLogoRemove": "ロゴを削除",
     "previewTitle": "プレビュー",
     "previewNote": "PDF出力時に、このバナーがレポート先頭に挿入されます",
+    "lifestyleTitle": "AI建築・こだわり条件設定（Pro限定）",
+    "lifestyleBody": "理想の住まいの条件をタグで登録しておくと、検索結果の「暮らしのイメージ画像生成」で初期値として読み込まれます。",
     "saveButton": "設定を保存",
     "saving": "保存中...",
     "saved": "保存しました",

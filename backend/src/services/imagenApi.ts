@@ -248,6 +248,13 @@ export interface HouseAreaData {
 }
 
 export interface HouseImagePrompts {
+  /**
+   * 外観・間取り図に共通する建築仕様（階数 / 外壁のメインカラー / 屋根形状 /
+   * ガレージの有無と位置）。2枚の画像が別の家に見えないよう、両プロンプトの
+   * 冒頭に必ずこの文字列がそのまま入る。
+   * 例: "3-story, flat roof, white exterior, built-in garage on the ground floor left"
+   */
+  spec: string;
   exterior: string;
   floorPlan: string;
 }
@@ -260,17 +267,36 @@ export interface GeneratedHouseImages {
 
 const HOUSE_PROMPT_SYSTEM_INSTRUCTION = `You are an expert architect and a prompt engineer for photorealistic image generation models (Imagen 4 class).
 
-Given (A) real environmental data for a specific Japanese location and (B) a list of "must-have" wishes written by the end user in Japanese, write TWO English image generation prompts for a single coherent house design:
+Given (A) real environmental data for a specific Japanese location and (B) a list of "must-have" wishes written by the end user in Japanese, design ONE house and write TWO English image generation prompts for that single house:
 1. "exterior"  — a photorealistic architectural photograph of the house exterior on that site.
-2. "floorPlan" — a clean 2D architectural floor plan of the same house.
+2. "floorPlan" — a clean 2D architectural floor plan of the SAME house.
+
+## STEP 1 (MANDATORY, do this first): decide the Architectural Specification
+Before writing any prompt, fix the shared "spec" of the building. It MUST state, in this order, all four of:
+  1. number of stories (e.g. "2-story", "3-story")
+  2. roof shape (e.g. "flat roof", "gabled roof", "steep snow-shedding gabled roof")
+  3. main exterior wall colour and material (e.g. "white stucco exterior", "charcoal grey siding exterior")
+  4. garage: presence AND position, or its explicit absence
+     (e.g. "built-in garage on the ground floor left", "carport on the right side", "no garage, open parking pad in front")
+Write it as one short comma-separated English phrase, e.g.:
+  "3-story, flat roof, white exterior, built-in garage on the ground floor left"
+
+## STEP 2: write the two prompts
+- BOTH prompts MUST begin with the EXACT spec string from step 1, character for character, followed by ", ".
+  The exterior photo and the floor plan must depict the same number of stories, the same roof, the same wall colour
+  and the same garage in the same position. Never let the two prompts disagree on any of the four items.
+- The floor plan is a plan of that same building: if the spec says a built-in garage on the ground floor left, the plan
+  shows that garage on the ground floor left; if the spec says 3-story, the plan covers those 3 stories.
 
 Output rules:
-- Output ONLY a JSON object: {"exterior": "...", "floorPlan": "..."} — no markdown fence, no commentary.
+- Output ONLY a JSON object: {"spec": "...", "exterior": "...", "floorPlan": "..."} — no markdown fence, no commentary.
+- "spec" holds the step-1 string alone. "exterior" and "floorPlan" each start with that same string.
 - Each prompt is comma-separated English keywords / short phrases.
 
 Design rules (blend A and B without contradiction):
 - The environmental data is authoritative for climate, disaster resilience and building regulations. The user's wishes are authoritative for style, rooms and amenities.
 - When a wish conflicts with the environment, DO NOT drop it — adapt it so both hold (e.g. "large windows" in a heavy-snow region -> large triple-glazed insulated windows with snow-shedding eaves; "open terrace" in a flood-risk area -> elevated terrace above the raised ground floor).
+- A wish about stories, roof, wall colour or garage must be reflected in the step-1 spec itself, not only in one of the prompts.
 - Cold / heavy-snow area (low winter temperature) -> steep or snow-shedding roof, insulated envelope, carport or snow-melting approach.
 - Hot / high-sunshine area -> deep eaves, shading louvers, cross ventilation, heat-reflective roof.
 - Flood risk -> raised floor level / piloti parking / elevated entrance. Landslide risk -> reinforced retaining wall, solid foundation.
@@ -278,8 +304,8 @@ Design rules (blend A and B without contradiction):
 - Use-district (用途地域) decides the surroundings: residential districts -> quiet low-rise neighbourhood; commercial districts -> dense urban street.
 
 Prompt content rules:
-- exterior: photorealistic architectural photography, daylight matching the local climate and season, surrounding streetscape consistent with the district, Japanese residential architecture, high-quality photography, 16:9 landscape.
-- floorPlan: 2D top-down architectural floor plan, orthographic, clean black line drawing on white, room partitions, furniture layout, dimension lines, minimal or no text labels (never Japanese characters), blueprint style, high resolution.`;
+- exterior: <spec>, photorealistic architectural photography, daylight matching the local climate and season, surrounding streetscape consistent with the district, Japanese residential architecture, high-quality photography, 16:9 landscape.
+- floorPlan: <spec>, 2D top-down architectural floor plan of the same house, orthographic, clean black line drawing on white, room partitions, furniture layout, dimension lines, minimal or no text labels (never Japanese characters), blueprint style, high resolution.`;
 
 /** エリア実データを日本語のブリーフィングテキストに整形する */
 function buildAreaBriefing(area: HouseAreaData): string {
@@ -332,19 +358,45 @@ function buildAreaBriefing(area: HouseAreaData): string {
 /** Stage1 が失敗したときの静的フォールバックプロンプト */
 function buildFallbackHousePrompts(area: HouseAreaData, tags: string[]): HouseImagePrompts {
   const wishes = tags.length > 0 ? `, incorporating: ${tags.join(", ")}` : "";
-  const cold = (area.weather?.winterAvgMinTemp ?? 99) <= 0 ? ", snow-resistant steep roof, highly insulated envelope" : "";
-  const flood = area.hazard?.floodRisk ? ", raised floor level, elevated entrance" : "";
+  const cold = (area.weather?.winterAvgMinTemp ?? 99) <= 0;
+  const flood = area.hazard?.floodRisk === true;
+  // 容積率が高い（都市部）ほど狭小3階建て寄りに倒す
+  const far = parseInt(String(area.zoning?.floorAreaRatio ?? "").replace(/[^0-9]/g, ""), 10);
+  const stories = Number.isFinite(far) && far >= 300 ? "3-story" : "2-story";
+  const roof = cold ? "steep snow-shedding gabled roof" : "gabled roof";
+  const garage = flood
+    ? "piloti garage on the raised ground floor left"
+    : "built-in garage on the ground floor left";
+  // 外観・間取り図の両方の冒頭に入れる共通の建築仕様
+  const spec = `${stories}, ${roof}, white stucco exterior, ${garage}`;
+
+  const resilience =
+    (cold ? ", highly insulated envelope" : "") + (flood ? ", raised floor level, elevated entrance" : "");
+
   return {
+    spec,
     exterior:
-      `Photorealistic architectural photograph of a modern Japanese detached house in ${area.municipality}, ${area.prefecture}, Japan` +
-      `${cold}${flood}${wishes}, surrounding local streetscape, daylight, high-quality photography, 16:9 landscape`,
+      `${spec}, photorealistic architectural photograph of a modern Japanese detached house in ` +
+      `${area.municipality}, ${area.prefecture}, Japan${resilience}${wishes}, surrounding local streetscape, ` +
+      `daylight, high-quality photography, 16:9 landscape`,
     floorPlan:
-      `2D top-down architectural floor plan of a modern Japanese detached house${wishes}, orthographic projection, ` +
-      `clean black line drawing on white background, room partitions, furniture layout, dimension lines, no text labels, blueprint style, high resolution`,
+      `${spec}, 2D top-down architectural floor plan of the same modern Japanese detached house${wishes}, ` +
+      `orthographic projection, clean black line drawing on white background, room partitions, furniture layout, ` +
+      `dimension lines, no text labels, blueprint style, high resolution`,
   };
 }
 
-/** JSON テキスト（```json フェンス付きも可）から2つのプロンプトを抽出する */
+/** 共通の建築仕様がプロンプト冒頭に無ければ強制的に前置きする */
+function withSpecPrefix(spec: string, prompt: string): string {
+  if (!spec) return prompt;
+  return prompt.toLowerCase().startsWith(spec.toLowerCase()) ? prompt : `${spec}, ${prompt}`;
+}
+
+/**
+ * JSON テキスト（```json フェンス付きも可）から共通仕様と2つのプロンプトを抽出する。
+ * モデルが spec の前置きを忘れても、ここで両プロンプトの冒頭に必ず入れ直すため、
+ * 外観と間取り図が別の家になることを防げる。
+ */
 function parseHousePrompts(text: string): HouseImagePrompts | null {
   const cleaned = text
     .trim()
@@ -354,9 +406,10 @@ function parseHousePrompts(text: string): HouseImagePrompts | null {
   try {
     const parsed = JSON.parse(cleaned) as Partial<HouseImagePrompts>;
     if (typeof parsed.exterior === "string" && typeof parsed.floorPlan === "string") {
-      const exterior = parsed.exterior.trim();
-      const floorPlan = parsed.floorPlan.trim();
-      if (exterior && floorPlan) return { exterior, floorPlan };
+      const spec = typeof parsed.spec === "string" ? parsed.spec.trim().replace(/[,、\s]+$/, "") : "";
+      const exterior = withSpecPrefix(spec, parsed.exterior.trim());
+      const floorPlan = withSpecPrefix(spec, parsed.floorPlan.trim());
+      if (exterior && floorPlan) return { spec, exterior, floorPlan };
     }
   } catch {
     /* JSON でなければフォールバックに委ねる */
@@ -425,7 +478,9 @@ export async function generateHouseImages(
   let prompts: HouseImagePrompts;
   try {
     prompts = await generateHousePrompts(area, tags);
-    console.log(`[HouseGen] プロンプト生成完了\n  exterior: ${prompts.exterior}\n  floorPlan: ${prompts.floorPlan}`);
+    console.log(
+      `[HouseGen] プロンプト生成完了\n  spec: ${prompts.spec}\n  exterior: ${prompts.exterior}\n  floorPlan: ${prompts.floorPlan}`,
+    );
   } catch (promptErr) {
     console.warn(
       `[HouseGen] プロンプト生成失敗、フォールバック使用: ${promptErr instanceof Error ? promptErr.message : promptErr}`,

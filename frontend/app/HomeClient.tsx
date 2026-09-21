@@ -17,6 +17,7 @@ import {
   checkAndIncrementFreeSearch,
   recordProSearch,
   getWhiteLabelConfig,
+  getLifestylePreferences,
   FREE_DAILY_LIMIT,
   GUEST_DAILY_LIMIT,
   IS_FREE_UNLIMITED_CAMPAIGN,
@@ -112,6 +113,8 @@ function HomePageContent() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchCountToday, setSearchCountToday] = useState(0);
   const bookmarks = useBookmarks(user?.uid ?? null);
+  /** マイページ（/profile）に保存済みの「AI建築・こだわり条件」。タグの初期値に使う */
+  const [lifestylePreferences, setLifestylePreferences] = useState<string[]>([]);
   const [bookmarkBusy, setBookmarkBusy] = useState(false);
 
   // PDF出力セクション選択
@@ -156,6 +159,25 @@ function HomePageContent() {
     // intentionally NOT calling handleSearch(lat, lng) here.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // マイページ（/profile）に保存済みの「AI建築・こだわり条件」を読み込み、
+  // <LifestyleGenerator> のタグ初期値として渡す。未ログインなら空にする。
+  useEffect(() => {
+    const uid = user?.uid;
+    if (!uid) {
+      setLifestylePreferences([]);
+      return;
+    }
+    let cancelled = false;
+    getLifestylePreferences(uid)
+      .then((tags) => {
+        if (!cancelled) setLifestylePreferences(tags);
+      })
+      .catch((err) => console.error("[HomeClient] lifestyle preferences read failed:", err));
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.uid]);
 
   // 設定パネル外クリックで閉じる
   useEffect(() => {
@@ -1348,6 +1370,7 @@ function HomePageContent() {
                     }
                     district={districtFilter || autoDistrict || firstRecord.districtName || null}
                     areaData={houseAreaData}
+                    initialTags={lifestylePreferences}
                     onLoginRequest={handleLogin}
                     onPlanModalOpen={() => setPlanModalOpen(true)}
                   />

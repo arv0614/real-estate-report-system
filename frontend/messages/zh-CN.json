@@ -105,6 +105,8 @@
     "companyLogoRemove": "删除 LOGO",
     "previewTitle": "预览",
     "previewNote": "PDF 输出时,此横幅会显示于报告开头",
+    "lifestyleTitle": "AI 建筑・理想条件设置（Pro 限定）",
+    "lifestyleBody": "将理想住宅的条件登记为标签后，搜索结果页的「生活印象图生成」会自动载入这些条件作为初始值。",
     "saveButton": "保存设置",
     "saving": "保存中...",
     "saved": "已保存",

@@ -12,10 +12,13 @@ import { useAuthModal } from "@/components/AuthModalContext";
 import {
   getWhiteLabelConfig,
   saveWhiteLabelConfig,
+  getLifestylePreferences,
+  saveLifestylePreferences,
   EMPTY_WHITE_LABEL,
   type WhiteLabelConfig,
 } from "@/lib/userPlan";
 import { PlanComparisonModal } from "@/components/PlanComparisonModal";
+import { TagInput } from "@/components/TagInput";
 import { trackEvent } from "@/lib/analytics";
 
 const MAX_LOGO_SIZE = 2 * 1024 * 1024; // 2MB
@@ -339,6 +342,9 @@ export default function ProfileClient() {
               <p className="text-xs text-slate-500 mb-3">{t("previewNote")}</p>
               <WhiteLabelPreview config={config} />
             </div>
+
+            {/* AI建築・こだわり条件設定（ダッシュボードの画像生成の初期値になる） */}
+            <LifestylePreferencesSection uid={user.uid} />
           </div>
         )}
 
@@ -832,6 +838,99 @@ function WhiteLabelPreview({ config }: { config: WhiteLabelConfig }) {
       )}
       <div className="ml-auto text-[10px] text-slate-400 uppercase tracking-wide">
         Property Report
+      </div>
+    </div>
+  );
+}
+
+/**
+ * AI建築・こだわり条件設定（Pro限定）
+ *
+ * ダッシュボードの「暮らしのイメージ画像生成」と同じタグ入力UIを置き、
+ * Firestore の users/{uid}.lifestylePreferences に保存する。
+ * 保存した内容はダッシュボード側でタグの初期値として読み込まれる。
+ */
+function LifestylePreferencesSection({ uid }: { uid: string }) {
+  const t = useTranslations("Profile");
+  const [tags, setTags] = useState<string[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getLifestylePreferences(uid).then((saved) => {
+      if (cancelled) return;
+      setTags(saved);
+      setLoaded(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [uid]);
+
+  function handleChange(next: string[]) {
+    setTags(next);
+    setError(null);
+    setSavedAt(null);
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    setError(null);
+    try {
+      await saveLifestylePreferences(uid, tags);
+      setSavedAt(Date.now());
+      trackEvent({
+        action: "save_lifestyle_preferences",
+        category: "engagement",
+        label: "profile",
+        value: tags.length,
+      });
+    } catch (err) {
+      console.error("[profile] save lifestyle preferences failed:", err);
+      setError(t("errorSave"));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-4">
+      <div>
+        <h2 className="text-lg font-semibold text-slate-800">{t("lifestyleTitle")}</h2>
+        <p className="mt-1 text-sm text-slate-600">{t("lifestyleBody")}</p>
+      </div>
+
+      {loaded ? (
+        <TagInput
+          tags={tags}
+          onChange={handleChange}
+          inputId="lifestyle-preferences-input"
+          disabled={saving}
+        />
+      ) : (
+        <div className="h-11 rounded-lg bg-slate-100 animate-pulse" />
+      )}
+
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
+      <div className="flex items-center gap-3 pt-1">
+        <button
+          onClick={handleSave}
+          disabled={!loaded || saving}
+          className="inline-flex items-center justify-center px-5 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-60 transition-colors shadow-sm"
+        >
+          {saving ? t("saving") : t("saveButton")}
+        </button>
+        {savedAt && Date.now() - savedAt < 3000 && (
+          <span className="text-sm text-green-600 font-medium">✓ {t("saved")}</span>
+        )}
       </div>
     </div>
   );

@@ -250,7 +250,8 @@ export interface HouseAreaDataPayload {
 export interface HouseImagesResponse {
   exterior: GeneratedImageResponse;
   floorPlan: GeneratedImageResponse;
-  prompts: { exterior: string; floorPlan: string };
+  /** spec は外観・間取り図に共通の建築仕様（両プロンプトの冒頭に入っている） */
+  prompts: { spec?: string; exterior: string; floorPlan: string };
 }
 
 /**

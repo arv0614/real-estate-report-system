@@ -105,6 +105,8 @@
     "companyLogoRemove": "Remove logo",
     "previewTitle": "Preview",
     "previewNote": "This banner will appear at the top of exported PDF reports",
+    "lifestyleTitle": "AI home design preferences (Pro only)",
+    "lifestyleBody": "Save the features you want in your ideal home as tags. They are pre-filled in the AI house image generator on the search results page.",
     "saveButton": "Save settings",
     "saving": "Saving...",
     "saved": "Saved",
