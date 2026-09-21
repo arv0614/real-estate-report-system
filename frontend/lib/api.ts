@@ -250,8 +250,11 @@ export interface HouseAreaDataPayload {
 export interface HouseImagesResponse {
   exterior: GeneratedImageResponse;
   floorPlan: GeneratedImageResponse;
-  /** spec は外観・間取り図に共通の建築仕様（両プロンプトの冒頭に入っている） */
-  prompts: { spec?: string; exterior: string; floorPlan: string };
+  /**
+   * plan は Stage1 が最初に設計した間取り（階数・駐車台数・部屋配置）、
+   * spec は外観・間取り図に共通の建築仕様（両プロンプトの冒頭に入っている）
+   */
+  prompts: { plan?: string; spec?: string; exterior: string; floorPlan: string };
 }
 
 /**
