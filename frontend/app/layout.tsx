@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { GoogleTagManager } from "@next/third-parties/google";
+import { GoogleTagManager, GoogleAnalytics } from "@next/third-parties/google";
 import PostHogInit from "@/components/PostHogInit";
+import { GA_MEASUREMENT_ID } from "@/lib/analytics";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -31,7 +32,14 @@ export default function RootLayout({
       lang="ja"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      {/*
+        GTM はマーケティング用ポップアップ等の配信のために維持する（GTM-5ZNNGVZQ）。
+        GA4タグの配信はGTMコンテナ側で停止済み（2026-09-16）。GA4計測（ページビュー・
+        カスタムイベント）は <GoogleAnalytics> と lib/analytics.ts の trackEvent/
+        trackPurchase（sendGAEvent 経由）でコード完結管理する（2026-09-21）。
+      */}
       <GoogleTagManager gtmId={process.env.NEXT_PUBLIC_GTM_ID || "GTM-5ZNNGVZQ"} />
+      <GoogleAnalytics gaId={GA_MEASUREMENT_ID} />
       <body className="min-h-full flex flex-col">
         <PostHogInit />
         {children}

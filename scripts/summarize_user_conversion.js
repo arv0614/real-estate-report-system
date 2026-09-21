@@ -12,7 +12,8 @@
  *
  * ゲスト限定の上限到達数について:
  *   reach_limit は guest/free 両方のプラン上限到達で発火するイベントのため、GA4 側で
- *   イベントパラメータ `user_plan`（フロント: frontend/lib/analytics.ts の trackEvent → GTM 経由）を
+ *   イベントパラメータ `user_plan`（フロント: frontend/lib/analytics.ts の trackEvent 経由、
+ *   sendGAEvent で GA4 に直接送信）を
  *   event-scoped custom dimension `customEvent:user_plan` として登録した上で、
  *   DimensionFilter (eventName=reach_limit AND customEvent:user_plan=guest) で絞り込む。
  *   カスタムディメンションが未登録の場合は起動時に自動登録を試みる（analytics.edit 権限が
