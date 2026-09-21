@@ -413,6 +413,7 @@
     "generateNote": "ボタンを押したときだけ生成します（外観・間取り図の2枚／約20〜40秒）",
     "loadingText": "AIが建築プランを設計中",
     "exteriorCaption": "外観イメージ",
+    "conceptTitle": "AIが考えた設計コンセプト",
     "floorPlanCaption": "間取り図イメージ",
     "exteriorAlt": "{area} の環境に合わせた住宅の外観イメージ",
     "floorPlanAlt": "生成された住宅の間取り図イメージ",

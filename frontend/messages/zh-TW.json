@@ -413,6 +413,7 @@
     "generateNote": "僅在按下按鈕時生成（外觀與格局圖共2張／約20〜40秒）",
     "loadingText": "AI 正在設計建築方案",
     "exteriorCaption": "外觀示意",
+    "conceptTitle": "AI 提出的設計理念",
     "floorPlanCaption": "格局圖示意",
     "exteriorAlt": "符合 {area} 環境的住宅外觀示意圖",
     "floorPlanAlt": "生成的住宅格局圖示意",

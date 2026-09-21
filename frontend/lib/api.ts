@@ -251,10 +251,22 @@ export interface HouseImagesResponse {
   exterior: GeneratedImageResponse;
   floorPlan: GeneratedImageResponse;
   /**
+   * AI が考えた設計コンセプト（日本語）。エリアの環境データとこだわり条件を
+   * 結びつけて「なぜこの間取り・外観になったのか」を説明する。
+   * 旧バージョンのバックエンドは返さないため optional。
+   */
+  conceptExplanation?: string;
+  /**
    * plan は Stage1 が最初に設計した間取り（階数・駐車台数・部屋配置）、
    * spec は外観・間取り図に共通の建築仕様（両プロンプトの冒頭に入っている）
    */
-  prompts: { plan?: string; spec?: string; exterior: string; floorPlan: string };
+  prompts: {
+    plan?: string;
+    spec?: string;
+    exterior: string;
+    floorPlan: string;
+    conceptExplanation?: string;
+  };
 }
 
 /**

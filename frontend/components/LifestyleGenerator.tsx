@@ -56,6 +56,8 @@ export function LifestyleGenerator({
   const isPro = plan === "pro";
   // ダウンロードファイル名に使うエリア名（パス区切りなど使えない文字だけ除去）
   const areaSlug = `${prefecture}${municipality}`.replace(/[\\/:*?"<>|\s]+/g, "-");
+  // 設計コンセプト。旧バックエンドは返さないので prompts 側も見てフォールバックする
+  const concept = images?.conceptExplanation?.trim() || images?.prompts?.conceptExplanation?.trim() || "";
 
   // マイページ保存分（Firestore）は検索より後に届くことがあるため、届いた時点で反映する。
   // ただしユーザーが既に編集していれば尊重する。
@@ -203,6 +205,21 @@ export function LifestyleGenerator({
         {/* ── 生成結果: 外観 + 間取り図 ───────────────── */}
         {!loading && images && (
           <div style={{ animation: "fadeInUp 0.5s ease both" }}>
+            {/* AI が考えた設計コンセプト（提案の理由）。画像より先に読ませる */}
+            {concept && (
+              <figure className="mb-4 overflow-hidden rounded-xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-purple-50">
+                <figcaption className="flex items-center gap-2 border-b border-indigo-200/70 bg-white/60 px-4 py-2.5">
+                  <span className="text-base" aria-hidden>
+                    💡
+                  </span>
+                  <span className="text-sm font-bold text-indigo-900">{t("conceptTitle")}</span>
+                </figcaption>
+                <blockquote className="px-4 py-3.5">
+                  <p className="whitespace-pre-line text-sm leading-relaxed text-slate-700">{concept}</p>
+                </blockquote>
+              </figure>
+            )}
+
             <div className="grid gap-4 sm:grid-cols-2">
               <GeneratedImageCard
                 src={`data:${images.exterior.mimeType};base64,${images.exterior.imageBase64}`}

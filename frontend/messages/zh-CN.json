@@ -413,6 +413,7 @@
     "generateNote": "仅在点击按钮时生成（外观与户型图共2张／约20〜40秒）",
     "loadingText": "AI 正在设计建筑方案",
     "exteriorCaption": "外观示意",
+    "conceptTitle": "AI 提出的设计理念",
     "floorPlanCaption": "户型图示意",
     "exteriorAlt": "契合 {area} 环境的住宅外观示意图",
     "floorPlanAlt": "生成的住宅户型图示意",

@@ -263,12 +263,19 @@ export interface HouseImagePrompts {
   spec: string;
   exterior: string;
   floorPlan: string;
+  /**
+   * 「なぜこの間取り・外観になったのか」を、エリアの環境データとユーザーのタグを
+   * 結びつけて説明する日本語テキスト（200〜300文字程度）。UI にそのまま表示する。
+   */
+  conceptExplanation: string;
 }
 
 export interface GeneratedHouseImages {
   exterior: GeneratedImage;
   floorPlan: GeneratedImage;
   prompts: HouseImagePrompts;
+  /** 設計コンセプト（日本語）。prompts.conceptExplanation と同じ内容を UI 用に平置きする */
+  conceptExplanation: string;
 }
 
 const HOUSE_PROMPT_SYSTEM_INSTRUCTION = `You are an expert architect and a prompt engineer for photorealistic image generation models (Imagen 4 class).
@@ -291,8 +298,16 @@ Work out the actual building, room by room, and fix these numbers before you wri
   c. The rooms on each floor and their arrangement (entrance, LDK, kitchen type, bedrooms, water rooms, stairs,
      and the garage bays if capacity > 0), consistent with the site area and the building regulations in (A).
   d. The footprint shape and how the mass stacks (e.g. "rectangular 9m x 8m footprint, second floor set back 1m at the south").
-Write this design out in "plan": 1-3 short English sentences that state the story count, the exact car capacity and
-position, and the room layout per floor. This is your single source of truth for BOTH images.
+  e. THE FACADE LAYOUT, left to right AS SEEN BY A VIEWER STANDING IN THE STREET FACING THE FRONT OF THE HOUSE.
+     Assign every street-facing element to exactly one of three slots — LEFT, CENTER, RIGHT — and never leave one vague:
+       - the garage / carport / parking pad opening (omit only when capacity is 0)
+       - the front entrance door
+       - the main large window(s) of the living space
+     Example: "facade left to right: garage opening on the LEFT, entrance door in the CENTER, large living room
+     window on the RIGHT". Use this viewer-facing convention for both images so they cannot come out mirrored.
+Write this design out in "plan": 2-4 short English sentences that state the story count, the exact car capacity and
+position, the room layout per floor, AND the facade left/right layout of step 1e. This is your single source of
+truth for BOTH images.
 
 ## STEP 2: derive the shared spec from that plan
 Compress the plan into one short comma-separated English phrase, "spec", stating in this order:
@@ -308,8 +323,16 @@ The spec MUST agree with the plan. If they differ, the plan wins: fix the spec, 
 ## STEP 3: write the "floorPlan" prompt FIRST, from the plan
 - It begins with the EXACT spec string, character for character, followed by ", ".
 - It draws the building of step 1: the same story count, the same rooms per floor, and exactly the car bays of the
-  capacity you fixed (e.g. "ground floor plan includes a garage with exactly 2 car bays on the left"; with 0 cars,
+  capacity you fixed (e.g. "1F plan includes a garage with exactly 2 car bays on the left"; with 0 cars,
   "no garage and no car bay anywhere in the plan").
+- It restates the step-1e facade layout with the SAME left/right sides, as seen from the street, so the plan is
+  drawn with the street-facing facade at the bottom of the sheet and is not mirrored
+  (e.g. "street-facing facade at the bottom of the drawing, garage on the left, entrance in the center,
+  living room window on the right, as seen from the street").
+- FLOOR LABELS — MANDATORY: the plan is labelled with the Japanese standard notation ONLY: "1F", "2F", "3F".
+  NEVER use "GROUND FLOOR", "FIRST FLOOR", "SECOND FLOOR", "G/F", "1st floor", "LEVEL 1" or any other wording
+  for the floors. Write the constraint into the prompt itself, e.g.
+  "floor labels written strictly as 1F and 2F only, never GROUND FLOOR or FIRST FLOOR, no other text labels".
 
 ## STEP 4: write the "exterior" prompt LAST, using the floor plan as the absolute reference
 - It begins with the SAME EXACT spec string, character for character, followed by ", ".
@@ -317,16 +340,33 @@ The spec MUST agree with the plan. If they differ, the plan wins: fix the spec, 
   the same footprint and massing, the garage opening on the same side, and exactly the same number of parking
   spaces (e.g. "exactly 2 cars parked in the built-in garage on the ground floor left"; with 0 cars, "no garage,
   no carport and no parked car anywhere on the site").
+- It repeats the step-1e facade layout verbatim in the same left/right terms, explicitly as seen by a viewer
+  facing the house from the street (e.g. "front elevation seen from the street, garage opening on the LEFT,
+  entrance door in the CENTER, large living room window on the RIGHT, not mirrored").
 - ABSOLUTE CONSTRAINT: the exterior image and the floor plan must NEVER contradict each other on the number of
-  parking spaces or the number of stories. If the plan says 2 cars, the exterior shows exactly 2 — not 1, not 3.
-  If the plan says 3-story, both the photograph and the plan show exactly 3 stories. Before you output, re-read
-  both prompts and check the story count and the car count match the plan; if they do not, rewrite them.
+  parking spaces, the number of stories, or the LEFT/RIGHT position of the garage, the entrance and the main
+  windows. If the plan says 2 cars, the exterior shows exactly 2 — not 1, not 3. If the plan says 3-story, both
+  the photograph and the plan show exactly 3 stories. If the plan puts the garage on the LEFT, it is on the left
+  in BOTH images — a mirrored facade is a failure. Before you output, re-read both prompts and check the story
+  count, the car count and every left/center/right assignment against the plan; if any of them disagree,
+  rewrite the prompts.
+
+## STEP 5: write "conceptExplanation" — the design rationale, IN JAPANESE
+- 200-300 Japanese characters, plain polite Japanese (です・ます調), no markdown, no bullet points, no English headings.
+- Explain WHY this plan and this exterior were chosen, by tying the environmental data in (A) — flood or landslide
+  risk, winter/summer temperature, sunshine hours, floor-area-ratio and building-coverage-ratio, use-district,
+  the nearest station, the typical lot size — to the user's wishes in (B) (e.g. "駐車場2台", "平屋").
+- Name the concrete decisions you made and the reason for each: the story count, where the living space sits,
+  the parking capacity and position, the facade layout, the roof and the openings.
+  e.g. 「このエリアは浸水リスクがあるため、主要な居住空間を2階に配置し、1階は駐車スペースとして…」
+- Only use facts present in (A) and (B). Never invent numbers that were not given.
 
 Output rules:
 - Output ONLY a JSON object, with the keys in this exact order:
-  {"plan": "...", "spec": "...", "floorPlan": "...", "exterior": "..."} — no markdown fence, no commentary.
+  {"plan": "...", "spec": "...", "floorPlan": "...", "exterior": "...", "conceptExplanation": "..."}
+  — no markdown fence, no commentary.
 - "spec" holds the step-2 string alone. "floorPlan" and "exterior" each start with that same string.
-- Each prompt is comma-separated English keywords / short phrases.
+- Each prompt is comma-separated English keywords / short phrases. "conceptExplanation" is Japanese prose.
 
 Design rules (blend A and B without contradiction):
 - The environmental data is authoritative for climate, disaster resilience and building regulations. The user's wishes are authoritative for style, rooms and amenities.
@@ -339,7 +379,7 @@ Design rules (blend A and B without contradiction):
 - Use-district (用途地域) decides the surroundings: residential districts -> quiet low-rise neighbourhood; commercial districts -> dense urban street.
 
 Prompt content rules:
-- floorPlan: <spec>, 2D top-down architectural floor plan of that house, orthographic, clean black line drawing on white, room partitions per the plan, furniture layout, dimension lines, minimal or no text labels (never Japanese characters), blueprint style, high resolution.
+- floorPlan: <spec>, 2D top-down architectural floor plan of that house, orthographic, clean black line drawing on white, room partitions per the plan, furniture layout, dimension lines, floor labels strictly as 1F / 2F / 3F (never GROUND FLOOR, never FIRST FLOOR), no other text labels and never Japanese characters, street-facing facade at the bottom of the sheet, blueprint style, high resolution.
 - exterior: <spec>, photorealistic architectural photography of the same building, daylight matching the local climate and season, surrounding streetscape consistent with the district, Japanese residential architecture, high-quality photography, 16:9 landscape.`;
 
 /** エリア実データを日本語のブリーフィングテキストに整形する */
@@ -421,31 +461,87 @@ function buildFallbackHousePrompts(area: HouseAreaData, tags: string[]): HouseIm
   const exteriorParking =
     carCount <= 0
       ? "no garage and no parked car anywhere on the site"
-      : `exactly ${carCount} car${carCount > 1 ? "s" : ""} parked in the garage on the ground floor left`;
+      : `exactly ${carCount} car${carCount > 1 ? "s" : ""} parked in the garage on the left of the facade`;
   const planParking =
     carCount <= 0
       ? "no garage and no car bay in the plan"
-      : `ground floor plan includes a garage with exactly ${carCount} car bay${carCount > 1 ? "s" : ""} on the left`;
+      : `1F plan includes a garage with exactly ${carCount} car bay${carCount > 1 ? "s" : ""} on the left`;
+
+  // 正面から見た左右配置。左右が反転しないよう、両プロンプトで同じ言い回しを使う
+  const facade =
+    carCount <= 0
+      ? "front elevation seen from the street, entrance door on the LEFT, large living room window on the RIGHT, not mirrored"
+      : "front elevation seen from the street, garage opening on the LEFT, entrance door in the CENTER, large living room window on the RIGHT, not mirrored";
+  // 間取り図で使わせない階数表記（日本式の 1F/2F/3F に統一する）
+  const floorLabels = `floor labels written strictly as ${Array.from({ length: storyCount }, (_, i) => `${i + 1}F`).join(" and ")} only, never GROUND FLOOR or FIRST FLOOR`;
 
   // Stage1 と同じ順序（間取り → 外観）で、まず間取りの設計内容を文章化しておく
   const plan =
     `${storyCount}-story detached house. ` +
-    `${carCount <= 0 ? "No parking: no garage, carport or parking pad on the site." : `Parking for exactly ${carCount} car${carCount > 1 ? "s" : ""} in a ${flood ? "piloti" : "built-in"} garage on the ground floor left.`} ` +
-    `Ground floor: entrance, LDK with kitchen and water rooms; upper floor${storyCount > 2 ? "s" : ""}: bedrooms.`;
+    `${carCount <= 0 ? "No parking: no garage, carport or parking pad on the site." : `Parking for exactly ${carCount} car${carCount > 1 ? "s" : ""} in a ${flood ? "piloti" : "built-in"} garage on the left of the facade.`} ` +
+    `1F: entrance, LDK with kitchen and water rooms; upper floor${storyCount > 2 ? "s" : ""}: bedrooms. ` +
+    `Facade left to right as seen from the street: ${carCount <= 0 ? "entrance on the left, living room window on the right" : "garage on the left, entrance in the center, living room window on the right"}.`;
 
   return {
     plan,
     spec,
     exterior:
       `${spec}, photorealistic architectural photograph of a modern Japanese detached house in ` +
-      `${area.municipality}, ${area.prefecture}, Japan, exactly ${storyCount} stories, ${exteriorParking}` +
+      `${area.municipality}, ${area.prefecture}, Japan, exactly ${storyCount} stories, ${exteriorParking}, ${facade}` +
       `${resilience}${wishes}, surrounding local streetscape, daylight, high-quality photography, 16:9 landscape`,
     floorPlan:
       `${spec}, 2D top-down architectural floor plan of the same modern Japanese detached house, ` +
-      `exactly ${storyCount} stories, ${planParking}${wishes}, orthographic projection, ` +
+      `exactly ${storyCount} stories, ${planParking}${wishes}, street-facing facade at the bottom of the sheet ` +
+      `with the garage on the left as seen from the street, orthographic projection, ` +
       `clean black line drawing on white background, room partitions, furniture layout, ` +
-      `dimension lines, no text labels, blueprint style, high resolution`,
+      `dimension lines, ${floorLabels}, no other text labels, blueprint style, high resolution`,
+    conceptExplanation: buildFallbackConcept(area, tags, { storyCount, carCount, cold, flood }),
   };
+}
+
+/**
+ * Stage1 が落ちたときの設計コンセプト文（日本語）。
+ * エリアの実データとタグから、階数・駐車・耐候の判断理由を組み立てる。
+ */
+function buildFallbackConcept(
+  area: HouseAreaData,
+  tags: string[],
+  d: { storyCount: number; carCount: number; cold: boolean; flood: boolean },
+): string {
+  const place = `${area.prefecture}${area.municipality}${area.district ? area.district : ""}`;
+  const parts: string[] = [
+    `${place}の環境データをもとに、${d.storyCount}階建ての住まいとして設計しました。`,
+  ];
+
+  if (d.flood) {
+    parts.push(
+      "このエリアは浸水リスクが確認されているため、床レベルを上げて玄関を高い位置に設け、主要な居住空間を上階に配置しています。",
+    );
+  } else if (area.zoning?.floorAreaRatio) {
+    parts.push(
+      `容積率${area.zoning.floorAreaRatio}・用途地域「${area.zoning.useArea ?? "不明"}」の条件に合わせ、敷地を無理なく使える規模にまとめています。`,
+    );
+  }
+
+  if (d.cold) {
+    parts.push("冬の冷え込みが厳しい気候に備え、雪が落ちやすい屋根形状と高断熱の外皮を前提にしました。");
+  } else if (area.weather?.annualSunshineHours != null) {
+    parts.push(
+      `年間日照時間が${Math.round(area.weather.annualSunshineHours)}時間の地域特性を活かし、主要な窓を正面右側にまとめて採光を確保しています。`,
+    );
+  }
+
+  parts.push(
+    d.carCount > 0
+      ? `ご指定の条件をふまえ、駐車${d.carCount}台分を正面左側に確保し、玄関との動線を短くしました。`
+      : "駐車スペースは設けず、その分を庭と居住空間に充てています。",
+  );
+
+  if (tags.length > 0) {
+    parts.push(`ご希望の「${tags.slice(0, 3).join("・")}」も間取りに反映しています。`);
+  }
+
+  return parts.join("");
 }
 
 /** 共通の建築仕様がプロンプト冒頭に無ければ強制的に前置きする */
@@ -470,9 +566,11 @@ function parseHousePrompts(text: string): HouseImagePrompts | null {
     if (typeof parsed.exterior === "string" && typeof parsed.floorPlan === "string") {
       const plan = typeof parsed.plan === "string" ? parsed.plan.trim() : "";
       const spec = typeof parsed.spec === "string" ? parsed.spec.trim().replace(/[,、\s]+$/, "") : "";
+      const conceptExplanation =
+        typeof parsed.conceptExplanation === "string" ? parsed.conceptExplanation.trim() : "";
       const exterior = withSpecPrefix(spec, parsed.exterior.trim());
       const floorPlan = withSpecPrefix(spec, parsed.floorPlan.trim());
-      if (exterior && floorPlan) return { plan, spec, exterior, floorPlan };
+      if (exterior && floorPlan) return { plan, spec, exterior, floorPlan, conceptExplanation };
     }
   } catch {
     /* JSON でなければフォールバックに委ねる */
@@ -545,7 +643,7 @@ export async function generateHouseImages(
   try {
     prompts = await generateHousePrompts(area, tags);
     console.log(
-      `[HouseGen] プロンプト生成完了\n  plan: ${prompts.plan}\n  spec: ${prompts.spec}\n  floorPlan: ${prompts.floorPlan}\n  exterior: ${prompts.exterior}`,
+      `[HouseGen] プロンプト生成完了\n  plan: ${prompts.plan}\n  spec: ${prompts.spec}\n  floorPlan: ${prompts.floorPlan}\n  exterior: ${prompts.exterior}\n  concept: ${prompts.conceptExplanation}`,
     );
   } catch (promptErr) {
     console.warn(
@@ -554,10 +652,18 @@ export async function generateHouseImages(
     prompts = buildFallbackHousePrompts(area, tags);
   }
 
+  // Stage1 がコンセプト文を返さなかった場合も UI が空にならないよう静的文面で補う
+  if (!prompts.conceptExplanation) {
+    prompts = {
+      ...prompts,
+      conceptExplanation: buildFallbackHousePrompts(area, tags).conceptExplanation,
+    };
+  }
+
   const [exterior, floorPlan] = await Promise.all([
     generateImageWithFallback(prompts.exterior, "exterior"),
     generateImageWithFallback(prompts.floorPlan, "floorPlan"),
   ]);
 
-  return { exterior, floorPlan, prompts };
+  return { exterior, floorPlan, prompts, conceptExplanation: prompts.conceptExplanation };
 }
