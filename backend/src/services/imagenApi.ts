@@ -126,21 +126,37 @@ function getMockImageBase64(): string {
 // Stage2: 画像生成モデル
 // ============================================================
 
-/** Gemini 画像生成モデル (generateContent + responseModalities IMAGE) で画像生成 */
+/**
+ * Gemini 画像生成モデル (generateContent + responseModalities IMAGE) で画像生成。
+ *
+ * referenceImages を渡すと Image-to-Image（参照画像つき生成）になる。
+ * Gemini の画像モデルは Imagen の :predict のような専用フィールドを持たず、
+ * 通常のマルチモーダル入力と同じく contents[].parts に inlineData(base64) を
+ * 並べる形で参照画像を渡す仕様（Nano Banana 2 は参照画像を最大14枚まで受け付ける）。
+ * テキストを先、画像を後に置く並びを Google のサンプルに合わせている。
+ */
 async function generateViaGeminiImage(
   modelId: string,
-  prompt: string
+  prompt: string,
+  referenceImages: GeneratedImage[] = []
 ): Promise<GeneratedImage> {
   const genAI = new GoogleGenerativeAI(config.gemini.apiKey);
   const model = genAI.getGenerativeModel({ model: modelId });
 
+  const parts: ({ text: string } | { inlineData: { mimeType: string; data: string } })[] = [
+    { text: prompt },
+    ...referenceImages.map((img) => ({
+      inlineData: { mimeType: img.mimeType, data: img.imageBase64 },
+    })),
+  ];
+
   const result = await model.generateContent({
-    contents: [{ role: "user", parts: [{ text: prompt }] }],
+    contents: [{ role: "user", parts }],
     generationConfig: { responseModalities: ["IMAGE"] } as Record<string, unknown>,
   });
 
-  const parts = result.response.candidates?.[0]?.content?.parts ?? [];
-  for (const part of parts) {
+  const responseParts = result.response.candidates?.[0]?.content?.parts ?? [];
+  for (const part of responseParts) {
     const inline = (part as unknown as Record<string, unknown>).inlineData as
       | { data: string; mimeType: string }
       | undefined;
@@ -748,12 +764,18 @@ async function generateHousePrompts(
   return parsed;
 }
 
-/** 画像1枚を primary → fallback モデルの順で生成する */
-async function generateImageWithFallback(prompt: string, label: string): Promise<GeneratedImage> {
+/** 画像1枚を primary → fallback モデルの順で生成する（referenceImages があれば Image-to-Image） */
+async function generateImageWithFallback(
+  prompt: string,
+  label: string,
+  referenceImages: GeneratedImage[] = [],
+): Promise<GeneratedImage> {
   for (const modelId of [PRIMARY_IMAGE_MODEL, FALLBACK_IMAGE_MODEL]) {
     try {
-      const result = await generateViaGeminiImage(modelId, prompt);
-      console.log(`[HouseGen] ${label}: ${modelId} 完了 (${result.mimeType})`);
+      const result = await generateViaGeminiImage(modelId, prompt, referenceImages);
+      console.log(
+        `[HouseGen] ${label}: ${modelId} 完了 (${result.mimeType}${referenceImages.length > 0 ? ", 参照画像あり" : ""})`,
+      );
       return result;
     } catch (err) {
       console.warn(
@@ -765,10 +787,26 @@ async function generateImageWithFallback(prompt: string, label: string): Promise
 }
 
 /**
+ * 間取り図画像を参照画像として外観生成に添えるときの前置き。
+ * 「図面そのものを描く」方向に引っ張られないよう、用途を明示する。
+ */
+function buildFloorPlanReferenceInstruction(): string {
+  return (
+    "The attached image is the 2D floor plan of THIS house. Treat it as the authoritative spatial " +
+    "reference: the number of floors, the footprint proportions and setbacks, and the left/right and " +
+    "front/back positions of the garage, the entrance, the windows and the staircase must match that " +
+    "plan exactly, with every opening in the same vertical column as the plan shows. Do NOT reproduce " +
+    "the drawing, the line work, the dimension lines or the floor labels — output a photorealistic " +
+    "exterior photograph of the real building that the plan describes. "
+  );
+}
+
+/**
  * エリアの実データとユーザーのこだわりタグから「外観」「間取り図」の2枚を生成する。
  * Stage1: gemini-3.6-flash が間取りを先に設計してから2種類の英語プロンプトを生成
  *         （失敗時は静的フォールバック）
- * Stage2: gemini-3.1-flash-image → gemini-2.5-flash-image で各画像を生成
+ * Stage2: 直列生成。まず間取り図を作り、その画像を参照画像として外観を生成する
+ *         （各画像は gemini-3.1-flash-image → gemini-2.5-flash-image の順にフォールバック）
  */
 export async function generateHouseImages(
   area: HouseAreaData,
@@ -803,10 +841,25 @@ export async function generateHouseImages(
     };
   }
 
-  const [exterior, floorPlan] = await Promise.all([
-    generateImageWithFallback(prompts.exterior, "exterior"),
-    generateImageWithFallback(prompts.floorPlan, "floorPlan"),
-  ]);
+  // Stage2 は直列。まず間取り図を生成し、その画像を参照画像（下絵）として外観を生成する。
+  // テキスト指示だけでは外観に間取り図に無いブロックが出てしまうため、
+  // Gemini 画像モデルの Image-to-Image（inlineData での参照画像入力）で空間を拘束する。
+  const floorPlan = await generateImageWithFallback(prompts.floorPlan, "floorPlan");
+
+  let exterior: GeneratedImage;
+  try {
+    exterior = await generateImageWithFallback(
+      `${buildFloorPlanReferenceInstruction()}${prompts.exterior}`,
+      "exterior (floor plan reference)",
+      [floorPlan],
+    );
+  } catch (refErr) {
+    // 参照画像つきが全モデルで失敗した場合は、テキストのみで生成し直して画像を落とさない
+    console.warn(
+      `[HouseGen] 参照画像つき外観生成が失敗、テキストのみで再試行: ${refErr instanceof Error ? refErr.message : refErr}`,
+    );
+    exterior = await generateImageWithFallback(prompts.exterior, "exterior (text only)");
+  }
 
   return { exterior, floorPlan, prompts, conceptExplanation: prompts.conceptExplanation };
 }

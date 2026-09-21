@@ -410,7 +410,7 @@
     "generateBtn": "用 AI 生成理想住宅 (Pro 限定)",
     "regenerateBtn": "以此條件再次生成 (Pro 限定)",
     "generatingBtn": "生成中…",
-    "generateNote": "僅在按下按鈕時生成（外觀與格局圖共2張／約20〜40秒）",
+    "generateNote": "僅在按下按鈕時生成（先格局圖再外觀，共2張／約40〜80秒）",
     "loadingText": "AI 正在設計建築方案",
     "exteriorCaption": "外觀示意",
     "conceptTitle": "AI 提出的設計理念",

@@ -410,7 +410,7 @@
     "generateBtn": "AIで理想の家を生成する (Pro限定)",
     "regenerateBtn": "この条件でもう一度生成する (Pro限定)",
     "generatingBtn": "生成中…",
-    "generateNote": "ボタンを押したときだけ生成します（外観・間取り図の2枚／約20〜40秒）",
+    "generateNote": "ボタンを押したときだけ生成します（間取り図→外観の順に2枚／約40〜80秒）",
     "loadingText": "AIが建築プランを設計中",
     "exteriorCaption": "外観イメージ",
     "conceptTitle": "AIが考えた設計コンセプト",
