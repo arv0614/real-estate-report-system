@@ -224,6 +224,63 @@ export async function generateLifestyleImage(
   return res.json();
 }
 
+/** 「理想の住まい」生成API に渡すエリア実データ（気象・ハザード・用途地域など） */
+export interface HouseAreaDataPayload {
+  zoning?: {
+    useArea?: string | null;
+    coverageRatio?: string | null;
+    floorAreaRatio?: string | null;
+  } | null;
+  hazard?: {
+    floodRisk?: boolean;
+    floodDepthLabel?: string | null;
+    landslideRisk?: boolean;
+    landslidePhenomena?: string[];
+  } | null;
+  weather?: {
+    summerAvgMaxTemp?: number | null;
+    winterAvgMinTemp?: number | null;
+    annualSunshineHours?: number | null;
+  } | null;
+  station?: { name?: string | null; walkMinutes?: number | null } | null;
+  avgArea?: number | null;
+  areaFeatures?: string | null;
+}
+
+export interface HouseImagesResponse {
+  exterior: GeneratedImageResponse;
+  floorPlan: GeneratedImageResponse;
+  prompts: { exterior: string; floorPlan: string };
+}
+
+/**
+ * エリアの実データ + ユーザーのこだわりタグから「外観」「間取り図」の2枚を生成する。
+ * コストが大きいため、ユーザーが生成ボタンを押したときだけ呼び出すこと（自動発火禁止）。
+ */
+export async function generateHouseImages(params: {
+  prefecture: string;
+  municipality: string;
+  district?: string | null;
+  tags: string[];
+  areaData?: HouseAreaDataPayload;
+}): Promise<HouseImagesResponse> {
+  const url = `${getApiBase()}/api/property/generate-house-images`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    if (res.status === 429) {
+      throw Object.assign(new Error("RATE_LIMITED"), { code: "RATE_LIMITED" });
+    }
+    const body = await res.text();
+    throw new Error(`API error ${res.status}: ${body}`);
+  }
+  return res.json();
+}
+
 /** 円を「1,234万円」(ja) または「¥1.2M」(en) 表記に変換。ゼロは「—」 */
 export function formatPrice(yen: number, locale = "ja"): string {
   if (yen === 0) return "—";

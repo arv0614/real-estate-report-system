@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { rateLimiter } from "hono-rate-limiter";
 import { z } from "zod";
 import { readCache, writeCache } from "../services/gcsCache";
 import {
@@ -11,7 +12,11 @@ import {
 } from "../services/mlitApi";
 import { fetchWeatherSummary, type WeatherSummary } from "../services/openMeteo";
 import { generateAreaReport, type AreaReportInput } from "../services/geminiApi";
-import { generateLifestyleImage } from "../services/imagenApi";
+import {
+  generateLifestyleImage,
+  generateHouseImages,
+  type HouseAreaData,
+} from "../services/imagenApi";
 import {
   checkSeoImageCache,
   saveSeoImageCache,
@@ -392,6 +397,110 @@ app.post("/generate-image", async (c) => {
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("[/generate-image] 生成失敗:", msg);
+    return c.json({ error: "画像生成に失敗しました", details: msg }, 500);
+  }
+});
+
+/**
+ * POST /api/property/generate-house-images
+ * エリアの実データ（気候・ハザード・用途地域等）とユーザーのこだわりタグから、
+ * 「外観」「間取り図」の2枚を生成する。
+ *
+ * フロントの明示的なボタン操作でのみ呼ばれる想定（自動生成しない）。
+ * 画像2枚分のコストがかかるため、グローバル制限に加えて IP 単位で 1時間10回に制限する。
+ */
+app.use(
+  "/generate-house-images",
+  rateLimiter({
+    windowMs: 60 * 60 * 1000, // 1時間
+    limit: 10,
+    standardHeaders: "draft-6",
+    keyGenerator: (c) =>
+      c.req.header("x-forwarded-for")?.split(",")[0].trim() ??
+      c.req.header("x-real-ip") ??
+      "unknown",
+    message: { error: "生成回数が上限に達しました。1時間後に再度お試しください。" },
+  }),
+);
+
+const houseImagesSchema = z.object({
+  prefecture: z.string().trim().min(1).max(50),
+  municipality: z.string().trim().min(1).max(50),
+  district: z.string().trim().max(50).nullish(),
+  /** ユーザーが入力したこだわり条件（フリーテキストタグ） */
+  tags: z.array(z.string().trim().min(1).max(40)).max(12).default([]),
+  areaData: z
+    .object({
+      zoning: z
+        .object({
+          useArea: z.string().nullish(),
+          coverageRatio: z.string().nullish(),
+          floorAreaRatio: z.string().nullish(),
+        })
+        .nullish(),
+      hazard: z
+        .object({
+          floodRisk: z.boolean().optional(),
+          floodDepthLabel: z.string().nullish(),
+          landslideRisk: z.boolean().optional(),
+          landslidePhenomena: z.array(z.string()).max(20).optional(),
+        })
+        .nullish(),
+      weather: z
+        .object({
+          summerAvgMaxTemp: z.number().nullish(),
+          winterAvgMinTemp: z.number().nullish(),
+          annualSunshineHours: z.number().nullish(),
+        })
+        .nullish(),
+      station: z
+        .object({
+          name: z.string().nullish(),
+          walkMinutes: z.number().nullish(),
+        })
+        .nullish(),
+      avgArea: z.number().nullish(),
+      areaFeatures: z.string().max(2000).nullish(),
+    })
+    .optional(),
+});
+
+app.post("/generate-house-images", async (c) => {
+  let body: unknown;
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "Invalid JSON body" }, 400);
+  }
+
+  const parsed = houseImagesSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: "Invalid parameters", details: parsed.error.flatten() }, 400);
+  }
+
+  const { prefecture, municipality, district, tags, areaData } = parsed.data;
+
+  // 空文字・重複タグを落としてからプロンプトへ渡す
+  const cleanTags = Array.from(new Set(tags.map((t) => t.trim()).filter(Boolean)));
+
+  const area: HouseAreaData = {
+    prefecture,
+    municipality,
+    district: district ?? null,
+    zoning: areaData?.zoning ?? null,
+    hazard: areaData?.hazard ?? null,
+    weather: areaData?.weather ?? null,
+    station: areaData?.station ?? null,
+    avgArea: areaData?.avgArea ?? null,
+    areaFeatures: areaData?.areaFeatures ?? null,
+  };
+
+  try {
+    const result = await generateHouseImages(area, cleanTags);
+    return c.json(result);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[/generate-house-images] 生成失敗:", msg);
     return c.json({ error: "画像生成に失敗しました", details: msg }, 500);
   }
 });
