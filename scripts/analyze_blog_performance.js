@@ -23,7 +23,8 @@
  *   node scripts/analyze_blog_performance.js --input fix.json  # GA4 を叩かずフィクスチャで分析 (テスト用)
  *
  * 環境変数:
- *   GA4_PROPERTY_ID        — 必須 (gcloud 取得時)。GA4 プロパティ番号
+ *   GA4_PROPERTY_ID        — 任意。参照する GA4 プロパティ番号の上書き用
+ *                            （既定: scripts/ga4_config.js の 312222045 = Mekiki-Research - GA4）
  *   GA4_ACCESS_TOKEN       — 任意。OAuth アクセストークン (未設定時 gcloud から取得)
  *   GEMINI_API_KEY         — 必須（--input フィクスチャ利用時を除く）
  *   GEMINI_ANALYSIS_MODEL  — 任意。既定: gemini-3.1-pro-preview
@@ -49,7 +50,7 @@ function flagValue(name, fallback) {
 const DRY_RUN = args.includes("--dry-run");
 const INPUT_FILE = flagValue("--input", null);
 const DAYS = Number(flagValue("--days", process.env.BLOG_ANALYSIS_DAYS || 28));
-const PROPERTY_ID = process.env.GA4_PROPERTY_ID;
+const { GA4_PROPERTY_ID: PROPERTY_ID } = require("./ga4_config");
 const MODEL = process.env.GEMINI_ANALYSIS_MODEL || "gemini-3.1-pro-preview";
 const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
 

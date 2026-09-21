@@ -4,6 +4,8 @@ import { sendGAEvent } from "@next/third-parties/google";
  * GA4 / GTM 計測ユーティリティ
  *
  * GA4 測定ID。frontend/app/layout.tsx の <GoogleAnalytics gaId={GA_MEASUREMENT_ID} /> に渡す。
+ * 送信先は GA4 プロパティ「Mekiki-Research - GA4」(312222045) の測定ID G-4Y1CLF7J2P。
+ * レポート系スクリプトが読む scripts/ga4_config.js のプロパティIDと必ず対応させる。
  *
  * GTM（NEXT_PUBLIC_GTM_ID）はマーケティング用ポップアップ等の配信のために維持するが、
  * GA4タグの配信はGTMコンテナ側で停止済み（2026-09-16）。GA4計測（ページビュー・
@@ -16,7 +18,7 @@ import { sendGAEvent } from "@next/third-parties/google";
  *   コンポーネントが layout.tsx でマウントされている前提（sendGAEvent の要件）。
  * - いずれも SSR / Next.js Server Components でも安全（window チェック済み）。
  */
-export const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "G-MF8SLJ81D2";
+export const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "G-4Y1CLF7J2P";
 
 export type UserPlanDL = "guest" | "free" | "pro";
 
