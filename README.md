@@ -226,14 +226,19 @@ node scripts/prepare-hoanrin.mjs --input-dir=/path/to/A13-by-pref/
 
 ### GA4 イベント一覧（全量）
 
-GA4 への計測は **Google Tag Manager に一本化**しています。アプリ側は `frontend/lib/analytics.ts` の
-`trackEvent()` / `trackPurchase()` / `dataLayerPush()` で `window.dataLayer` にイベントを積むだけで、
-GA4 への送信は GTM コンテナ（`<GoogleTagManager gtmId={NEXT_PUBLIC_GTM_ID}>`、`frontend/app/layout.tsx`）側の
-タグ／トリガー設定が担当します。
+**GA4計測は `@next/third-parties/google` でコード完結管理**しています（2026-09-21）。
+`frontend/app/layout.tsx` の `<GoogleAnalytics gaId={GA_MEASUREMENT_ID} />` が gtag.js の
+読み込み・初期化を担い、`frontend/lib/analytics.ts` の `trackEvent()` / `trackPurchase()` は
+内部で公式の `sendGAEvent()` を呼ぶだけの薄いラッパーとして GA4 に直接イベントを送信します。
+GTM（`<GoogleTagManager gtmId={NEXT_PUBLIC_GTM_ID}>`）はマーケティング用ポップアップ等の配信の
+ために並行して維持しますが、GA4タグの配信は GTM コンテナ側で停止済みのため、GTM 側のタグ／
+トリガー設定には一切依存せず、コードだけで下記イベントの GA4 到達を保証できます。
 
-以前は gtag.js を GTM と並行して直接読み込んでいましたが、GTM 側の GA4 設定タグと二重計測になるため
-削除しました（`frontend/lib/gtag.ts` と `window.gtag` 依存のコードは撤去済み）。そのため **下記の
-イベントを GA4 に届けるには、GTM コンテナ側にカスタムイベントトリガー + GA4 イベントタグの設定が必要**です。
+検索ファネル専用の `dataLayerPush()`（③参照）だけは例外で、GTM コンテナ側のトリガー
+（マーケティング用ポップアップの表示条件など）専用に `window.dataLayer` へ積むだけで GA4 へは送りません。
+
+（2026-09-19〜09-21: 一時的に GTM 経由への一本化を試みましたが、GTM 側の GA4 タグ配信が
+停止していたため計測が届かない状態になっていました。現在は上記の直接送信方式に戻しています。）
 
 #### ① カスタムイベント（`trackEvent` 経由）
 
@@ -268,7 +273,7 @@ GA4 への送信は GTM コンテナ（`<GoogleTagManager gtmId={NEXT_PUBLIC_GTM
 
 #### ④ GA4 自動収集イベント（コードから送信していない）
 
-GA4 の **Enhanced Measurement** が自動的に収集するイベント（GTM の GA4 設定タグ経由）。コードに送信処理はない。
+GA4 の **Enhanced Measurement** が `<GoogleAnalytics>` 経由で自動的に収集するイベント。コードに送信処理はない。
 
 | イベント名 | GA4 が自動収集する条件 |
 |---|---|
@@ -293,7 +298,8 @@ GA4 Data API を軸にした、**追加コストゼロ**（Looker Studio + GA4 �
 1. **取得指標**（GA4 Data API `runReport`）: 検索利用 `generate_report`件数 / 上限到達 `reach_limit`件数 / 無料登録
    `sign_up`件数。それぞれ「検索利用→上限到達」「上限到達→無料登録」の CVR を算出。
 2. **ゲスト限定の絞り込み**: `reach_limit` は本来ゲスト・Free 両方のプラン上限到達で発火するイベントのため、
-   GA4 のイベントパラメータ `user_plan`（`frontend/lib/analytics.ts` の `trackEvent` → GTM 経由で送信）を
+   GA4 のイベントパラメータ `user_plan`（`frontend/lib/analytics.ts` の `trackEvent` 経由、sendGAEvent で
+   GA4 に直接送信）を
    event-scoped custom dimension `customEvent:user_plan` として使い、`DimensionFilter` で
    `user_plan="guest"` のみに絞り込む。この custom dimension が GA4 property 側に未登録の場合は
    起動時に GA4 Admin API 経由で自動登録を試みる（`analytics.edit` 権限が必要。権限が無い/失敗時は
@@ -1694,7 +1700,7 @@ real-estate-report-system/
 │   │   ├── __tests__/
 │   │   │   └── researchHistory.test.ts # builtYear optional 後方互換性テスト [P2]
 │   │   ├── geo/, links/, parsers/, schemas/, debug/
-│   │   ├── firebase.ts, gtag.ts, analytics.ts, posthog.ts
+│   │   ├── firebase.ts, analytics.ts, posthog.ts
 │   │   ├── userPlan.ts                 # プラン判定・ゲスト制限
 │   │   └── exportPdf.ts                # PDF エクスポート
 │   ├── proxy.ts                        # next-intl ロケールルーティング
