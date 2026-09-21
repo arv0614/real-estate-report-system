@@ -310,11 +310,6 @@ Work out the actual building, room by room, and fix these numbers before you wri
      - Decide the setbacks from the rules in (A) (the diagonal-line / 斜線制限 and setback habits of the district,
        the floor-area-ratio and building-coverage-ratio). An upper floor that is smaller than the one below MUST
        say by how much and on which side; a floor that is identical to the one below must say so explicitly.
-  f. THE STAIRCASE POSITION, named with the same viewer-facing vocabulary as step 1e
-     (e.g. "straight-run staircase at Center-Left, against the party wall, same position on every floor").
-     - The house has ONE vertical circulation core. Its footprint sits at the SAME position, at the same
-       left/right and front/back place in the plan, on EVERY floor from 1F to the top floor.
-     - Every floor above 1F is reached by that staircase; the plan must show it arriving on each upper floor.
   e. THE FACADE LAYOUT, left to right AS SEEN BY A VIEWER STANDING IN THE STREET FACING THE FRONT OF THE HOUSE.
      Assign every street-facing element to exactly one of three slots — LEFT, CENTER, RIGHT — and never leave one vague:
        - the garage / carport / parking pad opening (omit only when capacity is 0)
@@ -322,16 +317,47 @@ Work out the actual building, room by room, and fix these numbers before you wri
        - the main large window(s) of the living space
      Example: "facade left to right: garage opening on the LEFT, entrance door in the CENTER, large living room
      window on the RIGHT". Use this viewer-facing convention for both images so they cannot come out mirrored.
-Write this design out in "plan": 3-6 short English sentences that state the story count, the exact car capacity
+  f. THE STAIRCASE POSITION, named with the same viewer-facing vocabulary as step 1e
+     (e.g. "straight-run staircase at Center-Left, against the party wall, same position on every floor").
+     - The house has ONE vertical circulation core. Its footprint sits at the SAME position, at the same
+       left/right and front/back place in the plan, on EVERY floor from 1F to the top floor.
+     - Every floor above 1F is reached by that staircase; the plan must show it arriving on each upper floor.
+  g. THE VERTICAL ALIGNMENT (the stacking lines), column by column, using the same LEFT / CENTER / RIGHT slots.
+     For each slot, say what sits in it on EVERY floor, from 1F up, so each element has a known neighbour
+     directly above and directly below it:
+       - LEFT   column: e.g. "1F garage opening -> 2F bedroom window directly above the garage -> 3F balcony directly above that bedroom"
+       - CENTER column: e.g. "1F entrance door -> 2F small stair-hall window directly above the entrance -> 3F blank wall"
+       - RIGHT  column: e.g. "1F living room window -> 2F large bedroom window directly above it -> 3F setback, no wall at this line"
+     Structural sense: openings and walls line up vertically; a large 2F window must not float over a blank
+     stretch of 1F wall, and a 2F room must not hang over open air unless the plan says it is a cantilever.
+     Where an upper floor is set back, say which column ends there (e.g. "the RIGHT column stops at 2F; above it
+     is the roof balcony of the 3F setback").
+  h. THE FACADE PROPORTION — translate the step-1d numbers into a VISUAL shape phrase for the photograph.
+     Do not hand the image model bare metres; describe the volume it should draw:
+       - frontage clearly smaller than depth (e.g. 6m x 10m) -> "narrow facade with a deep rectangular volume
+         receding from the street"
+       - frontage close to depth (e.g. 9m x 10m) -> "nearly square, compact boxy volume"
+       - frontage larger than depth (e.g. 10m x 7m) -> "wide frontage with a shallow volume"
+     Write the chosen phrase down; step 4 must reuse it verbatim.
+Write this design out in "plan": 4-7 short English sentences that state the story count, the exact car capacity
 and position, the per-floor footprint in metres with its setbacks (step 1d), the single bathroom's floor (step 1c),
-the staircase position repeated on every floor (step 1f), the room layout per floor, AND the facade left/right
-layout of step 1e. This is your single source of truth for BOTH images.
+the facade left/right layout (step 1e), the staircase position repeated on every floor (step 1f), the vertical
+alignment of each LEFT / CENTER / RIGHT column (step 1g), and the facade proportion phrase (step 1h), plus the
+room layout per floor. This is your single source of truth for BOTH images.
 
 ### ABSOLUTE CONSTRAINT — vertical circulation
 The staircase is at ONE position and that position is IDENTICAL on every floor, 1F to the top floor. A floor drawn
 without the staircase arriving on it, a staircase that moves to another part of the plan between floors, or any
 floor that cannot be reached on foot, is a SEVERE ERROR and the design must be redone before you write the prompts.
 Both the floor plan prompt and the exterior prompt must be written from that single stair core.
+
+### ABSOLUTE CONSTRAINT — vertical alignment
+The vertical position of the garage, the entrance and every main window in the photograph must match the floor
+plan exactly: what the plan puts on the LEFT of 1F is directly BELOW what the plan puts on the LEFT of 2F, and so
+on for CENTER and RIGHT. A 2F window that drifts sideways so it no longer sits directly above the 1F garage, an
+opening that lands over a blank wall, or a column whose order differs between the two images, is a CRITICAL ERROR.
+Write the stacking lines of step 1g into BOTH prompts in words ("the 2F bedroom window is perfectly aligned
+directly above the 1F garage opening"), and verify them again before you output.
 
 ## STEP 2: derive the shared spec from that plan
 Compress the plan into one short comma-separated English phrase, "spec", stating in this order:
@@ -363,6 +389,9 @@ The spec MUST agree with the plan. If they differ, the plan wins: fix the spec, 
   side with a balcony over the setback").
 - PROPORTIONS: it states the Japanese urban house proportions from step 1d (e.g. "about 6m frontage by 10m depth,
   natural Japanese urban house proportions, not an extremely long narrow plan").
+- VERTICAL ALIGNMENT: it writes the step-1g stacking lines into the plan, so each floor's openings sit in the same
+  columns (e.g. "2F bedroom window drawn directly above the 1F garage opening on the left, 2F stair-hall window
+  directly above the 1F entrance in the center, upper-floor walls aligned with the walls below").
 - FLOOR LABELS — MANDATORY: the plan is labelled with the Japanese standard notation ONLY: "1F", "2F", "3F".
   NEVER use "GROUND FLOOR", "FIRST FLOOR", "SECOND FLOOR", "G/F", "1st floor", "LEVEL 1" or any other wording
   for the floors. Write the constraint into the prompt itself, e.g.
@@ -381,11 +410,16 @@ The spec MUST agree with the plan. If they differ, the plan wins: fix the spec, 
   floor visibly smaller where the plan draws it smaller (e.g. "third floor set back 3m from the street facade
   with a roof balcony over the second floor, first and second floors flush at the same width").
   A facade shown as one flush box while the plan sets an upper floor back is a contradiction.
-- PROPORTIONS: it states the same Japanese urban house proportions (about 6m frontage, 10m depth), so the volume
-  does not come out as an unnaturally long, narrow bar.
+- VERTICAL ALIGNMENT: it spells out the step-1g stacking lines in plain words, e.g. "the window of the 2nd floor
+  bedroom is perfectly aligned directly above the 1st floor garage opening on the left, the small 2F window sits
+  directly above the entrance door in the center, all openings stacked in straight vertical lines".
+- PROPORTIONS: it reuses the step-1h facade proportion phrase VERBATIM alongside the numbers, so the photograph
+  gets a shape and not only metres (e.g. "narrow facade with a deep rectangular volume receding from the street,
+  about 6m frontage by 10m depth"). Never give the image model bare dimensions with no visual description.
 - ABSOLUTE CONSTRAINT: the exterior image and the floor plan must NEVER contradict each other on the number of
   parking spaces, the number of stories, the LEFT/RIGHT position of the garage, the entrance and the main
-  windows, the per-floor footprint and its setbacks, or the staircase position.
+  windows, the VERTICAL stacking of those openings, the per-floor footprint and its setbacks, or the staircase
+  position.
   If the plan says 2 cars, the exterior shows exactly 2 — not 1, not 3. If the plan says 3-story, both
   the photograph and the plan show exactly 3 stories. If the plan puts the garage on the LEFT, it is on the left
   in BOTH images — a mirrored facade is a failure. If the plan sets the top floor back, the photograph shows that
@@ -396,7 +430,10 @@ The spec MUST agree with the plan. If they differ, the plan wins: fix the spec, 
     3. every LEFT / CENTER / RIGHT assignment identical in all three;
     4. each floor's width x depth and every setback identical in all three;
     5. the staircase named at one and the same position on every floor;
-    6. exactly one bathtub in the whole house.
+    6. exactly one bathtub in the whole house;
+    7. the LEFT / CENTER / RIGHT stacking lines of step 1g stated in both prompts, with every opening directly
+       above or below the one named for the neighbouring floor;
+    8. the step-1h facade proportion phrase present in the exterior prompt, matching the metres in the plan.
 
 ## STEP 5: write "conceptExplanation" — the design rationale, IN JAPANESE
 - 200-300 Japanese characters, plain polite Japanese (です・ます調), no markdown, no bullet points, no English headings.
@@ -431,10 +468,11 @@ Architectural sanity rules (a plan that breaks one of these is not buildable —
 - Stack the floors honestly: an upper floor is the same size as the one below or smaller, never larger, and every size change is a setback you can point to in both images.
 - Keep Japanese urban house proportions (about 6m frontage x 10m depth, up to roughly 1:1.8); never an extreme narrow bar.
 - Water rooms and the kitchen share plumbing walls; do not scatter them to opposite corners on different floors.
+- Stack the openings: every window and door sits in a vertical column with the wall or opening above and below it; nothing floats over a blank wall or over open air.
 
 Prompt content rules:
-- floorPlan: <spec>, 2D top-down architectural floor plan of that house, orthographic, clean black line drawing on white, room partitions per the plan, one staircase in the same position on every floor, exactly one bathroom in the whole house, each floor at its own width x depth with the setbacks drawn, furniture layout, dimension lines, floor labels strictly as 1F / 2F / 3F (never GROUND FLOOR, never FIRST FLOOR), no other text labels and never Japanese characters, street-facing facade at the bottom of the sheet, blueprint style, high resolution.
-- exterior: <spec>, photorealistic architectural photography of the same building, daylight matching the local climate and season, surrounding streetscape consistent with the district, Japanese residential architecture, high-quality photography, 16:9 landscape.`;
+- floorPlan: <spec>, 2D top-down architectural floor plan of that house, orthographic, clean black line drawing on white, room partitions per the plan, one staircase in the same position on every floor, exactly one bathroom in the whole house, each floor at its own width x depth with the setbacks drawn, openings stacked in the same columns on every floor, furniture layout, dimension lines, floor labels strictly as 1F / 2F / 3F (never GROUND FLOOR, never FIRST FLOOR), no other text labels and never Japanese characters, street-facing facade at the bottom of the sheet, blueprint style, high resolution.
+- exterior: <spec>, photorealistic architectural photography of the same building, the step-1h facade proportion phrase, every opening aligned in straight vertical lines with the floor below, daylight matching the local climate and season, surrounding streetscape consistent with the district, Japanese residential architecture, high-quality photography, 16:9 landscape.`;
 
 /** エリア実データを日本語のブリーフィングテキストに整形する */
 function buildAreaBriefing(area: HouseAreaData): string {
@@ -542,12 +580,32 @@ function buildFallbackHousePrompts(area: HouseAreaData, tags: string[]): HouseIm
       `${FRONTAGE_M}m x ${DEPTH_M - SETBACK_M}m, set back ${SETBACK_M}m on the street side with a balcony over the setback`
     : `every floor at ${FRONTAGE_M}m x ${DEPTH_M}m, no setback between floors`;
   const proportions = `about ${FRONTAGE_M}m frontage by ${DEPTH_M}m depth, natural Japanese urban house proportions, not an extremely long narrow plan`;
+  // 数値だけでなく「見た目の形」を言語化して画像モデルに渡す（間口が狭く奥行きが深い等）
+  const facadeProportion =
+    FRONTAGE_M < DEPTH_M * 0.8
+      ? "narrow facade with a deep rectangular volume receding from the street"
+      : FRONTAGE_M > DEPTH_M * 1.2
+        ? "wide frontage with a shallow volume"
+        : "nearly square, compact boxy volume";
 
   // 垂直動線は1系統のみ。全階で同じ位置に置き、上階へ必ず到達できるようにする
   const stairs =
     storyCount > 1
       ? `single straight-run staircase at Center-Left in exactly the same position on ${floorNames.join(", ")}, every upper floor reached by that staircase`
       : "single-story house, no staircase";
+  // 垂直方向のつながり（LEFT / CENTER / RIGHT の各列に何が積まれるか）。
+  // 外観と間取り図で開口部の縦ラインがズレないよう、同じ文言を両方に入れる
+  const leftColumn =
+    carCount <= 0
+      ? "LEFT column: 1F entrance door with a 2F bedroom window perfectly aligned directly above it"
+      : `LEFT column: 1F garage opening with a 2F bedroom window perfectly aligned directly above the garage`;
+  const alignment =
+    storyCount === 1
+      ? "single-story, all openings in one row on the facade"
+      : `${leftColumn}, CENTER column: 1F ${carCount <= 0 ? "hallway window" : "entrance door"} with a small 2F stair-hall window directly above it, ` +
+        `RIGHT column: 1F living room window with a 2F window directly above it, all openings stacked in straight vertical lines, ` +
+        `no window floating over a blank wall${hasSetback ? `, the ${topFloor} setback starts behind the street-facing columns` : ""}`;
+
   // 浴室は家全体で1つだけ（60〜80㎡の標準的な日本の住宅を想定）
   const bathFloor = storyCount > 1 ? "2F" : "1F";
   const bathroom =
@@ -560,7 +618,7 @@ function buildFallbackHousePrompts(area: HouseAreaData, tags: string[]): HouseIm
     `Per-floor footprint: ${footprints}. ` +
     `${carCount <= 0 ? "No parking: no garage, carport or parking pad on the site." : `Parking for exactly ${carCount} car${carCount > 1 ? "s" : ""} in a ${flood ? "piloti" : "built-in"} garage on the left of the facade.`} ` +
     `${storyCount === 1 ? "1F: entrance, LDK with kitchen, water rooms and bedrooms" : `1F: entrance, LDK with kitchen and water rooms; upper floor${storyCount > 2 ? "s" : ""}: bedrooms`}. ` +
-    `${stairs}. ${bathroom}. ` +
+    `${stairs}. ${bathroom}. Vertical alignment — ${alignment}. ` +
     `Facade left to right as seen from the street: ${carCount <= 0 ? "entrance on the left, living room window on the right" : "garage on the left, entrance in the center, living room window on the right"}.`;
 
   return {
@@ -570,11 +628,14 @@ function buildFallbackHousePrompts(area: HouseAreaData, tags: string[]): HouseIm
       `${spec}, photorealistic architectural photograph of a modern Japanese detached house in ` +
       `${area.municipality}, ${area.prefecture}, Japan, exactly ${storyCount} ${storyCount === 1 ? "story" : "stories"}, ${exteriorParking}, ${facade}, ` +
       `${hasSetback ? `${topFloor} set back ${SETBACK_M}m from the street facade with a roof balcony over the floor below, lower floors flush at the same width` : "all floors flush at the same width, no setback"}, ` +
-      `${proportions}${resilience}${wishes}, surrounding local streetscape, daylight, high-quality photography, 16:9 landscape`,
+      `${facadeProportion}, ${proportions}, ${alignment}${resilience}${wishes}, ` +
+      `surrounding local streetscape, daylight, high-quality photography, 16:9 landscape`,
     floorPlan:
       `${spec}, 2D top-down architectural floor plan of the same modern Japanese detached house, ` +
       `exactly ${storyCount} ${storyCount === 1 ? "story" : "stories"}, ${planParking}${wishes}, street-facing facade at the bottom of the sheet ` +
-      `with the garage on the left as seen from the street, ${footprints}, ${proportions}, ${stairs}, ${bathroom}, ` +
+      `with ${carCount <= 0 ? "the entrance on the left" : "the garage on the left"} as seen from the street, ` +
+      `${footprints}, ${proportions}, ${stairs}, ${bathroom}, ` +
+      `${alignment}, ` +
       `orthographic projection, clean black line drawing on white background, room partitions, furniture layout, ` +
       `dimension lines, ${floorLabels}, no other text labels, blueprint style, high resolution`,
     conceptExplanation: buildFallbackConcept(area, tags, { storyCount, carCount, cold, flood }),
