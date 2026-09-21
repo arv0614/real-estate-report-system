@@ -206,3 +206,237 @@ export async function generateLifestyleImage(
   // ── Fallback: 全モデル失敗 → エラーをスロー ──
   throw new Error("[ImageGen] 全モデルが画像生成に失敗しました");
 }
+
+// ============================================================
+// 理想の住まい画像生成（外観 + 間取り図）
+//
+// 「暮らしイメージ」(generateLifestyleImage) が街の風景写真を生成するのに対し、
+// こちらはエリアの実データ（気候・ハザード・用途地域/容積率など）とユーザーが
+// 指定したこだわり条件タグをブレンドして、住宅の「外観」と「間取り図」の
+// 2枚を生成する。API コストが大きいためフロント側の明示的な操作でのみ呼ばれる。
+// ============================================================
+
+export interface HouseAreaData {
+  prefecture: string;
+  municipality: string;
+  district?: string | null;
+  /** 用途地域・建蔽率・容積率 */
+  zoning?: {
+    useArea?: string | null;
+    coverageRatio?: string | null;
+    floorAreaRatio?: string | null;
+  } | null;
+  /** ハザード情報（浸水・土砂災害） */
+  hazard?: {
+    floodRisk?: boolean;
+    floodDepthLabel?: string | null;
+    landslideRisk?: boolean;
+    landslidePhenomena?: string[];
+  } | null;
+  /** 気象サマリー */
+  weather?: {
+    summerAvgMaxTemp?: number | null;
+    winterAvgMinTemp?: number | null;
+    annualSunshineHours?: number | null;
+  } | null;
+  /** 最寄り駅 */
+  station?: { name?: string | null; walkMinutes?: number | null } | null;
+  /** 周辺取引の平均面積（㎡）。敷地規模の手がかりとして使う */
+  avgArea?: number | null;
+  /** AIレポート等のエリア説明（日本語） */
+  areaFeatures?: string | null;
+}
+
+export interface HouseImagePrompts {
+  exterior: string;
+  floorPlan: string;
+}
+
+export interface GeneratedHouseImages {
+  exterior: GeneratedImage;
+  floorPlan: GeneratedImage;
+  prompts: HouseImagePrompts;
+}
+
+const HOUSE_PROMPT_SYSTEM_INSTRUCTION = `You are an expert architect and a prompt engineer for photorealistic image generation models (Imagen 4 class).
+
+Given (A) real environmental data for a specific Japanese location and (B) a list of "must-have" wishes written by the end user in Japanese, write TWO English image generation prompts for a single coherent house design:
+1. "exterior"  — a photorealistic architectural photograph of the house exterior on that site.
+2. "floorPlan" — a clean 2D architectural floor plan of the same house.
+
+Output rules:
+- Output ONLY a JSON object: {"exterior": "...", "floorPlan": "..."} — no markdown fence, no commentary.
+- Each prompt is comma-separated English keywords / short phrases.
+
+Design rules (blend A and B without contradiction):
+- The environmental data is authoritative for climate, disaster resilience and building regulations. The user's wishes are authoritative for style, rooms and amenities.
+- When a wish conflicts with the environment, DO NOT drop it — adapt it so both hold (e.g. "large windows" in a heavy-snow region -> large triple-glazed insulated windows with snow-shedding eaves; "open terrace" in a flood-risk area -> elevated terrace above the raised ground floor).
+- Cold / heavy-snow area (low winter temperature) -> steep or snow-shedding roof, insulated envelope, carport or snow-melting approach.
+- Hot / high-sunshine area -> deep eaves, shading louvers, cross ventilation, heat-reflective roof.
+- Flood risk -> raised floor level / piloti parking / elevated entrance. Landslide risk -> reinforced retaining wall, solid foundation.
+- Floor-area-ratio and building-coverage-ratio decide the massing: low ratios -> compact 2-story house with garden setback; high ratios -> narrow 3-story urban house with minimal setback.
+- Use-district (用途地域) decides the surroundings: residential districts -> quiet low-rise neighbourhood; commercial districts -> dense urban street.
+
+Prompt content rules:
+- exterior: photorealistic architectural photography, daylight matching the local climate and season, surrounding streetscape consistent with the district, Japanese residential architecture, high-quality photography, 16:9 landscape.
+- floorPlan: 2D top-down architectural floor plan, orthographic, clean black line drawing on white, room partitions, furniture layout, dimension lines, minimal or no text labels (never Japanese characters), blueprint style, high resolution.`;
+
+/** エリア実データを日本語のブリーフィングテキストに整形する */
+function buildAreaBriefing(area: HouseAreaData): string {
+  const lines: string[] = [
+    `所在地: ${area.prefecture}${area.municipality}${area.district ? ` ${area.district}` : ""}`,
+  ];
+
+  const z = area.zoning;
+  if (z && (z.useArea || z.coverageRatio || z.floorAreaRatio)) {
+    lines.push(
+      `用途地域: ${z.useArea ?? "不明"} / 建蔽率: ${z.coverageRatio ?? "不明"} / 容積率: ${z.floorAreaRatio ?? "不明"}`,
+    );
+  }
+
+  const h = area.hazard;
+  if (h) {
+    const flood = h.floodRisk
+      ? `浸水リスクあり（想定浸水深: ${h.floodDepthLabel ?? "不明"}）`
+      : "浸水リスクなし";
+    const landslide = h.landslideRisk
+      ? `土砂災害リスクあり（${(h.landslidePhenomena ?? []).join("・") || "区域指定あり"}）`
+      : "土砂災害リスクなし";
+    lines.push(`ハザード: ${flood} / ${landslide}`);
+  }
+
+  const w = area.weather;
+  if (w && (w.summerAvgMaxTemp != null || w.winterAvgMinTemp != null || w.annualSunshineHours != null)) {
+    lines.push(
+      `気候: 夏の平均最高気温 ${w.summerAvgMaxTemp ?? "?"}℃ / 冬の平均最低気温 ${w.winterAvgMinTemp ?? "?"}℃ / 年間日照時間 ${w.annualSunshineHours ?? "?"}h`,
+    );
+  }
+
+  if (area.station?.name) {
+    lines.push(
+      `最寄り駅: ${area.station.name}${area.station.walkMinutes != null ? `（徒歩${area.station.walkMinutes}分）` : ""}`,
+    );
+  }
+
+  if (area.avgArea != null) {
+    lines.push(`周辺取引の平均面積: 約${Math.round(area.avgArea)}㎡`);
+  }
+
+  if (area.areaFeatures) {
+    lines.push(`エリア特性:\n${area.areaFeatures.slice(0, 600)}`);
+  }
+
+  return lines.join("\n");
+}
+
+/** Stage1 が失敗したときの静的フォールバックプロンプト */
+function buildFallbackHousePrompts(area: HouseAreaData, tags: string[]): HouseImagePrompts {
+  const wishes = tags.length > 0 ? `, incorporating: ${tags.join(", ")}` : "";
+  const cold = (area.weather?.winterAvgMinTemp ?? 99) <= 0 ? ", snow-resistant steep roof, highly insulated envelope" : "";
+  const flood = area.hazard?.floodRisk ? ", raised floor level, elevated entrance" : "";
+  return {
+    exterior:
+      `Photorealistic architectural photograph of a modern Japanese detached house in ${area.municipality}, ${area.prefecture}, Japan` +
+      `${cold}${flood}${wishes}, surrounding local streetscape, daylight, high-quality photography, 16:9 landscape`,
+    floorPlan:
+      `2D top-down architectural floor plan of a modern Japanese detached house${wishes}, orthographic projection, ` +
+      `clean black line drawing on white background, room partitions, furniture layout, dimension lines, no text labels, blueprint style, high resolution`,
+  };
+}
+
+/** JSON テキスト（```json フェンス付きも可）から2つのプロンプトを抽出する */
+function parseHousePrompts(text: string): HouseImagePrompts | null {
+  const cleaned = text
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/, "")
+    .trim();
+  try {
+    const parsed = JSON.parse(cleaned) as Partial<HouseImagePrompts>;
+    if (typeof parsed.exterior === "string" && typeof parsed.floorPlan === "string") {
+      const exterior = parsed.exterior.trim();
+      const floorPlan = parsed.floorPlan.trim();
+      if (exterior && floorPlan) return { exterior, floorPlan };
+    }
+  } catch {
+    /* JSON でなければフォールバックに委ねる */
+  }
+  return null;
+}
+
+/**
+ * Stage1: エリア実データ + ユーザーのこだわりタグから、外観・間取り図それぞれの
+ * 英語プロンプトを gemini-3.6-flash で生成する。
+ */
+async function generateHousePrompts(
+  area: HouseAreaData,
+  tags: string[],
+): Promise<HouseImagePrompts> {
+  const genAI = new GoogleGenerativeAI(config.gemini.apiKey);
+  const model = genAI.getGenerativeModel({
+    model: "gemini-3.6-flash",
+    systemInstruction: HOUSE_PROMPT_SYSTEM_INSTRUCTION,
+  });
+
+  const userMessage =
+    `## A. Environmental data (Japanese, authoritative)\n${buildAreaBriefing(area)}\n\n` +
+    `## B. User wishes (Japanese, authoritative for style/rooms)\n` +
+    (tags.length > 0 ? tags.map((t) => `- ${t}`).join("\n") : "- (no specific wishes)");
+
+  const result = await model.generateContent(userMessage);
+  const parsed = parseHousePrompts(result.response.text());
+  if (!parsed) throw new Error("Prompt generator returned unparsable output");
+  return parsed;
+}
+
+/** 画像1枚を primary → fallback モデルの順で生成する */
+async function generateImageWithFallback(prompt: string, label: string): Promise<GeneratedImage> {
+  for (const modelId of [PRIMARY_IMAGE_MODEL, FALLBACK_IMAGE_MODEL]) {
+    try {
+      const result = await generateViaGeminiImage(modelId, prompt);
+      console.log(`[HouseGen] ${label}: ${modelId} 完了 (${result.mimeType})`);
+      return result;
+    } catch (err) {
+      console.warn(
+        `[HouseGen] ${label}: ${modelId} 失敗: ${err instanceof Error ? err.message : err}`,
+      );
+    }
+  }
+  throw new Error(`[HouseGen] ${label} の画像生成に全モデルが失敗しました`);
+}
+
+/**
+ * エリアの実データとユーザーのこだわりタグから「外観」「間取り図」の2枚を生成する。
+ * Stage1: gemini-3.6-flash で2種類の英語プロンプトを生成（失敗時は静的フォールバック）
+ * Stage2: gemini-3.1-flash-image → gemini-2.5-flash-image で各画像を生成
+ */
+export async function generateHouseImages(
+  area: HouseAreaData,
+  tags: string[],
+): Promise<GeneratedHouseImages> {
+  if (!config.gemini.apiKey) {
+    throw new Error("[HouseGen] APIキー未設定");
+  }
+
+  console.log(
+    `[HouseGen] 生成開始: ${area.prefecture}${area.municipality} / tags=[${tags.join(", ")}]`,
+  );
+
+  let prompts: HouseImagePrompts;
+  try {
+    prompts = await generateHousePrompts(area, tags);
+    console.log(`[HouseGen] プロンプト生成完了\n  exterior: ${prompts.exterior}\n  floorPlan: ${prompts.floorPlan}`);
+  } catch (promptErr) {
+    console.warn(
+      `[HouseGen] プロンプト生成失敗、フォールバック使用: ${promptErr instanceof Error ? promptErr.message : promptErr}`,
+    );
+    prompts = buildFallbackHousePrompts(area, tags);
+  }
+
+  const [exterior, floorPlan] = await Promise.all([
+    generateImageWithFallback(prompts.exterior, "exterior"),
+    generateImageWithFallback(prompts.floorPlan, "floorPlan"),
+  ]);
+
+  return { exterior, floorPlan, prompts };
+}

@@ -23,12 +23,12 @@ import {
 } from "@/lib/userPlan";
 import { dataLayerPush, trackEvent, trackPurchase } from "@/lib/analytics";
 import { fetchTransactions, fetchAiReport, calcSummary } from "@/lib/api";
+import type { HouseAreaDataPayload } from "@/lib/api";
 import { TOKYO_23_WARDS } from "@/lib/areas";
 import { trackLimitReached } from "@/lib/posthog";
 import { exportToPdf, DEFAULT_PDF_OPTIONS } from "@/lib/exportPdf";
 import type { PdfExportOptions } from "@/lib/exportPdf";
-import { getLifestyleCache, saveLifestyleCache } from "@/lib/lifestyleCache";
-import { generateLifestyleImage } from "@/lib/api";
+import { getLifestyleCache } from "@/lib/lifestyleCache";
 import { geocodeAddress, reverseGeocodeDistrict, matchDistrictName } from "@/lib/geocode";
 import { saveSearchHistory } from "@/lib/history";
 import { useBookmarks, sameCoords } from "@/lib/bookmarks";
@@ -38,6 +38,7 @@ import type { DistrictMarker } from "@/components/SearchForm";
 import { HistoryList } from "@/components/HistoryList";
 import { SourceBadge } from "@/components/SourceBadge";
 import { SummaryCards } from "@/components/SummaryCards";
+import { LifestyleGenerator } from "@/components/LifestyleGenerator";
 import { PropertyTypeFilter, ALL_TYPE, type PropertyTypeValue } from "@/components/PropertyTypeFilter";
 import { TransactionTable } from "@/components/TransactionTable";
 import { PriceTrendChart } from "@/components/PriceTrendChart";
@@ -354,33 +355,17 @@ function HomePageContent() {
         setAutoDistrict(matchDistrictName(gsiName, uniqueDistricts));
       }
 
-      // 暮らしイメージ: ロケーションキャッシュ確認 → pro はなければ自動生成（バックグラウンド）
+      // 暮らしイメージ: ロケーションキャッシュがあれば復元するだけ。
+      // 画像生成は API コストが大きいため自動生成はしない（<LifestyleGenerator> /
+      // <AiReport> のボタン操作でのみ生成する）。
       {
-        const pref = data.data.data[0]?.prefecture ?? "";
-        const muni = data.data.data[0]?.municipality ?? data.data.geocodedDistrict ?? "";
         const cityCode = data.data.cityCode;
-        if (pref && muni && cityCode) {
-          (async () => {
-            const cached = await getLifestyleCache(cityCode);
-            if (cached) {
-              setLifestyleImage(cached);
-            } else if (plan === "pro") {
-              setLifestyleImageLoading(true);
-              try {
-                const result = await generateLifestyleImage(
-                  pref, muni,
-                  data.aiReport?.slice(0, 800)
-                );
-                const dataUrl = `data:${result.mimeType};base64,${result.imageBase64}`;
-                setLifestyleImage(dataUrl);
-                saveLifestyleCache(cityCode, dataUrl, pref, muni).catch(console.error);
-              } catch (err) {
-                console.error("[HomeClient] lifestyle auto-generate failed:", err);
-              } finally {
-                setLifestyleImageLoading(false);
-              }
-            }
-          })();
+        if (cityCode) {
+          getLifestyleCache(cityCode)
+            .then((cached) => {
+              if (cached) setLifestyleImage(cached);
+            })
+            .catch((err) => console.error("[HomeClient] lifestyle cache read failed:", err));
         }
       }
 
@@ -560,6 +545,36 @@ function HomePageContent() {
     [result, filteredRecords]
   );
   const firstRecord = result?.data.data[0];
+
+  // 「理想の住まい」生成に渡すエリア実データ（気象・ハザード・用途地域・駅・平均面積）。
+  // 生成ボタンを押したときだけ送信され、Gemini プロンプトでユーザーのタグとブレンドされる。
+  const houseAreaData = useMemo<HouseAreaDataPayload | undefined>(() => {
+    if (!result) return undefined;
+    const areas = filteredRecords
+      .map((r) => r.area)
+      .filter((a): a is number => typeof a === "number" && a > 0);
+    return {
+      zoning: result.environment?.zoning ?? null,
+      hazard: {
+        floodRisk: result.hazard?.flood?.hasRisk ?? false,
+        floodDepthLabel: result.hazard?.flood?.maxDepthLabel ?? null,
+        landslideRisk: result.hazard?.landslide?.hasRisk ?? false,
+        landslidePhenomena: result.hazard?.landslide?.phenomena ?? [],
+      },
+      weather: result.weather
+        ? {
+            summerAvgMaxTemp: result.weather.summerAvgMaxTemp,
+            winterAvgMinTemp: result.weather.winterAvgMinTemp,
+            annualSunshineHours: result.weather.annualSunshineHours,
+          }
+        : null,
+      station: result.environment?.station
+        ? { name: result.environment.station.name }
+        : null,
+      avgArea: areas.length > 0 ? areas.reduce((a, b) => a + b, 0) / areas.length : null,
+      areaFeatures: result.aiReport?.slice(0, 800) ?? null,
+    };
+  }, [result, filteredRecords]);
 
   // 新しい検索結果が来たら種別フィルタと徒歩時間フィルタを「すべて」に戻す
   // （新エリアでは旧条件の取引が0件のことがあるため）
@@ -1318,6 +1333,24 @@ function HomePageContent() {
                       />
                     </ErrorBoundary>
                   )}
+                </div>
+              )}
+
+              {/* 理想の住まい生成（外観 + 間取り図）。生成はボタン押下時のみ・PDF には含めない */}
+              {firstRecord && (
+                <div className="pdf-hide">
+                  <LifestyleGenerator
+                    user={user}
+                    plan={plan}
+                    prefecture={firstRecord.prefecture ?? ""}
+                    municipality={
+                      firstRecord.municipality ?? result.data.geocodedDistrict ?? ""
+                    }
+                    district={districtFilter || autoDistrict || firstRecord.districtName || null}
+                    areaData={houseAreaData}
+                    onLoginRequest={handleLogin}
+                    onPlanModalOpen={() => setPlanModalOpen(true)}
+                  />
                 </div>
               )}
 
