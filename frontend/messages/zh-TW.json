@@ -105,6 +105,8 @@
     "companyLogoRemove": "刪除 LOGO",
     "previewTitle": "預覽",
     "previewNote": "PDF 輸出時,此橫幅會顯示於報告開頭",
+    "lifestyleTitle": "AI 建築・理想條件設定（Pro 限定）",
+    "lifestyleBody": "將理想住宅的條件登記為標籤後，搜尋結果頁的「生活印象圖生成」會自動載入這些條件作為初始值。",
     "saveButton": "儲存設定",
     "saving": "儲存中...",
     "saved": "已儲存",

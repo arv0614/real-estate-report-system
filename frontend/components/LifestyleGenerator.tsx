@@ -1,16 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { User } from "firebase/auth";
 import { generateHouseImages, type HouseAreaDataPayload, type HouseImagesResponse } from "@/lib/api";
 import { trackEvent } from "@/lib/analytics";
+import { TagInput } from "@/components/TagInput";
 import type { UserPlan } from "@/lib/userPlan";
-
-/** 入力できるタグの上限。プロンプトが発散するのを防ぐ */
-const MAX_TAGS = 12;
-/** 1タグあたりの最大文字数（バックエンドの zod 制約と合わせる） */
-const MAX_TAG_LENGTH = 40;
 
 interface Props {
   user: User | null;
@@ -20,6 +16,8 @@ interface Props {
   district?: string | null;
   /** 気象・ハザード・用途地域などの実データ。プロンプトのブレンド素材として送る */
   areaData?: HouseAreaDataPayload;
+  /** マイページに保存済みのこだわり条件。タグの初期値として読み込む */
+  initialTags?: string[];
   onLoginRequest?: () => void;
   onPlanModalOpen?: () => void;
 }
@@ -39,44 +37,35 @@ export function LifestyleGenerator({
   municipality,
   district,
   areaData,
+  initialTags,
   onLoginRequest,
   onPlanModalOpen,
 }: Props) {
   const t = useTranslations("LifestyleGenerator");
 
-  const [input, setInput] = useState("");
-  const [tags, setTags] = useState<string[]>([]);
+  const [tags, setTags] = useState<string[]>(initialTags ?? []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [images, setImages] = useState<HouseImagesResponse | null>(null);
+  /** ユーザーがこの画面でタグを触ったら、後から届く初期値で上書きしない */
+  const editedRef = useRef(false);
 
   const isPro = plan === "pro";
 
-  function addTag() {
-    const value = input.trim().slice(0, MAX_TAG_LENGTH);
-    if (!value) return;
-    if (tags.includes(value)) {
-      setInput("");
-      return;
-    }
-    if (tags.length >= MAX_TAGS) {
-      setError(t("errorMaxTags", { max: MAX_TAGS }));
-      return;
-    }
-    setTags((prev) => [...prev, value]);
-    setInput("");
+  // マイページ保存分（Firestore）は検索より後に届くことがあるため、届いた時点で反映する。
+  // ただしユーザーが既に編集していれば尊重する。
+  const initialKey = (initialTags ?? []).join("\u0000");
+  useEffect(() => {
+    if (editedRef.current) return;
+    setTags(initialTags ?? []);
+    // initialKey で内容変化のみを検知する（配列の参照変化では再実行しない）
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialKey]);
+
+  function handleTagsChange(next: string[]) {
+    editedRef.current = true;
+    setTags(next);
     setError(null);
-  }
-
-  function removeTag(target: string) {
-    setTags((prev) => prev.filter((tag) => tag !== target));
-  }
-
-  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    // IME 変換確定の Enter でタグが作られないよう、composing 中は無視する
-    if (e.key !== "Enter" || e.nativeEvent.isComposing) return;
-    e.preventDefault();
-    addTag();
   }
 
   /** ★ここだけが画像生成APIの呼び出し口。ボタン押下以外から呼ばないこと。 */
@@ -148,51 +137,12 @@ export function LifestyleGenerator({
           >
             {t("tagLabel")}
           </label>
-          <div className="flex gap-2">
-            <input
-              id="lifestyle-tag-input"
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              maxLength={MAX_TAG_LENGTH}
-              placeholder={t("tagPlaceholder")}
-              className="flex-1 min-w-0 rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
-            />
-            <button
-              type="button"
-              onClick={addTag}
-              disabled={!input.trim()}
-              className="shrink-0 rounded-lg bg-slate-800 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {t("addBtn")}
-            </button>
-          </div>
-          <p className="mt-1.5 text-xs text-slate-400">{t("tagHint", { max: MAX_TAGS })}</p>
-
-          {/* チップ一覧 */}
-          {tags.length > 0 ? (
-            <ul className="mt-3 flex flex-wrap gap-2">
-              {tags.map((tag) => (
-                <li
-                  key={tag}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 py-1 pl-3 pr-1.5 text-sm text-indigo-800"
-                >
-                  <span className="break-all">{tag}</span>
-                  <button
-                    type="button"
-                    onClick={() => removeTag(tag)}
-                    aria-label={t("removeTag", { tag })}
-                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-indigo-500 transition-colors hover:bg-indigo-200 hover:text-indigo-900"
-                  >
-                    ×
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-3 text-xs text-slate-400">{t("tagEmpty")}</p>
-          )}
+          <TagInput
+            tags={tags}
+            onChange={handleTagsChange}
+            inputId="lifestyle-tag-input"
+            disabled={loading}
+          />
         </div>
 
         {/* ── 生成ボタン ─────────────────────────────── */}
