@@ -410,7 +410,7 @@
     "generateBtn": "Generate my ideal home with AI (Pro only)",
     "regenerateBtn": "Generate again with these conditions (Pro only)",
     "generatingBtn": "Generating…",
-    "generateNote": "Runs only when you press the button (2 images: exterior & floor plan, approx. 20-40s)",
+    "generateNote": "Runs only when you press the button (floor plan first, then the exterior: 2 images, approx. 40-80s)",
     "loadingText": "AI is drafting the architectural plan",
     "exteriorCaption": "Exterior",
     "conceptTitle": "The design concept behind this plan",
