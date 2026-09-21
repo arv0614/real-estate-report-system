@@ -1,0 +1,108 @@
+name: Deploy Backend to Cloud Run
+
+# バックエンド API (realestate-api) を Cloud Run にデプロイする。
+#
+# ビルド方式: `gcloud run deploy --source backend` （backend/Dockerfile を
+# Cloud Build がそのまま使う）。既存サービスへの更新なので、環境変数・
+# サービスアカウント・スケーリング設定など既存の構成はそのまま引き継がれる。
+#
+# トリガー:
+# - push (main) で backend/** または本ワークフロー自身が変更されたとき
+# - workflow_dispatch（手動実行）
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "backend/**"
+      - ".github/workflows/deploy_backend.yml"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Build & Deploy API to Cloud Run
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up gcloud CLI
+        uses: google-github-actions/setup-gcloud@v3
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Deploy to Cloud Run (--source)
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GCP_REGION: ${{ secrets.GCP_REGION }}
+          CLOUD_RUN_SERVICE_NAME: ${{ secrets.CLOUD_RUN_SERVICE_NAME }}
+        run: |
+          set -euo pipefail
+          REGION="${GCP_REGION:-asia-northeast1}"
+          SERVICE="${CLOUD_RUN_SERVICE_NAME:-realestate-api}"
+
+          echo "Project : ${GCP_PROJECT_ID}"
+          echo "Region  : ${REGION}"
+          echo "Service : ${SERVICE}"
+
+          # 既存サービスの更新。--set-env-vars を渡さないため、稼働中の
+          # 環境変数（GEMINI_API_KEY 等）とサービスアカウントは維持される。
+          gcloud run deploy "${SERVICE}" \
+            --source backend \
+            --region "${REGION}" \
+            --project "${GCP_PROJECT_ID}" \
+            --quiet
+
+      - name: Verify the new revision serves traffic
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GCP_REGION: ${{ secrets.GCP_REGION }}
+          CLOUD_RUN_SERVICE_NAME: ${{ secrets.CLOUD_RUN_SERVICE_NAME }}
+        run: |
+          set -euo pipefail
+          REGION="${GCP_REGION:-asia-northeast1}"
+          SERVICE="${CLOUD_RUN_SERVICE_NAME:-realestate-api}"
+
+          DESCRIBE() {
+            gcloud run services describe "${SERVICE}" \
+              --region "${REGION}" --project "${GCP_PROJECT_ID}" "$@"
+          }
+
+          LATEST_READY=$(DESCRIBE --format='value(status.latestReadyRevisionName)')
+          TRAFFIC=$(DESCRIBE --format='value(status.traffic[0].revisionName)')
+          URL=$(DESCRIBE --format='value(status.url)')
+
+          echo "Latest ready revision : ${LATEST_READY}"
+          echo "Serving revision      : ${TRAFFIC}"
+          echo "Service URL           : ${URL}"
+
+          if [ -z "${LATEST_READY}" ]; then
+            echo "::error::最新リビジョンが Ready になっていません"
+            exit 1
+          fi
+
+          # /health が 200 を返すまで最大2分待つ（起動直後の初回リクエスト対策）
+          for i in $(seq 1 12); do
+            CODE=$(curl -s -o /dev/null -w "%{http_code}" "${URL}/health" || echo "000")
+            echo "  [${i}] GET /health -> ${CODE}"
+            if [ "${CODE}" = "200" ]; then
+              echo "✅ ヘルスチェック成功: ${LATEST_READY} がトラフィックを処理しています"
+              exit 0
+            fi
+            sleep 10
+          done
+
+          echo "::error::/health が 200 を返しませんでした（最終コード: ${CODE}）"
+          exit 1
