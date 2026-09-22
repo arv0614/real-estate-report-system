@@ -412,6 +412,16 @@ The spec MUST agree with the plan. If they differ, the plan wins: fix the spec, 
   NEVER use "GROUND FLOOR", "FIRST FLOOR", "SECOND FLOOR", "G/F", "1st floor", "LEVEL 1" or any other wording
   for the floors. Write the constraint into the prompt itself, e.g.
   "floor labels written strictly as 1F and 2F only, never GROUND FLOOR or FIRST FLOOR, no other text labels".
+- ONE BLOCK PER FLOOR — MANDATORY: the prompt must carry this sentence, adapted to the story count:
+  "Draw EXACTLY the specified number of floors, strictly one block per floor, arranged side by side.
+   Do NOT duplicate any floor (e.g., if 3 stories, draw only 1F, 2F, and 3F exactly once)."
+  A sheet that repeats a floor, shows the same plan twice, or adds an extra unlabelled block is a failure.
+  Name the blocks explicitly for this house (e.g. "exactly 3 plan blocks in one row: 1F, 2F, 3F, one block each").
+- DRAWING STYLE — MANDATORY: the prompt must carry this style clause verbatim:
+  "Pure 2D digital CAD drawing, crisp black lines on a plain white background, flat vector style.
+   Absolutely NO photographs, NO paper textures, NO shadows, NO 3D elements, NO mockups."
+  The output is the drawing itself, never a photograph of a printed drawing: no desk, no hands, no pens, no
+  rolled blueprints, no drop shadows, no page curl, no perspective, no isometric or axonometric view.
 
 ## STEP 4: write the "exterior" prompt LAST, using the floor plan as the absolute reference
 - It begins with the SAME EXACT spec string, character for character, followed by ", ".
@@ -449,7 +459,9 @@ The spec MUST agree with the plan. If they differ, the plan wins: fix the spec, 
     6. exactly one bathtub in the whole house;
     7. the LEFT / CENTER / RIGHT stacking lines of step 1g stated in both prompts, with every opening directly
        above or below the one named for the neighbouring floor;
-    8. the step-1h facade proportion phrase present in the exterior prompt, matching the metres in the plan.
+    8. the step-1h facade proportion phrase present in the exterior prompt, matching the metres in the plan;
+    9. the floorPlan prompt names one block per floor, each floor exactly once, and carries the pure 2D digital
+       CAD style clause with its no-photo / no-paper / no-shadow / no-3D / no-mockup exclusions.
 
 ## STEP 5: write "conceptExplanation" — the design rationale, IN JAPANESE
 - 200-300 Japanese characters, plain polite Japanese (です・ます調), no markdown, no bullet points, no English headings.
@@ -487,7 +499,7 @@ Architectural sanity rules (a plan that breaks one of these is not buildable —
 - Stack the openings: every window and door sits in a vertical column with the wall or opening above and below it; nothing floats over a blank wall or over open air.
 
 Prompt content rules:
-- floorPlan: <spec>, 2D top-down architectural floor plan of that house, orthographic, clean black line drawing on white, room partitions per the plan, one staircase in the same position on every floor, exactly one bathroom in the whole house, each floor at its own width x depth with the setbacks drawn, openings stacked in the same columns on every floor, furniture layout, dimension lines, floor labels strictly as 1F / 2F / 3F (never GROUND FLOOR, never FIRST FLOOR), no other text labels and never Japanese characters, street-facing facade at the bottom of the sheet, blueprint style, high resolution.
+- floorPlan: <spec>, pure 2D digital CAD drawing, crisp black lines on a plain white background, flat vector style, absolutely no photographs, no paper textures, no shadows, no 3D elements, no mockups, top-down orthographic floor plan of that house, exactly one block per floor arranged side by side with no floor drawn twice, room partitions per the plan, one staircase in the same position on every floor, exactly one bathroom in the whole house, each floor at its own width x depth with the setbacks drawn, openings stacked in the same columns on every floor, furniture layout, dimension lines, floor labels strictly as 1F / 2F / 3F (never GROUND FLOOR, never FIRST FLOOR), no other text labels and never Japanese characters, street-facing facade at the bottom of the sheet, high resolution.
 - exterior: <spec>, photorealistic architectural photography of the same building, the step-1h facade proportion phrase, every opening aligned in straight vertical lines with the floor below, daylight matching the local climate and season, surrounding streetscape consistent with the district, Japanese residential architecture, high-quality photography, 16:9 landscape.`;
 
 /** エリア実データを日本語のブリーフィングテキストに整形する */
@@ -583,6 +595,15 @@ function buildFallbackHousePrompts(area: HouseAreaData, tags: string[]): HouseIm
   // 間取り図で使わせない階数表記（日本式の 1F/2F/3F に統一する）
   const floorNames = Array.from({ length: storyCount }, (_, i) => `${i + 1}F`);
   const floorLabels = `floor labels written strictly as ${floorNames.join(" and ")} only, never GROUND FLOOR or FIRST FLOOR`;
+  // 各階1ブロックのみ。同じ階が2つ描かれるのを防ぐ
+  const oneBlockPerFloor =
+    `draw exactly ${storyCount} plan block${storyCount > 1 ? "s" : ""} in one row (${floorNames.join(", ")}), ` +
+    `strictly one block per floor, each floor drawn exactly once, never duplicate a floor`;
+  // 紙の図面を撮影した写真風モックアップにならないようスタイルを固定する
+  const CAD_STYLE =
+    "pure 2D digital CAD drawing, crisp black lines on a plain white background, flat vector style, " +
+    "absolutely no photographs, no paper textures, no shadows, no 3D elements, no mockups, " +
+    "no desk, no hands, no rolled blueprints, no perspective, no isometric view";
 
   // 日本の都市型住宅のアスペクト比（間口6m × 奥行き10m）を基準にし、
   // 3階建て以上は最上階を道路側にセットバックさせる（斜線制限を想定）
@@ -647,13 +668,14 @@ function buildFallbackHousePrompts(area: HouseAreaData, tags: string[]): HouseIm
       `${facadeProportion}, ${proportions}, ${alignment}${resilience}${wishes}, ` +
       `surrounding local streetscape, daylight, high-quality photography, 16:9 landscape`,
     floorPlan:
-      `${spec}, 2D top-down architectural floor plan of the same modern Japanese detached house, ` +
+      `${spec}, ${CAD_STYLE}, top-down orthographic floor plan of the same modern Japanese detached house, ` +
+      `${oneBlockPerFloor}, ` +
       `exactly ${storyCount} ${storyCount === 1 ? "story" : "stories"}, ${planParking}${wishes}, street-facing facade at the bottom of the sheet ` +
       `with ${carCount <= 0 ? "the entrance on the left" : "the garage on the left"} as seen from the street, ` +
       `${footprints}, ${proportions}, ${stairs}, ${bathroom}, ` +
       `${alignment}, ` +
-      `orthographic projection, clean black line drawing on white background, room partitions, furniture layout, ` +
-      `dimension lines, ${floorLabels}, no other text labels, blueprint style, high resolution`,
+      `room partitions, furniture layout, ` +
+      `dimension lines, ${floorLabels}, no other text labels, high resolution`,
     conceptExplanation: buildFallbackConcept(area, tags, { storyCount, carCount, cold, flood }),
   };
 }
@@ -796,8 +818,8 @@ function buildFloorPlanReferenceInstruction(): string {
     "reference: the number of floors, the footprint proportions and setbacks, and the left/right and " +
     "front/back positions of the garage, the entrance, the windows and the staircase must match that " +
     "plan exactly, with every opening in the same vertical column as the plan shows. Do NOT reproduce " +
-    "the drawing, the line work, the dimension lines or the floor labels — output a photorealistic " +
-    "exterior photograph of the real building that the plan describes. "
+    "the drawing, the line work, the dimension lines or the floor labels, and do not output a flat 2D CAD " +
+    "image — output a photorealistic exterior photograph of the real building that the plan describes. "
   );
 }
 
