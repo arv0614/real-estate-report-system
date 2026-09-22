@@ -66,6 +66,17 @@ describe("generateHouseImages: floor plan first, then exterior with the plan as 
     expect(planParts.filter((p) => p.inlineData)).toHaveLength(0);
     expect(planParts[0].text).toContain("floor plan");
 
+    // 紙の図面を撮影した写真風モックアップにならないようスタイルを固定している
+    const planPrompt = planParts[0].text as string;
+    expect(planPrompt).toContain("pure 2D digital CAD drawing");
+    expect(planPrompt).toContain("crisp black lines on a plain white background");
+    for (const forbidden of ["no photographs", "no paper textures", "no shadows", "no 3D elements", "no mockups"]) {
+      expect(planPrompt).toContain(forbidden);
+    }
+    // 各階1ブロックのみ（同じ階が2度描かれない）
+    expect(planPrompt).toContain("strictly one block per floor");
+    expect(planPrompt).toContain("each floor drawn exactly once");
+
     // 3回目 = 外観。間取り図の base64 が inlineData として添付されている
     const exteriorParts = partsOf(2);
     const attached = exteriorParts.filter((p) => p.inlineData);
@@ -75,6 +86,7 @@ describe("generateHouseImages: floor plan first, then exterior with the plan as 
     // 添付画像の用途（下絵であって図面を模写させない）を指示している
     expect(exteriorParts[0].text).toContain("The attached image is the 2D floor plan");
     expect(exteriorParts[0].text).toContain("photorealistic exterior photograph");
+    expect(exteriorParts[0].text).toContain("do not output a flat 2D CAD");
 
     expect(result.floorPlan.imageBase64).toBe("FLOORPLAN_B64");
     expect(result.exterior.imageBase64).toBe("EXTERIOR_B64");
