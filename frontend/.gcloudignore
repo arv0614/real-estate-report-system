@@ -8,3 +8,11 @@ node_modules
 .env.*
 !.env.example
 .DS_Store
+# テスト・ドキュメント類（frontend/content/blog/ の記事データを巻き込まないよう
+# ルート直下のみに限定する `/` アンカーを必ず付けること）
+tests
+test-results
+playwright.config.ts
+playwright-results.json
+/*.md
+tsconfig.tsbuildinfo

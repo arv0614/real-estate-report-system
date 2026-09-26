@@ -1,0 +1,14 @@
+.git
+.gitignore
+node_modules
+dist
+*.log
+.env
+.env.*
+!.env.example
+.DS_Store
+scripts
+jest.config.js
+**/*.test.ts
+**/__tests__/**
+coverage

@@ -1,0 +1,41 @@
+# Cloud Build 設定（バックエンド Hono API）。
+# ローカル開発コンテナに Docker が無い環境でも `gcloud builds submit --config
+# backend/cloudbuild.yaml --substitutions _IMAGE=... backend/` でビルド・プッシュできる。
+#
+# レイヤーキャッシュ: Artifact Registry に既に push 済みの :latest イメージを
+# `docker pull` してから `--cache-from` で参照する。BuildKit のインラインキャッシュ
+# (BUILDKIT_INLINE_CACHE=1) を使うことで、multi-stage Dockerfile の各ステージ
+# （deps インストール層など）も package.json / package-lock.json に変更が無い限り
+# キャッシュヒットし、ビルド時間と Cloud Build 実行枠の消費を削減する。
+substitutions:
+  _IMAGE: ''
+
+steps:
+  # 初回デプロイ時はイメージが存在せず pull が失敗するため、その場合のみ許容して継続する
+  - name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        docker pull "${_IMAGE}" || echo "No previous image to pull from (initial build)"
+
+  - name: 'gcr.io/cloud-builders/docker'
+    env:
+      - 'DOCKER_BUILDKIT=1'
+    args:
+      - build
+      - '--build-arg'
+      - 'BUILDKIT_INLINE_CACHE=1'
+      - '--cache-from'
+      - '${_IMAGE}'
+      - '-t'
+      - '${_IMAGE}'
+      - '.'
+
+images:
+  - '${_IMAGE}'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: '600s'

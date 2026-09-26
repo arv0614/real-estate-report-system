@@ -1448,7 +1448,16 @@ npx firebase-tools@latest deploy --only firestore:rules --project your-project-i
 
 ### バックエンド（手動）
 
-**Dev Container（OrbStack）環境ではローカル Docker が使えないため、`gcloud builds submit` でクラウドビルドします。**
+**Dev Container（OrbStack）環境ではローカル Docker が使えないため、`gcloud builds submit` でクラウドビルドします。** `bash scripts/deploy.sh` が `backend/cloudbuild.yaml` を使って Cloud Build → Artifact Registry プッシュ → Cloud Run デプロイ → ヘルスチェックまで一括実行します（ローカル Docker の有無を問わず動作）。
+
+```bash
+source .env
+bash scripts/deploy.sh
+```
+
+`backend/cloudbuild.yaml` は Artifact Registry の既存 `:latest` イメージを `docker pull` した上で `--cache-from` + BuildKit インラインキャッシュ (`BUILDKIT_INLINE_CACHE=1`) を使ってビルドするため、`package.json` / `package-lock.json` に変更が無い日は依存関係インストール層がキャッシュヒットし、ビルド時間と Cloud Build 実行枠の消費を削減します。
+
+手動で個別ステップを実行したい場合:
 
 ```bash
 source .env
@@ -1456,9 +1465,11 @@ source .env
 IMAGE_REPO="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/realestate-api/backend"
 IMAGE_TAG="${IMAGE_REPO}:latest"
 
-# Cloud Build でイメージビルド & Artifact Registry プッシュ
-cd backend
-gcloud builds submit --project "$GCP_PROJECT_ID" --tag "$IMAGE_TAG" --quiet .
+# Cloud Build でイメージビルド & Artifact Registry プッシュ（レイヤーキャッシュ有効）
+gcloud builds submit backend/ \
+  --config backend/cloudbuild.yaml \
+  --substitutions "_IMAGE=${IMAGE_TAG}" \
+  --project "$GCP_PROJECT_ID"
 
 # Cloud Run デプロイ
 gcloud run deploy "$CLOUD_RUN_SERVICE_NAME" \
@@ -1470,8 +1481,6 @@ gcloud run deploy "$CLOUD_RUN_SERVICE_NAME" \
   --set-env-vars "^|^GCP_PROJECT_ID=${GCP_PROJECT_ID}|GCP_REGION=${GCP_REGION}|GCS_CACHE_BUCKET=${GCS_CACHE_BUCKET}|..." \
   --quiet
 ```
-
-> **ローカル Docker が使える環境（macOS ネイティブ等）** では `bash scripts/deploy.sh` で Docker ビルド → プッシュ → デプロイを一括実行できます。
 
 > **環境変数の更新だけ行いたい場合**
 >

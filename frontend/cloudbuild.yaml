@@ -14,9 +14,25 @@ substitutions:
   _NEXT_PUBLIC_GA_MEASUREMENT_ID: 'G-4Y1CLF7J2P'
 
 steps:
+  # 前回 push 済みの :latest を pull し、--cache-from の参照元にする（毎朝のブログ
+  # 自動デプロイで package.json 等に変更が無い限り deps インストール層をキャッシュヒット
+  # させ、ビルド時間と Cloud Build 実行枠の消費を削減する）。初回は pull 失敗を許容。
   - name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        docker pull "${_IMAGE}" || echo "No previous image to pull from (initial build)"
+
+  - name: 'gcr.io/cloud-builders/docker'
+    env:
+      - 'DOCKER_BUILDKIT=1'
     args:
       - build
+      - '--build-arg'
+      - 'BUILDKIT_INLINE_CACHE=1'
+      - '--cache-from'
+      - '${_IMAGE}'
       - '--build-arg'
       - 'NEXT_PUBLIC_API_URL=${_NEXT_PUBLIC_API_URL}'
       - '--build-arg'

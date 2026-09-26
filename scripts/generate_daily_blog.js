@@ -33,8 +33,11 @@
  *   GEMINI_API_KEY        — Gemini API キー
  *
  * 任意環境変数:
- *   GEMINI_MODEL               — 本文執筆用モデル。既定: gemini-3.1-pro-preview
- *   GEMINI_PLANNING_MODEL      — 企画会議・画像プロンプト生成用の軽量モデル。既定: gemini-3.6-flash
+ *   GEMINI_MODEL               — 本文執筆（jaBody）専用の高品質モデル。既定: gemini-3.1-pro-preview
+ *                                 記事の品質を担保するためダウングレードしない。
+ *   GEMINI_PLANNING_MODEL      — 企画会議・画像プロンプト生成・メタデータ生成/翻訳・
+ *                                 本文翻訳(en/zh-TW/zh-CN)用の軽量モデル。既定: gemini-3.6-flash
+ *                                 （コスト最適化: 日本語本文の一次執筆以外は Flash 系に統一）
  *   GEMINI_IMAGE_MODEL         — アイキャッチ画像生成モデル。既定: gemini-3.1-flash-image
  *   GEMINI_IMAGE_FALLBACK_MODEL — 画像生成の第一候補失敗時のフォールバック。既定: gemini-2.5-flash-image
  *   BLOG_DATE             — 上書き YYYY-MM-DD (既定: JST の本日)
@@ -350,11 +353,13 @@ async function callJson(ai, prompt, model = MODEL) {
 // grounding: true の場合、Google検索グラウンディング（tools: [{ googleSearch: {} }]）を有効にする。
 // ツール利用時にエラーが発生した場合は、検索なしの通常推論にフォールバックして記事生成を止めない
 // （backend/src/services/geminiApi.ts の generateCustomerProposal と同じ安全設計）。
-async function callText(ai, prompt, { grounding = false } = {}) {
+// model 省略時は MODEL（本文執筆用の高品質モデル）。翻訳など品質要求が緩いステップは
+// 呼び出し側で model に PLANNING_MODEL（Flash）を渡してコストを下げる。
+async function callText(ai, prompt, { grounding = false, model = MODEL } = {}) {
   if (grounding) {
     try {
       const response = await generateContentWithRetry(ai, {
-        model: MODEL,
+        model,
         contents: prompt,
         config: { temperature: 0.85, tools: [{ googleSearch: {} }] },
       });
@@ -369,7 +374,7 @@ async function callText(ai, prompt, { grounding = false } = {}) {
   }
 
   const response = await generateContentWithRetry(ai, {
-    model: MODEL,
+    model,
     contents: prompt,
     config: { temperature: 0.85 },
   });
@@ -1058,7 +1063,7 @@ async function main() {
 
   if (DRY_RUN) {
     console.log("[DRY] [JA] メタデータ生成中...");
-    const jaMeta = await callJson(ai, jaMetaPrompt({ today, recentSlugs, plan, editorialGuidelines }));
+    const jaMeta = await callJson(ai, jaMetaPrompt({ today, recentSlugs, plan, editorialGuidelines }), PLANNING_MODEL);
     console.log("[DRY] メタデータ:", JSON.stringify(jaMeta, null, 2));
     jaMeta.primaryLocation = { lat: plan.lat, lng: plan.lng, name: plan.targetArea };
     jaMeta.slug = sanitizeSlug(jaMeta.slug) || "dry-run-preview";
@@ -1087,7 +1092,7 @@ async function main() {
   const primaryLocation = { lat: plan.lat, lng: plan.lng, name: plan.targetArea };
 
   console.log("[INFO] [JA] メタデータ生成中...");
-  const jaMeta = await callJson(ai, jaMetaPrompt({ today, recentSlugs, plan, editorialGuidelines }));
+  const jaMeta = await callJson(ai, jaMetaPrompt({ today, recentSlugs, plan, editorialGuidelines }), PLANNING_MODEL);
   for (const k of ["slug", "title", "description", "tags"]) {
     if (!jaMeta[k]) throw new Error(`日本語メタの必須フィールド '${k}' が欠けています`);
   }
@@ -1119,7 +1124,7 @@ async function main() {
 
   for (const lang of ["en", "zh-TW", "zh-CN"]) {
     console.log(`[INFO] [${lang}] メタデータ翻訳中...`);
-    const tMeta = await callJson(ai, transMetaPrompt({ lang, jaMeta }));
+    const tMeta = await callJson(ai, transMetaPrompt({ lang, jaMeta }), PLANNING_MODEL);
     if (!tMeta.title || !tMeta.description) {
       throw new Error(`${lang} メタ翻訳が不完全です`);
     }
@@ -1127,7 +1132,7 @@ async function main() {
     tMeta.primaryLocation = tMeta.primaryLocation || jaMeta.primaryLocation;
 
     console.log(`[INFO] [${lang}] 本文翻訳中...`);
-    const tBody = await callText(ai, transBodyPrompt({ lang, jaBody }));
+    const tBody = await callText(ai, transBodyPrompt({ lang, jaBody }), { model: PLANNING_MODEL });
     if (tBody.length < 800) {
       throw new Error(`${lang} 翻訳本文が短すぎます: ${tBody.length} chars`);
     }

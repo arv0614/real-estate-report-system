@@ -36,23 +36,18 @@ echo "  Service : $CLOUD_RUN_SERVICE_NAME"
 echo "  Image   : $IMAGE_TAG"
 echo "========================================"
 
-# ステップ1: Docker認証
+# ステップ1-3: Cloud Build でビルド・プッシュ
+# NOTE: ローカル開発コンテナ (Dev Container) には Docker が無いため、ローカル
+# `docker build` / `docker push` は使わず gcloud builds submit に統一する
+# (frontend の scripts/deploy_frontend.sh と同じ方式)。backend/cloudbuild.yaml が
+# Artifact Registry の既存 :latest を --cache-from で参照してレイヤーキャッシュを効かせる。
 echo ""
-echo "📦 [1/4] Artifact Registry に認証..."
-gcloud auth configure-docker "${GCP_REGION}-docker.pkg.dev" --quiet
-
-# ステップ2: Dockerビルド
-echo ""
-echo "🔨 [2/4] Dockerイメージをビルド..."
-cd "$ROOT_DIR/backend"
-docker build --platform linux/amd64 -t "$IMAGE_TAG" .
-echo "✅ ビルド完了"
-
-# ステップ3: プッシュ
-echo ""
-echo "⬆️  [3/4] Artifact Registry にプッシュ..."
-docker push "$IMAGE_TAG"
-echo "✅ プッシュ完了"
+echo "🔨 [1-3/4] Cloud Build でイメージをビルド・プッシュ..."
+gcloud builds submit "$ROOT_DIR/backend" \
+  --config "$ROOT_DIR/backend/cloudbuild.yaml" \
+  --substitutions "_IMAGE=${IMAGE_TAG}" \
+  --project "$GCP_PROJECT_ID"
+echo "✅ ビルド・プッシュ完了"
 
 # ステップ4: Cloud Run デプロイ
 echo ""
