@@ -79,10 +79,13 @@ jobs:
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
         run: |
           set -euo pipefail
-          # backend/Dockerfile をそのまま使い、Terraform と同じタグへ push する
-          # （アップロード対象は backend/.gcloudignore で絞られる）
+          # backend/cloudbuild.yaml を使う（--tag だけの素朴なビルドだと、
+          # Artifact Registry の既存 :latest を --cache-from で参照する
+          # レイヤーキャッシュ設定が一切適用されない）。
+          # アップロード対象は backend/.gcloudignore / backend/.dockerignore で絞られる。
           gcloud builds submit backend \
-            --tag "${IMAGE}" \
+            --config backend/cloudbuild.yaml \
+            --substitutions "_IMAGE=${IMAGE}" \
             --project "${GCP_PROJECT_ID}" \
             --quiet
 
