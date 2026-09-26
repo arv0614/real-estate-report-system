@@ -1,3 +1,13 @@
+# レイヤーキャッシュ: `docker build --cache-from` + BUILDKIT_INLINE_CACHE=1（旧実装）は
+# multi-stage Dockerfile の中間ステージ（deps/builder ステージの npm ci 層）を実際には
+# キャッシュしないことをbackend側の実機検証で確認したため、`docker buildx build` +
+# レジストリキャッシュエクスポーター (mode=max) に変更した。mode=max は最終イメージだけで
+# なく中間ステージの全レイヤーもキャッシュ対象にするため、package.json /
+# package-lock.json に変更が無い日は deps ステージの npm ci 層が実際に CACHED ヒットする。
+# キャッシュは本体イメージとは別に `:buildcache` タグとして Artifact Registry に保存する
+# （registry キャッシュエクスポーターは実イメージのタグに同居できないため）。
+# NOTE: フロントの `COPY . .`（content/blog/ 等）は毎日変わるため、それ以降のレイヤー
+# （next build 自体）はキャッシュされない。効くのは deps インストール層のみ。
 substitutions:
   _NEXT_PUBLIC_API_URL: ''
   _IMAGE: ''
@@ -14,55 +24,54 @@ substitutions:
   _NEXT_PUBLIC_GA_MEASUREMENT_ID: 'G-4Y1CLF7J2P'
 
 steps:
-  # 前回 push 済みの :latest を pull し、--cache-from の参照元にする（毎朝のブログ
-  # 自動デプロイで package.json 等に変更が無い限り deps インストール層をキャッシュヒット
-  # させ、ビルド時間と Cloud Build 実行枠の消費を削減する）。初回は pull 失敗を許容。
+  # NOTE: Cloud Build は `${VAR}` を自身の substitution 構文として解釈しようとするため、
+  # bash 側のパラメータ展開はすべて `$$` でエスケープして「リテラルな $」として渡す
+  # （そうしないと "not a valid built-in substitution" で Cloud Build 側のバリデーションに落ちる）。
   - name: 'gcr.io/cloud-builders/docker'
     entrypoint: 'bash'
+    env:
+      - 'IMAGE=${_IMAGE}'
+      - 'NEXT_PUBLIC_API_URL=${_NEXT_PUBLIC_API_URL}'
+      - 'NEXT_PUBLIC_SITE_URL=${_NEXT_PUBLIC_SITE_URL}'
+      - 'NEXT_PUBLIC_FIREBASE_API_KEY=${_NEXT_PUBLIC_FIREBASE_API_KEY}'
+      - 'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${_NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}'
+      - 'NEXT_PUBLIC_FIREBASE_PROJECT_ID=${_NEXT_PUBLIC_FIREBASE_PROJECT_ID}'
+      - 'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${_NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}'
+      - 'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${_NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}'
+      - 'NEXT_PUBLIC_FIREBASE_APP_ID=${_NEXT_PUBLIC_FIREBASE_APP_ID}'
+      - 'NEXT_PUBLIC_POSTHOG_KEY=${_NEXT_PUBLIC_POSTHOG_KEY}'
+      - 'NEXT_PUBLIC_POSTHOG_HOST=${_NEXT_PUBLIC_POSTHOG_HOST}'
+      - 'NEXT_PUBLIC_GTM_ID=${_NEXT_PUBLIC_GTM_ID}'
+      - 'NEXT_PUBLIC_GA_MEASUREMENT_ID=${_NEXT_PUBLIC_GA_MEASUREMENT_ID}'
     args:
       - '-c'
       - |
-        docker pull "${_IMAGE}" || echo "No previous image to pull from (initial build)"
+        set -euo pipefail
+        docker buildx create --name cibuilder --driver docker-container --use
+        docker buildx inspect --bootstrap
 
-  - name: 'gcr.io/cloud-builders/docker'
-    env:
-      - 'DOCKER_BUILDKIT=1'
-    args:
-      - build
-      - '--build-arg'
-      - 'BUILDKIT_INLINE_CACHE=1'
-      - '--cache-from'
-      - '${_IMAGE}'
-      - '--build-arg'
-      - 'NEXT_PUBLIC_API_URL=${_NEXT_PUBLIC_API_URL}'
-      - '--build-arg'
-      - 'NEXT_PUBLIC_SITE_URL=${_NEXT_PUBLIC_SITE_URL}'
-      - '--build-arg'
-      - 'NEXT_PUBLIC_FIREBASE_API_KEY=${_NEXT_PUBLIC_FIREBASE_API_KEY}'
-      - '--build-arg'
-      - 'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${_NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}'
-      - '--build-arg'
-      - 'NEXT_PUBLIC_FIREBASE_PROJECT_ID=${_NEXT_PUBLIC_FIREBASE_PROJECT_ID}'
-      - '--build-arg'
-      - 'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${_NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}'
-      - '--build-arg'
-      - 'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${_NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}'
-      - '--build-arg'
-      - 'NEXT_PUBLIC_FIREBASE_APP_ID=${_NEXT_PUBLIC_FIREBASE_APP_ID}'
-      - '--build-arg'
-      - 'NEXT_PUBLIC_POSTHOG_KEY=${_NEXT_PUBLIC_POSTHOG_KEY}'
-      - '--build-arg'
-      - 'NEXT_PUBLIC_POSTHOG_HOST=${_NEXT_PUBLIC_POSTHOG_HOST}'
-      - '--build-arg'
-      - 'NEXT_PUBLIC_GTM_ID=${_NEXT_PUBLIC_GTM_ID}'
-      - '--build-arg'
-      - 'NEXT_PUBLIC_GA_MEASUREMENT_ID=${_NEXT_PUBLIC_GA_MEASUREMENT_ID}'
-      - '-t'
-      - '${_IMAGE}'
-      - '.'
+        CACHE_REF="$${IMAGE%:*}:buildcache"
+        echo "Image: $$IMAGE"
+        echo "Cache: $$CACHE_REF"
 
-images:
-  - '${_IMAGE}'
+        docker buildx build \
+          --cache-from "type=registry,ref=$$CACHE_REF" \
+          --cache-to "type=registry,ref=$$CACHE_REF,mode=max" \
+          --build-arg "NEXT_PUBLIC_API_URL=$$NEXT_PUBLIC_API_URL" \
+          --build-arg "NEXT_PUBLIC_SITE_URL=$$NEXT_PUBLIC_SITE_URL" \
+          --build-arg "NEXT_PUBLIC_FIREBASE_API_KEY=$$NEXT_PUBLIC_FIREBASE_API_KEY" \
+          --build-arg "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=$$NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN" \
+          --build-arg "NEXT_PUBLIC_FIREBASE_PROJECT_ID=$$NEXT_PUBLIC_FIREBASE_PROJECT_ID" \
+          --build-arg "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=$$NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET" \
+          --build-arg "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=$$NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID" \
+          --build-arg "NEXT_PUBLIC_FIREBASE_APP_ID=$$NEXT_PUBLIC_FIREBASE_APP_ID" \
+          --build-arg "NEXT_PUBLIC_POSTHOG_KEY=$$NEXT_PUBLIC_POSTHOG_KEY" \
+          --build-arg "NEXT_PUBLIC_POSTHOG_HOST=$$NEXT_PUBLIC_POSTHOG_HOST" \
+          --build-arg "NEXT_PUBLIC_GTM_ID=$$NEXT_PUBLIC_GTM_ID" \
+          --build-arg "NEXT_PUBLIC_GA_MEASUREMENT_ID=$$NEXT_PUBLIC_GA_MEASUREMENT_ID" \
+          -t "$$IMAGE" \
+          --push \
+          .
 
 options:
   logging: CLOUD_LOGGING_ONLY

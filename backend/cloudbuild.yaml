@@ -2,38 +2,45 @@
 # ローカル開発コンテナに Docker が無い環境でも `gcloud builds submit --config
 # backend/cloudbuild.yaml --substitutions _IMAGE=... backend/` でビルド・プッシュできる。
 #
-# レイヤーキャッシュ: Artifact Registry に既に push 済みの :latest イメージを
-# `docker pull` してから `--cache-from` で参照する。BuildKit のインラインキャッシュ
-# (BUILDKIT_INLINE_CACHE=1) を使うことで、multi-stage Dockerfile の各ステージ
-# （deps インストール層など）も package.json / package-lock.json に変更が無い限り
-# キャッシュヒットし、ビルド時間と Cloud Build 実行枠の消費を削減する。
+# レイヤーキャッシュ: `docker build --cache-from` + BUILDKIT_INLINE_CACHE=1（旧実装）は
+# multi-stage Dockerfile の中間ステージ（builder ステージの npm ci 層）を実際には
+# キャッシュしないことを実機検証で確認した（"importing cache manifest" 自体は成功するが
+# npm ci が毎回フルで再実行され、CACHED マーカーが一切出ない）。
+# そのため `docker buildx build` + レジストリキャッシュエクスポーター (mode=max) に変更。
+# mode=max は最終イメージだけでなく中間ステージの全レイヤーもキャッシュ対象にするため、
+# package.json / package-lock.json に変更が無い日は builder/runner 両ステージの
+# npm ci 層が実際に CACHED ヒットする（2回目以降のビルドで確認済み）。
+# キャッシュは本体イメージとは別に `:buildcache` タグとして Artifact Registry に保存する
+# （registry キャッシュエクスポーターは実イメージのタグに同居できないため）。
 substitutions:
   _IMAGE: ''
 
 steps:
-  # 初回デプロイ時はイメージが存在せず pull が失敗するため、その場合のみ許容して継続する
+  # NOTE: Cloud Build は `${VAR}` を自身の substitution 構文として解釈しようとするため、
+  # bash 側のパラメータ展開（$$IMAGE / $${CACHE_REF} 等）はすべて `$$` でエスケープして
+  # 「リテラルな $」として渡す必要がある（そうしないと "not a valid built-in substitution"
+  # で Cloud Build 側のバリデーションに落ちる）。
   - name: 'gcr.io/cloud-builders/docker'
     entrypoint: 'bash'
+    env:
+      - 'IMAGE=${_IMAGE}'
     args:
       - '-c'
       - |
-        docker pull "${_IMAGE}" || echo "No previous image to pull from (initial build)"
+        set -euo pipefail
+        docker buildx create --name cibuilder --driver docker-container --use
+        docker buildx inspect --bootstrap
 
-  - name: 'gcr.io/cloud-builders/docker'
-    env:
-      - 'DOCKER_BUILDKIT=1'
-    args:
-      - build
-      - '--build-arg'
-      - 'BUILDKIT_INLINE_CACHE=1'
-      - '--cache-from'
-      - '${_IMAGE}'
-      - '-t'
-      - '${_IMAGE}'
-      - '.'
+        CACHE_REF="$${IMAGE%:*}:buildcache"
+        echo "Image: $$IMAGE"
+        echo "Cache: $$CACHE_REF"
 
-images:
-  - '${_IMAGE}'
+        docker buildx build \
+          --cache-from "type=registry,ref=$$CACHE_REF" \
+          --cache-to "type=registry,ref=$$CACHE_REF,mode=max" \
+          -t "$$IMAGE" \
+          --push \
+          .
 
 options:
   logging: CLOUD_LOGGING_ONLY
